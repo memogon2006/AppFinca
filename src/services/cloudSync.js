@@ -116,6 +116,7 @@ export async function cloudSaveUser(user) {
         name: user.name,
         farm_name: user.farmName,
         email: cleanEmail,
+        password_hash: user.passwordHash,
         updated_at: new Date().toISOString()
       }, { onConflict: 'email' });
     } catch (err) {
@@ -200,6 +201,8 @@ export async function cloudFindUser(email) {
           name: data.name,
           farmName: data.farm_name,
           email: data.email,
+          passwordHash: data.password_hash || data.passwordHash,
+          createdAt: data.created_at,
         };
       }
     } catch (err) {
