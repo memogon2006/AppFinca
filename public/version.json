@@ -1,5 +1,5 @@
 {
-  "version": "2.7.2",
-  "buildTime": 1772890000000,
-  "description": "Ajuste de términos: 'Socio' actualizado a 'Dueño del Animal' en todo el sistema y liquidaciones."
+  "version": "2.8.0",
+  "buildTime": 1772900000000,
+  "description": "Integración completa con Supabase PostgreSQL para inicio de sesión multidispositivo y sincronización en tiempo real."
 }
