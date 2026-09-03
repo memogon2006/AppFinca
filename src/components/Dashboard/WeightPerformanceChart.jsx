@@ -1,22 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
+import { calculateWeightMetrics, formatNumber } from '../../services/calculations';
 
 export function WeightPerformanceChart({ cattle = [], weighings = [] }) {
   const { isDark } = useTheme();
+  const [metricMode, setMetricMode] = useState('gain'); // 'gain' | 'current'
+
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   
   const performanceData = activeCattle.map(animal => {
-    const entryWeight = parseFloat(animal.entryWeight) || 0;
-    const currentWeight = parseFloat(animal.currentWeight || entryWeight);
-    const gain = Math.max(0, currentWeight - entryWeight);
+    const animalWeighs = weighings.filter(w => w.cattleId === animal.id);
+    const wm = calculateWeightMetrics(animal, animalWeighs);
     return {
-      name: `${animal.tagNumber} ${animal.name ? `(${animal.name})` : ''}`,
-      ganancia: Math.round(gain),
-      actual: Math.round(currentWeight),
-      inicial: Math.round(entryWeight),
+      name: animal.tagNumber,
+      fullName: `${animal.tagNumber} ${animal.name ? `(${animal.name})` : ''}`,
+      ganancia: wm.totalGain,
+      actual: wm.currentWeight,
+      inicial: wm.entryWeight,
+      gdp: wm.overallGdp,
+      days: wm.totalDays,
     };
-  }).sort((a, b) => b.ganancia - a.ganancia).slice(0, 6);
+  }).sort((a, b) => (metricMode === 'gain' ? b.ganancia - a.ganancia : b.actual - a.actual)).slice(0, 7);
 
   if (performanceData.length === 0) {
     return (
@@ -28,32 +33,68 @@ export function WeightPerformanceChart({ cattle = [], weighings = [] }) {
   }
 
   return (
-    <div className="h-64 sm:h-72 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
-          <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} />
-          <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} unit="kg" />
-          <Tooltip 
-            formatter={(value, name) => [
-              `${value} kg`, 
-              name === 'ganancia' ? 'Ganancia Acumulada' : name === 'actual' ? 'Peso Actual' : 'Peso Inicial'
-            ]}
-            contentStyle={{ 
-              backgroundColor: isDark ? '#0f172a' : '#ffffff', 
-              borderColor: isDark ? '#334155' : '#e2e8f0', 
-              borderRadius: '0.75rem', 
-              color: isDark ? '#fff' : '#0f172a',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-            }}
-          />
-          <Bar dataKey="ganancia" fill="#10b981" radius={[6, 6, 0, 0]}>
-            {performanceData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#3b82f6'} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="space-y-3">
+      {/* Selector de Métrica */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+          {metricMode === 'gain' ? 'Top Ganancia de Peso (+kg)' : 'Bovinos con Mayor Peso Actual (kg)'}
+        </span>
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-bold">
+          <button
+            type="button"
+            onClick={() => setMetricMode('gain')}
+            className={`px-2 py-1 rounded-md transition cursor-pointer ${metricMode === 'gain' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+          >
+            Aumento (+kg)
+          </button>
+          <button
+            type="button"
+            onClick={() => setMetricMode('current')}
+            className={`px-2 py-1 rounded-md transition cursor-pointer ${metricMode === 'current' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+          >
+            Peso Actual
+          </button>
+        </div>
+      </div>
+
+      <div className="h-56 sm:h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+            <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} />
+            <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} unit="kg" />
+            <Tooltip 
+              formatter={(value, name, item) => [
+                `${value} kg`, 
+                metricMode === 'gain' 
+                  ? `Ganancia (${item.payload.days} días • GDP: ${formatNumber(item.payload.gdp, 3)} kg/d)` 
+                  : 'Peso Actual'
+              ]}
+              labelFormatter={(label, item) => item && item[0] ? item[0].payload.fullName : label}
+              contentStyle={{ 
+                backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                borderColor: isDark ? '#334155' : '#e2e8f0', 
+                borderRadius: '0.75rem', 
+                color: isDark ? '#fff' : '#0f172a',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                fontSize: '12px'
+              }}
+            />
+            <Bar 
+              dataKey={metricMode === 'gain' ? 'ganancia' : 'actual'} 
+              fill="#10b981" 
+              radius={[6, 6, 0, 0]}
+            >
+              {performanceData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={metricMode === 'gain' ? (index === 0 ? '#10b981' : '#14b8a6') : (index === 0 ? '#3b82f6' : '#60a5fa')} 
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

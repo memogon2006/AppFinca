@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CattleCard } from './CattleCard';
 import { CattleFilters } from './CattleFilters';
-import { Badge, StatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
+import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { 
   formatCurrency, 
   formatNumber, 
@@ -16,31 +16,55 @@ import {
   Scale, 
   DollarSign, 
   Layers, 
-  Eye,
-  Trash2,
-  Tag
+  Eye, 
+  Trash2, 
+  Tag, 
+  Skull, 
+  ShoppingBag, 
+  Calendar, 
+  BookOpen, 
+  HelpCircle,
+  Users,
+  PackagePlus
 } from 'lucide-react';
 
 export function CattleListView({ 
   cattle = [], 
   weighings = [], 
   onSelectAnimal, 
-  onOpenNewAnimal, 
+  onOpenNewAnimal,
+  onOpenNew,
+  onOpenBatchEntry,
+  onOpenEdit,
   onOpenSell, 
   onOpenAddWeight,
-  onDeleteAnimal 
+  onAddWeight,
+  onOpenDeath,
+  onRevertDeath,
+  onDeleteAnimal,
+  onDelete,
+  onOpenGlossary,
+  onOpenPartnershipModal
 }) {
+  const handleOpenNewAnimalSafe = onOpenNewAnimal || onOpenNew;
+  const handleDeleteAnimalSafe = onDeleteAnimal || onDelete;
+  const handleAddWeightSafe = onOpenAddWeight || onAddWeight;
   const [viewMode, setViewMode] = useState('grid');
   const [filters, setFilters] = useState({
     search: '',
     sex: '',
     productionType: '',
     status: 'Activo',
+    saleType: '',
     reproductiveStatus: '',
     milkingStatus: '',
     isBreedingOnly: false,
     owner: '',
     entryBatch: '',
+    entryDateStart: '',
+    entryDateEnd: '',
+    saleDateStart: '',
+    saleDateEnd: '',
     sortBy: 'tagNumber',
   });
 
@@ -58,6 +82,22 @@ export function CattleListView({
   const filteredCattle = useMemo(() => {
     return cattle.filter(animal => {
       if (filters.status !== 'Todos' && animal.status !== filters.status) return false;
+      
+      // Filtro de modalidad de venta (Compañía vs Directa)
+      if (filters.status === 'Vendido' && filters.saleType) {
+        const isCompany = animal.exitType === 'En Compañía' || !!animal.partnershipDetails;
+        if (filters.saleType === 'Compania' && !isCompany) return false;
+        if (filters.saleType === 'Directa' && isCompany) return false;
+      }
+
+      // Filtro por Fecha de Compra / Ingreso
+      if (filters.entryDateStart && (animal.entryDate || '') < filters.entryDateStart) return false;
+      if (filters.entryDateEnd && (animal.entryDate || '') > filters.entryDateEnd) return false;
+
+      // Filtro por Fecha de Venta / Salida
+      if (filters.saleDateStart && (animal.exitDate || '') < filters.saleDateStart) return false;
+      if (filters.saleDateEnd && (animal.exitDate || '') > filters.saleDateEnd) return false;
+
       if (filters.sex && animal.sex !== filters.sex) return false;
       if (filters.productionType && animal.productionType !== filters.productionType) return false;
       if (filters.reproductiveStatus && animal.reproductiveStatus !== filters.reproductiveStatus) return false;
@@ -79,13 +119,21 @@ export function CattleListView({
         const owner = (animal.owner || '').toLowerCase();
         const breed = (animal.breed || '').toLowerCase();
         const batch = (animal.entryBatch || animal.paddock || '').toLowerCase();
+        const entryDate = (animal.entryDate || '').toLowerCase();
+        const exitDate = (animal.exitDate || '').toLowerCase();
+        const buyer = (animal.saleBuyer || animal.buyer || '').toLowerCase();
+        const color = (animal.color || '').toLowerCase();
         if (
           !tag.includes(query) &&
           !name.includes(query) &&
           !brand.includes(query) &&
           !owner.includes(query) &&
           !breed.includes(query) &&
-          !batch.includes(query)
+          !batch.includes(query) &&
+          !entryDate.includes(query) &&
+          !exitDate.includes(query) &&
+          !buyer.includes(query) &&
+          !color.includes(query)
         ) {
           return false;
         }
@@ -168,31 +216,68 @@ export function CattleListView({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+          {/* Botón Liquidar Lote / Compañía */}
+          {onOpenPartnershipModal && (
+            <button
+              onClick={onOpenPartnershipModal}
+              className="px-3 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-200 font-extrabold text-xs flex items-center gap-1.5 transition border border-teal-300 dark:border-teal-700 cursor-pointer min-h-[36px]"
+              title="Liquidar venta de varios animales en compañía (50/50)"
+            >
+              <Users className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span>🤝 Liquidar Lote / Compañía</span>
+            </button>
+          )}
+
+          {/* Botón Glosario */}
+          {onOpenGlossary && (
+            <button
+              onClick={onOpenGlossary}
+              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 transition border border-slate-200 dark:border-slate-700 cursor-pointer min-h-[36px]"
+              title="Explicación de GDP, ROI, Biomasa y Fórmulas"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden sm:inline">Guía</span>
+            </button>
+          )}
+
           {/* Selector de modo Vista */}
           <div className="flex items-center bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition min-w-[36px] min-h-[36px] flex items-center justify-center ${viewMode === 'grid' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'}`}
+              className={`p-1.5 rounded-lg transition min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer ${viewMode === 'grid' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'}`}
               title="Vista en Tarjetas"
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition min-w-[36px] min-h-[36px] flex items-center justify-center ${viewMode === 'table' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'}`}
+              className={`p-1.5 rounded-lg transition min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer ${viewMode === 'table' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'}`}
               title="Vista en Tabla"
             >
               <List className="w-4 h-4" />
             </button>
           </div>
 
+          {/* Botón Ingresar Lote Completo */}
+          {onOpenBatchEntry && (
+            <button
+              onClick={onOpenBatchEntry}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer min-h-[38px]"
+              title="Registrar un lote completo con cálculo por kilo o precio fijo"
+            >
+              <PackagePlus className="w-3.5 h-3.5" />
+              <span>📦 Ingresar Lote</span>
+            </button>
+          )}
+
           <button
-            onClick={onOpenNewAnimal}
-            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition min-h-[38px]"
+            onClick={handleOpenNewAnimalSafe}
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs flex items-center gap-1.5 shadow transition min-h-[38px] cursor-pointer"
+            title="Registrar un solo bovino"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>Agregar</span>
+            <span>+ Individual</span>
           </button>
         </div>
       </div>
@@ -205,11 +290,11 @@ export function CattleListView({
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
             {cattle.length === 0 
               ? 'El inventario está en ceros. Registra el primer bovino de tu finca para comenzar.'
-              : 'Prueba cambiando los criterios de búsqueda o el filtro de Ingreso #.'}
+              : 'Prueba cambiando los criterios de búsqueda o el filtro de estado.'}
           </p>
           <button
-            onClick={onOpenNewAnimal}
-            className="mt-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md min-h-[44px]"
+            onClick={handleOpenNewAnimalSafe}
+            className="mt-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md min-h-[44px] cursor-pointer"
           >
             Registrar Bovino Ahora
           </button>
@@ -226,8 +311,10 @@ export function CattleListView({
               weighings={weighings}
               onSelect={onSelectAnimal}
               onOpenSell={onOpenSell}
-              onOpenAddWeight={onOpenAddWeight}
-              onDelete={onDeleteAnimal}
+              onOpenAddWeight={handleAddWeightSafe}
+              onOpenDeath={onOpenDeath}
+              onDelete={handleDeleteAnimalSafe}
+              onOpenGlossary={onOpenGlossary}
             />
           ))}
         </div>
@@ -237,19 +324,23 @@ export function CattleListView({
       {viewMode === 'table' && filteredCattle.length > 0 && (
         <div className="custom-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[700px]">
+            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[850px]">
               <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="p-3.5">Arete / Chapa</th>
+                  <th className="p-3.5">Estado</th>
                   <th className="p-3.5">Ingreso #</th>
                   <th className="p-3.5">Hierro & Dueño</th>
-                  <th className="p-3.5">Raza & Sexo</th>
-                  <th className="p-3.5">Producción</th>
+                  <th className="p-3.5">Raza & Categoría</th>
+                  <th className="p-3.5">Compra / Inicial</th>
                   <th className="p-3.5">Peso Actual</th>
                   <th className="p-3.5">Ganancia Total</th>
-                  <th className="p-3.5">GDP</th>
-                  <th className="p-3.5">Estado Hembra</th>
-                  <th className="p-3.5">Utilidad Neta</th>
+                  <th className="p-3.5 cursor-pointer" onClick={onOpenGlossary} title="Ver qué significa GDP">
+                    <span className="flex items-center gap-1">GDP & Días <HelpCircle className="w-3 h-3 text-slate-400" /></span>
+                  </th>
+                  <th className="p-3.5 cursor-pointer" onClick={onOpenGlossary} title="Ver qué significa ROI y Utilidad">
+                    <span className="flex items-center gap-1">Utilidad <HelpCircle className="w-3 h-3 text-slate-400" /></span>
+                  </th>
                   <th className="p-3.5 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -258,20 +349,49 @@ export function CattleListView({
                   const aWeighs = weighings.filter(w => w.cattleId === animal.id);
                   const wm = calculateWeightMetrics(animal, aWeighs);
                   const fin = calculateFinancials(animal);
-                  const repro = calculateReproduction(animal);
                   const batch = animal.entryBatch || animal.paddock || 'Ingreso #1';
+
+                  const femaleStatus = animal.femaleStatus || (
+                    animal.reproductiveStatus === 'Preñada' ? 'Gestación' : animal.milkingStatus === 'En ordeño' ? 'Producción de leche' : 'Vacía'
+                  );
+
+                  const entryWeightStr = animal.entryWeight && parseFloat(animal.entryWeight) > 0 
+                    ? `${animal.entryWeight} kg` 
+                    : (animal.origin === 'Nacido en finca' || animal.entryType === 'Nacimiento' ? '0 kg (Nacido)' : 'Sin peso');
+
+                  const entryPriceStr = animal.entryPrice && parseFloat(animal.entryPrice) > 0 
+                    ? formatCurrency(animal.entryPrice) 
+                    : '$0';
 
                   return (
                     <tr 
                       key={animal.id} 
                       onClick={() => onSelectAnimal(animal)}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition"
+                      className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition ${animal.status === 'Muerto' ? 'opacity-80 bg-rose-50/15 dark:bg-rose-950/10' : ''}`}
                     >
                       {/* Arete y Nombre */}
                       <td className="p-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{animal.tagNumber}</span>
                           {animal.name && <span className="text-slate-500 dark:text-slate-400 font-normal">({animal.name})</span>}
+                        </div>
+                      </td>
+
+                      {/* Estado */}
+                      <td className="p-3.5 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <StatusBadge status={animal.status} />
+                          {animal.status === 'Vendido' && (
+                            (animal.exitType === 'En Compañía' || animal.partnershipDetails) ? (
+                              <span className="inline-flex items-center gap-1 font-black text-teal-800 dark:text-teal-200 bg-teal-100 dark:bg-teal-950 px-2 py-0.5 rounded-full border border-teal-400 dark:border-teal-700 text-[10px] shadow-sm">
+                                <Users className="w-2.5 h-2.5 text-teal-600 dark:text-teal-400" /> 🤝 En Compañía
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 font-bold text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-700 text-[10px]">
+                                <DollarSign className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" /> 💰 Directa
+                              </span>
+                            )
+                          )}
                         </div>
                       </td>
 
@@ -290,88 +410,126 @@ export function CattleListView({
 
                       {/* Raza & Sexo */}
                       <td className="p-3.5">
-                        <div className="text-slate-800 dark:text-slate-200">{animal.breed}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">{animal.sex} • {animal.category}</div>
+                        <div className="text-slate-800 dark:text-slate-200">{animal.breed || 'Sin especificar'}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {animal.sex === 'Macho' ? '🐂 Macho' : '🐄 Hembra'} • {animal.category}
+                        </div>
+                        {animal.sex === 'Hembra' && (
+                          <div className="mt-1">
+                            <FemaleStatusBadge status={femaleStatus} liters={animal.dailyMilkLiters} />
+                          </div>
+                        )}
                       </td>
 
-                      {/* Producción */}
+                      {/* Compra / Inicial */}
                       <td className="p-3.5 whitespace-nowrap">
-                        <ProductionTypeBadge type={animal.productionType} />
+                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                          <Scale className="w-3 h-3 text-slate-400" />
+                          <span>{entryWeightStr}</span>
+                        </div>
+                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                          <ShoppingBag className="w-3 h-3 text-slate-400" />
+                          <span>{entryPriceStr}</span>
+                        </div>
                       </td>
 
                       {/* Peso Actual */}
                       <td className="p-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                        {wm.currentWeight} kg
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">Entrada: {animal.entryWeight} kg</div>
+                        <div className="flex items-center gap-1.5">
+                          <span>{wm.hasWeight ? `${wm.currentWeight} kg` : (animal.sex === 'Hembra' ? 'Vientre' : 'Sin pesaje')}</span>
+                        </div>
+                        {wm.lastWeighDate && (
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-0.5 mt-0.5">
+                            <Calendar className="w-2.5 h-2.5 text-slate-400" />
+                            <span>Pesaje: {wm.lastWeighDate}</span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Ganancia Total */}
                       <td className="p-3.5 whitespace-nowrap">
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">+{wm.totalGain} kg</span>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">{wm.totalDays} días</div>
-                      </td>
-
-                      {/* GDP */}
-                      <td className="p-3.5 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                        {formatNumber(wm.overallGdp, 3)} kg/d
-                      </td>
-
-                      {/* Estado Hembra */}
-                      <td className="p-3.5">
-                        {animal.sex === 'Hembra' ? (
-                          <div className="space-y-1">
-                            {animal.reproductiveStatus === 'Preñada' && (
-                              <ReproductiveBadge status={animal.reproductiveStatus} isPregnant={repro.isPregnant} daysUntilCalving={repro.daysUntilCalving} />
-                            )}
-                            {animal.milkingStatus === 'En ordeño' && (
-                              <MilkingBadge status={animal.milkingStatus} liters={animal.dailyMilkLiters} />
-                            )}
-                            {animal.isBreedingOnly && <Badge variant="purple" size="sm">Solo Cría</Badge>}
-                            {animal.reproductiveStatus === 'Vacía' && <Badge variant="gray" size="sm">Vacía</Badge>}
-                          </div>
+                        {wm.hasEntryWeight ? (
+                          <>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">+{wm.totalGain} kg</span>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">{wm.totalDays} días</div>
+                          </>
                         ) : (
-                          <span className="text-slate-400 dark:text-slate-500">-</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-[11px]">-</span>
                         )}
+                      </td>
+
+                      {/* GDP & Días */}
+                      <td className="p-3.5 whitespace-nowrap">
+                        <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                          <span>{wm.hasEntryWeight ? `${formatNumber(wm.overallGdp, 3)} kg/d` : '-'}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">{wm.totalDays} días en finca</div>
                       </td>
 
                       {/* Utilidad Neta */}
                       <td className="p-3.5 whitespace-nowrap">
-                        <span className={`font-bold ${fin.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {formatCurrency(fin.netProfit)}
-                        </span>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">ROI: {fin.roi}%</div>
+                        {animal.status === 'Vendido' && (animal.exitType === 'En Compañía' || animal.partnershipDetails) ? (
+                          (() => {
+                            const partDetails = animal.partnershipDetails || {
+                              farmShare: Math.max(0, (parseFloat(animal.exitPrice) || 0) - (parseFloat(animal.entryPrice) || 0)) * 0.5,
+                              partnerTotalReturn: (parseFloat(animal.entryPrice) || 0) + (Math.max(0, (parseFloat(animal.exitPrice) || 0) - (parseFloat(animal.entryPrice) || 0)) * 0.5),
+                            };
+                            return (
+                              <div>
+                                <span className="font-extrabold text-emerald-600 dark:text-emerald-400 block text-xs">
+                                  🏢 Finca: {formatCurrency(partDetails.farmShare)}
+                                </span>
+                                <span className="text-[10px] text-teal-700 dark:text-teal-300 font-bold block mt-0.5">
+                                  👤 Dueño: {formatCurrency(partDetails.partnerTotalReturn)}
+                                </span>
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <>
+                            <span className={`font-bold ${fin.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              {formatCurrency(fin.netProfit)}
+                            </span>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500">ROI: {fin.roi}%</div>
+                          </>
+                        )}
                       </td>
 
                       {/* Acciones */}
                       <td className="p-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => onOpenAddWeight(animal)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-600 text-slate-600 hover:text-white dark:bg-slate-800 dark:text-slate-300 transition"
-                            title="Registrar Pesaje"
+                            onClick={() => handleAddWeightSafe(animal)}
+                            className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition cursor-pointer"
+                            title="Registrar pesaje"
                           >
                             <Scale className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => onOpenSell(animal)}
+                            className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
+                            title="Vender animal"
+                          >
+                            <DollarSign className="w-4 h-4" />
+                          </button>
                           {animal.status === 'Activo' && (
                             <button
-                              onClick={() => onOpenSell(animal)}
-                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-600 dark:bg-slate-800 text-slate-600 hover:text-white dark:text-slate-300 transition"
-                              title="Vender / Liquidar"
+                              onClick={() => onOpenDeath(animal)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                              title="Baja por muerte"
                             >
-                              <DollarSign className="w-4 h-4" />
+                              <Skull className="w-4 h-4" />
                             </button>
                           )}
                           <button
-                            onClick={() => onSelectAnimal(animal)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
-                            title="Ver Ficha"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => handleDeletePrompt(animal, e)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-600 text-slate-400 hover:text-white dark:bg-slate-800 dark:hover:bg-rose-600 transition"
-                            title="Eliminar bovino"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`⚠️ ¿Estás seguro de que deseas eliminar permanentemente al bovino ${animal.tagNumber} (${animal.name || 'Sin nombre'})?\n\nEsta acción borrará también su historial de pesajes.`)) {
+                                handleDeleteAnimalSafe(animal.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                            title="Eliminar registro"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

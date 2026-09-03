@@ -2,18 +2,23 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { Download, Upload, RefreshCw, FileSpreadsheet, Database, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
 import { exportBackupData, importBackupData, loadSampleData, clearAllData, db } from '../../services/db';
+import { calculateWeightMetrics, calculateFinancials } from '../../services/calculations';
+import { useAuth } from '../../context/AuthContext';
 import * as XLSX from 'xlsx';
 
 export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
+  const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
+  const userId = currentUser?.id;
+
   const handleClearAll = async () => {
-    if (window.confirm('⚠️ ¿Estás seguro de que deseas ELIMINAR TODOS los animales, pesajes y registros para quedar en CEROS?\n\nEsta acción no se puede deshacer (te recomendamos descargar un respaldo antes).')) {
+    if (window.confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR TODOS los animales de ${currentUser?.farmName || 'tu finca'} para comenzar en CEROS?\n\nEsta acción no se puede deshacer (te recomendamos descargar un respaldo antes).`)) {
       try {
         setLoading(true);
-        await clearAllData();
-        setMessage({ type: 'success', text: '¡Inventario limpiado por completo! Ahora estás en ceros para ingresar tu ganado.' });
+        await clearAllData(userId);
+        setMessage({ type: 'success', text: '¡Inventario de tu finca limpiado por completo! Ahora estás en ceros para ingresar tu ganado.' });
         if (onDataChanged) onDataChanged();
       } catch (err) {
         setMessage({ type: 'error', text: 'Error al limpiar datos: ' + err.message });
@@ -26,7 +31,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   const handleExportJSON = async () => {
     try {
       setLoading(true);
-      await exportBackupData();
+      await exportBackupData(userId, currentUser);
       setMessage({ type: 'success', text: 'Copia de seguridad JSON descargada correctamente.' });
     } catch (e) {
       setMessage({ type: 'error', text: 'Error al exportar: ' + e.message });
@@ -38,51 +43,63 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   const handleExportExcel = async () => {
     try {
       setLoading(true);
-      const cattle = await db.cattle.toArray();
-      const weighings = await db.weighings.toArray();
+      const cattle = userId ? await db.cattle.where('userId').equals(userId).toArray() : await db.cattle.toArray();
+      const weighings = userId ? await db.weighings.where('userId').equals(userId).toArray() : await db.weighings.toArray();
 
       if (cattle.length === 0) {
         setMessage({ type: 'error', text: 'No hay animales en el inventario para exportar a Excel.' });
         return;
       }
 
-      const excelData = cattle.map(c => ({
-        'Número Chapa / Arete': c.tagNumber,
-        'Nombre': c.name || '',
-        'Ingreso #': c.entryBatch || c.paddock || 'Ingreso #1',
-        'Hierro / Marca': c.ironBrand || '',
-        'Propietario / Dueño': c.owner || '',
-        'Sexo': c.sex,
-        'Raza': c.breed || '',
-        'Categoría': c.category || '',
-        'Tipo Producción': c.productionType || '',
-        'Estado': c.status || 'Activo',
-        'Estado Reproductivo': c.reproductiveStatus || 'N/A',
-        'Fecha Servicio': c.serviceDate || '',
-        'Estado Leche': c.milkingStatus || 'N/A',
-        'Litros/Día': c.dailyMilkLiters || 0,
-        'Es Solo Cría': c.isBreedingOnly ? 'Sí' : 'No',
-        'Fecha Entrada': c.entryDate || '',
-        'Tipo Entrada': c.entryType || '',
-        'Peso Entrada (kg)': c.entryWeight || 0,
-        'Valor Compra ($)': c.entryPrice || 0,
-        'Costos Adicionales ($)': c.additionalCosts || 0,
-        'Peso Actual (kg)': c.currentWeight || c.entryWeight || 0,
-        'Fecha Salida': c.exitDate || '',
-        'Peso Salida (kg)': c.exitWeight || '',
-        'Valor Venta ($)': c.exitPrice || '',
-        'Comprador / Destino': c.buyer || '',
-        'Notas': c.notes || ''
-      }));
+      const excelData = cattle.map(c => {
+        const animalWeighs = weighings.filter(w => w.cattleId === String(c.id) || w.cattleId === c.id);
+        const wm = calculateWeightMetrics(c, animalWeighs);
+        const fin = calculateFinancials(c);
+
+        return {
+          'Número Chapa / Arete': c.tagNumber,
+          'Nombre': c.name || '',
+          'Ingreso #': c.entryBatch || c.paddock || 'Ingreso #1',
+          'Hierro / Marca': c.ironBrand || '',
+          'Propietario / Dueño': c.owner || '',
+          'Sexo': c.sex,
+          'Raza': c.breed || '',
+          'Categoría': c.category || '',
+          'Tipo Producción': c.productionType || '',
+          'Estado': c.status || 'Activo',
+          'Fecha Entrada': c.entryDate || '',
+          'Días en Finca': wm.totalDays,
+          'Peso Entrada (kg)': c.entryWeight || 0,
+          'Peso Actual (kg)': wm.currentWeight,
+          'Ganancia Total (kg)': wm.totalGain,
+          'GDP Global (kg/día)': wm.overallGdp,
+          'Estado Reproductivo': c.reproductiveStatus || 'N/A',
+          'Fecha Servicio': c.serviceDate || '',
+          'Estado Leche': c.milkingStatus || 'N/A',
+          'Litros/Día': c.dailyMilkLiters || 0,
+          'Es Solo Cría': c.isBreedingOnly ? 'Sí' : 'No',
+          'Valor Compra ($)': c.entryPrice || 0,
+          'Costos Adicionales ($)': c.additionalCosts || 0,
+          'Inversión Total ($)': fin.totalInvested,
+          'Valor Venta / Estimado ($)': fin.isSold ? c.exitPrice : fin.totalInvested + fin.netProfit,
+          'Utilidad Neta ($)': fin.netProfit,
+          'ROI (%)': fin.roi,
+          'Fecha Salida': c.exitDate || '',
+          'Peso Salida (kg)': c.exitWeight || '',
+          'Comprador / Destino': c.buyer || '',
+          'Notas': c.notes || ''
+        };
+      });
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
-      XLSX.utils.book_append_sheet(wb, ws, "Inventario Bovino");
+      XLSX.utils.book_append_sheet(wb, ws, "Inventario & Rendimientos");
 
       const wsPesajes = XLSX.utils.json_to_sheet(weighings);
       XLSX.utils.book_append_sheet(wb, wsPesajes, "Historial Pesajes");
 
-      XLSX.writeFile(wb, `Inventario_Bovino_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      const cleanFarm = (currentUser?.farmName || "Finca").replace(/[^a-zA-Z0-9]/g, '_');
+      XLSX.writeFile(wb, `Inventario_${cleanFarm}_${new Date().toISOString().slice(0, 10)}.xlsx`);
       setMessage({ type: 'success', text: 'Archivo Excel generado y descargado exitosamente.' });
     } catch (e) {
       setMessage({ type: 'error', text: 'Error generando Excel: ' + e.message });
@@ -99,7 +116,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     reader.onload = async (evt) => {
       try {
         setLoading(true);
-        const result = await importBackupData(evt.target.result);
+        const result = await importBackupData(evt.target.result, userId);
         if (result.success) {
           setMessage({ type: 'success', text: result.message });
           if (onDataChanged) onDataChanged();
@@ -118,15 +135,15 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   const handleLoadSample = async () => {
     if (window.confirm('¿Cargar datos de ejemplo/demostración para ver cómo funciona el sistema?')) {
       setLoading(true);
-      await loadSampleData();
-      setMessage({ type: 'success', text: 'Datos de ejemplo cargados correctamente.' });
+      await loadSampleData(userId);
+      setMessage({ type: 'success', text: 'Datos de ejemplo cargados correctamente en tu cuenta.' });
       if (onDataChanged) onDataChanged();
       setLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Gestión de Datos & Copias de Seguridad" subtitle="Exporta a Excel, descarga respaldos JSON, carga datos o limpia a ceros" maxWidth="max-w-3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Gestión de Datos • ${currentUser?.farmName || 'Mi Finca'}`} subtitle="Exporta a Excel, descarga respaldos JSON, carga datos o limpia a ceros" maxWidth="max-w-3xl">
       {message && (
         <div className={`p-3.5 sm:p-4 rounded-xl flex items-center gap-3 ${message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30' : 'bg-rose-50 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30'}`}>
           {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 flex-shrink-0" />}
@@ -139,10 +156,10 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         <div>
           <h4 className="text-sm font-bold text-rose-800 dark:text-rose-300 flex items-center gap-2">
             <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
-            Limpiar Todos los Inventarios (Comenzar en Ceros)
+            Limpiar Inventario de Mi Finca (Comenzar en Ceros)
           </h4>
           <p className="text-xs text-rose-600 dark:text-rose-400/80 mt-0.5">
-            Borra todos los bovinos, pesajes y ventas para que puedas registrar desde cero los animales reales de tu finca.
+            Borra todos los bovinos, pesajes y ventas de tu cuenta para registrar desde cero tus animales reales.
           </p>
         </div>
         <button
@@ -162,7 +179,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
               <FileSpreadsheet className="w-6 h-6" />
             </div>
             <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Exportar a Microsoft Excel</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Descarga una hoja de cálculo con animales, Ingreso #, pesajes, costos y utilidades.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Descarga una hoja con días en finca, ganancias continuas, GDP (kg/día), Ingreso # y utilidades.</p>
           </div>
           <button
             onClick={handleExportExcel}
@@ -180,7 +197,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
               <Database className="w-6 h-6" />
             </div>
             <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Copia de Seguridad (JSON)</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Guarda una copia exacta de tu base de datos para transferir a otro equipo o guardar un respaldo.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Guarda una copia exacta de tu finca para transferir o guardar un respaldo seguro.</p>
           </div>
           <button
             onClick={handleExportJSON}

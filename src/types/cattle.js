@@ -20,6 +20,13 @@ export const CATEGORIES = [
   { value: 'Buey', label: 'Buey / Ceba Pesada', sex: 'Macho' },
 ];
 
+export const FEMALE_STATUSES = [
+  { value: 'Producción de leche', label: '🥛 Producción de leche (En ordeño activo)', color: 'blue' },
+  { value: 'Levante de cría', label: '👶 Levante de cría (Amamantando / Cría al pie)', color: 'purple' },
+  { value: 'Gestación', label: '🤰 Gestación (Preñada)', color: 'emerald' },
+  { value: 'Vacía', label: '⭕ Vacía (Abierta / Seca / Lista para servicio)', color: 'gray' },
+];
+
 export const REPRODUCTIVE_STATUSES = [
   { value: 'Vacía', label: 'Vacía / Abierta', color: 'gray' },
   { value: 'En Servicio', label: 'En Servicio / Inseminada', color: 'amber' },

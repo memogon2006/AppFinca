@@ -37,7 +37,7 @@ export function StatusBadge({ status }) {
     case 'Vendido':
       return <Badge variant="blue">✓ Vendido</Badge>;
     case 'Muerto':
-      return <Badge variant="red">✝ Muerte</Badge>;
+      return <Badge variant="red">💀 Muerte</Badge>;
     case 'Trasladado':
       return <Badge variant="purple">↗ Trasladado</Badge>;
     default:
@@ -45,14 +45,37 @@ export function StatusBadge({ status }) {
   }
 }
 
+export function FemaleStatusBadge({ status, liters, cycleAvg }) {
+  switch (status) {
+    case 'Producción de leche':
+      return (
+        <Badge variant="blue">
+          🥛 En Leche {liters ? `(${liters} L/d)` : ''}
+        </Badge>
+      );
+    case 'Levante de cría':
+      return <Badge variant="purple">👶 Levante de Cría</Badge>;
+    case 'Gestación':
+    case 'Preñada':
+      return <Badge variant="emerald">🤰 Gestación (Preñada)</Badge>;
+    case 'Vacía':
+      return <Badge variant="gray">⭕ Vacía / Abierta</Badge>;
+    default:
+      return <Badge variant="default">{status || 'Hembra'}</Badge>;
+  }
+}
+
 export function ReproductiveBadge({ status, isPregnant, daysUntilCalving }) {
-  if (status === 'Preñada' || isPregnant) {
+  if (status === 'Preñada' || status === 'Gestación' || isPregnant) {
     const isClose = daysUntilCalving !== null && daysUntilCalving <= 20;
     return (
       <Badge variant={isClose ? 'amber' : 'emerald'} className="animate-pulse">
-        🤰 Preñada {daysUntilCalving !== null ? `(Faltan ~${daysUntilCalving}d)` : ''}
+        🤰 Gestación {daysUntilCalving !== null ? `(Faltan ~${daysUntilCalving}d)` : ''}
       </Badge>
     );
+  }
+  if (status === 'Levante de cría') {
+    return <Badge variant="purple">👶 Levante de Cría</Badge>;
   }
   if (status === 'En Servicio') {
     return <Badge variant="amber">⏳ En Servicio</Badge>;
@@ -64,7 +87,7 @@ export function ReproductiveBadge({ status, isPregnant, daysUntilCalving }) {
 }
 
 export function MilkingBadge({ status, liters }) {
-  if (status === 'En ordeño') {
+  if (status === 'En ordeño' || status === 'Producción de leche') {
     return (
       <Badge variant="cyan">
         🥛 En Leche {liters ? `(${liters} L/d)` : ''}

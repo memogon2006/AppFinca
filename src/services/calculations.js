@@ -1,5 +1,5 @@
 /**
- * Cálculos matemáticos y zootécnicos ganaderos
+ * Cálculos matemáticos, zootécnicos y lecheros ganaderos continuos
  */
 
 export const BOVINE_GESTATION_DAYS = 283; // Promedio de días de gestación bovina
@@ -16,7 +16,7 @@ export function formatCurrency(amount, currency = '$') {
 }
 
 /**
- * Formatea un número decimal (ej. kg de peso o GDP)
+ * Formatea un número decimal (ej. kg de peso o GDP o litros)
  */
 export function formatNumber(num, decimals = 1) {
   if (num === undefined || num === null || isNaN(num)) return '0';
@@ -38,57 +38,179 @@ export function getDaysDifference(date1, date2 = new Date()) {
 }
 
 /**
- * Calcula la ganancia total de peso y GDP (Ganancia Diaria de Peso en kg/día)
- * @param {Object} animal - Datos del animal
- * @param {Array} weighings - Historial de pesajes ordenado cronológicamente
+ * Calcula el historial continuo de pesajes acumulados desde el Pesaje Inicial / Entrada (Pesaje 1)
+ */
+export function calculateContinuousWeighings(animal, weighings = []) {
+  const entryWeight = parseFloat(animal.entryWeight) || 0;
+  const entryDate = animal.entryDate || new Date().toISOString().split('T')[0];
+
+  // Ordenar pesajes cronológicamente
+  const sorted = [...weighings].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Caso A: Tiene peso de entrada registrado
+  if (entryWeight > 0) {
+    const nonEntryWeighings = sorted.filter(w => w.date !== entryDate);
+
+    const logs = [
+      {
+        id: 'entry',
+        index: 1,
+        name: 'Pesaje 1 (Entrada)',
+        date: entryDate,
+        weight: entryWeight,
+        daysFromEntry: 0,
+        totalGain: 0,
+        gdp: 0,
+        notes: 'Pesaje inicial de ingreso a la finca'
+      }
+    ];
+
+    nonEntryWeighings.forEach((w, idx) => {
+      const daysFromEntry = getDaysDifference(entryDate, w.date);
+      const totalGain = parseFloat(w.weight) - entryWeight;
+      const gdp = daysFromEntry > 0 ? totalGain / daysFromEntry : 0;
+
+      const prevLog = logs[logs.length - 1];
+      const gainFromPrev = parseFloat(w.weight) - parseFloat(prevLog.weight);
+      const daysFromPrev = getDaysDifference(prevLog.date, w.date);
+
+      logs.push({
+        id: w.id || `w_${idx}`,
+        index: idx + 2,
+        name: `Pesaje ${idx + 2}`,
+        date: w.date,
+        weight: parseFloat(w.weight),
+        daysFromEntry,
+        totalGain: Number(totalGain.toFixed(1)),
+        gdp: Number(gdp.toFixed(3)),
+        gainFromPrev: Number(gainFromPrev.toFixed(1)),
+        daysFromPrev,
+        notes: w.notes || ''
+      });
+    });
+
+    if (animal.status === 'Vendido' && animal.exitWeight) {
+      const exitDate = animal.exitDate || new Date().toISOString().split('T')[0];
+      if (!logs.some(l => l.date === exitDate)) {
+        const daysFromEntry = getDaysDifference(entryDate, exitDate);
+        const totalGain = parseFloat(animal.exitWeight) - entryWeight;
+        const gdp = daysFromEntry > 0 ? totalGain / daysFromEntry : 0;
+
+        logs.push({
+          id: 'exit',
+          index: logs.length + 1,
+          name: `Pesaje Final (Salida)`,
+          date: exitDate,
+          weight: parseFloat(animal.exitWeight),
+          daysFromEntry,
+          totalGain: Number(totalGain.toFixed(1)),
+          gdp: Number(gdp.toFixed(3)),
+          notes: `Liquidación de venta a ${animal.buyer || 'Comprador'}`
+        });
+      }
+    }
+
+    return logs;
+  }
+
+  // Caso B: Hembra de vientre/cría sin peso de entrada obligatorio
+  if (sorted.length === 0) {
+    return [];
+  }
+
+  const firstLog = sorted[0];
+  const firstDate = firstLog.date;
+  const firstWeight = parseFloat(firstLog.weight);
+
+  const logs = [
+    {
+      id: firstLog.id || 'w_0',
+      index: 1,
+      name: 'Pesaje 1 (Primer Control)',
+      date: firstDate,
+      weight: firstWeight,
+      daysFromEntry: 0,
+      totalGain: 0,
+      gdp: 0,
+      notes: firstLog.notes || 'Primer pesaje registrado en finca'
+    }
+  ];
+
+  sorted.slice(1).forEach((w, idx) => {
+    const daysFromFirst = getDaysDifference(firstDate, w.date);
+    const totalGain = parseFloat(w.weight) - firstWeight;
+    const gdp = daysFromFirst > 0 ? totalGain / daysFromFirst : 0;
+
+    const prevLog = logs[logs.length - 1];
+    const gainFromPrev = parseFloat(w.weight) - parseFloat(prevLog.weight);
+    const daysFromPrev = getDaysDifference(prevLog.date, w.date);
+
+    logs.push({
+      id: w.id || `w_${idx + 1}`,
+      index: idx + 2,
+      name: `Pesaje ${idx + 2}`,
+      date: w.date,
+      weight: parseFloat(w.weight),
+      daysFromEntry: daysFromFirst,
+      totalGain: Number(totalGain.toFixed(1)),
+      gdp: Number(gdp.toFixed(3)),
+      gainFromPrev: Number(gainFromPrev.toFixed(1)),
+      daysFromPrev,
+      notes: w.notes || ''
+    });
+  });
+
+  return logs;
+}
+
+/**
+ * Calcula las métricas generales de peso y rendimiento continuo
  */
 export function calculateWeightMetrics(animal, weighings = []) {
   const entryWeight = parseFloat(animal.entryWeight) || 0;
   const entryDate = animal.entryDate ? new Date(animal.entryDate) : new Date();
 
-  // Si hay pesajes registrados en la báscula, tomamos el último
   const sortedWeights = [...weighings].sort((a, b) => new Date(a.date) - new Date(b.date));
   
-  let currentWeight = entryWeight;
+  let currentWeight = entryWeight > 0 ? entryWeight : null;
   let lastWeighDate = animal.entryDate;
-  let recentGdp = 0; // GDP del último periodo entre pesajes
   let totalDays = getDaysDifference(entryDate, animal.exitDate ? new Date(animal.exitDate) : new Date());
   
   if (sortedWeights.length > 0) {
     const lastLog = sortedWeights[sortedWeights.length - 1];
     currentWeight = parseFloat(lastLog.weight) || currentWeight;
     lastWeighDate = lastLog.date;
-
-    // Si hay al menos 2 pesajes, calcular GDP reciente
-    if (sortedWeights.length >= 2) {
-      const prevLog = sortedWeights[sortedWeights.length - 2];
-      const daysBetween = getDaysDifference(prevLog.date, lastLog.date);
-      if (daysBetween > 0) {
-        recentGdp = (parseFloat(lastLog.weight) - parseFloat(prevLog.weight)) / daysBetween;
-      }
-    } else {
-      // Comparar con el peso de entrada
-      const daysSinceEntry = getDaysDifference(entryDate, lastLog.date);
-      if (daysSinceEntry > 0) {
-        recentGdp = (currentWeight - entryWeight) / daysSinceEntry;
-      }
-    }
   } else if (animal.status === 'Vendido' && animal.exitWeight) {
     currentWeight = parseFloat(animal.exitWeight);
+    lastWeighDate = animal.exitDate;
   }
 
-  const totalGain = currentWeight - entryWeight;
-  const overallGdp = totalDays > 0 ? totalGain / totalDays : 0;
+  let totalGain = 0;
+  let overallGdp = 0;
+
+  if (entryWeight > 0 && currentWeight !== null) {
+    totalGain = currentWeight - entryWeight;
+    overallGdp = totalDays > 0 ? totalGain / totalDays : 0;
+  } else if (sortedWeights.length >= 2) {
+    const firstWeight = parseFloat(sortedWeights[0].weight) || 0;
+    const daysBetween = getDaysDifference(sortedWeights[0].date, lastWeighDate);
+    totalGain = (currentWeight || 0) - firstWeight;
+    overallGdp = daysBetween > 0 ? totalGain / daysBetween : 0;
+  }
+
+  const continuousLogs = calculateContinuousWeighings(animal, weighings);
 
   return {
     entryWeight,
-    currentWeight: Number(currentWeight.toFixed(1)),
+    hasEntryWeight: entryWeight > 0,
+    currentWeight: currentWeight !== null ? Number(currentWeight.toFixed(1)) : 0,
+    hasWeight: currentWeight !== null && currentWeight > 0,
     totalGain: Number(totalGain.toFixed(1)),
     totalDays,
-    overallGdp: Number(overallGdp.toFixed(3)), // kg/día general
-    recentGdp: Number(recentGdp.toFixed(3)),   // kg/día último pesaje
+    overallGdp: Number(overallGdp.toFixed(3)),
     lastWeighDate,
     sortedWeights,
+    continuousLogs,
   };
 }
 
@@ -102,13 +224,14 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
   const totalInvested = entryPrice + expenses;
 
   let isSold = animal.status === 'Vendido';
+  let isDead = animal.status === 'Muerto';
   let netProfit = 0;
   let roi = 0;
   let pricePerKgSold = 0;
   let pricePerKgEntry = 0;
 
-  const entryWeight = parseFloat(animal.entryWeight) || 1;
-  const currentWeight = parseFloat(animal.currentWeight || animal.exitWeight || animal.entryWeight) || 1;
+  const entryWeight = parseFloat(animal.entryWeight) || 0;
+  const currentWeight = parseFloat(animal.currentWeight || animal.exitWeight || animal.entryWeight) || 0;
 
   if (entryWeight > 0 && entryPrice > 0) {
     pricePerKgEntry = entryPrice / entryWeight;
@@ -120,10 +243,13 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
     if (animal.exitWeight && parseFloat(animal.exitWeight) > 0) {
       pricePerKgSold = exitPrice / parseFloat(animal.exitWeight);
     }
+  } else if (isDead) {
+    netProfit = -totalInvested;
+    roi = -100;
   } else {
-    // Estimación proyectada basada en peso actual y precio de mercado referencial ($8,500/kg)
+    // Estimación proyectada basada en peso actual ($8,500/kg) o valor invertido en caso de vientres sin pesaje
     const estimatedMarketPricePerKg = 8500;
-    const estimatedCurrentValue = currentWeight * estimatedMarketPricePerKg;
+    const estimatedCurrentValue = currentWeight > 0 ? currentWeight * estimatedMarketPricePerKg : totalInvested;
     const projectedProfit = estimatedCurrentValue - totalInvested;
     netProfit = projectedProfit;
     roi = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
@@ -139,6 +265,7 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
     pricePerKgEntry: Number(pricePerKgEntry.toFixed(0)),
     pricePerKgSold: Number(pricePerKgSold.toFixed(0)),
     isSold,
+    isDead,
   };
 }
 
@@ -146,13 +273,15 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
  * Calcula datos de reproducción de hembras (preñez, fecha parto, días de gestación)
  */
 export function calculateReproduction(animal) {
-  if (animal.sex !== 'Hembra' || animal.reproductiveStatus !== 'Preñada') {
+  const isGestating = animal.femaleStatus === 'Gestación' || animal.reproductiveStatus === 'Preñada' || animal.reproductiveStatus === 'Gestación';
+
+  if (animal.sex !== 'Hembra' || !isGestating) {
     return {
       isPregnant: false,
       daysPregnant: 0,
       expectedCalvingDate: null,
       daysUntilCalving: null,
-      statusLabel: animal.reproductiveStatus || 'No aplica',
+      statusLabel: animal.femaleStatus || animal.reproductiveStatus || 'No aplica',
     };
   }
 
@@ -162,14 +291,14 @@ export function calculateReproduction(animal) {
       daysPregnant: 0,
       expectedCalvingDate: null,
       daysUntilCalving: null,
-      statusLabel: 'Preñada (Sin fecha de servicio registrada)',
+      statusLabel: 'Gestante (Sin fecha de servicio registrada)',
     };
   }
 
   const sDate = new Date(animal.serviceDate);
   const today = new Date();
   
-  // Gestación: servicio + 283 días
+  // Gestación bovina: servicio + 283 días
   const dueDate = new Date(sDate);
   dueDate.setDate(dueDate.getDate() + BOVINE_GESTATION_DAYS);
 
@@ -189,5 +318,43 @@ export function calculateReproduction(animal) {
       ? '¡Fecha de parto cumplida!' 
       : `Parto en aprox. ${daysUntilCalving} días (${daysPregnant} días de preñez)`,
     isNearCalving: daysUntilCalving <= 20 && daysUntilCalving >= -15,
+  };
+}
+
+/**
+ * Calcula métricas lecheras y de ciclo productivo
+ */
+export function calculateMilkMetrics(animal) {
+  if (animal.sex !== 'Hembra') {
+    return {
+      isMilking: false,
+      dailyLiters: 0,
+      cycleDays: 0,
+      cycleTotalLiters: 0,
+      cycleAvgDaily: 0,
+    };
+  }
+
+  const dailyLiters = parseFloat(animal.dailyMilkLiters) || 0;
+  const cycleDays = parseInt(animal.lactationCycleDays) || 305;
+  
+  let cycleTotalLiters = parseFloat(animal.lactationCycleTotalLiters);
+  if (!cycleTotalLiters || isNaN(cycleTotalLiters)) {
+    cycleTotalLiters = dailyLiters * cycleDays;
+  }
+
+  let cycleAvgDaily = parseFloat(animal.lactationCycleAvgLiters);
+  if (!cycleAvgDaily || isNaN(cycleAvgDaily)) {
+    cycleAvgDaily = cycleDays > 0 ? cycleTotalLiters / cycleDays : dailyLiters;
+  }
+
+  const isMilking = animal.femaleStatus === 'Producción de leche' || animal.milkingStatus === 'En ordeño' || dailyLiters > 0;
+
+  return {
+    isMilking,
+    dailyLiters: Number(dailyLiters.toFixed(1)),
+    cycleDays,
+    cycleTotalLiters: Number(cycleTotalLiters.toFixed(1)),
+    cycleAvgDaily: Number(cycleAvgDaily.toFixed(1)),
   };
 }
