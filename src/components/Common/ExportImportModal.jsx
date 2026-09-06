@@ -442,40 +442,6 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         XLSX.utils.book_append_sheet(wb, wsPesajes, "Historial Pesajes");
       }
 
-      // 5. Pestaña Gastos Operativos de Finca (opcional, si existen registros guardados)
-      const allExpenses = userId ? await db.expenses.where('userId').equals(userId).toArray() : await db.expenses.toArray();
-      if (allExpenses && allExpenses.length > 0) {
-        const sortedExpenses = [...allExpenses].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-        const formattedExpenses = sortedExpenses.map(exp => ({
-          'Fecha': exp.date || '',
-          'Mes': exp.date ? exp.date.slice(0, 7) : '',
-          'Categoría': exp.category || 'Otros Gastos de Finca',
-          'Concepto / Detalle': exp.description || '',
-          'Tipo / Frecuencia': exp.isRecurring ? `🔄 Recurrente (Día ${exp.recurringDay || '1'})` : 'Ocasional',
-          'Lote Asignado': exp.batch || 'General Finca',
-          'Proveedor / Responsable': exp.supplier || '',
-          'Monto Total ($ COP)': Number(parseFloat(exp.amount || 0).toFixed(0))
-        }));
-
-        const totalExpensesAmount = formattedExpenses.reduce((sum, e) => sum + (e['Monto Total ($ COP)'] || 0), 0);
-        formattedExpenses.push({
-          'Fecha': '📊 TOTAL GASTOS DE FINCA',
-          'Mes': '',
-          'Categoría': `${allExpenses.length} registros`,
-          'Concepto / Detalle': '',
-          'Tipo / Frecuencia': '',
-          'Lote Asignado': '',
-          'Proveedor / Responsable': '',
-          'Monto Total ($ COP)': totalExpensesAmount
-        });
-
-        const wsGastos = XLSX.utils.json_to_sheet(formattedExpenses);
-        wsGastos['!cols'] = calculateColumnWidths(formattedExpenses);
-        if (wsGastos['!ref']) wsGastos['!autofilter'] = { ref: wsGastos['!ref'] };
-        applyTableStyles(wsGastos, false, formattedExpenses);
-        XLSX.utils.book_append_sheet(wb, wsGastos, "Gastos de Finca");
-      }
-
       const cleanFarm = (currentUser?.farmName || "Finca").replace(/[^a-zA-Z0-9]/g, '_');
       const filterSuffix = exportBatch !== 'all' ? `_${sanitizeSheetName(exportBatch)}` : '';
       XLSX.writeFile(wb, `Inventario_${cleanFarm}${filterSuffix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
