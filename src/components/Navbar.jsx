@@ -14,7 +14,8 @@ import {
   MapPin,
   Cloud,
   RefreshCw,
-  Settings
+  Settings,
+  Boxes
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +36,7 @@ export function Navbar({
   const navItems = [
     { id: 'dashboard', label: 'Tablero', shortLabel: 'Tablero', icon: LayoutDashboard },
     { id: 'cattle', label: 'Inventario', shortLabel: 'Ganado', icon: Layers },
+    { id: 'batches', label: 'Lotes & Ingresos', shortLabel: 'Lotes', icon: Boxes },
     { id: 'weights', label: 'Control Pesos', shortLabel: 'Pesos', icon: Scale },
     { id: 'quickWeigh', label: 'Báscula Rápida', shortLabel: 'Báscula', icon: Zap },
     { id: 'finances', label: 'Ventas & Utilidades', shortLabel: 'Ventas', icon: DollarSign },
@@ -226,7 +228,7 @@ export function Navbar({
 
       {/* Mobile Bottom Navigation Bar (< md) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] shadow-lg">
-        <div className="grid grid-cols-6 h-16 items-center px-1">
+        <div className="grid grid-cols-7 h-16 items-center px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;

@@ -1,17 +1,18 @@
-export const CURRENT_APP_VERSION = "2.8.27";
-export const CURRENT_BUILD_TIME = 1789110000000;
+export const CURRENT_APP_VERSION = "2.8.28";
+export const CURRENT_BUILD_TIME = 1789115000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
   {
-    version: "2.8.27",
+    version: "2.8.28",
     date: "06/09/2026",
-    title: "Restauración de Finanzas & Optimización",
+    title: "Módulo de Análisis por Lote / Ingreso",
     highlights: [
-      "Enfoque 100% en ventas de ganado, utilidades en compañía y rentabilidad de lotes.",
-      "Optimización de rendimiento y limpieza integral del sistema."
+      "Espacio dedicado para ver compra total, precio por animal, valor del kilo ($/kg) y kilos promedio por lote.",
+      "Tabla comparativa entre lotes con biomasa de entrada, peso actual, ganancia de carne y GDP.",
+      "Listado detallado animal por animal con bordes negros definidos y pie de subtotales/promedios exactos."
     ]
   },
   {

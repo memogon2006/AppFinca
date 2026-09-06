@@ -10,6 +10,7 @@ import { CattleListView } from './components/Cattle/CattleListView';
 import { WeightsView } from './components/Weights/WeightsView';
 import { QuickWeighinView } from './components/Weights/QuickWeighinView';
 import { FemalesView } from './components/Females/FemalesView';
+import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { FinancesView } from './components/Finances/FinancesView';
 import { CattleFormModal } from './components/Cattle/CattleFormModal';
 import { CattleDetailModal } from './components/Cattle/CattleDetailModal';
@@ -554,6 +555,17 @@ export default function App() {
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
+          />
+        )}
+
+        {currentView === 'batches' && (
+          <BatchAnalyticsView
+            cattle={cattle}
+            weighings={weighings}
+            onSelectAnimal={handleSelectAnimal}
+            onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
+            onOpenNewAnimal={handleOpenNew}
+            onOpenExportImport={() => setIsExportModalOpen(true)}
           />
         )}
 
