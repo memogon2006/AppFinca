@@ -1,5 +1,5 @@
 {
-  "version": "2.8.10",
-  "buildTime": 1789055000000,
-  "description": "Cálculo exacto de GDP (kg/día): (Último peso - Peso de entrada) / Días entre fecha de entrada y fecha del último pesaje registrado."
+  "version": "2.8.11",
+  "buildTime": 1789060000000,
+  "description": "Ficha Técnica ampliada y optimizada a pantalla completa con gráficos y tablas de pesaje de gran tamaño y alta legibilidad."
 }
