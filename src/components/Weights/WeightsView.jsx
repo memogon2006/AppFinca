@@ -31,18 +31,21 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
   const globalStats = useMemo(() => {
     let totalKg = 0;
     let totalGain = 0;
-    let totalDays = 0;
+    let totalGdpSum = 0;
+    let weighedCount = 0;
 
     cattleWithMetrics.forEach(({ metrics }) => {
       totalKg += metrics.currentWeight;
       totalGain += metrics.totalGain;
-      totalDays += metrics.totalDays;
+      if (metrics.overallGdp > 0) {
+        totalGdpSum += metrics.overallGdp;
+        weighedCount++;
+      }
     });
 
     const avgWeight = cattleWithMetrics.length > 0 ? totalKg / cattleWithMetrics.length : 0;
     const avgGain = cattleWithMetrics.length > 0 ? totalGain / cattleWithMetrics.length : 0;
-    const avgDays = cattleWithMetrics.length > 0 ? totalDays / cattleWithMetrics.length : 0;
-    const avgGdp = avgDays > 0 ? avgGain / avgDays : 0;
+    const avgGdp = weighedCount > 0 ? totalGdpSum / weighedCount : 0;
 
     return { totalKg, avgWeight, avgGain, avgGdp };
   }, [cattleWithMetrics]);

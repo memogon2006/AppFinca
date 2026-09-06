@@ -253,7 +253,7 @@ export function CattleDetailModal({
               )}
             </p>
             <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">
-              {weightMetrics.hasEntryWeight ? 'Desde la entrada' : (animal.sex === 'Hembra' ? 'Matriz productiva' : 'Sin pesajes')}
+              {weightMetrics.hasEntryWeight ? (weightMetrics.daysToLastWeigh > 0 ? `En ${weightMetrics.daysToLastWeigh} días desde entrada` : 'Desde la entrada') : (animal.sex === 'Hembra' ? 'Matriz productiva' : 'Sin pesajes')}
             </span>
           </div>
 

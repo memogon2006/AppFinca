@@ -201,8 +201,7 @@ export function calculateWeightMetrics(animal, weighings = []) {
   
   let currentWeight = entryWeight > 0 ? entryWeight : null;
   let lastWeighDate = animal.entryDate;
-  let totalDays = getDaysDifference(entryDate, animal.exitDate ? new Date(animal.exitDate) : new Date());
-  
+
   if (sortedWeights.length > 0) {
     const lastLog = sortedWeights[sortedWeights.length - 1];
     currentWeight = parseFloat(lastLog.weight) || currentWeight;
@@ -212,12 +211,20 @@ export function calculateWeightMetrics(animal, weighings = []) {
     lastWeighDate = animal.exitDate;
   }
 
+  // Días totales en finca (hasta hoy o hasta fecha de salida)
+  const totalDays = getDaysDifference(entryDate, animal.exitDate ? new Date(animal.exitDate) : new Date());
+
+  // Días transcurridos desde el ingreso a la finca hasta la fecha del último pesaje registrado
+  const daysToLastWeigh = lastWeighDate ? getDaysDifference(entryDate, lastWeighDate) : 0;
+
   let totalGain = 0;
   let overallGdp = 0;
 
   if (entryWeight > 0 && currentWeight !== null) {
     totalGain = currentWeight - entryWeight;
-    overallGdp = totalDays > 0 ? totalGain / totalDays : 0;
+    // La GDP se calcula exactamente entre el peso inicial de ingreso y el último pesaje registrado, sobre los días transcurridos entre ambas fechas
+    const effectiveDays = daysToLastWeigh > 0 ? daysToLastWeigh : totalDays;
+    overallGdp = effectiveDays > 0 ? totalGain / effectiveDays : 0;
   } else if (sortedWeights.length >= 2) {
     const firstWeight = parseFloat(sortedWeights[0].weight) || 0;
     const daysBetween = getDaysDifference(sortedWeights[0].date, lastWeighDate);
@@ -234,6 +241,7 @@ export function calculateWeightMetrics(animal, weighings = []) {
     hasWeight: currentWeight !== null && currentWeight > 0,
     totalGain: Number(totalGain.toFixed(1)),
     totalDays,
+    daysToLastWeigh,
     overallGdp: Number(overallGdp.toFixed(3)),
     lastWeighDate,
     sortedWeights,
