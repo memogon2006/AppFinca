@@ -76,6 +76,8 @@ export function calculateContinuousWeighings(animal, weighings = []) {
 
       logs.push({
         id: w.id || `w_${idx}`,
+        weighingId: w.id,
+        isEntry: false,
         index: idx + 2,
         name: `Pesaje ${idx + 2}`,
         date: w.date,
@@ -98,6 +100,8 @@ export function calculateContinuousWeighings(animal, weighings = []) {
 
         logs.push({
           id: 'exit',
+          isEntry: false,
+          isExit: true,
           index: logs.length + 1,
           name: `Pesaje Final (Salida)`,
           date: exitDate,
@@ -125,6 +129,8 @@ export function calculateContinuousWeighings(animal, weighings = []) {
   const logs = [
     {
       id: firstLog.id || 'w_0',
+      weighingId: firstLog.id,
+      isEntry: true,
       index: 1,
       name: 'Pesaje 1 (Primer Control)',
       date: firstDate,
@@ -147,6 +153,8 @@ export function calculateContinuousWeighings(animal, weighings = []) {
 
     logs.push({
       id: w.id || `w_${idx + 1}`,
+      weighingId: w.id,
+      isEntry: false,
       index: idx + 2,
       name: `Pesaje ${idx + 2}`,
       date: w.date,

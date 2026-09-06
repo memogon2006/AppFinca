@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Scale, TrendingUp, PlusCircle, Search, Calendar, ChevronDown, ChevronUp, Zap, Tag } from 'lucide-react';
+import { Scale, TrendingUp, PlusCircle, Search, Calendar, ChevronDown, ChevronUp, Zap, Tag, Trash2 } from 'lucide-react';
 import { calculateWeightMetrics, formatNumber } from '../../services/calculations';
 
-export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpenAddWeight, onNavigate }) {
+export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpenAddWeight, onDeleteWeight, onNavigate }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('');
   const [expandedAnimalId, setExpandedAnimalId] = useState(null);
@@ -284,39 +284,64 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                                     <th className="p-2.5">GDP Continuo (kg/día)</th>
                                     <th className="p-2.5">Aumento vs. Pesaje Anterior</th>
                                     <th className="p-2.5">Notas</th>
+                                    <th className="p-2.5 text-right">Acción</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                                  {metrics.continuousLogs.map((log) => (
-                                    <tr key={log.id} className={log.index === 1 ? 'bg-slate-50/60 dark:bg-slate-900/40 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}>
-                                      <td className="p-2.5 font-bold text-slate-900 dark:text-white">
-                                        {log.name}
-                                      </td>
-                                      <td className="p-2.5 font-medium">{log.date}</td>
-                                      <td className="p-2.5 font-extrabold text-blue-600 dark:text-blue-400">
-                                        {log.daysFromEntry} días
-                                      </td>
-                                      <td className="p-2.5 font-bold text-slate-900 dark:text-white">
-                                        {log.weight} kg
-                                      </td>
-                                      <td className="p-2.5 font-extrabold text-emerald-600 dark:text-emerald-400">
-                                        {log.index === 1 ? '0.0 kg (Inicial)' : `+${log.totalGain} kg`}
-                                      </td>
-                                      <td className="p-2.5 font-extrabold text-purple-600 dark:text-purple-400">
-                                        {log.index === 1 ? '-' : `${formatNumber(log.gdp, 3)} kg/d`}
-                                      </td>
-                                      <td className="p-2.5 text-slate-700 dark:text-slate-300">
-                                        {log.index === 1 ? (
-                                          <span className="text-slate-400">-</span>
-                                        ) : (
-                                          <span className={log.gainFromPrev >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-rose-600 dark:text-rose-400 font-medium'}>
-                                            {log.gainFromPrev >= 0 ? `+${log.gainFromPrev}` : log.gainFromPrev} kg ({log.daysFromPrev}d)
-                                          </span>
-                                        )}
-                                      </td>
-                                      <td className="p-2.5 text-slate-500 dark:text-slate-400 italic">{log.notes || '-'}</td>
-                                    </tr>
-                                  ))}
+                                  {metrics.continuousLogs.map((log) => {
+                                    const canDelete = log.id !== 'entry' && log.id !== 'exit' && onDeleteWeight;
+                                    return (
+                                      <tr key={log.id || `${log.date}_${log.weight}`} className={log.index === 1 ? 'bg-slate-50/60 dark:bg-slate-900/40 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}>
+                                        <td className="p-2.5 font-bold text-slate-900 dark:text-white">
+                                          {log.name}
+                                        </td>
+                                        <td className="p-2.5 font-medium">{log.date}</td>
+                                        <td className="p-2.5 font-extrabold text-blue-600 dark:text-blue-400">
+                                          {log.daysFromEntry} días
+                                        </td>
+                                        <td className="p-2.5 font-bold text-slate-900 dark:text-white">
+                                          {log.weight} kg
+                                        </td>
+                                        <td className="p-2.5 font-extrabold text-emerald-600 dark:text-emerald-400">
+                                          {log.index === 1 ? '0.0 kg (Inicial)' : `+${log.totalGain} kg`}
+                                        </td>
+                                        <td className="p-2.5 font-extrabold text-purple-600 dark:text-purple-400">
+                                          {log.index === 1 ? '-' : `${formatNumber(log.gdp, 3)} kg/d`}
+                                        </td>
+                                        <td className="p-2.5 text-slate-700 dark:text-slate-300">
+                                          {log.index === 1 ? (
+                                            <span className="text-slate-400">-</span>
+                                          ) : (
+                                            <span className={log.gainFromPrev >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-rose-600 dark:text-rose-400 font-medium'}>
+                                              {log.gainFromPrev >= 0 ? `+${log.gainFromPrev}` : log.gainFromPrev} kg ({log.daysFromPrev}d)
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="p-2.5 text-slate-500 dark:text-slate-400 italic">{log.notes || '-'}</td>
+                                        <td className="p-2.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                          {canDelete ? (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (window.confirm(`¿Deseas eliminar este registro de pesaje (${log.weight} kg del ${log.date}) del bovino ${animal.tagNumber}?`)) {
+                                                  onDeleteWeight(log.weighingId || log.id, animal.id, log.date, log.weight);
+                                                }
+                                              }}
+                                              className="p-1.5 rounded-lg text-rose-600 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-600/80 transition cursor-pointer"
+                                              title="Eliminar este pesaje"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          ) : log.id === 'entry' ? (
+                                            <span className="text-[10px] text-slate-400 font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Inicial</span>
+                                          ) : (
+                                            <span className="text-[10px] text-slate-400 font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Salida</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </table>
                             </div>

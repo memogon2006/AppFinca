@@ -226,6 +226,49 @@ export default function App() {
     showToast(`Pesaje de ${weight} kg registrado y sincronizado en la nube ☁️`);
   };
 
+  const handleDeleteWeight = async (weighingId, cattleId, date, weight) => {
+    if (!userId) return;
+
+    let targetWeighing = null;
+    if (weighingId && weighingId !== 'entry' && weighingId !== 'exit') {
+      targetWeighing = await db.weighings.get(weighingId) || await db.weighings.get(Number(weighingId));
+    }
+
+    if (!targetWeighing && cattleId) {
+      const matches = await db.weighings.where('cattleId').equals(String(cattleId)).toArray();
+      targetWeighing = matches.find(w => w.date === date && (weight ? Math.abs(parseFloat(w.weight) - parseFloat(weight)) < 0.01 : true)) || matches[matches.length - 1];
+    }
+
+    if (targetWeighing) {
+      await db.weighings.delete(targetWeighing.id);
+    }
+
+    const animal = await db.cattle.get(cattleId) || await db.cattle.get(Number(cattleId));
+    if (animal) {
+      const remaining = await db.weighings.where('cattleId').equals(String(animal.id)).toArray();
+      remaining.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      let newCurrentWeight = parseFloat(animal.entryWeight) || 0;
+      if (remaining.length > 0) {
+        newCurrentWeight = parseFloat(remaining[remaining.length - 1].weight) || newCurrentWeight;
+      }
+
+      await db.cattle.update(animal.id, {
+        currentWeight: newCurrentWeight > 0 ? newCurrentWeight : undefined,
+      });
+
+      if (selectedAnimal && selectedAnimal.id === animal.id) {
+        setSelectedAnimal(prev => ({
+          ...prev,
+          currentWeight: newCurrentWeight > 0 ? newCurrentWeight : undefined,
+        }));
+      }
+    }
+
+    cloudPushData(userId);
+    showToast('Registro de pesaje eliminado y peso actual recalculado ⚖️');
+  };
+
   const handleConfirmSale = async ({ id, exitDate, exitWeight, exitPrice, saleBuyer, saleReason, exitType, partnershipDetails }) => {
     const animal = await db.cattle.get(id) || await db.cattle.get(Number(id));
     const targetId = animal ? animal.id : id;
@@ -463,6 +506,7 @@ export default function App() {
             weighings={weighings}
             onSelectAnimal={handleSelectAnimal}
             onAddWeight={handleOpenAddWeight}
+            onDeleteWeight={handleDeleteWeight}
             onNavigate={setCurrentView}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
           />
@@ -535,7 +579,7 @@ export default function App() {
       <CattleDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        animal={selectedAnimal}
+        animal={cattle.find(c => c.id === selectedAnimal?.id) || selectedAnimal}
         weighings={weighings}
         onOpenEdit={handleOpenEdit}
         onOpenSell={handleOpenSell}
@@ -543,6 +587,7 @@ export default function App() {
         onOpenDeath={handleOpenDeath}
         onRevertDeath={handleRevertDeath}
         onDelete={handleDeleteAnimal}
+        onDeleteWeight={handleDeleteWeight}
         onOpenGlossary={() => setIsGlossaryOpen(true)}
       />
 

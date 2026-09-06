@@ -48,6 +48,7 @@ export function CattleDetailModal({
   onOpenDeath,
   onRevertDeath,
   onDelete,
+  onDeleteWeight,
   isDark = false 
 }) {
   if (!animal) return null;
@@ -404,24 +405,49 @@ export function CattleDetailModal({
                         <th className="p-2.5 sm:p-3">Aumento Total Continuo</th>
                         <th className="p-2.5 sm:p-3">GDP Continuo (kg/d)</th>
                         <th className="p-2.5 sm:p-3">Notas</th>
+                        <th className="p-2.5 sm:p-3 text-right">Acción</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
-                      {weightMetrics.continuousLogs.map((log) => (
-                        <tr key={log.id} className={log.index === 1 ? 'bg-slate-50/60 dark:bg-slate-900/40 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30 transition'}>
-                          <td className="p-2.5 sm:p-3 font-bold text-slate-900 dark:text-white">{log.name}</td>
-                          <td className="p-2.5 sm:p-3 font-medium">{log.date}</td>
-                          <td className="p-2.5 sm:p-3 font-extrabold text-blue-600 dark:text-blue-400">{log.daysFromEntry} días</td>
-                          <td className="p-2.5 sm:p-3 font-bold text-slate-900 dark:text-white">{log.weight} kg</td>
-                          <td className="p-2.5 sm:p-3 font-extrabold text-emerald-600 dark:text-emerald-400">
-                            {log.index === 1 ? '0.0 kg (Inicial)' : `+${log.totalGain} kg`}
-                          </td>
-                          <td className="p-2.5 sm:p-3 font-extrabold text-purple-600 dark:text-purple-400">
-                            {log.index === 1 ? '-' : `${formatNumber(log.gdp, 3)} kg/d`}
-                          </td>
-                          <td className="p-2.5 sm:p-3 text-slate-500 dark:text-slate-400 italic">{log.notes || '-'}</td>
-                        </tr>
-                      ))}
+                      {weightMetrics.continuousLogs.map((log) => {
+                        const canDelete = log.id !== 'entry' && log.id !== 'exit' && onDeleteWeight;
+                        return (
+                          <tr key={log.id || `${log.date}_${log.weight}`} className={log.index === 1 ? 'bg-slate-50/60 dark:bg-slate-900/40 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30 transition'}>
+                            <td className="p-2.5 sm:p-3 font-bold text-slate-900 dark:text-white">{log.name}</td>
+                            <td className="p-2.5 sm:p-3 font-medium">{log.date}</td>
+                            <td className="p-2.5 sm:p-3 font-extrabold text-blue-600 dark:text-blue-400">{log.daysFromEntry} días</td>
+                            <td className="p-2.5 sm:p-3 font-bold text-slate-900 dark:text-white">{log.weight} kg</td>
+                            <td className="p-2.5 sm:p-3 font-extrabold text-emerald-600 dark:text-emerald-400">
+                              {log.index === 1 ? '0.0 kg (Inicial)' : `+${log.totalGain} kg`}
+                            </td>
+                            <td className="p-2.5 sm:p-3 font-extrabold text-purple-600 dark:text-purple-400">
+                              {log.index === 1 ? '-' : `${formatNumber(log.gdp, 3)} kg/d`}
+                            </td>
+                            <td className="p-2.5 sm:p-3 text-slate-500 dark:text-slate-400 italic">{log.notes || '-'}</td>
+                            <td className="p-2.5 sm:p-3 text-right whitespace-nowrap">
+                              {canDelete ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`¿Deseas eliminar este registro de pesaje (${log.weight} kg del ${log.date}) del bovino ${animal.tagNumber}?`)) {
+                                      onDeleteWeight(log.weighingId || log.id, animal.id, log.date, log.weight);
+                                    }
+                                  }}
+                                  className="p-1.5 rounded-lg text-rose-600 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-600/80 transition cursor-pointer"
+                                  title="Eliminar este pesaje"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              ) : log.id === 'entry' ? (
+                                <span className="text-[10px] text-slate-400 font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Inicial</span>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Salida</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
