@@ -17,6 +17,15 @@ db.version(3).stores({
   });
 });
 
+db.version(4).stores({
+  users: 'id, email, username, farmName, name, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  births: '++id, tagNumber, birthDate, motherTag, fatherTag, sex, breed, status, farmName, paddock, birthWeight, estimatedValue, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Solicitar al navegador almacenamiento permanente protegido
 export async function requestPersistentStorage() {
   if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
@@ -39,10 +48,11 @@ export async function initializeDatabase() {
 // Limpiar todos los inventarios del usuario activo
 export async function clearAllData(userId) {
   if (!userId) return;
-  await db.transaction('rw', db.cattle, db.weighings, db.expenses, async () => {
+  await db.transaction('rw', db.cattle, db.weighings, db.expenses, db.births, async () => {
     await db.cattle.where('userId').equals(userId).delete();
     await db.weighings.where('userId').equals(userId).delete();
     await db.expenses.where('userId').equals(userId).delete();
+    await db.births.where('userId').equals(userId).delete();
   });
 }
 
@@ -81,19 +91,22 @@ export async function exportBackupData(userId, userDetails = {}) {
   let cattle = [];
   let weighings = [];
   let expenses = [];
+  let births = [];
 
   if (userId) {
     cattle = await db.cattle.where('userId').equals(userId).toArray();
     weighings = await db.weighings.where('userId').equals(userId).toArray();
     expenses = await db.expenses.where('userId').equals(userId).toArray();
+    births = db.births ? await db.births.where('userId').equals(userId).toArray() : [];
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
     expenses = await db.expenses.toArray();
+    births = db.births ? await db.births.toArray() : [];
   }
 
   const backup = {
-    version: 3,
+    version: 4,
     appName: "INVENTARIO BOVINO APP",
     exportDate: new Date().toISOString(),
     farmName: userDetails.farmName || "Mi Finca Ganadera",
@@ -102,6 +115,7 @@ export async function exportBackupData(userId, userDetails = {}) {
     cattle,
     weighings,
     expenses,
+    births,
   };
 
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
@@ -122,15 +136,17 @@ export async function importBackupData(jsonData, userId) {
       throw new Error('Formato de respaldo no válido.');
     }
 
-    await db.transaction('rw', db.cattle, db.weighings, db.expenses, async () => {
+    await db.transaction('rw', db.cattle, db.weighings, db.expenses, db.births, async () => {
       if (userId) {
         await db.cattle.where('userId').equals(userId).delete();
         await db.weighings.where('userId').equals(userId).delete();
         await db.expenses.where('userId').equals(userId).delete();
+        await db.births.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
         await db.expenses.clear();
+        await db.births.clear();
       }
 
       if (data.cattle?.length) {
@@ -155,9 +171,16 @@ export async function importBackupData(jsonData, userId) {
         }));
         await db.expenses.bulkAdd(cleanedE);
       }
+      if (data.births?.length && db.births) {
+        const cleanedB = data.births.map(b => ({
+          ...b,
+          userId: userId || b.userId || 'default',
+        }));
+        await db.births.bulkAdd(cleanedB);
+      }
     });
 
-    return { success: true, message: `Importados ${data.cattle.length} bovinos exitosamente.` };
+    return { success: true, message: `Importados ${data.cattle.length} bovinos y ${data.births?.length || 0} nacimientos exitosamente.` };
   } catch (error) {
     console.error('Error importando backup:', error);
     return { success: false, message: error.message };

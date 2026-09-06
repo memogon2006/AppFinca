@@ -11,6 +11,7 @@ import { WeightsView } from './components/Weights/WeightsView';
 import { QuickWeighinView } from './components/Weights/QuickWeighinView';
 import { FemalesView } from './components/Females/FemalesView';
 import { FinancesView } from './components/Finances/FinancesView';
+import { BirthsView } from './components/Births/BirthsView';
 import { CattleFormModal } from './components/Cattle/CattleFormModal';
 import { CattleDetailModal } from './components/Cattle/CattleDetailModal';
 import { SellModal } from './components/Cattle/SellModal';
@@ -109,6 +110,14 @@ export default function App() {
     () => {
       if (!userId) return [];
       return db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
+    },
+    [userId]
+  ) || [];
+
+  const births = useLiveQuery(
+    () => {
+      if (!userId) return [];
+      return db.births ? db.births.filter(b => b.userId === userId || !b.userId).toArray() : [];
     },
     [userId]
   ) || [];
@@ -354,6 +363,124 @@ export default function App() {
     showToast(`Animal eliminado y sincronizado en la nube ☁️`);
   };
 
+  const handleSaveBirth = async (birthData) => {
+    if (!userId) return;
+    const cleanTag = (birthData.tagNumber || '').trim().toUpperCase();
+
+    // Validar identificación única en caso de nacimiento vivo
+    if (birthData.status === 'Vivo') {
+      const tagExistsInCattle = cattle.some(c => (c.tagNumber || '').toUpperCase().trim() === cleanTag && c.status === 'Activo');
+      const tagExistsInBirths = births.some(b => (b.tagNumber || '').toUpperCase().trim() === cleanTag && b.status === 'Vivo' && b.id !== birthData.id);
+
+      if (tagExistsInCattle || tagExistsInBirths) {
+        throw new Error('Esta identificación ya está registrada. Verifique el número antes de registrar el nacimiento.');
+      }
+    }
+
+    const birthId = birthData.id || ('b_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+    const birthRecord = {
+      ...birthData,
+      id: birthId,
+      tagNumber: cleanTag,
+      userId,
+      createdAt: birthData.createdAt || new Date().toISOString(),
+    };
+
+    if (birthData.id) {
+      await db.births.put(birthRecord);
+    } else {
+      await db.births.add(birthRecord);
+    }
+
+    // Si es nacimiento vivo, crear automáticamente el animal en el inventario (+1)
+    if (birthData.status === 'Vivo') {
+      const animalId = 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      const sex = birthData.sex;
+      const category = sex === 'Macho' ? 'Ternero' : 'Ternera';
+      const birthWeight = parseFloat(birthData.birthWeight) || 0;
+      const estimatedVal = parseFloat(birthData.estimatedValue) || 0;
+
+      const newAnimal = {
+        id: animalId,
+        tagNumber: cleanTag,
+        name: `Cría de ${birthData.motherTag || 'Vaca'}`,
+        sex: sex,
+        category: category,
+        breed: birthData.breed || 'Cebú Comercial',
+        color: 'N/A',
+        status: 'Activo',
+        origin: 'Nacido en finca',
+        entryType: 'Nacimiento',
+        entryDate: birthData.birthDate,
+        birthDate: birthData.birthDate,
+        entryWeight: birthWeight > 0 ? birthWeight : undefined,
+        currentWeight: birthWeight > 0 ? birthWeight : undefined,
+        entryPrice: 0,
+        estimatedBirthValue: estimatedVal,
+        motherTag: birthData.motherTag,
+        fatherTag: birthData.fatherTag || '',
+        farmName: birthData.farmName,
+        paddock: birthData.paddock || 'Maternidad',
+        entryBatch: birthData.paddock || 'Maternidad',
+        reproductiveStatus: sex === 'Hembra' ? 'Vacía' : undefined,
+        notes: `Nacimiento registrado el ${birthData.birthDate}. Madre: ${birthData.motherTag}${birthData.fatherTag ? `, Padre: ${birthData.fatherTag}` : ''}. ${birthData.notes || ''}`.trim(),
+        userId,
+        createdAt: new Date().toISOString(),
+      };
+
+      await db.cattle.add(newAnimal);
+
+      // Crear pesaje inicial si el peso al nacer > 0
+      if (birthWeight > 0) {
+        const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        await db.weighings.add({
+          id: weighId,
+          cattleId: String(animalId),
+          userId,
+          date: birthData.birthDate,
+          weight: birthWeight,
+          conditionScore: 3.5,
+          notes: 'Peso al nacer (Registro de Nacimiento)',
+        });
+      }
+
+      // Actualizar fecha de último parto de la madre si existe en el inventario
+      if (birthData.motherTag) {
+        const mother = cattle.find(c => (c.tagNumber || '').toUpperCase().trim() === (birthData.motherTag || '').toUpperCase().trim() && c.status === 'Activo');
+        if (mother) {
+          await db.cattle.update(mother.id, {
+            lastCalvingDate: birthData.birthDate,
+            reproductiveStatus: 'Parida',
+          });
+        }
+      }
+
+      cloudPushData(userId);
+      showToast(`¡Nacimiento de ${cleanTag} registrado! +1 ternero/a incorporado al inventario 🐂`);
+    } else {
+      // Nacimiento muerto (pérdida perinatal guardada solo para trazabilidad)
+      cloudPushData(userId);
+      showToast(`Registro de parto perinatal guardado para trazabilidad maternal.`);
+    }
+  };
+
+  const handleDeleteBirth = async (birthId, tagNumber) => {
+    if (!userId) return;
+    await db.births.delete(birthId);
+
+    // Si había un animal activo creado con este arete y de origen "Nacido en finca", dar opción de eliminarlo
+    if (tagNumber) {
+      const animal = cattle.find(c => (c.tagNumber || '').toUpperCase().trim() === tagNumber.toUpperCase().trim() && c.origin === 'Nacido en finca');
+      if (animal) {
+        await db.cattle.delete(animal.id);
+        await db.weighings.where('cattleId').equals(String(animal.id)).delete();
+      }
+    }
+
+    cloudPushData(userId);
+    showToast(`Registro de nacimiento eliminado.`);
+  };
+
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
@@ -454,6 +581,17 @@ export default function App() {
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
+          />
+        )}
+
+        {currentView === 'births' && (
+          <BirthsView
+            cattle={cattle}
+            births={births}
+            onSaveBirth={handleSaveBirth}
+            onDeleteBirth={handleDeleteBirth}
+            onSelectAnimal={handleSelectAnimal}
+            onNavigateToInventory={() => setCurrentView('cattle')}
           />
         )}
 
