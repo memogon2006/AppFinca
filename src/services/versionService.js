@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.25";
-export const CURRENT_BUILD_TIME = 1789100000000;
+export const CURRENT_APP_VERSION = "2.8.26";
+export const CURRENT_BUILD_TIME = 1789105000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.26",
+    date: "06/09/2026",
+    title: "Ajuste de Métricas de Gastos y Simplificación",
+    highlights: [
+      "Retirada la métrica de costo por kilo en la vista de gastos para mayor claridad y simpleza visual.",
+      "Optimización de panel financiero con Total Acumulado, Promedio Mensual y Gastos Fijos Recurrentes."
+    ]
+  },
   {
     version: "2.8.25",
     date: "06/09/2026",
@@ -21,7 +30,7 @@ export const APP_CHANGELOG = [
     title: "Módulo Opcional de Gastos Operativos de Finca",
     highlights: [
       "Control 100% opcional de gastos (sales/minerales, medicamentos, jornales, fletes, mantenimiento e insumos).",
-      "Pestaña dedicada en Finanzas con KPIs de gastos totales, desglose por categorías y costo por kilo producido.",
+      "Pestaña dedicada en Finanzas con KPIs de gastos totales, desglose por categorías y control presupuestal.",
       "Exportación automática de hoja 'Gastos de Finca' en Excel y sincronización segura con la nube."
     ]
   },
@@ -42,16 +51,6 @@ export const APP_CHANGELOG = [
       "Fila final de totales en Excel desglosa cuántas cabezas siguen en finca y cuántas fueron vendidas.",
       "Pie de tabla (tfoot) en el inventario con resumen numérico de biomasa, activos y vendidos.",
       "Insignias superiores destacadas con contadores en tiempo real."
-    ]
-  },
-  {
-    version: "2.8.21",
-    date: "06/09/2026",
-    title: "Fila Diferenciada de Vendidos y Prioridad de Activos",
-    highlights: [
-      "Toda la fila del animal vendido aparece coloreada en tono ámbar distintivo.",
-      "Los animales activos que siguen en finca se muestran siempre de primero en la tabla y en Excel.",
-      "En Excel, cada celda de animal vendido tiene fondo ámbar pastel y texto en marrón oscuro."
     ]
   }
 ];

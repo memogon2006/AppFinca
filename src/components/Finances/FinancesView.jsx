@@ -606,7 +606,7 @@ export function FinancesView({
         <div className="space-y-6">
           
           {/* Tarjetas de Métricas de Gastos */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             
             {/* Total Gastos */}
             <div className="p-5 rounded-2xl bg-amber-50 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-orange-500/5 border border-amber-200 dark:border-amber-500/30 shadow-sm">
@@ -647,17 +647,6 @@ export function FinancesView({
               <div className="flex items-center gap-1.5 mt-1 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
                 <Repeat className="w-3.5 h-3.5" />
                 <span>Compromiso recurrente auto-generado</span>
-              </div>
-            </div>
-
-            {/* Costo Operativo / Kg Ganado */}
-            <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-gradient-to-br dark:from-emerald-500/20 dark:to-teal-500/5 border border-emerald-200 dark:border-emerald-500/30 shadow-sm">
-              <span className="text-xs font-semibold uppercase text-emerald-800 dark:text-emerald-400">Costo Operativo / Kg Ganado</span>
-              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
-                {totalGainAllCattle > 0 ? formatCurrency(costPerKgProduced) : '$0'}
-              </p>
-              <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
-                <span>Sobre {formatNumber(totalGainAllCattle, 0)} kg carne producidos</span>
               </div>
             </div>
 
