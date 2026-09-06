@@ -1,5 +1,5 @@
 {
-  "version": "2.8.3",
-  "buildTime": 1772950000000,
-  "description": "Versión 100% autónoma y ligera: Báscula rápida con semáforos, liquidación de lote mixta 50/50 y visualización de ROI y precio por kilo ($8.500/kg)."
+  "version": "2.9.0",
+  "buildTime": 1788700000000,
+  "description": "Nuevo módulo de Nacimientos: registro de partos, trazabilidad maternal e incorporación automática al inventario (+1)."
 }
