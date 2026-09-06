@@ -1,5 +1,5 @@
 {
-  "version": "2.8.2",
-  "buildTime": 1772930000000,
-  "description": "Visualización clara de finanzas: muestra el valor de la utilidad, el porcentaje de ROI y el valor por kilo tomado ($/kg base o venta)."
+  "version": "2.8.3",
+  "buildTime": 1772950000000,
+  "description": "Versión 100% autónoma y ligera: Báscula rápida con semáforos, liquidación de lote mixta 50/50 y visualización de ROI y precio por kilo ($8.500/kg)."
 }
