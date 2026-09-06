@@ -231,25 +231,28 @@ export function CattleListView({
 
       {/* Barra de Herramientas y Resumen */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-        <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <span className="font-extrabold text-slate-900 dark:text-white text-sm">
-            {summary.totalCount} {summary.totalCount === 1 ? 'bovino' : 'bovinos'}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            Total: <strong>{summary.totalCount}</strong> {summary.totalCount === 1 ? 'bovino' : 'bovinos'}
           </span>
-          {summary.activeCount > 0 && summary.totalCount !== summary.activeCount && (
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-              🟢 {summary.activeCount} en finca
-            </span>
-          )}
+          <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-sm flex items-center gap-1">
+            🟢 <strong>{summary.activeCount}</strong> activas / en finca
+          </span>
           {summary.soldCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-              🏷️ {summary.soldCount} vendidos
+            <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-sm flex items-center gap-1">
+              🏷️ <strong>{summary.soldCount}</strong> vendidas
             </span>
           )}
-          <span className="text-slate-500 dark:text-slate-400">
-            Biomasa en finca: <strong className="text-emerald-600 dark:text-emerald-400">{formatNumber(summary.totalKg, 0)} kg</strong>
+          {summary.deadCount > 0 && (
+            <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700 shadow-sm flex items-center gap-1">
+              💀 <strong>{summary.deadCount}</strong> bajas
+            </span>
+          )}
+          <span className="text-slate-600 dark:text-slate-300 font-semibold ml-1">
+            Biomasa en finca: <strong className="text-emerald-600 dark:text-emerald-400 font-black">{formatNumber(summary.totalKg, 0)} kg</strong>
           </span>
-          <span className="text-slate-500 dark:text-slate-400">
-            Utilidad Neta: <strong className="text-blue-600 dark:text-blue-400">{formatCurrency(summary.totalProfit)}</strong>
+          <span className="text-slate-600 dark:text-slate-300 font-semibold">
+            Utilidad Neta: <strong className="text-blue-600 dark:text-blue-400 font-black">{formatCurrency(summary.totalProfit)}</strong>
           </span>
         </div>
 
@@ -603,6 +606,41 @@ export function CattleListView({
                   );
                 })}
               </tbody>
+              <tfoot className="bg-emerald-50/80 dark:bg-emerald-950/60 text-slate-800 dark:text-slate-200 font-extrabold border-t-2 border-emerald-600 dark:border-emerald-500">
+                <tr>
+                  <td className="p-3.5 whitespace-nowrap text-emerald-800 dark:text-emerald-300 font-black">
+                    📊 Total: {summary.totalCount} {summary.totalCount === 1 ? 'cabeza' : 'cabezas'}
+                  </td>
+                  <td className="p-3.5 whitespace-nowrap">
+                    <div className="space-y-0.5 text-[11px]">
+                      <span className="inline-block font-black text-emerald-700 dark:text-emerald-300">
+                        🟢 {summary.activeCount} en finca
+                      </span>
+                      {summary.soldCount > 0 && (
+                        <span className="block font-black text-amber-800 dark:text-amber-300">
+                          🏷️ {summary.soldCount} vendidas
+                        </span>
+                      )}
+                      {summary.deadCount > 0 && (
+                        <span className="block font-bold text-rose-700 dark:text-rose-400">
+                          💀 {summary.deadCount} bajas
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td colSpan={4} className="p-3.5 text-slate-500 dark:text-slate-400 text-[11px] font-semibold">
+                    Totales del Inventario
+                  </td>
+                  <td className="p-3.5 whitespace-nowrap font-black text-emerald-700 dark:text-emerald-400 text-xs">
+                    {formatNumber(summary.totalKg, 0)} kg
+                  </td>
+                  <td colSpan={2} className="p-3.5"></td>
+                  <td className="p-3.5 whitespace-nowrap font-black text-blue-700 dark:text-blue-300 text-xs">
+                    {formatCurrency(summary.totalProfit)}
+                  </td>
+                  <td className="p-3.5"></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>

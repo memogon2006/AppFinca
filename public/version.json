@@ -1,6 +1,6 @@
 {
-  "version": "2.8.21",
-  "buildTime": 1789083000000,
-  "description": "Resaltado de animales vendidos con fila diferenciada (tono ámbar suave) y prioridad de visualización para ganados activos en finca y en exportación Excel."
+  "version": "2.8.22",
+  "buildTime": 1789085000000,
+  "description": "Desglose explícito de totales en Excel y en la tabla de inventario: cabezas activas en finca, cabezas vendidas y totales generales."
 }
 

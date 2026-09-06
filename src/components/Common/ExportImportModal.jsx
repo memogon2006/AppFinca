@@ -241,10 +241,14 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     };
   };
 
-  // Función constructora de fila de Totales y Promedios
+  // Función constructora de fila de Totales y Promedios con desglose de Activos y Vendidos
   const buildTotalsRow = (rows, label = 'TOTALES / PROMEDIOS') => {
     if (!rows || rows.length === 0) return null;
     const count = rows.length;
+    const activeCount = rows.filter(r => r['Estado'] === 'Activo').length;
+    const soldCount = rows.filter(r => r['Estado'] === 'Vendido').length;
+    const deadCount = rows.filter(r => r['Estado'] === 'Muerto').length;
+
     const totalWeight = rows.reduce((acc, r) => acc + (parseFloat(r['Peso Actual (kg)']) || 0), 0);
     const totalGain = rows.reduce((acc, r) => acc + (parseFloat(r['Ganancia Total (+kg)']) || 0), 0);
     const gdpValues = rows.map(r => parseFloat(r['GDP Promedio (kg/día)'])).filter(v => v > 0);
@@ -255,16 +259,16 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     const avgRoi = totalInvested > 0 ? ((totalProfit / totalInvested) * 100) : 0;
 
     return {
-      'Número Chapa / Arete': `📊 ${label} (${count} cabezas)`,
-      'Nombre': '',
-      'Lote / Ingreso #': '',
-      'Hierro / Marca': '',
+      'Número Chapa / Arete': `📊 ${label} (${count} cabezas: ${activeCount} en finca | ${soldCount} vendidas)`,
+      'Nombre': `🟢 ${activeCount} activas en finca`,
+      'Lote / Ingreso #': `🏷️ ${soldCount} vendidas`,
+      'Hierro / Marca': deadCount > 0 ? `💀 ${deadCount} bajas` : '',
       'Propietario / Dueño': '',
       'Sexo': '',
       'Raza': '',
       'Categoría': '',
       'Tipo de Producción': '',
-      'Estado': '',
+      'Estado': `🟢 ${activeCount} en finca • 🏷️ ${soldCount} vendidas`,
       'Fecha Entrada': '',
       'Días en Finca': '',
       'Peso Entrada (kg)': '',
