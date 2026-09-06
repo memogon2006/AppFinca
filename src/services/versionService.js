@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.30";
-export const CURRENT_BUILD_TIME = 1789125000000;
+export const CURRENT_APP_VERSION = "2.8.31";
+export const CURRENT_BUILD_TIME = 1789130000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.31",
+    date: "06/09/2026",
+    title: "Comparativa de Lotes en Excel con Gráficas Visuales",
+    highlights: [
+      "Nueva pestaña dedicada en Excel: '⚖️ Comparativa de Lotes' con cuadro de honor, matriz comparativa y bordes negros definidos.",
+      "Gráficas visuales de barras integradas en Excel para ritmo de engorde (GDP kg/día), ganancia total de carne (+kg) e inversión de compra ($).",
+      "Botón de descarga directa con un solo clic desde el módulo de Lotes y en la exportación general de inventario."
+    ]
+  },
   {
     version: "2.8.30",
     date: "06/09/2026",

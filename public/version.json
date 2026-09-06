@@ -1,5 +1,5 @@
 {
-  "version": "2.8.30",
-  "buildTime": 1789125000000,
-  "description": "Comparador ejecutivo sintético de lotes enfocado en precios, rendimientos, tiempo en finca y valor de compra."
+  "version": "2.8.31",
+  "buildTime": 1789130000000,
+  "description": "Comparativa de lotes en Excel en una pestaña nueva con gráficas visuales de barras, cuadro de honor y matriz completa."
 }

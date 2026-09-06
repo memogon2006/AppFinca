@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { exportBackupData, importBackupData, loadSampleData, clearAllData, db } from '../../services/db';
 import { calculateWeightMetrics, calculateFinancials, formatNumber } from '../../services/calculations';
+import { buildBatchComparisonWorksheet } from '../../services/batchExcelService';
 import { useAuth } from '../../context/AuthContext';
 import XLSX from 'xlsx-js-style';
 
@@ -375,7 +376,19 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       applyTableStyles(wsMain, false, mainSheetData);
       XLSX.utils.book_append_sheet(wb, wsMain, mainSheetName);
 
-      // 2. Si se activó "Separar en pestañas por Lote" (y no se filtró un solo lote)
+      // 2. NUEVA PESTAÑA: Comparativa Ejecutiva de Lotes & Gráficas de Rendimiento
+      if (exportBatch === 'all') {
+        const wsComparison = buildBatchComparisonWorksheet(
+          filteredRows.map(r => r._rawAnimal),
+          weighings,
+          currentUser?.farmName || 'Finca Ganadera'
+        );
+        if (wsComparison) {
+          XLSX.utils.book_append_sheet(wb, wsComparison, '⚖️ Comparativa de Lotes');
+        }
+      }
+
+      // 3. Si se activó "Separar en pestañas por Lote" (y no se filtró un solo lote)
       if (splitByBatch && exportBatch === 'all') {
         // Obtener lotes únicos presentes en los datos
         const batchesInFiltered = Array.from(new Set(filteredRows.map(r => r['Lote / Ingreso #'])));
@@ -513,7 +526,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
                 </span>
               </h4>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-                Genera un libro Excel profesional con pestañas separadas por lote, ganancias continuas, GDP, semáforo, meta 480 kg y fila de totales automáticos.
+                Genera un libro Excel profesional con <b>Pestaña de Comparativa Ejecutiva de Lotes & Gráficas de Rendimiento</b>, hojas individuales por lote, GDP, semáforo y subtotales contables.
               </p>
             </div>
           </div>
