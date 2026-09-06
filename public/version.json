@@ -1,5 +1,5 @@
 {
-  "version": "2.8.7",
-  "buildTime": 1789052000000,
-  "description": "Control estricto de fechas en pesajes: solo se aceptan fechas mayores o iguales a la última registrada, y corrección de GDP continuo."
+  "version": "2.8.8",
+  "buildTime": 1789053000000,
+  "description": "Orden cronológico garantizado en pesajes: el peso actual siempre corresponde al pesaje más reciente."
 }

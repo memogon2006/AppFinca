@@ -22,6 +22,7 @@ import { GlossaryModal } from './components/Common/GlossaryModal';
 import { PartnershipSettlementModal } from './components/Finances/PartnershipSettlementModal';
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
+import { calculateWeightMetrics } from './services/calculations';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -218,8 +219,11 @@ export default function App() {
       notes: notes || '',
     });
 
+    const allWeighs = await db.weighings.where('cattleId').equals(String(targetId)).toArray();
+    const metrics = calculateWeightMetrics(animal || { id: targetId }, allWeighs);
+
     await db.cattle.update(targetId, {
-      currentWeight: parseFloat(weight),
+      currentWeight: metrics.currentWeight > 0 ? metrics.currentWeight : parseFloat(weight),
     });
 
     cloudPushData(userId);
@@ -379,8 +383,11 @@ export default function App() {
         notes: item.notes || 'Pesaje rápido de báscula',
       });
 
+      const allWeighs = await db.weighings.where('cattleId').equals(String(targetId)).toArray();
+      const metrics = calculateWeightMetrics(animal || { id: targetId }, allWeighs);
+
       await db.cattle.update(targetId, {
-        currentWeight: parseFloat(item.weight),
+        currentWeight: metrics.currentWeight > 0 ? metrics.currentWeight : parseFloat(item.weight),
       });
     }
 

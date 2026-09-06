@@ -50,7 +50,8 @@ export function calculateContinuousWeighings(animal, weighings = []) {
   // Caso A: Tiene peso de entrada registrado
   if (entryWeight > 0) {
     const nonEntryWeighings = sorted.filter(w => {
-      if (w.date === entryDate) return false;
+      // Ignorar cualquier pesaje con fecha igual o anterior a la fecha de ingreso
+      if (w.date <= entryDate) return false;
       // Si es un pesaje inicial automático generado con el mismo peso de entrada
       if ((w.notes === 'Peso inicial de registro' || w.notes === 'Peso inicial de registro por lote' || w.notes === 'Peso inicial de ingreso' || (w.notes && w.notes.toLowerCase().includes('inicial'))) && parseFloat(w.weight) === entryWeight) {
         return false;
@@ -185,8 +186,11 @@ export function calculateWeightMetrics(animal, weighings = []) {
   const entryWeight = parseFloat(animal.entryWeight) || 0;
   const entryDate = animal.entryDate ? new Date(animal.entryDate) : new Date();
 
-  // Filtrar pesajes iniciales duplicados que tengan el mismo peso de entrada y notas de registro inicial
+  // Filtrar pesajes que no sean posteriores a la fecha de entrada o sean iniciales duplicados
   const validWeighings = weighings.filter(w => {
+    if (animal.entryDate && w.date <= animal.entryDate) {
+      return false;
+    }
     if (entryWeight > 0 && (w.notes === 'Peso inicial de registro' || w.notes === 'Peso inicial de registro por lote' || w.notes === 'Peso inicial de ingreso' || (w.notes && w.notes.toLowerCase().includes('inicial'))) && parseFloat(w.weight) === entryWeight) {
       return false;
     }
