@@ -21,12 +21,12 @@ export function ProductionTypeChart({ cattle = [], weighings = [] }) {
     value: purposeCounts[key],
   }));
 
-  // Modo B: Por Rangos de Peso Comercial (Levante, Ceba, Gordo Listo)
+  // Modo B: Por Rangos de Peso Comercial (Levante, Ceba, Listos para Venta)
   const weightRanges = {
     'Destete (< 250 kg)': 0,
     'Levante (250-350 kg)': 0,
-    'Media Ceba (350-474 kg)': 0,
-    'Gordos Listos (≥ 475 kg)': 0,
+    'Media Ceba (350-479 kg)': 0,
+    'Listos para Venta (≥ 480 kg)': 0,
   };
 
   activeCattle.forEach(c => {
@@ -34,10 +34,10 @@ export function ProductionTypeChart({ cattle = [], weighings = [] }) {
     const wm = calculateWeightMetrics(c, w);
     const weight = wm.currentWeight || parseFloat(c.entryWeight) || 0;
 
-    if (weight >= 475) {
-      weightRanges['Gordos Listos (≥ 475 kg)']++;
+    if (weight >= 480) {
+      weightRanges['Listos para Venta (≥ 480 kg)']++;
     } else if (weight >= 350) {
-      weightRanges['Media Ceba (350-474 kg)']++;
+      weightRanges['Media Ceba (350-479 kg)']++;
     } else if (weight >= 250) {
       weightRanges['Levante (250-350 kg)']++;
     } else {

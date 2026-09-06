@@ -68,7 +68,7 @@ export function WeightPerformanceChart({ cattle = [], weighings = [] }) {
                 `${value} kg`, 
                 metricMode === 'gain' 
                   ? `Ganancia (${item.payload.days} días • GDP: ${formatNumber(item.payload.gdp, 3)} kg/d)` 
-                  : 'Peso Actual'
+                  : `Peso Actual ${item.payload.actual >= 480 ? '🎯 (Listo ≥ 480 kg)' : `(Faltan ${(480 - item.payload.actual).toFixed(1)} kg)`}`
               ]}
               labelFormatter={(label, item) => item && item[0] ? item[0].payload.fullName : label}
               contentStyle={{ 
@@ -88,7 +88,11 @@ export function WeightPerformanceChart({ cattle = [], weighings = [] }) {
               {performanceData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={metricMode === 'gain' ? (index === 0 ? '#10b981' : '#14b8a6') : (index === 0 ? '#3b82f6' : '#60a5fa')} 
+                  fill={
+                    metricMode === 'gain'
+                      ? (entry.gdp >= 0.75 ? '#10b981' : entry.gdp >= 0.37 ? '#0284c7' : '#f59e0b')
+                      : (entry.actual >= 480 ? '#10b981' : index === 0 ? '#3b82f6' : '#60a5fa')
+                  } 
                 />
               ))}
             </Bar>

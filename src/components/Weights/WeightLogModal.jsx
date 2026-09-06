@@ -48,7 +48,7 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
     ? totalGainFromEntry / daysDiff 
     : 0;
 
-  const isMaleFatReady = animal.sex === 'Macho' && newWeightNum >= 475;
+  const isMaleFatReady = animal.sex === 'Macho' && newWeightNum >= 480;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -120,16 +120,16 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
           </div>
         </div>
 
-        {/* ALERTA EN VIVO: Macho con peso >= 475 kg */}
+        {/* ALERTA EN VIVO: Macho con peso >= 480 kg */}
         {isMaleFatReady && (
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-400 dark:border-amber-500/50 flex items-start gap-3 animate-pulse">
-            <Flame className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/10 border border-emerald-400 dark:border-emerald-500/50 flex items-start gap-3 animate-pulse">
+            <Flame className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs">
-              <span className="font-extrabold text-amber-950 dark:text-amber-200 uppercase tracking-wide block">
-                🥩 ¡Alerta de Ganado Gordo para Venta!
+              <span className="font-black text-emerald-950 dark:text-emerald-200 uppercase tracking-wide block">
+                🎯 ¡Alerta de Ganado Listo para Venta! (≥ 480 kg)
               </span>
-              <p className="text-amber-800 dark:text-amber-300 mt-0.5">
-                Este macho superó los <strong>475 kg</strong> ({newWeightNum} kg). Se encuentra en peso óptimo de ceba y terminación para venta a frigorífico o subasta.
+              <p className="text-emerald-800 dark:text-emerald-300 mt-0.5 font-bold">
+                Este macho superó la meta de <strong>480 kg</strong> ({newWeightNum} kg). Se encuentra en peso óptimo de ceba y terminación para venta a frigorífico o subasta.
               </p>
             </div>
           </div>

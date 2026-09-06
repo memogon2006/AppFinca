@@ -360,7 +360,7 @@ export function QuickWeighinView({
               const wasSavedInSession = savedSuccessMap[animal.id];
               const registeredWeight = wasSavedInSession || (weighDate && animalWeighs.find(w => w.date === weighDate)?.weight);
               const isRegistered = Boolean(registeredWeight);
-              const isFatReady = animal.sex === 'Macho' && (newWeightNum >= 475 || wm.currentWeight >= 475);
+              const isFatReady = animal.sex === 'Macho' && (newWeightNum >= 480 || wm.currentWeight >= 480);
 
               return (
                 <div 

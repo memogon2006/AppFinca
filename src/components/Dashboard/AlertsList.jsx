@@ -14,15 +14,15 @@ export function AlertsList({ cattle = [], onSelectAnimal }) {
 
     const currentWeight = parseFloat(animal.currentWeight || animal.entryWeight) || 0;
 
-    // ALERTA DESTACADA 1: Macho con peso >= 475 kg (Listo para venta gordo)
-    if (animal.sex === 'Macho' && currentWeight >= 475) {
+    // ALERTA DESTACADA 1: Macho con peso >= 480 kg (Listo para venta gordo)
+    if (animal.sex === 'Macho' && currentWeight >= 480) {
       animalAlerts.push({
         id: `fat-bull-${animal.id}`,
         animal,
         priority: 1,
         type: 'fat_ready',
-        title: `🥩 ¡Macho Gordo Listo para Venta! (${animal.tagNumber})`,
-        desc: `Alcanzó un peso óptimo de ${currentWeight} kg para despacho o frigorífico.`,
+        title: `🎯 ¡Macho Listo para Venta! (${animal.tagNumber})`,
+        desc: `Alcanzó el peso meta de ${currentWeight} kg (≥ 480 kg) para despacho o frigorífico.`,
         icon: Flame,
       });
     }
@@ -161,8 +161,8 @@ export function AlertsList({ cattle = [], onSelectAnimal }) {
               <div className="flex items-center justify-between gap-1">
                 <h5 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">{alert.title}</h5>
                 {alert.type === 'fat_ready' && (
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 flex-shrink-0 animate-pulse">
-                    ≥ 475 kg
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 flex-shrink-0 animate-pulse">
+                    ≥ 480 kg
                   </span>
                 )}
               </div>
