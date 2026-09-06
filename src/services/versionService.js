@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.23";
-export const CURRENT_BUILD_TIME = 1789088000000;
+export const CURRENT_APP_VERSION = "2.8.24";
+export const CURRENT_BUILD_TIME = 1789095000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.24",
+    date: "06/09/2026",
+    title: "Módulo Opcional de Gastos Operativos de Finca",
+    highlights: [
+      "Control 100% opcional de gastos (sales/minerales, medicamentos, jornales, fletes, mantenimiento e insumos).",
+      "Pestaña dedicada en Finanzas con KPIs de gastos totales, desglose por categorías y costo por kilo producido.",
+      "Exportación automática de hoja 'Gastos de Finca' en Excel y sincronización segura con la nube."
+    ]
+  },
   {
     version: "2.8.23",
     date: "06/09/2026",
@@ -42,16 +52,6 @@ export const APP_CHANGELOG = [
       "Cuadrícula con bordes negros nítidos en todas las celdas de las hojas Excel.",
       "Encabezados verde esmeralda con texto en blanco y filas alternadas con contraste óptimo.",
       "Línea de totales destacada con doble borde inferior contable."
-    ]
-  },
-  {
-    version: "2.8.19",
-    date: "06/09/2026",
-    title: "Formato y Auto-Ajuste de Columnas en Excel",
-    highlights: [
-      "Ancho de columnas inteligente para que ningún dato o número se corte.",
-      "Subtotales automáticos de kilos, ganancia, inversión y rentabilidad ROI.",
-      "Separación automática por pestañas de Lote / Ingreso #."
     ]
   }
 ];

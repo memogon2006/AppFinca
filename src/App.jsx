@@ -22,6 +22,7 @@ import { GlossaryModal } from './components/Common/GlossaryModal';
 import { PartnershipSettlementModal } from './components/Finances/PartnershipSettlementModal';
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
+import { ExpenseFormModal } from './components/Finances/ExpenseFormModal';
 import { calculateWeightMetrics } from './services/calculations';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -54,6 +55,8 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   const [isPartnershipModalOpen, setIsPartnershipModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
 
   // Mostrar notificación de guardado automático
   const showToast = (text) => {
@@ -110,6 +113,14 @@ export default function App() {
     () => {
       if (!userId) return [];
       return db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
+    },
+    [userId]
+  ) || [];
+
+  const expenses = useLiveQuery(
+    () => {
+      if (!userId) return [];
+      return db.expenses.filter(e => e.userId === userId || !e.userId).toArray();
     },
     [userId]
   ) || [];
@@ -183,6 +194,7 @@ export default function App() {
   }
 
   const activeCattleCount = cattle.filter(c => c.status === 'Activo').length;
+  const batches = Array.from(new Set(cattle.map(c => c.entryBatch || c.paddock).filter(Boolean))).sort();
 
   const handleSaveAnimal = async (animalData) => {
     if (!userId) return;
@@ -493,6 +505,64 @@ export default function App() {
     setIsWeightModalOpen(true);
   };
 
+  const handleOpenAddExpense = () => {
+    setEditingExpense(null);
+    setIsExpenseModalOpen(true);
+  };
+
+  const handleOpenEditExpense = (expense) => {
+    setEditingExpense(expense);
+    setIsExpenseModalOpen(true);
+  };
+
+  const handleSaveExpense = async (expenseData) => {
+    try {
+      const dataToSave = {
+        ...expenseData,
+        userId: userId || null,
+        amount: parseFloat(expenseData.amount) || 0,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (editingExpense && editingExpense.id) {
+        await db.expenses.update(editingExpense.id, dataToSave);
+        showToast('Gasto operativo actualizado con éxito ☁️');
+      } else {
+        const newExpenseId = 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        await db.expenses.add({
+          ...dataToSave,
+          id: newExpenseId,
+          createdAt: new Date().toISOString()
+        });
+        showToast('Gasto operativo registrado con éxito ☁️');
+      }
+
+      setIsExpenseModalOpen(false);
+      setEditingExpense(null);
+
+      if (userId) {
+        cloudPushData(userId).catch(err => console.warn('Cloud sync error on save expense:', err));
+      }
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      alert('Error al guardar el gasto: ' + error.message);
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId) => {
+    if (!window.confirm('¿Está seguro de eliminar este registro de gasto?')) return;
+    try {
+      await db.expenses.delete(expenseId);
+      showToast('Gasto eliminado correctamente ☁️');
+      if (userId) {
+        cloudPushData(userId).catch(err => console.warn('Cloud sync error on delete expense:', err));
+      }
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      alert('Error al eliminar el gasto');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
       
@@ -591,16 +661,33 @@ export default function App() {
         {currentView === 'finances' && (
           <FinancesView
             cattle={cattle}
+            weighings={weighings}
+            expenses={expenses}
+            batches={batches}
             onSelectAnimal={handleSelectAnimal}
             onRevertSale={handleRevertSale}
             onDeleteAnimal={handleDeleteAnimal}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
+            onOpenNewExpense={handleOpenAddExpense}
+            onOpenEditExpense={handleOpenEditExpense}
+            onDeleteExpense={handleDeleteExpense}
           />
         )}
 
       </main>
 
       {/* MODALES */}
+
+      <ExpenseFormModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => {
+          setIsExpenseModalOpen(false);
+          setEditingExpense(null);
+        }}
+        onSave={handleSaveExpense}
+        expense={editingExpense}
+        batches={batches}
+      />
 
       <BatchEntryModal
         isOpen={isBatchEntryModalOpen}

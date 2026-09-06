@@ -112,11 +112,13 @@ export async function cloudPushData(userId) {
   try {
     const cattle = await db.cattle.filter(c => c.userId === userId || !c.userId).toArray();
     const weighings = await db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
+    const expenses = await db.expenses.filter(e => e.userId === userId || !e.userId).toArray();
 
     const payload = {
       userId,
       cattle,
       weighings,
+      expenses,
       syncedAt: new Date().toISOString(),
     };
 
@@ -195,6 +197,11 @@ export async function cloudPullData(userId) {
           if (Array.isArray(remoteData.weighings)) {
             for (const item of remoteData.weighings) {
               await db.weighings.put({ ...item, userId });
+            }
+          }
+          if (Array.isArray(remoteData.expenses)) {
+            for (const item of remoteData.expenses) {
+              await db.expenses.put({ ...item, userId });
             }
           }
           localStorage.setItem(DATA_STORAGE_KEY + userId, found.id);
