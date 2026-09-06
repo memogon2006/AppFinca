@@ -263,7 +263,7 @@ export function getGdpPerformance(gdp) {
   if (g >= 0.75) {
     return {
       level: 'excelente',
-      label: 'Excelente (≥ 0.75 kg/d)',
+      label: 'Excelente (≥ 0.750 kg/d)',
       badgeVariant: 'emerald',
       colorText: 'text-emerald-700 dark:text-emerald-400',
       colorBg: 'bg-emerald-100 dark:bg-emerald-950/80',
@@ -271,10 +271,10 @@ export function getGdpPerformance(gdp) {
       shortLabel: 'Excelente'
     };
   }
-  if (g >= 0.45) {
+  if (g >= 0.37) {
     return {
       level: 'bueno',
-      label: 'Aceptable (0.45 - 0.75 kg/d)',
+      label: 'Aceptable (0.370 - 0.750 kg/d)',
       badgeVariant: 'amber',
       colorText: 'text-amber-700 dark:text-amber-400',
       colorBg: 'bg-amber-100 dark:bg-amber-950/80',
@@ -285,7 +285,7 @@ export function getGdpPerformance(gdp) {
   if (g > 0) {
     return {
       level: 'bajo',
-      label: 'Bajo Rendimiento (< 0.45 kg/d)',
+      label: 'Bajo Rendimiento (< 0.370 kg/d)',
       badgeVariant: 'red',
       colorText: 'text-rose-700 dark:text-rose-400',
       colorBg: 'bg-rose-100 dark:bg-rose-950/80',

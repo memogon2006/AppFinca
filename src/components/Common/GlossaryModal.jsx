@@ -28,9 +28,9 @@ export function GlossaryModal({ isOpen, onClose }) {
       summary: 'Mide cuántos kilogramos de carne viva está engordando en promedio el animal cada día que pasa en tu finca.',
       example: 'Si un novillo entró pesando 240 kg y tras 245 días pesa 485 kg, ganó 245 kg en 245 días → GDP = 1.000 kg/día (1 kg de carne diario).',
       benchmark: [
-        { label: 'Bajo', value: '< 0.450 kg/d (requiere sal o rotación)', color: 'text-amber-600 dark:text-amber-400' },
-        { label: 'Normal', value: '0.500 - 0.650 kg/d (pastoreo estándar)', color: 'text-slate-600 dark:text-slate-300' },
-        { label: 'Excelente', value: '> 0.750 - 1.000 kg/d (ceba intensiva)', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Bajo', value: '< 0.370 kg/d (requiere sal o rotación)', color: 'text-amber-600 dark:text-amber-400' },
+        { label: 'Aceptable / Normal', value: '0.370 - 0.750 kg/d (pastoreo estándar)', color: 'text-slate-600 dark:text-slate-300' },
+        { label: 'Excelente', value: '≥ 0.750 kg/d (ceba intensiva)', color: 'text-emerald-600 dark:text-emerald-400' },
       ]
     },
     {

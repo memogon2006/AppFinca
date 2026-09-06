@@ -151,7 +151,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
           <p className="text-2xl font-black text-rose-950 dark:text-rose-200 mt-1">
             {globalStats.lowGdpCount} <span className="text-xs font-bold text-rose-700 dark:text-rose-300">cabezas</span>
           </p>
-          <span className="text-[11px] text-rose-700 dark:text-rose-300 font-bold">GDP &lt; 0.45 kg/día</span>
+          <span className="text-[11px] text-rose-700 dark:text-rose-300 font-bold">GDP &lt; 0.370 kg/día</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm col-span-2 sm:col-span-1">

@@ -119,7 +119,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
                 : 'bg-white dark:bg-slate-900 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700 hover:bg-rose-50'
             }`}
           >
-            <span>⚠️ Bajo Rendimiento (&lt; 0.45 kg/d)</span>
+            <span>⚠️ Bajo Rendimiento (&lt; 0.37 kg/d)</span>
           </button>
         </div>
       )}
