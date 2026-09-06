@@ -33,11 +33,11 @@ export function Modal({ isOpen, onClose, title, subtitle, children, maxWidth = '
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/80 sticky top-0 z-20">
           <div className="min-w-0 pr-3">
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 truncate">
+            <h3 className="text-base sm:text-lg md:text-xl font-black text-slate-950 dark:text-white flex items-center gap-2 truncate">
               {title}
             </h3>
             {subtitle && (
-              <p className="text-[11px] sm:text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+              <p className="text-[11px] sm:text-xs md:text-sm text-slate-700 dark:text-slate-300 font-bold mt-0.5 truncate">
                 {subtitle}
               </p>
             )}
