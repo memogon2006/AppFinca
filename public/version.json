@@ -1,5 +1,5 @@
 {
-  "version": "2.8.6",
-  "buildTime": 1789050000000,
-  "description": "Validación de fechas de pesajes (solo fechas iguales o posteriores al ingreso) y eliminación de pesajes erróneos."
+  "version": "2.8.7",
+  "buildTime": 1789052000000,
+  "description": "Control estricto de fechas en pesajes: solo se aceptan fechas mayores o iguales a la última registrada, y corrección de GDP continuo."
 }

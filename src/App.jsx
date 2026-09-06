@@ -609,6 +609,7 @@ export default function App() {
         isOpen={isWeightModalOpen}
         onClose={() => setIsWeightModalOpen(false)}
         animal={weighingAnimal}
+        weighings={weighings}
         onSaveWeight={handleSaveWeight}
       />
 

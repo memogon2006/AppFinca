@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
 import { Scale, Flame } from 'lucide-react';
-import { formatNumber, getDaysDifference } from '../../services/calculations';
+import { formatNumber, getDaysDifference, calculateWeightMetrics } from '../../services/calculations';
 
-export function WeightLogModal({ isOpen, onClose, animal, onSaveWeight }) {
+export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight }) {
   if (!animal) return null;
 
-  const currentWeightNum = parseFloat(animal.currentWeight || animal.entryWeight || 0);
+  const animalWeighs = useMemo(() => {
+    return (weighings || []).filter(w => String(w.cattleId) === String(animal.id));
+  }, [weighings, animal]);
+
+  const metrics = useMemo(() => {
+    return calculateWeightMetrics(animal, animalWeighs);
+  }, [animal, animalWeighs]);
+
+  // Obtener la fecha más reciente registrada (fecha de ingreso o último pesaje)
+  const existingDates = useMemo(() => {
+    const dates = [animal.entryDate, ...animalWeighs.map(w => w.date)].filter(Boolean);
+    return Array.from(new Set(dates)).sort();
+  }, [animal, animalWeighs]);
+
+  const lastRecordedDate = existingDates.length > 0 ? existingDates[existingDates.length - 1] : (animal.entryDate || '');
+  const lastRecordedWeight = metrics.currentWeight || parseFloat(animal.entryWeight) || 0;
 
   const [weightData, setWeightData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -25,10 +40,12 @@ export function WeightLogModal({ isOpen, onClose, animal, onSaveWeight }) {
   }, [isOpen, animal]);
 
   const newWeightNum = parseFloat(weightData.weight) || 0;
-  const gainSinceLast = newWeightNum > 0 ? (newWeightNum - currentWeightNum) : 0;
+  const gainSinceLast = newWeightNum > 0 ? (newWeightNum - lastRecordedWeight) : 0;
   const daysDiff = getDaysDifference(animal.entryDate, weightData.date);
-  const estimatedGdp = (daysDiff > 0 && newWeightNum > 0) 
-    ? (newWeightNum - parseFloat(animal.entryWeight)) / daysDiff 
+  const entryWeightNum = parseFloat(animal.entryWeight) || lastRecordedWeight;
+  const totalGainFromEntry = (entryWeightNum > 0 && newWeightNum > 0) ? (newWeightNum - entryWeightNum) : 0;
+  const estimatedGdp = (daysDiff > 0 && totalGainFromEntry > 0) 
+    ? totalGainFromEntry / daysDiff 
     : 0;
 
   const isMaleFatReady = animal.sex === 'Macho' && newWeightNum >= 475;
@@ -40,8 +57,8 @@ export function WeightLogModal({ isOpen, onClose, animal, onSaveWeight }) {
       return;
     }
 
-    if (animal.entryDate && weightData.date < animal.entryDate) {
-      alert(`⚠️ La fecha del pesaje (${weightData.date}) no puede ser anterior a la fecha de ingreso del animal (${animal.entryDate}). Debe ser una fecha igual o posterior.`);
+    if (lastRecordedDate && weightData.date < lastRecordedDate) {
+      alert(`⚠️ La fecha del pesaje (${weightData.date}) no puede ser anterior a la fecha previa registrada (${lastRecordedDate}). Debe ser una fecha igual o posterior.`);
       return;
     }
 
@@ -60,7 +77,7 @@ export function WeightLogModal({ isOpen, onClose, animal, onSaveWeight }) {
       isOpen={isOpen}
       onClose={onClose}
       title={`Nuevo Pesaje en Báscula: ${animal.tagNumber}`}
-      subtitle={`${animal.name ? `Nombre: ${animal.name} • ` : ''}Hierro: ${animal.ironBrand || 'N/A'} • Sexo: ${animal.sex} • Peso previo: ${currentWeightNum} kg`}
+      subtitle={`${animal.name ? `Nombre: ${animal.name} • ` : ''}Hierro: ${animal.ironBrand || 'N/A'} • Sexo: ${animal.sex} • Último peso: ${lastRecordedWeight} kg${lastRecordedDate ? ` (${lastRecordedDate})` : ''}`}
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,15 +85,15 @@ export function WeightLogModal({ isOpen, onClose, animal, onSaveWeight }) {
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
             Fecha del Pesaje <span className="text-rose-500">*</span>
-            {animal.entryDate && (
+            {lastRecordedDate && (
               <span className="text-[10px] text-slate-400 font-normal ml-1">
-                (Ingreso: {animal.entryDate})
+                (Mínimo: {lastRecordedDate})
               </span>
             )}
           </label>
           <input
             type="date"
-            min={animal.entryDate || undefined}
+            min={lastRecordedDate || animal.entryDate || undefined}
             value={weightData.date}
             onChange={(e) => setWeightData(prev => ({ ...prev, date: e.target.value }))}
             className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 min-h-[44px]"

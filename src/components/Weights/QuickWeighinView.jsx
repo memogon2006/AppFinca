@@ -85,8 +85,12 @@ export function QuickWeighinView({
       return;
     }
 
-    if (animal.entryDate && weighDate < animal.entryDate) {
-      alert(`⚠️ La fecha del pesaje (${weighDate}) no puede ser anterior a la fecha de ingreso del animal ${animal.tagNumber} (${animal.entryDate}). Debe ser una fecha igual o posterior.`);
+    const animalWeighs = (weighings || []).filter(w => String(w.cattleId) === String(animal.id));
+    const existingDates = [animal.entryDate, ...animalWeighs.map(w => w.date)].filter(Boolean).sort();
+    const lastRecordedDate = existingDates.length > 0 ? existingDates[existingDates.length - 1] : (animal.entryDate || '');
+
+    if (lastRecordedDate && weighDate < lastRecordedDate) {
+      alert(`⚠️ La fecha del pesaje (${weighDate}) no puede ser anterior a la última fecha registrada para el animal ${animal.tagNumber} (${lastRecordedDate}). Debe ser una fecha igual o posterior.`);
       return;
     }
 
@@ -134,16 +138,23 @@ export function QuickWeighinView({
       return;
     }
 
-    const invalidDates = Object.keys(weightsMap).filter(cattleId => {
+    const invalidAnimals = [];
+    Object.keys(weightsMap).forEach(cattleId => {
       const wVal = parseFloat(weightsMap[cattleId]);
-      if (!wVal || wVal <= 0) return false;
+      if (!wVal || wVal <= 0) return;
       const a = activeCattle.find(c => String(c.id) === String(cattleId));
-      return a && a.entryDate && weighDate < a.entryDate;
+      if (!a) return;
+      const aWeighs = (weighings || []).filter(w => String(w.cattleId) === String(a.id));
+      const dates = [a.entryDate, ...aWeighs.map(w => w.date)].filter(Boolean).sort();
+      const lastD = dates.length > 0 ? dates[dates.length - 1] : (a.entryDate || '');
+      if (lastD && weighDate < lastD) {
+        invalidAnimals.push({ tag: a.tagNumber, lastDate: lastD });
+      }
     });
 
-    if (invalidDates.length > 0) {
-      const sample = activeCattle.find(c => String(c.id) === String(invalidDates[0]));
-      alert(`⚠️ La fecha de pesaje (${weighDate}) no puede ser anterior a la fecha de ingreso del animal ${sample?.tagNumber || ''} (${sample?.entryDate || ''}). Por favor selecciona una fecha igual o posterior.`);
+    if (invalidAnimals.length > 0) {
+      const sample = invalidAnimals[0];
+      alert(`⚠️ La fecha de pesaje (${weighDate}) no puede ser anterior a la última fecha registrada del animal ${sample.tag} (${sample.lastDate}). Por favor selecciona una fecha igual o posterior.`);
       return;
     }
 
