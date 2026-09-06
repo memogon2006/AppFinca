@@ -1,5 +1,5 @@
 {
-  "version": "2.8.4",
-  "buildTime": 1788950000000,
-  "description": "Opción de eliminación y corrección de pesajes en el historial continuo con recálculo automático de peso actual y GDP."
+  "version": "2.8.5",
+  "buildTime": 1789000000000,
+  "description": "Corrección automática de pesajes iniciales duplicados y recálculo preciso de GDP continuo."
 }
