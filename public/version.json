@@ -1,5 +1,5 @@
 {
-  "version": "2.8.28",
-  "buildTime": 1789115000000,
-  "description": "Espacio dedicado de análisis por Lote / Ingreso con compra total, precio por animal, valor del kilo, kilos promedio y comparativas."
+  "version": "2.8.29",
+  "buildTime": 1789120000000,
+  "description": "Comparador interactivo de lotes e ingresos cara a cara con medallas de eficiencia y matriz comparativa."
 }

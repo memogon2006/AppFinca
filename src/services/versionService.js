@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.28";
-export const CURRENT_BUILD_TIME = 1789115000000;
+export const CURRENT_APP_VERSION = "2.8.29";
+export const CURRENT_BUILD_TIME = 1789120000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.29",
+    date: "06/09/2026",
+    title: "Comparador Interactivo de Lotes & Ingresos",
+    highlights: [
+      "Comparador cara a cara entre múltiples lotes con selección interactiva por chips o todos a la vez.",
+      "Insignias y medallas de eficiencia al mejor lote: menor costo de compra ($/kg), mayor ritmo de engorde (GDP) y mayor ganancia total de carne.",
+      "Matriz comparativa completa y tarjetas lado a lado de biomasa, inversión, días en finca y cabezas listas para venta."
+    ]
+  },
   {
     version: "2.8.28",
     date: "06/09/2026",
