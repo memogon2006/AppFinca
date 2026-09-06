@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.29";
-export const CURRENT_BUILD_TIME = 1789120000000;
+export const CURRENT_APP_VERSION = "2.8.30";
+export const CURRENT_BUILD_TIME = 1789125000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.30",
+    date: "06/09/2026",
+    title: "Comparador Ejecutivo Sintético de Lotes",
+    highlights: [
+      "Comparativa compacta y concisa enfocada en: Precios ($/animal y $/kg), Rendimientos (GDP y +kg), Tiempo en Finca (Días) y Valor de Compra Total.",
+      "Tabla matriz ejecutiva con fondo de alto contraste, bordes negros definidos y columnas financieras/zootécnicas clave.",
+      "Tarjetas resumen compactas por lote para rápida lectura en móvil y computador."
+    ]
+  },
   {
     version: "2.8.29",
     date: "06/09/2026",

@@ -880,56 +880,56 @@ export function BatchAnalyticsView({
       )}
 
       {/* ========================================================================= */}
-      {/* VISTA 2: COMPARADOR CARA A CARA ENTRE LOTES / INGRESOS (COMPARADOR PRO) */}
+      {/* VISTA 2: COMPARADOR EJECUTIVO ENTRE LOTES / INGRESOS (CORTO & CONCISO)   */}
       {/* ========================================================================= */}
       {activeTab === 'compare' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           
-          {/* Selector de Lotes a Comparar */}
-          <div className="custom-card p-5 space-y-4 border-2 border-indigo-200 dark:border-indigo-900/60 shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+          {/* Selector Rápido de Lotes a Comparar */}
+          <div className="custom-card p-4 space-y-3 border-2 border-indigo-200 dark:border-indigo-900/60 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  <ArrowRightLeft className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  <span>Selecciona los Lotes que deseas Comparar:</span>
+                <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <ArrowRightLeft className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Comparador Rápido de Precios, Rendimiento & Tiempo</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Marca o desmarca los lotes para colocarlos cara a cara en métricas financieras y zootécnicas.
+                  Selecciona los lotes a contrastar cara a cara en inversión de compra, ganancia de peso y días en predio.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={selectAllForComparison}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-extrabold hover:bg-indigo-100 transition cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-black hover:bg-indigo-100 transition cursor-pointer"
                 >
                   Seleccionar Todos ({allBatches.length})
                 </button>
               </div>
             </div>
 
-            {/* Botones de Selección Rápida */}
-            <div className="flex flex-wrap gap-2.5">
+            {/* Chips de Selección Rápida */}
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
               {batchesStatistics.map((b) => {
-                const isChecked = comparedBatches.includes(b.batchName);
+                const isChecked = comparedBatches.length === 0 || comparedBatches.includes(b.batchName);
                 return (
                   <button
                     key={b.batchName}
                     type="button"
                     onClick={() => toggleBatchComparison(b.batchName)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition flex items-center gap-2 border cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-2 border cursor-pointer ${
                       isChecked
-                        ? 'bg-indigo-600 text-white border-indigo-500 shadow-md ring-2 ring-indigo-300 dark:ring-indigo-700'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-indigo-400'
+                        ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700 hover:border-indigo-400'
                     }`}
                   >
-                    <div className={`w-4 h-4 rounded-md flex items-center justify-center border text-[10px] ${
+                    <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border text-[9px] ${
                       isChecked ? 'bg-white text-indigo-600 border-white' : 'border-slate-400 bg-transparent'
                     }`}>
-                      {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                     </div>
                     <span>🏷️ {b.batchName}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                       isChecked ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                     }`}>
                       {b.headCount} cab
@@ -940,231 +940,103 @@ export function BatchAnalyticsView({
             </div>
           </div>
 
-          {/* DESTACADOS DE EFICIENCIA & MEDALLAS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            
-            {/* Medalla 1: Mejor Precio de Compra */}
+          {/* CUADRO SINTÉTICO DE MEJORES RENDIMIENTOS (MINI DESTACADOS) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {bestPurchaseBatch && (
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/20 border-2 border-emerald-300 dark:border-emerald-700/60 shadow-sm space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-black uppercase text-emerald-800 dark:text-emerald-300">
-                  <Award className="w-4 h-4 text-emerald-600" />
-                  <span>Mejor Precio de Kilo Comprado</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-black text-slate-900 dark:text-white">
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] font-black uppercase text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Mejor Precio Kilo Compra</span>
+                  </div>
+                  <div className="text-sm font-black text-slate-900 dark:text-white">
                     🏷️ {bestPurchaseBatch.batchName}
-                  </span>
-                  <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-base font-black text-emerald-700 dark:text-emerald-300">
                     {formatCurrency(bestPurchaseBatch.costPerEntryKg)}/kg
-                  </span>
+                  </div>
+                  <div className="text-[10px] text-emerald-800 dark:text-emerald-400 font-bold">
+                    {formatCurrency(bestPurchaseBatch.avgPricePerHead)}/cab
+                  </div>
                 </div>
-                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                  Compra más económica de entrada por kilo.
-                </p>
               </div>
             )}
 
-            {/* Medalla 2: Mayor Ritmo de Engorde (Mejor GDP) */}
             {bestGdpBatch && (
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/20 border-2 border-purple-300 dark:border-purple-700/60 shadow-sm space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-black uppercase text-purple-800 dark:text-purple-300">
-                  <Zap className="w-4 h-4 text-purple-600" />
-                  <span>Mayor Ritmo de Ganancia Diaria</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-black text-slate-900 dark:text-white">
+              <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-300 dark:border-purple-800/60 flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] font-black uppercase text-purple-800 dark:text-purple-400 flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Mayor Rendimiento (GDP)</span>
+                  </div>
+                  <div className="text-sm font-black text-slate-900 dark:text-white">
                     🏷️ {bestGdpBatch.batchName}
-                  </span>
-                  <span className="text-base font-black text-purple-600 dark:text-purple-400">
-                    {formatNumber(bestGdpBatch.avgGdp, 3)} kg/día
-                  </span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-purple-700 dark:text-purple-400 font-medium">
-                  Mejor conversión y velocidad de engorde.
-                </p>
+                <div className="text-right">
+                  <div className="text-base font-black text-purple-700 dark:text-purple-300">
+                    {formatNumber(bestGdpBatch.avgGdp, 3)} kg/d
+                  </div>
+                  <div className="text-[10px] text-purple-800 dark:text-purple-400 font-bold">
+                    +{formatNumber(bestGdpBatch.avgGainKg, 1)} kg ganados
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Medalla 3: Mayor Ganancia por Animal */}
             {bestGainBatch && (
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/20 border-2 border-blue-300 dark:border-blue-700/60 shadow-sm space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-black uppercase text-blue-800 dark:text-blue-300">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span>Mayor Ganancia de Carne / Cabeza</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-black text-slate-900 dark:text-white">
+              <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-300 dark:border-blue-800/60 flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] font-black uppercase text-blue-800 dark:text-blue-400 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Más Carne Ganada / Cabeza</span>
+                  </div>
+                  <div className="text-sm font-black text-slate-900 dark:text-white">
                     🏷️ {bestGainBatch.batchName}
-                  </span>
-                  <span className="text-base font-black text-blue-600 dark:text-blue-400">
-                    +{formatNumber(bestGainBatch.avgGainKg, 1)} kg/cab
-                  </span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-blue-700 dark:text-blue-400 font-medium">
-                  Mayor biomasa producida por animal en finca.
-                </p>
+                <div className="text-right">
+                  <div className="text-base font-black text-blue-700 dark:text-blue-300">
+                    +{formatNumber(bestGainBatch.avgGainKg, 1)} kg/cab
+                  </div>
+                  <div className="text-[10px] text-blue-800 dark:text-blue-400 font-bold">
+                    Total: +{formatNumber(bestGainBatch.totalGainKg, 0)} kg
+                  </div>
+                </div>
               </div>
             )}
-
           </div>
 
-          {/* TARJETAS CARA A CARA (COLUMNAS LADO A LADO) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {selectedBatchesForComparison.map((b) => {
-              const isBestPurchase = bestPurchaseBatch?.batchName === b.batchName;
-              const isBestGdp = bestGdpBatch?.batchName === b.batchName;
-              const isBestGain = bestGainBatch?.batchName === b.batchName;
-
-              return (
-                <div 
-                  key={b.batchName}
-                  className="custom-card p-5 space-y-4 border-2 border-slate-300 dark:border-slate-700 shadow-md relative overflow-hidden"
-                >
-                  {/* Encabezado del Lote */}
-                  <div className="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-black text-slate-900 dark:text-white">
-                          🏷️ {b.batchName}
-                        </span>
-                      </div>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Ingreso: {b.earliestDate} • {b.avgDays} días en finca
-                      </span>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
-                        {b.headCount} cabezas
-                      </span>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        {b.activeCount} en finca • {b.soldCount} v.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Indicadores Clave de Compra */}
-                  <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                    <span className="text-[11px] font-black uppercase text-amber-800 dark:text-amber-400 flex items-center gap-1">
-                      <DollarSign className="w-3.5 h-3.5" /> Métricas de Compra / Entrada:
-                    </span>
-                    
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400">Compra Total del Lote:</span>
-                      <span className="font-black text-slate-900 dark:text-white">{formatCurrency(b.totalPurchaseCost)}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400">Precio Promedio / Animal:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{formatCurrency(b.avgPricePerHead)}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-700">
-                      <span className="text-slate-700 dark:text-slate-300 font-extrabold flex items-center gap-1">
-                        Valor del Kilo Compra:
-                        {isBestPurchase && <span className="text-[10px] text-emerald-600 font-black">👑 Menor</span>}
-                      </span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                        {formatCurrency(b.costPerEntryKg)}/kg
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Indicadores de Peso y Ganancia */}
-                  <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                    <span className="text-[11px] font-black uppercase text-blue-800 dark:text-blue-400 flex items-center gap-1">
-                      <Scale className="w-3.5 h-3.5" /> Biomasa & Ganancia de Peso:
-                    </span>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400">Peso Entrada Promedio:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{formatNumber(b.avgEntryWeight, 1)} kg</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400">Peso Actual Promedio:</span>
-                      <span className="font-black text-slate-900 dark:text-white">{formatNumber(b.avgCurrentWeight, 1)} kg</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-700">
-                      <span className="text-slate-700 dark:text-slate-300 font-extrabold flex items-center gap-1">
-                        Ganancia Total Carne:
-                        {isBestGain && <span className="text-[10px] text-blue-600 font-black">👑 Mayor</span>}
-                      </span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                        +{formatNumber(b.totalGainKg, 0)} kg
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400">Ganancia Promedio / Cabeza:</span>
-                      <span className="font-black text-slate-900 dark:text-white">+{formatNumber(b.avgGainKg, 1)} kg/cab</span>
-                    </div>
-                  </div>
-
-                  {/* Indicadores de Desempeño y Ceba */}
-                  <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                    <span className="text-[11px] font-black uppercase text-purple-800 dark:text-purple-400 flex items-center gap-1">
-                      <TrendingUp className="w-3.5 h-3.5" /> Desempeño & Meta 480 kg:
-                    </span>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-700 dark:text-slate-300 font-extrabold flex items-center gap-1">
-                        GDP Promedio Diario:
-                        {isBestGdp && <span className="text-[10px] text-purple-600 font-black">🚀 Más rápido</span>}
-                      </span>
-                      <span className="font-black text-purple-600 dark:text-purple-400 text-sm">
-                        {formatNumber(b.avgGdp, 3)} kg/día
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400">Listos para Venta (≥ 480 kg):</span>
-                      <span className="font-black text-slate-900 dark:text-white">
-                        {b.readyToSellCount} de {b.activeCount} ({b.activeCount > 0 ? ((b.readyToSellCount / b.activeCount) * 100).toFixed(0) : 0}%)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Botón para ver detalle completo */}
-                  <button
-                    onClick={() => {
-                      setSelectedBatch(b.batchName);
-                      setActiveTab('detail');
-                    }}
-                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer shadow-sm"
-                  >
-                    <span>Ver Animales de {b.batchName}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-
-                </div>
-              );
-            })}
-          </div>
-
-          {/* TABLA COMPARATIVA CON BORDES NEGROS */}
-          <div className="custom-card p-5 space-y-3">
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <Scale className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              <span>Matriz Comparativa Completa entre Lotes</span>
-            </h3>
+          {/* TABLA COMPARATIVA SINTÉTICA (PRECIOS, RENDIMIENTOS, TIEMPO, VALOR DE COMPRA) */}
+          <div className="custom-card p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Scale className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Tabla Comparativa de Precios, Rendimiento & Tiempo</span>
+              </h3>
+              <span className="text-xs text-slate-500 font-bold">
+                {selectedBatchesForComparison.length} {selectedBatchesForComparison.length === 1 ? 'lote' : 'lotes'}
+              </span>
+            </div>
 
             <div className="overflow-x-auto border-2 border-slate-900 dark:border-slate-700 rounded-xl">
-              <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[850px]">
-                <thead className="bg-indigo-900 text-white uppercase text-[11px] font-black border-b-2 border-slate-900">
+              <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[900px]">
+                <thead className="bg-slate-900 text-white uppercase text-[11px] font-black border-b-2 border-slate-900">
                   <tr>
-                    <th className="p-3 border-r border-indigo-950">Lote / Ingreso #</th>
-                    <th className="p-3 border-r border-indigo-950 text-center">Cabezas</th>
-                    <th className="p-3 border-r border-indigo-950 text-right">Compra Total ($)</th>
-                    <th className="p-3 border-r border-indigo-950 text-right">Precio / Cabeza</th>
-                    <th className="p-3 border-r border-indigo-950 text-right">Valor Kilo ($/kg)</th>
-                    <th className="p-3 border-r border-indigo-950 text-right">Kilos Entrada Prom</th>
-                    <th className="p-3 border-r border-indigo-950 text-right">Kilos Actual Prom</th>
-                    <th className="p-3 border-r border-indigo-950 text-right">Ganancia (+kg)</th>
-                    <th className="p-3 border-r border-indigo-950 text-right">GDP (kg/día)</th>
-                    <th className="p-3 border-r border-indigo-950 text-center">Listos ≥480kg</th>
-                    <th className="p-3 text-center">Detalle</th>
+                    <th className="p-3 border-r border-slate-800">Lote / Ingreso</th>
+                    <th className="p-3 border-r border-slate-800 text-center">Cabezas</th>
+                    <th className="p-3 border-r border-slate-800 text-right bg-amber-950/60 text-amber-200">Valor Compra Total ($)</th>
+                    <th className="p-3 border-r border-slate-800 text-right bg-amber-950/60 text-amber-200">Precio / Animal</th>
+                    <th className="p-3 border-r border-slate-800 text-right bg-emerald-950/60 text-emerald-200">Valor Kilo ($/kg)</th>
+                    <th className="p-3 border-r border-slate-800 text-right">Kilos Entrada</th>
+                    <th className="p-3 border-r border-slate-800 text-right font-black">Kilos Actual</th>
+                    <th className="p-3 border-r border-slate-800 text-right bg-blue-950/60 text-blue-200">Ganancia (+kg)</th>
+                    <th className="p-3 border-r border-slate-800 text-right bg-purple-950/60 text-purple-200">Rendimiento (GDP)</th>
+                    <th className="p-3 border-r border-slate-800 text-center">Tiempo en Finca</th>
+                    <th className="p-3 border-r border-slate-800 text-center">Listos ≥480kg</th>
+                    <th className="p-3 text-center">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 dark:divide-slate-700 font-medium">
@@ -1175,52 +1047,82 @@ export function BatchAnalyticsView({
                         idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/60'
                       }`}
                     >
-                      <td className="p-3 font-black text-slate-900 dark:text-white border-r border-slate-300 dark:border-slate-700">
-                        🏷️ {b.batchName}
+                      {/* Lote */}
+                      <td className="p-3 font-black text-slate-900 dark:text-white border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-indigo-600 dark:text-indigo-400">🏷️</span>
+                          <span>{b.batchName}</span>
+                        </div>
                       </td>
-                      <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700">
-                        <span className="font-extrabold text-emerald-700 dark:text-emerald-400">{b.activeCount} activos</span>
+
+                      {/* Cabezas */}
+                      <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                        <span className="font-black text-emerald-700 dark:text-emerald-400">{b.activeCount} en finca</span>
                         {b.soldCount > 0 && <span className="text-[10px] text-amber-700 dark:text-amber-400 block font-bold">({b.soldCount} v.)</span>}
                       </td>
-                      <td className="p-3 text-right font-black border-r border-slate-300 dark:border-slate-700">
+
+                      {/* Valor de Compra Total */}
+                      <td className="p-3 text-right font-black text-amber-950 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                         {formatCurrency(b.totalPurchaseCost)}
                       </td>
-                      <td className="p-3 text-right font-bold border-r border-slate-300 dark:border-slate-700">
+
+                      {/* Precio Promedio por Animal */}
+                      <td className="p-3 text-right font-extrabold text-slate-800 dark:text-slate-200 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                         {formatCurrency(b.avgPricePerHead)}
                       </td>
-                      <td className="p-3 text-right font-black text-emerald-700 dark:text-emerald-400 border-r border-slate-300 dark:border-slate-700">
+
+                      {/* Valor del Kilo Entrada ($/kg) */}
+                      <td className="p-3 text-right font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                         {formatCurrency(b.costPerEntryKg)}/kg
                       </td>
-                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-semibold">
+
+                      {/* Kilos Entrada Promedio */}
+                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-semibold whitespace-nowrap">
                         {formatNumber(b.avgEntryWeight, 1)} kg
                       </td>
-                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-slate-900 dark:text-white">
+
+                      {/* Kilos Actual Promedio */}
+                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-slate-900 dark:text-white whitespace-nowrap">
                         {formatNumber(b.avgCurrentWeight, 1)} kg
                       </td>
-                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-emerald-600 dark:text-emerald-400">
+
+                      {/* Ganancia de Carne Promedio */}
+                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-blue-700 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20 whitespace-nowrap">
                         +{formatNumber(b.avgGainKg, 1)} kg/cab
                       </td>
-                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-bold text-purple-700 dark:text-purple-400">
-                        {formatNumber(b.avgGdp, 3)}
+
+                      {/* Rendimiento (GDP kg/día) */}
+                      <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-purple-700 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-950/20 whitespace-nowrap">
+                        {formatNumber(b.avgGdp, 3)} kg/d
                       </td>
-                      <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700">
+
+                      {/* Tiempo en Finca */}
+                      <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">{b.avgDays} días</span>
+                        <span className="text-[10px] text-slate-500 block font-normal">Desde {b.earliestDate}</span>
+                      </td>
+
+                      {/* Listos ≥ 480 kg */}
+                      <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                         {b.readyToSellCount > 0 ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200 border border-purple-300">
                             🎯 {b.readyToSellCount} listos
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-[11px]">0</span>
+                          <span className="text-slate-400 text-[11px] font-bold">0</span>
                         )}
                       </td>
-                      <td className="p-3 text-center">
+
+                      {/* Acción Ver Detalle */}
+                      <td className="p-3 text-center whitespace-nowrap">
                         <button
                           onClick={() => {
                             setSelectedBatch(b.batchName);
                             setActiveTab('detail');
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition cursor-pointer shadow-sm"
                         >
-                          Ver →
+                          Ver Detalle →
                         </button>
                       </td>
                     </tr>
@@ -1228,6 +1130,100 @@ export function BatchAnalyticsView({
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* TARJETAS RESUMEN CARA A CARA (DISEÑO COMPACTO Y CONCISO) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {selectedBatchesForComparison.map((b) => (
+              <div 
+                key={b.batchName}
+                className="custom-card p-4 space-y-3 border-2 border-slate-300 dark:border-slate-700 shadow-sm"
+              >
+                {/* Header Compacto */}
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                  <div>
+                    <div className="flex items-center gap-1.5 font-black text-base text-slate-900 dark:text-white">
+                      <span>🏷️</span>
+                      <span>{b.batchName}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                      ⏱️ <span className="font-bold text-slate-700 dark:text-slate-300">{b.avgDays} días en finca</span> • Desde {b.earliestDate}
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+                      {b.headCount} cabezas
+                    </span>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      {b.activeCount} en finca {b.soldCount > 0 ? `• ${b.soldCount} v.` : ''}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bloque 1: Precios & Valor de Compra */}
+                <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-1.5">
+                  <div className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor de Compra & Precios:</span>
+                    <span className="font-black text-xs text-amber-950 dark:text-amber-300">{formatCurrency(b.totalPurchaseCost)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Precio / Animal:</span>
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">{formatCurrency(b.avgPricePerHead)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Valor del Kilo:</span>
+                      <span className="font-black text-emerald-700 dark:text-emerald-400">{formatCurrency(b.costPerEntryKg)}/kg</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bloque 2: Rendimientos & Peso */}
+                <div className="p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 space-y-1.5">
+                  <div className="text-[10px] font-black uppercase text-blue-800 dark:text-blue-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1"><Scale className="w-3 h-3" /> Rendimiento de Peso & GDP:</span>
+                    <span className="font-black text-xs text-purple-700 dark:text-purple-400">{formatNumber(b.avgGdp, 3)} kg/día</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-xs pt-1 border-t border-blue-200/60 dark:border-blue-800/40 text-center">
+                    <div>
+                      <span className="text-[10px] text-slate-500 block">Entrada Prom:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{formatNumber(b.avgEntryWeight, 1)} kg</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block">Actual Prom:</span>
+                      <span className="font-black text-slate-900 dark:text-white">{formatNumber(b.avgCurrentWeight, 1)} kg</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block font-bold">Ganancia:</span>
+                      <span className="font-black text-emerald-600 dark:text-emerald-400">+{formatNumber(b.avgGainKg, 1)} kg</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer del Lote con Acción Rápida */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] font-extrabold text-slate-600 dark:text-slate-400">
+                    {b.readyToSellCount > 0 ? (
+                      <span className="text-purple-700 dark:text-purple-300 font-black">🎯 {b.readyToSellCount} listos (≥480kg)</span>
+                    ) : (
+                      <span>En etapa de ceba</span>
+                    )}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSelectedBatch(b.batchName);
+                      setActiveTab('detail');
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Ver Animales</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+              </div>
+            ))}
           </div>
 
         </div>
