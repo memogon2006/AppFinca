@@ -237,22 +237,27 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
     pricePerKgEntry = entryPrice / entryWeight;
   }
 
+  const estimatedMarketPricePerKg = 8500;
+  let pricePerKgUsed = 0;
+
   if (isSold) {
     netProfit = exitPrice - totalInvested;
     roi = totalInvested > 0 ? (netProfit / totalInvested) * 100 : 0;
     if (animal.exitWeight && parseFloat(animal.exitWeight) > 0) {
       pricePerKgSold = exitPrice / parseFloat(animal.exitWeight);
+      pricePerKgUsed = pricePerKgSold;
     }
   } else if (isDead) {
     netProfit = -totalInvested;
     roi = -100;
+    pricePerKgUsed = 0;
   } else {
     // Estimación proyectada basada en peso actual ($8,500/kg) o valor invertido en caso de vientres sin pesaje
-    const estimatedMarketPricePerKg = 8500;
     const estimatedCurrentValue = currentWeight > 0 ? currentWeight * estimatedMarketPricePerKg : totalInvested;
     const projectedProfit = estimatedCurrentValue - totalInvested;
     netProfit = projectedProfit;
     roi = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
+    pricePerKgUsed = estimatedMarketPricePerKg;
   }
 
   return {
@@ -264,6 +269,8 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
     roi: Number(roi.toFixed(1)),
     pricePerKgEntry: Number(pricePerKgEntry.toFixed(0)),
     pricePerKgSold: Number(pricePerKgSold.toFixed(0)),
+    pricePerKgUsed: Number(pricePerKgUsed.toFixed(0)),
+    estimatedMarketPricePerKg,
     isSold,
     isDead,
   };

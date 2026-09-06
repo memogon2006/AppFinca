@@ -490,7 +490,14 @@ export function CattleListView({
                             <span className={`font-bold ${fin.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                               {formatCurrency(fin.netProfit)}
                             </span>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500">ROI: {fin.roi}%</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1">
+                              <span>ROI: {fin.roi}%</span>
+                              {fin.pricePerKgUsed > 0 && (
+                                <span className="text-[9px] text-blue-700 dark:text-blue-300 font-bold bg-blue-100/70 dark:bg-blue-900/40 px-1 rounded">
+                                  {formatCurrency(fin.pricePerKgUsed)}/kg
+                                </span>
+                              )}
+                            </div>
                           </>
                         )}
                       </td>

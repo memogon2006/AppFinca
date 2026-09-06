@@ -263,9 +263,14 @@ export function CattleDetailModal({
             <p className={`text-base sm:text-lg font-extrabold mt-0.5 ${financials.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
               {formatCurrency(financials.netProfit)}
             </p>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500">
-              ROI: {financials.roi}%
-            </span>
+            <div className="flex items-center justify-between mt-1 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              <span>ROI: {financials.roi}%</span>
+              {financials.pricePerKgUsed > 0 && (
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  {formatCurrency(financials.pricePerKgUsed)}/kg {financials.isSold ? '(Venta)' : '(Base)'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

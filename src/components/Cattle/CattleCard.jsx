@@ -304,25 +304,32 @@ export function CattleCard({
                 <div>
                   <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1">
                     <DollarSign className="w-3 h-3 text-blue-600 dark:text-blue-400" /> 
-                    {animal.status === 'Muerto' ? 'Pérdida:' : 'Utilidad Proy.:'}
+                    {animal.status === 'Muerto' ? 'Pérdida:' : animal.status === 'Vendido' ? 'Utilidad Real:' : 'Utilidad Proy.:'}
                   </span>
                   <p className={`text-xs sm:text-sm font-black mt-0.5 ${financials.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {formatCurrency(financials.netProfit)}
                   </p>
                 </div>
 
-                <span 
-                  onClick={(e) => {
-                    if (onOpenGlossary) {
-                      e.stopPropagation();
-                      onOpenGlossary();
-                    }
-                  }}
-                  title="ROI: Retorno sobre la Inversión (% ganancia neta sobre dinero invertido)"
-                  className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1 hover:text-blue-600 dark:hover:text-blue-300 transition"
-                >
-                  ROI: {financials.roi}% ℹ️
-                </span>
+                <div className="mt-1 flex flex-col gap-0.5">
+                  <span 
+                    onClick={(e) => {
+                      if (onOpenGlossary) {
+                        e.stopPropagation();
+                        onOpenGlossary();
+                      }
+                    }}
+                    title="ROI: Retorno sobre la Inversión (% ganancia neta sobre dinero invertido)"
+                    className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold hover:text-blue-600 dark:hover:text-blue-300 transition"
+                  >
+                    ROI: {financials.roi}% ℹ️
+                  </span>
+                  {financials.pricePerKgUsed > 0 && (
+                    <span className="text-[9px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100/70 dark:bg-blue-900/40 px-1 py-0.5 rounded text-center truncate">
+                      {formatCurrency(financials.pricePerKgUsed)}/kg {animal.status === 'Vendido' ? '(Venta)' : '(Base)'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </>
