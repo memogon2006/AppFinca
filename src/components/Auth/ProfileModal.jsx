@@ -9,15 +9,17 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   AlertCircle, 
-  Save,
-  KeyRound,
-  LogOut,
-  RefreshCw,
-  Sparkles,
-  Trash2,
-  AlertTriangle
+  Save, 
+  KeyRound, 
+  LogOut, 
+  RefreshCw, 
+  Sparkles, 
+  Trash2, 
+  AlertTriangle,
+  History,
+  Tag
 } from 'lucide-react';
-import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate } from '../../services/versionService';
+import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 
 export function ProfileModal({ isOpen, onClose }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout } = useAuth();
@@ -434,32 +436,32 @@ export function ProfileModal({ isOpen, onClose }) {
         {/* PESTAÑA 3: ACTUALIZACIONES & VERSIÓN */}
         {activeTab === 'version' && (
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Versión Instalada:</span>
-                  <p className="text-lg font-black text-slate-900 dark:text-white">v{CURRENT_APP_VERSION}</p>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Versión Instalada:</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xl font-black text-slate-900 dark:text-white">v{CURRENT_APP_VERSION}</p>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-500/30">
+                      🟢 En línea
+                    </span>
+                  </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-500/30">
-                  En línea
-                </span>
+
+                <button
+                  type="button"
+                  onClick={handleCheckVersion}
+                  disabled={versionChecking}
+                  className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer min-h-[38px] self-start sm:self-auto"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${versionChecking ? 'animate-spin' : ''}`} />
+                  <span>{versionChecking ? 'Comprobando...' : 'Buscar Actualizaciones'}</span>
+                </button>
               </div>
 
               <p className="text-xs text-slate-600 dark:text-slate-300">
                 Cada vez que se publica una mejora o nueva función en la nube, la app te notificará automáticamente para actualizar con un solo clic.
               </p>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleCheckVersion}
-                  disabled={versionChecking}
-                  className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${versionChecking ? 'animate-spin' : ''}`} />
-                  <span>{versionChecking ? 'Comprobando en la nube...' : 'Buscar Actualizaciones Ahora'}</span>
-                </button>
-              </div>
 
               {versionResult && (
                 <div className="mt-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs">
@@ -483,6 +485,62 @@ export function ProfileModal({ isOpen, onClose }) {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* HISTORIAL DE LAS ÚLTIMAS 5 ACTUALIZACIONES */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between px-1">
+                <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <History className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Últimas 5 Actualizaciones Generadas</span>
+                </h3>
+                <span className="text-[11px] text-slate-400 font-semibold">Registro Oficial</span>
+              </div>
+
+              <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                {APP_CHANGELOG.slice(0, 5).map((item) => (
+                  <div
+                    key={item.version}
+                    className={`p-3.5 rounded-2xl border transition ${
+                      item.version === CURRENT_APP_VERSION
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700/80 shadow-sm'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/70'
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
+                          item.version === CURRENT_APP_VERSION
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
+                        }`}>
+                          v{item.version}
+                        </span>
+                        {item.version === CURRENT_APP_VERSION && (
+                          <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-600">
+                            ✨ Actual
+                          </span>
+                        )}
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          {item.title}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {item.date}
+                      </span>
+                    </div>
+
+                    <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300 pl-1">
+                      {item.highlights.map((h, hIdx) => (
+                        <li key={hIdx} className="flex items-start gap-1.5 leading-relaxed">
+                          <span className="text-emerald-500 dark:text-emerald-400 font-bold mt-0.5">•</span>
+                          <span>{h}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

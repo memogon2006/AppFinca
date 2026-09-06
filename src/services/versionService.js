@@ -1,5 +1,60 @@
-export const CURRENT_APP_VERSION = "2.8.22";
-export const CURRENT_BUILD_TIME = 1789085000000;
+export const CURRENT_APP_VERSION = "2.8.23";
+export const CURRENT_BUILD_TIME = 1789088000000;
+
+/**
+ * Historial de las últimas actualizaciones generadas en el sistema
+ */
+export const APP_CHANGELOG = [
+  {
+    version: "2.8.23",
+    date: "06/09/2026",
+    title: "Historial de Actualizaciones en Perfil",
+    highlights: [
+      "Visualizador de las últimas 5 actualizaciones generadas con sus mejoras y cambios.",
+      "Identificación automática de la versión instalada y estado de conexión en la nube."
+    ]
+  },
+  {
+    version: "2.8.22",
+    date: "06/09/2026",
+    title: "Desglose de Cabezas Activas y Vendidas en Totales",
+    highlights: [
+      "Fila final de totales en Excel desglosa cuántas cabezas siguen en finca y cuántas fueron vendidas.",
+      "Pie de tabla (tfoot) en el inventario con resumen numérico de biomasa, activos y vendidos.",
+      "Insignias superiores destacadas con contadores en tiempo real."
+    ]
+  },
+  {
+    version: "2.8.21",
+    date: "06/09/2026",
+    title: "Fila Diferenciada de Vendidos y Prioridad de Activos",
+    highlights: [
+      "Toda la fila del animal vendido aparece coloreada en tono ámbar distintivo.",
+      "Los animales activos que siguen en finca se muestran siempre de primero en la tabla y en Excel.",
+      "En Excel, cada celda de animal vendido tiene fondo ámbar pastel y texto en marrón oscuro."
+    ]
+  },
+  {
+    version: "2.8.20",
+    date: "06/09/2026",
+    title: "Bordes Negros Definidos y Estilos Pro en Excel",
+    highlights: [
+      "Cuadrícula con bordes negros nítidos en todas las celdas de las hojas Excel.",
+      "Encabezados verde esmeralda con texto en blanco y filas alternadas con contraste óptimo.",
+      "Línea de totales destacada con doble borde inferior contable."
+    ]
+  },
+  {
+    version: "2.8.19",
+    date: "06/09/2026",
+    title: "Formato y Auto-Ajuste de Columnas en Excel",
+    highlights: [
+      "Ancho de columnas inteligente para que ningún dato o número se corte.",
+      "Subtotales automáticos de kilos, ganancia, inversión y rentabilidad ROI.",
+      "Separación automática por pestañas de Lote / Ingreso #."
+    ]
+  }
+];
 
 /**
  * Consulta en la nube si hay una nueva versión publicada

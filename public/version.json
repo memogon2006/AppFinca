@@ -1,6 +1,6 @@
 {
-  "version": "2.8.22",
-  "buildTime": 1789085000000,
-  "description": "Desglose explícito de totales en Excel y en la tabla de inventario: cabezas activas en finca, cabezas vendidas y totales generales."
+  "version": "2.8.23",
+  "buildTime": 1789088000000,
+  "description": "Historial interactivo de las últimas 5 actualizaciones generadas disponible en la pestaña Versión de Mi Perfil."
 }
 
