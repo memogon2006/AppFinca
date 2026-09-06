@@ -15,6 +15,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
       reproductiveStatus: '',
       milkingStatus: '',
       isBreedingOnly: false,
+      performanceFilter: '',
       owner: '',
       entryBatch: '',
       entryDateStart: '',
@@ -27,7 +28,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
 
   const isFiltered = filters.search || filters.sex || filters.productionType || 
     filters.status !== 'Activo' || filters.saleType || filters.reproductiveStatus || 
-    filters.milkingStatus || filters.isBreedingOnly || filters.owner || filters.entryBatch ||
+    filters.milkingStatus || filters.isBreedingOnly || filters.performanceFilter || filters.owner || filters.entryBatch ||
     filters.entryDateStart || filters.entryDateEnd || filters.saleDateStart || filters.saleDateEnd;
 
   const hasActiveDates = filters.entryDateStart || filters.entryDateEnd || filters.saleDateStart || filters.saleDateEnd;
@@ -69,7 +70,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
               onClick={() => setFilters(prev => ({ ...prev, status: tab.id, saleType: '' }))}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition min-h-[34px] cursor-pointer ${
                 filters.status === tab.id
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-600 text-white shadow-sm font-black'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
@@ -78,6 +79,50 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
           ))}
         </div>
       </div>
+
+      {/* Píldoras de Filtro Rápido de Rendimiento y Meta 480 kg */}
+      {filters.status === 'Activo' && (
+        <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs">
+          <span className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+            <span>🎯 Filtros de Ceba & GDP:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setFilters(prev => ({ ...prev, performanceFilter: prev.performanceFilter === 'ready480' ? '' : 'ready480' }))}
+            className={`px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 transition cursor-pointer border ${
+              filters.performanceFilter === 'ready480'
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                : 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50'
+            }`}
+          >
+            <span>🎯 Listos para Venta (≥ 480 kg)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilters(prev => ({ ...prev, performanceFilter: prev.performanceFilter === 'highGdp' ? '' : 'highGdp' }))}
+            className={`px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 transition cursor-pointer border ${
+              filters.performanceFilter === 'highGdp'
+                ? 'bg-teal-600 text-white border-teal-500 shadow-sm'
+                : 'bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-300 border-teal-300 dark:border-teal-700 hover:bg-teal-50'
+            }`}
+          >
+            <span>🚀 Alto Rendimiento (≥ 0.75 kg/d)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilters(prev => ({ ...prev, performanceFilter: prev.performanceFilter === 'lowGdp' ? '' : 'lowGdp' }))}
+            className={`px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 transition cursor-pointer border ${
+              filters.performanceFilter === 'lowGdp'
+                ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
+                : 'bg-white dark:bg-slate-900 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700 hover:bg-rose-50'
+            }`}
+          >
+            <span>⚠️ Bajo Rendimiento (&lt; 0.45 kg/d)</span>
+          </button>
+        </div>
+      )}
 
       {/* Sub-Filtro Exclusivo de Ventas: En Compañía vs Venta Directa */}
       {filters.status === 'Vendido' && (

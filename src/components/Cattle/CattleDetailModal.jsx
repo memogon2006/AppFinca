@@ -25,7 +25,11 @@ import {
   Trash2,
   Edit3,
   RotateCcw,
-  Skull
+  Skull,
+  Target,
+  Flame,
+  CheckCircle2,
+  Zap
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -384,6 +388,115 @@ export function CattleDetailModal({
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 font-bold">
                   Puedes registrar pesajes periódicos de control con el botón superior "+ Pesaje".
                 </p>
+              </div>
+            )}
+
+            {/* PROYECCIÓN DE CEBA & PESO META (> 480 KG) */}
+            {weightMetrics.hasWeight && weightMetrics.cebaProjection && (
+              <div className={`p-4 rounded-2xl border shadow-sm space-y-3 ${
+                weightMetrics.cebaProjection.isReady 
+                  ? 'bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 border-emerald-400 dark:border-emerald-500/50' 
+                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Target className={`w-5 h-5 ${weightMetrics.cebaProjection.isReady ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`} />
+                    <div>
+                      <h4 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
+                        <span>Proyección a Peso Meta ({weightMetrics.cebaProjection.targetWeight} kg)</span>
+                        {weightMetrics.cebaProjection.isReady && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-sm animate-pulse">
+                            ¡LISTO PARA VENTA!
+                          </span>
+                        )}
+                      </h4>
+                    </div>
+                  </div>
+
+                  {/* Semáforo de Desempeño */}
+                  <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Rendimiento:</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${weightMetrics.performance.colorBg} ${weightMetrics.performance.colorText} flex items-center gap-1 shadow-sm`}>
+                      <span>{weightMetrics.performance.icon}</span>
+                      <span>{weightMetrics.performance.label}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Barra de Progreso hacia los 480 kg */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-black text-slate-800 dark:text-slate-200">
+                    <span>Peso Actual: {weightMetrics.currentWeight} kg</span>
+                    <span>Meta: {weightMetrics.cebaProjection.targetWeight} kg ({weightMetrics.cebaProjection.progressPercentage}%)</span>
+                  </div>
+                  <div className="w-full h-3.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden p-0.5 shadow-inner">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        weightMetrics.cebaProjection.isReady 
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-400' 
+                          : weightMetrics.cebaProjection.progressPercentage >= 85 
+                            ? 'bg-gradient-to-r from-amber-500 to-emerald-500' 
+                            : 'bg-gradient-to-r from-blue-500 to-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, weightMetrics.cebaProjection.progressPercentage)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Tarjetas de Proyección Detallada */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-bold pt-1">
+                  {weightMetrics.cebaProjection.isReady ? (
+                    <>
+                      <div className="p-3 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700">
+                        <span className="text-[10px] uppercase text-emerald-800 dark:text-emerald-300 block font-black">Estado del Animal</span>
+                        <p className="font-black text-emerald-950 dark:text-emerald-100 text-sm mt-0.5">
+                          🎯 Listo para Sacrificio / Venta
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700">
+                        <span className="text-[10px] uppercase text-emerald-800 dark:text-emerald-300 block font-black">Excedente sobre Meta</span>
+                        <p className="font-black text-emerald-950 dark:text-emerald-100 text-sm mt-0.5">
+                          +{weightMetrics.cebaProjection.surplusKg} kg sobre 480 kg
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase text-emerald-800 dark:text-emerald-300 block font-black">Acción Inmediata</span>
+                          <p className="font-black text-emerald-950 dark:text-emerald-100 text-xs mt-0.5">Programar Venta</p>
+                        </div>
+                        {animal.status === 'Activo' && onOpenSell && (
+                          <button
+                            onClick={() => onOpenSell(animal)}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow transition cursor-pointer"
+                          >
+                            Vender Ahora
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <span className="text-[10px] uppercase text-slate-600 dark:text-slate-400 block font-black">Kilos Restantes</span>
+                        <p className="font-black text-slate-950 dark:text-white text-base mt-0.5">
+                          {weightMetrics.cebaProjection.remainingKg} kg
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <span className="text-[10px] uppercase text-slate-600 dark:text-slate-400 block font-black">Días Proyectados</span>
+                        <p className="font-black text-blue-700 dark:text-blue-400 text-base mt-0.5">
+                          {weightMetrics.cebaProjection.daysToTarget !== null ? `~${weightMetrics.cebaProjection.daysToTarget} días` : 'No calculable'}
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <span className="text-[10px] uppercase text-slate-600 dark:text-slate-400 block font-black">Fecha Estimada Salida</span>
+                        <p className="font-black text-purple-700 dark:text-purple-400 text-base mt-0.5">
+                          {weightMetrics.cebaProjection.estimatedDate || 'Pendiente de pesaje'}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 

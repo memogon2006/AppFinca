@@ -233,6 +233,8 @@ export function calculateWeightMetrics(animal, weighings = []) {
   }
 
   const continuousLogs = calculateContinuousWeighings(animal, weighings);
+  const cebaProjection = calculateCebaProjection(currentWeight, overallGdp, lastWeighDate, TARGET_WEIGHT_DEFAULT);
+  const performance = getGdpPerformance(overallGdp);
 
   return {
     entryWeight,
@@ -246,6 +248,113 @@ export function calculateWeightMetrics(animal, weighings = []) {
     lastWeighDate,
     sortedWeights,
     continuousLogs,
+    cebaProjection,
+    performance,
+  };
+}
+
+export const TARGET_WEIGHT_DEFAULT = 480; // Meta estándar de ceba (kg)
+
+/**
+ * Evalúa el nivel de rendimiento de Ganancia Diaria de Peso (Semáforo Ganadero)
+ */
+export function getGdpPerformance(gdp) {
+  const g = parseFloat(gdp) || 0;
+  if (g >= 0.75) {
+    return {
+      level: 'excelente',
+      label: 'Excelente (≥ 0.75 kg/d)',
+      badgeVariant: 'emerald',
+      colorText: 'text-emerald-700 dark:text-emerald-400',
+      colorBg: 'bg-emerald-100 dark:bg-emerald-950/80',
+      icon: '🚀',
+      shortLabel: 'Excelente'
+    };
+  }
+  if (g >= 0.45) {
+    return {
+      level: 'bueno',
+      label: 'Aceptable (0.45 - 0.75 kg/d)',
+      badgeVariant: 'amber',
+      colorText: 'text-amber-700 dark:text-amber-400',
+      colorBg: 'bg-amber-100 dark:bg-amber-950/80',
+      icon: '⚡',
+      shortLabel: 'Aceptable'
+    };
+  }
+  if (g > 0) {
+    return {
+      level: 'bajo',
+      label: 'Bajo Rendimiento (< 0.45 kg/d)',
+      badgeVariant: 'red',
+      colorText: 'text-rose-700 dark:text-rose-400',
+      colorBg: 'bg-rose-100 dark:bg-rose-950/80',
+      icon: '⚠️',
+      shortLabel: 'Bajo'
+    };
+  }
+  return {
+    level: 'estancado',
+    label: 'Sin Ganancia / Pérdida (≤ 0 kg/d)',
+    badgeVariant: 'gray',
+    colorText: 'text-slate-600 dark:text-slate-400',
+    colorBg: 'bg-slate-100 dark:bg-slate-800',
+    icon: '🔻',
+    shortLabel: 'Estancado'
+  };
+}
+
+/**
+ * Calcula la proyección de ceba hacia el peso meta objetivo (> 480 kg)
+ */
+export function calculateCebaProjection(currentWeight, gdp, lastWeighDate, targetWeight = TARGET_WEIGHT_DEFAULT) {
+  const weight = parseFloat(currentWeight) || 0;
+  const rate = parseFloat(gdp) || 0;
+  const target = parseFloat(targetWeight) || TARGET_WEIGHT_DEFAULT;
+
+  const isReady = weight >= target;
+  const surplusKg = isReady ? Number((weight - target).toFixed(1)) : 0;
+  const remainingKg = isReady ? 0 : Number((target - weight).toFixed(1));
+  const progressPercentage = Math.min(100, Number(((weight / target) * 100).toFixed(1)));
+
+  let daysToTarget = null;
+  let estimatedDate = null;
+
+  if (!isReady && rate > 0) {
+    daysToTarget = Math.ceil(remainingKg / rate);
+    const baseDate = lastWeighDate ? new Date(lastWeighDate) : new Date();
+    const est = new Date(baseDate);
+    est.setDate(est.getDate() + daysToTarget);
+    estimatedDate = est.toISOString().split('T')[0];
+  }
+
+  let status = 'in_progress';
+  let message = `Faltan ${remainingKg} kg`;
+
+  if (isReady) {
+    status = 'ready';
+    message = surplusKg > 0 
+      ? `🎯 ¡Listo para Venta! (Superó ${target} kg por +${surplusKg} kg)`
+      : `🎯 ¡Listo para Venta! (Alcanzó exactamente ${target} kg)`;
+  } else if (rate > 0) {
+    status = 'in_progress';
+    message = `Faltan ${remainingKg} kg (~${daysToTarget} días • Salida estimada: ${estimatedDate})`;
+  } else {
+    status = 'stalled';
+    message = `Faltan ${remainingKg} kg (Requiere GDP positivo para estimar fecha)`;
+  }
+
+  return {
+    targetWeight: target,
+    isReady,
+    surplusKg,
+    remainingKg,
+    progressPercentage,
+    daysToTarget,
+    estimatedDate,
+    status,
+    message,
+    performance: getGdpPerformance(rate),
   };
 }
 

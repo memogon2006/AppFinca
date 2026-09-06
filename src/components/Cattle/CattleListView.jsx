@@ -59,6 +59,7 @@ export function CattleListView({
     reproductiveStatus: '',
     milkingStatus: '',
     isBreedingOnly: false,
+    performanceFilter: '',
     owner: '',
     entryBatch: '',
     entryDateStart: '',
@@ -88,6 +89,15 @@ export function CattleListView({
         const isCompany = animal.exitType === 'En Compañía' || !!animal.partnershipDetails;
         if (filters.saleType === 'Compania' && !isCompany) return false;
         if (filters.saleType === 'Directa' && isCompany) return false;
+      }
+
+      // Filtro de Rendimiento / Ceba (Meta 480 kg y Semáforo)
+      if (filters.status === 'Activo' && filters.performanceFilter) {
+        const aWeighs = weighings.filter(w => w.cattleId === animal.id);
+        const wm = calculateWeightMetrics(animal, aWeighs);
+        if (filters.performanceFilter === 'ready480' && !wm.cebaProjection?.isReady) return false;
+        if (filters.performanceFilter === 'highGdp' && wm.performance?.level !== 'excelente') return false;
+        if (filters.performanceFilter === 'lowGdp' && wm.performance?.level !== 'bajo' && wm.performance?.level !== 'estancado') return false;
       }
 
       // Filtro por Fecha de Compra / Ingreso
@@ -436,10 +446,15 @@ export function CattleListView({
                       {/* Peso Actual */}
                       <td className="p-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
-                          <span>{wm.hasWeight ? `${wm.currentWeight} kg` : (animal.sex === 'Hembra' ? 'Vientre' : 'Sin pesaje')}</span>
+                          <span className="font-black">{wm.hasWeight ? `${wm.currentWeight} kg` : (animal.sex === 'Hembra' ? 'Vientre' : 'Sin pesaje')}</span>
+                          {wm.cebaProjection?.isReady && animal.status === 'Activo' && (
+                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-600 text-white shadow-sm">
+                              🎯 ≥ 480 kg
+                            </span>
+                          )}
                         </div>
                         {wm.lastWeighDate && (
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-0.5 mt-0.5">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-0.5 mt-0.5">
                             <Calendar className="w-2.5 h-2.5 text-slate-400" />
                             <span>Pesaje: {wm.lastWeighDate}</span>
                           </div>
@@ -450,8 +465,8 @@ export function CattleListView({
                       <td className="p-3.5 whitespace-nowrap">
                         {wm.hasEntryWeight ? (
                           <>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">+{wm.totalGain} kg</span>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">{wm.totalDays} días</div>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-black">+{wm.totalGain} kg</span>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{wm.totalDays} días</div>
                           </>
                         ) : (
                           <span className="text-slate-400 dark:text-slate-500 text-[11px]">-</span>
@@ -460,10 +475,15 @@ export function CattleListView({
 
                       {/* GDP & Días */}
                       <td className="p-3.5 whitespace-nowrap">
-                        <div className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                        <div className="font-black text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
                           <span>{wm.hasEntryWeight ? `${formatNumber(wm.overallGdp, 3)} kg/d` : '-'}</span>
+                          {wm.hasEntryWeight && (
+                            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black ${wm.performance.colorBg} ${wm.performance.colorText}`}>
+                              {wm.performance.icon} {wm.performance.shortLabel}
+                            </span>
+                          )}
                         </div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">{wm.totalDays} días en finca</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{wm.totalDays} días en finca</div>
                       </td>
 
                       {/* Utilidad Neta */}

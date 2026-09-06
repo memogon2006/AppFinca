@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
-import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake } from 'lucide-react';
+import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap } from 'lucide-react';
 
 export function CattleCard({ 
   animal, 
@@ -34,7 +34,7 @@ export function CattleCard({
   };
 
   const batchName = animal.entryBatch || animal.paddock || 'Ingreso #1';
-  const isFatMaleReady = animal.sex === 'Macho' && animal.status === 'Activo' && weightMetrics.currentWeight >= 475;
+  const isReadyForSale = animal.status === 'Activo' && weightMetrics.currentWeight >= 480;
   const isCompanySale = animal.status === 'Vendido' && (animal.exitType === 'En Compañía' || !!animal.partnershipDetails);
 
   const femaleStatus = animal.femaleStatus || (
@@ -68,8 +68,8 @@ export function CattleCard({
             ? isCompanySale
               ? 'border-teal-300 dark:border-teal-700/70 bg-gradient-to-b from-teal-500/5 to-transparent'
               : 'border-blue-300 dark:border-blue-700/70 bg-gradient-to-b from-blue-500/5 to-transparent'
-            : isFatMaleReady 
-              ? 'border-amber-400 dark:border-amber-500/60 bg-gradient-to-b from-amber-500/5 to-transparent' 
+            : isReadyForSale 
+              ? 'border-emerald-500 dark:border-emerald-500/80 bg-gradient-to-b from-emerald-500/10 to-transparent ring-2 ring-emerald-500/20' 
               : ''
       }`}
     >
@@ -134,10 +134,17 @@ export function CattleCard({
             )
           )}
 
-          {/* ALERTA MACHO GORDO >= 475 kg */}
-          {isFatMaleReady && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 flex items-center gap-1 shadow-sm animate-pulse">
-              <Flame className="w-3 h-3" /> Gordo Listo (≥ 475 kg)
+          {/* ALERTA CEBA LISTO >= 480 kg */}
+          {isReadyForSale && (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-gradient-to-r from-emerald-600 to-teal-500 text-white flex items-center gap-1 shadow-sm animate-pulse">
+              <Target className="w-3.5 h-3.5" /> 🎯 Listo Venta (≥ 480 kg)
+            </span>
+          )}
+
+          {/* Progreso hacia meta 480 kg si aún no llega */}
+          {animal.status === 'Activo' && !isReadyForSale && weightMetrics.hasWeight && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700/60 flex items-center gap-1">
+              <Target className="w-3 h-3 text-blue-600 dark:text-blue-400" /> Meta 480 kg: {weightMetrics.cebaProjection.progressPercentage}%
             </span>
           )}
 
@@ -273,13 +280,13 @@ export function CattleCard({
             {/* 2. PESO ACTUAL (CON FECHA ÚLTIMO PESAJE) & UTILIDAD */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className={`p-2 rounded-xl border flex flex-col justify-between ${
-                isFatMaleReady 
-                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-500/40' 
+                isReadyForSale 
+                  ? 'bg-emerald-100/70 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-600' 
                   : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60'
               }`}>
                 <div>
                   <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1">
-                    <Scale className={`w-3 h-3 ${isFatMaleReady ? 'text-amber-600' : 'text-emerald-600 dark:text-emerald-400'}`} /> 
+                    <Scale className={`w-3 h-3 ${isReadyForSale ? 'text-emerald-700 dark:text-emerald-300' : 'text-emerald-600 dark:text-emerald-400'}`} /> 
                     Peso Actual:
                   </span>
                   <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-0.5">
@@ -336,20 +343,25 @@ export function CattleCard({
         )}
 
         {/* Footer info: GDP continuo y Días en finca */}
-        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5 flex-wrap gap-1">
           {weightMetrics.hasEntryWeight ? (
-            <span 
-              onClick={(e) => {
-                if (onOpenGlossary) {
-                  e.stopPropagation();
-                  onOpenGlossary();
-                }
-              }}
-              title="GDP: Ganancia Diaria de Peso (kg de carne ganados por día)"
-              className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-300 transition"
-            >
-              GDP: <strong className="text-blue-600 dark:text-blue-400">{formatNumber(weightMetrics.overallGdp, 3)} kg/d</strong> ℹ️
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span 
+                onClick={(e) => {
+                  if (onOpenGlossary) {
+                    e.stopPropagation();
+                    onOpenGlossary();
+                  }
+                }}
+                title="GDP: Ganancia Diaria de Peso (kg de carne ganados por día)"
+                className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-300 transition font-bold"
+              >
+                GDP: <strong className="text-blue-600 dark:text-blue-400">{formatNumber(weightMetrics.overallGdp, 3)} kg/d</strong>
+              </span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${weightMetrics.performance.colorBg} ${weightMetrics.performance.colorText}`} title={weightMetrics.performance.label}>
+                {weightMetrics.performance.icon} {weightMetrics.performance.shortLabel}
+              </span>
+            </div>
           ) : (
             <span className="text-purple-600 dark:text-purple-400 font-medium">🐄 {animal.femaleStatus || 'Vientre Cría'}</span>
           )}
