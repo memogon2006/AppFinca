@@ -247,22 +247,12 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
     netProfit = -totalInvested;
     roi = -100;
   } else {
-    // Si el animal no ha registrado aumento de peso (currentWeight <= entryWeight o no hay nuevo pesaje con ganancia),
-    // la utilidad proyectada se mantiene en $0 (y el ROI en 0%)
-    const weightGain = currentWeight - entryWeight;
-
-    if (weightGain > 0 && entryWeight > 0) {
-      // Precio base por kilo al que se adquirió el animal
-      const unitPrice = pricePerKgEntry > 0 ? pricePerKgEntry : 9000;
-      // Ganancia por los kilos adicionales de carne producidos
-      const gainValue = weightGain * unitPrice;
-      const projectedProfit = gainValue - expenses;
-      netProfit = projectedProfit;
-      roi = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
-    } else {
-      netProfit = 0;
-      roi = 0;
-    }
+    // Estimación proyectada basada en peso actual ($8,500/kg) o valor invertido en caso de vientres sin pesaje
+    const estimatedMarketPricePerKg = 8500;
+    const estimatedCurrentValue = currentWeight > 0 ? currentWeight * estimatedMarketPricePerKg : totalInvested;
+    const projectedProfit = estimatedCurrentValue - totalInvested;
+    netProfit = projectedProfit;
+    roi = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
   }
 
   return {
