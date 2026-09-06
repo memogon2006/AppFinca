@@ -1,6 +1,6 @@
 {
-  "version": "2.8.19",
-  "buildTime": 1789078000000,
-  "description": "Reporte Excel pulido con auto-ajuste inteligente de columnas, autofiltros nativos, formato numérico profesional y pestañas formateadas."
+  "version": "2.8.20",
+  "buildTime": 1789079000000,
+  "description": "Reporte Excel con bordes negros en toda la tabla, encabezados esmeralda, filas alternadas y totales destacados con doble borde."
 }
 

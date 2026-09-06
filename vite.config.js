@@ -11,14 +11,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom'],
           'vendor-charts': ['recharts'],
           'vendor-db': ['dexie', 'dexie-react-hooks'],
-          'vendor-export': ['xlsx'],
+          'vendor-export': ['xlsx-js-style'],
           'vendor-icons': ['lucide-react']
         }
       }

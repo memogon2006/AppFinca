@@ -17,7 +17,7 @@ import {
 import { exportBackupData, importBackupData, loadSampleData, clearAllData, db } from '../../services/db';
 import { calculateWeightMetrics, calculateFinancials, formatNumber } from '../../services/calculations';
 import { useAuth } from '../../context/AuthContext';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 
 export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   const { currentUser } = useAuth();
@@ -93,6 +93,76 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       // Margen generoso para que nada quede apretado ni cortado en Excel
       return { wch: Math.min(50, Math.max(maxLen + 4, 12)) };
     });
+  };
+
+  // Aplicar bordes negros bien definidos, estilos de encabezado y totales
+  const applyTableStyles = (ws, isPesajesSheet = false) => {
+    if (!ws || !ws['!ref']) return;
+    const range = XLSX.utils.decode_range(ws['!ref']);
+
+    const blackBorder = {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } },
+    };
+
+    const headerBorder = {
+      top: { style: 'medium', color: { rgb: '000000' } },
+      bottom: { style: 'medium', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } },
+    };
+
+    const totalBorder = {
+      top: { style: 'medium', color: { rgb: '000000' } },
+      bottom: { style: 'double', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } },
+    };
+
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      const isHeader = R === 0;
+      const isTotalRow = !isPesajesSheet && R === range.e.r && range.e.r > 1;
+      const isEvenRow = R % 2 === 0;
+
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cellAddress]) {
+          ws[cellAddress] = { t: 's', v: '' };
+        }
+        const cell = ws[cellAddress];
+
+        if (isHeader) {
+          cell.s = {
+            fill: { fgColor: { rgb: '065F46' } }, // Verde esmeralda oscuro
+            font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: headerBorder,
+          };
+        } else if (isTotalRow) {
+          cell.s = {
+            fill: { fgColor: { rgb: 'D1FAE5' } }, // Verde claro de totales
+            font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: '064E3B' } },
+            alignment: {
+              horizontal: C === 0 ? 'left' : (typeof cell.v === 'number' ? 'right' : 'center'),
+              vertical: 'center'
+            },
+            border: totalBorder,
+          };
+        } else {
+          cell.s = {
+            fill: isEvenRow ? { fgColor: { rgb: 'F8FAFC' } } : { fgColor: { rgb: 'FFFFFF' } },
+            font: { name: 'Calibri', sz: 10, color: { rgb: '0F172A' } },
+            alignment: {
+              horizontal: typeof cell.v === 'number' ? 'right' : (String(cell.v).includes('-') || String(cell.v).length <= 10 ? 'center' : 'left'),
+              vertical: 'center'
+            },
+            border: blackBorder,
+          };
+        }
+      }
+    }
   };
 
   // Función constructora de fila de datos Excel
@@ -260,6 +330,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       const wsMain = XLSX.utils.json_to_sheet(mainSheetData);
       wsMain['!cols'] = calculateColumnWidths(mainSheetData);
       if (wsMain['!ref']) wsMain['!autofilter'] = { ref: wsMain['!ref'] };
+      applyTableStyles(wsMain);
       XLSX.utils.book_append_sheet(wb, wsMain, mainSheetName);
 
       // 2. Si se activó "Separar en pestañas por Lote" (y no se filtró un solo lote)
@@ -282,6 +353,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
             const wsBatch = XLSX.utils.json_to_sheet(batchSheetData);
             wsBatch['!cols'] = calculateColumnWidths(batchSheetData);
             if (wsBatch['!ref']) wsBatch['!autofilter'] = { ref: wsBatch['!ref'] };
+            applyTableStyles(wsBatch);
             XLSX.utils.book_append_sheet(wb, wsBatch, sheetTitle);
           }
         });
@@ -296,6 +368,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
           const wsReady = XLSX.utils.json_to_sheet(readySheetData);
           wsReady['!cols'] = calculateColumnWidths(readySheetData);
           if (wsReady['!ref']) wsReady['!autofilter'] = { ref: wsReady['!ref'] };
+          applyTableStyles(wsReady);
           XLSX.utils.book_append_sheet(wb, wsReady, '🎯 Listos Venta (≥480kg)');
         }
       }
@@ -323,6 +396,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         const wsPesajes = XLSX.utils.json_to_sheet(formattedWeighings);
         wsPesajes['!cols'] = calculateColumnWidths(formattedWeighings);
         if (wsPesajes['!ref']) wsPesajes['!autofilter'] = { ref: wsPesajes['!ref'] };
+        applyTableStyles(wsPesajes, true);
         XLSX.utils.book_append_sheet(wb, wsPesajes, "Historial Pesajes");
       }
 
@@ -330,7 +404,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       const filterSuffix = exportBatch !== 'all' ? `_${sanitizeSheetName(exportBatch)}` : '';
       XLSX.writeFile(wb, `Inventario_${cleanFarm}${filterSuffix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
       
-      setMessage({ type: 'success', text: `¡Excel profesional generado exitosamente con ${filteredRows.length} animales, anchos automáticos y totales!` });
+      setMessage({ type: 'success', text: `¡Excel profesional generado exitosamente con ${filteredRows.length} animales, bordes definidos y subtotales!` });
     } catch (e) {
       setMessage({ type: 'error', text: 'Error generando Excel: ' + e.message });
     } finally {
