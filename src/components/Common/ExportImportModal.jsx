@@ -77,6 +77,24 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     }
   };
 
+  // Auto-ajuste de ancho de columnas para que las celdas no se corten
+  const calculateColumnWidths = (dataRows) => {
+    if (!dataRows || dataRows.length === 0) return [];
+    const headers = Object.keys(dataRows[0]);
+    return headers.map(header => {
+      let maxLen = header.length;
+      dataRows.forEach(row => {
+        const val = row[header];
+        if (val !== null && val !== undefined) {
+          const str = String(val);
+          if (str.length > maxLen) maxLen = str.length;
+        }
+      });
+      // Margen generoso para que nada quede apretado ni cortado en Excel
+      return { wch: Math.min(50, Math.max(maxLen + 4, 12)) };
+    });
+  };
+
   // Función constructora de fila de datos Excel
   const buildExcelRow = (c, weighings) => {
     const animalWeighs = weighings.filter(w => w.cattleId === String(c.id) || w.cattleId === c.id);
@@ -86,41 +104,41 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     return {
       'Número Chapa / Arete': c.tagNumber,
       'Nombre': c.name || '',
-      'Ingreso # / Lote': c.entryBatch || c.paddock || 'Ingreso #1',
+      'Lote / Ingreso #': c.entryBatch || c.paddock || 'Ingreso #1',
       'Hierro / Marca': c.ironBrand || '',
       'Propietario / Dueño': c.owner || '',
       'Sexo': c.sex,
       'Raza': c.breed || '',
       'Categoría': c.category || '',
-      'Tipo Producción': c.productionType || '',
+      'Tipo de Producción': c.productionType || '',
       'Estado': c.status || 'Activo',
       'Fecha Entrada': c.entryDate || '',
-      'Días en Finca': wm.totalDays,
-      'Peso Entrada (kg)': c.entryWeight || 0,
-      'Peso Actual (kg)': wm.currentWeight,
-      'Ganancia Total (kg)': wm.totalGain,
-      'GDP Global (kg/día)': wm.overallGdp,
-      'Rendimiento GDP': wm.performance?.label || '',
-      'Meta 480 kg - Estado': wm.cebaProjection?.isReady ? 'Listo Venta (≥ 480 kg)' : 'En Ceba',
-      'Meta 480 kg - Avance (%)': wm.cebaProjection?.progressPercentage || 0,
-      'Meta 480 kg - Faltan (kg)': wm.cebaProjection?.remainingKg ?? 0,
-      'Meta 480 kg - Días Salida': wm.cebaProjection?.daysToTarget || '',
-      'Meta 480 kg - Fecha Salida': wm.cebaProjection?.estimatedDate || '',
+      'Días en Finca': Number(wm.totalDays),
+      'Peso Entrada (kg)': c.entryWeight ? Number(parseFloat(c.entryWeight).toFixed(1)) : 0,
+      'Peso Actual (kg)': Number(parseFloat(wm.currentWeight).toFixed(1)),
+      'Ganancia Total (+kg)': Number(parseFloat(wm.totalGain).toFixed(1)),
+      'GDP Promedio (kg/día)': Number(parseFloat(wm.overallGdp).toFixed(3)),
+      'Semáforo GDP': wm.performance?.label || '',
+      'Meta 480 kg (Estado)': wm.cebaProjection?.isReady ? '🎯 Listo Venta (≥ 480 kg)' : 'En Ceba',
+      'Avance a Meta (%)': wm.cebaProjection ? Number(wm.cebaProjection.progressPercentage.toFixed(1)) : 0,
+      'Faltan para Meta (kg)': wm.cebaProjection ? Number(wm.cebaProjection.remainingKg.toFixed(1)) : 0,
+      'Días Est. a Meta': wm.cebaProjection?.daysToTarget ? Number(wm.cebaProjection.daysToTarget) : '',
+      'Fecha Est. Salida': wm.cebaProjection?.estimatedDate || '',
       'Estado Reproductivo': c.reproductiveStatus || 'N/A',
-      'Fecha Servicio': c.serviceDate || '',
-      'Estado Leche': c.milkingStatus || 'N/A',
-      'Litros/Día': c.dailyMilkLiters || 0,
+      'Fecha de Servicio': c.serviceDate || '',
+      'Producción Leche': c.milkingStatus || 'N/A',
+      'Litros / Día': c.dailyMilkLiters ? Number(parseFloat(c.dailyMilkLiters).toFixed(1)) : 0,
       'Es Solo Cría': c.isBreedingOnly ? 'Sí' : 'No',
-      'Valor Compra ($)': c.entryPrice || 0,
-      'Costos Adicionales ($)': c.additionalCosts || 0,
-      'Inversión Total ($)': fin.totalInvested,
-      'Valor Venta / Estimado ($)': fin.isSold ? c.exitPrice : (fin.totalInvested + fin.netProfit),
-      'Utilidad Neta ($)': fin.netProfit,
-      'ROI (%)': fin.roi,
-      'Fecha Salida': c.exitDate || '',
-      'Peso Salida (kg)': c.exitWeight || '',
+      'Valor Compra ($ COP)': c.entryPrice ? Number(parseFloat(c.entryPrice).toFixed(0)) : 0,
+      'Costos Adicionales ($ COP)': c.additionalCosts ? Number(parseFloat(c.additionalCosts).toFixed(0)) : 0,
+      'Inversión Total ($ COP)': Number(parseFloat(fin.totalInvested).toFixed(0)),
+      'Valor Estimado / Venta ($ COP)': fin.isSold ? Number(parseFloat(c.exitPrice || 0).toFixed(0)) : Number(parseFloat(fin.totalInvested + fin.netProfit).toFixed(0)),
+      'Utilidad Neta ($ COP)': Number(parseFloat(fin.netProfit).toFixed(0)),
+      'Rentabilidad ROI (%)': Number(parseFloat(fin.roi).toFixed(1)),
+      'Fecha de Salida': c.exitDate || '',
+      'Peso Salida (kg)': c.exitWeight ? Number(parseFloat(c.exitWeight).toFixed(1)) : '',
       'Comprador / Destino': c.buyer || '',
-      'Notas': c.notes || '',
+      'Observaciones / Notas': c.notes || '',
       _rawAnimal: c,
       _rawWm: wm
     };
@@ -131,52 +149,52 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     if (!rows || rows.length === 0) return null;
     const count = rows.length;
     const totalWeight = rows.reduce((acc, r) => acc + (parseFloat(r['Peso Actual (kg)']) || 0), 0);
-    const totalGain = rows.reduce((acc, r) => acc + (parseFloat(r['Ganancia Total (kg)']) || 0), 0);
-    const gdpValues = rows.map(r => parseFloat(r['GDP Global (kg/día)'])).filter(v => v > 0);
+    const totalGain = rows.reduce((acc, r) => acc + (parseFloat(r['Ganancia Total (+kg)']) || 0), 0);
+    const gdpValues = rows.map(r => parseFloat(r['GDP Promedio (kg/día)'])).filter(v => v > 0);
     const avgGdp = gdpValues.length > 0 ? (gdpValues.reduce((a, b) => a + b, 0) / gdpValues.length) : 0;
-    const totalInvested = rows.reduce((acc, r) => acc + (parseFloat(r['Inversión Total ($)']) || 0), 0);
-    const totalValue = rows.reduce((acc, r) => acc + (parseFloat(r['Valor Venta / Estimado ($)']) || 0), 0);
-    const totalProfit = rows.reduce((acc, r) => acc + (parseFloat(r['Utilidad Neta ($)']) || 0), 0);
+    const totalInvested = rows.reduce((acc, r) => acc + (parseFloat(r['Inversión Total ($ COP)']) || 0), 0);
+    const totalValue = rows.reduce((acc, r) => acc + (parseFloat(r['Valor Estimado / Venta ($ COP)']) || 0), 0);
+    const totalProfit = rows.reduce((acc, r) => acc + (parseFloat(r['Utilidad Neta ($ COP)']) || 0), 0);
     const avgRoi = totalInvested > 0 ? ((totalProfit / totalInvested) * 100) : 0;
 
     return {
       'Número Chapa / Arete': `📊 ${label} (${count} cabezas)`,
       'Nombre': '',
-      'Ingreso # / Lote': '',
+      'Lote / Ingreso #': '',
       'Hierro / Marca': '',
       'Propietario / Dueño': '',
       'Sexo': '',
       'Raza': '',
       'Categoría': '',
-      'Tipo Producción': '',
+      'Tipo de Producción': '',
       'Estado': '',
       'Fecha Entrada': '',
       'Días en Finca': '',
       'Peso Entrada (kg)': '',
       'Peso Actual (kg)': Number(totalWeight.toFixed(1)),
-      'Ganancia Total (kg)': Number(totalGain.toFixed(1)),
-      'GDP Global (kg/día)': Number(avgGdp.toFixed(3)),
-      'Rendimiento GDP': avgGdp >= 0.75 ? '🚀 Excelente' : avgGdp >= 0.37 ? '⚡ Aceptable' : '⚠️ Bajo',
-      'Meta 480 kg - Estado': '',
-      'Meta 480 kg - Avance (%)': '',
-      'Meta 480 kg - Faltan (kg)': '',
-      'Meta 480 kg - Días Salida': '',
-      'Meta 480 kg - Fecha Salida': '',
+      'Ganancia Total (+kg)': Number(totalGain.toFixed(1)),
+      'GDP Promedio (kg/día)': Number(avgGdp.toFixed(3)),
+      'Semáforo GDP': avgGdp >= 0.75 ? '🚀 Excelente' : avgGdp >= 0.37 ? '⚡ Aceptable' : '⚠️ Bajo',
+      'Meta 480 kg (Estado)': '',
+      'Avance a Meta (%)': '',
+      'Faltan para Meta (kg)': '',
+      'Días Est. a Meta': '',
+      'Fecha Est. Salida': '',
       'Estado Reproductivo': '',
-      'Fecha Servicio': '',
-      'Estado Leche': '',
-      'Litros/Día': '',
+      'Fecha de Servicio': '',
+      'Producción Leche': '',
+      'Litros / Día': '',
       'Es Solo Cría': '',
-      'Valor Compra ($)': '',
-      'Costos Adicionales ($)': '',
-      'Inversión Total ($)': totalInvested,
-      'Valor Venta / Estimado ($)': totalValue,
-      'Utilidad Neta ($)': totalProfit,
-      'ROI (%)': Number(avgRoi.toFixed(1)),
-      'Fecha Salida': '',
+      'Valor Compra ($ COP)': '',
+      'Costos Adicionales ($ COP)': '',
+      'Inversión Total ($ COP)': Number(totalInvested.toFixed(0)),
+      'Valor Estimado / Venta ($ COP)': Number(totalValue.toFixed(0)),
+      'Utilidad Neta ($ COP)': Number(totalProfit.toFixed(0)),
+      'Rentabilidad ROI (%)': Number(avgRoi.toFixed(1)),
+      'Fecha de Salida': '',
       'Peso Salida (kg)': '',
       'Comprador / Destino': '',
-      'Notas': ''
+      'Observaciones / Notas': ''
     };
   };
 
@@ -205,7 +223,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       let filteredRows = allProcessedRows.filter(row => {
         // Filtro Lote
         if (exportBatch !== 'all') {
-          const rowBatch = row['Ingreso # / Lote'];
+          const rowBatch = row['Lote / Ingreso #'];
           if (rowBatch !== exportBatch) return false;
         }
 
@@ -240,15 +258,17 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         : (exportStatus === 'ready480' ? 'Listos Venta ≥ 480kg' : 'Inventario General');
       
       const wsMain = XLSX.utils.json_to_sheet(mainSheetData);
+      wsMain['!cols'] = calculateColumnWidths(mainSheetData);
+      if (wsMain['!ref']) wsMain['!autofilter'] = { ref: wsMain['!ref'] };
       XLSX.utils.book_append_sheet(wb, wsMain, mainSheetName);
 
       // 2. Si se activó "Separar en pestañas por Lote" (y no se filtró un solo lote)
       if (splitByBatch && exportBatch === 'all') {
         // Obtener lotes únicos presentes en los datos
-        const batchesInFiltered = Array.from(new Set(filteredRows.map(r => r['Ingreso # / Lote'])));
+        const batchesInFiltered = Array.from(new Set(filteredRows.map(r => r['Lote / Ingreso #'])));
         
         batchesInFiltered.forEach(batchName => {
-          const batchRows = filteredRows.filter(r => r['Ingreso # / Lote'] === batchName);
+          const batchRows = filteredRows.filter(r => r['Lote / Ingreso #'] === batchName);
           if (batchRows.length > 0) {
             const batchSheetData = cleanRows(batchRows);
             const batchTotals = buildTotalsRow(batchSheetData, `TOTAL ${batchName}`);
@@ -260,6 +280,8 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
               sheetTitle = sanitizeSheetName(`${sheetTitle}_1`);
             }
             const wsBatch = XLSX.utils.json_to_sheet(batchSheetData);
+            wsBatch['!cols'] = calculateColumnWidths(batchSheetData);
+            if (wsBatch['!ref']) wsBatch['!autofilter'] = { ref: wsBatch['!ref'] };
             XLSX.utils.book_append_sheet(wb, wsBatch, sheetTitle);
           }
         });
@@ -272,15 +294,35 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
           if (readyTotals) readySheetData.push(readyTotals);
 
           const wsReady = XLSX.utils.json_to_sheet(readySheetData);
+          wsReady['!cols'] = calculateColumnWidths(readySheetData);
+          if (wsReady['!ref']) wsReady['!autofilter'] = { ref: wsReady['!ref'] };
           XLSX.utils.book_append_sheet(wb, wsReady, '🎯 Listos Venta (≥480kg)');
         }
       }
 
-      // 4. Pestaña Historial de Pesajes
+      // 4. Pestaña Historial de Pesajes Formateada
       const relevantCattleIds = new Set(filteredRows.map(r => String(r._rawAnimal.id)));
       const filteredWeighings = weighings.filter(w => relevantCattleIds.has(String(w.cattleId)));
       if (filteredWeighings.length > 0) {
-        const wsPesajes = XLSX.utils.json_to_sheet(filteredWeighings);
+        const formattedWeighings = filteredWeighings.map(w => {
+          const animal = allCattle.find(c => String(c.id) === String(w.cattleId)) || {};
+          return {
+            'Número Chapa / Arete': animal.tagNumber || 'N/A',
+            'Nombre Bovino': animal.name || '',
+            'Lote / Ingreso #': animal.entryBatch || animal.paddock || 'Ingreso #1',
+            'Hierro / Marca': animal.ironBrand || '',
+            'Sexo': animal.sex || '',
+            'Raza': animal.breed || '',
+            'Fecha del Pesaje': w.date || '',
+            'Peso Registrado (kg)': Number((parseFloat(w.weight) || 0).toFixed(1)),
+            'Condición Corporal (1-5)': w.conditionScore ? Number(w.conditionScore) : '',
+            'Observaciones / Notas': w.notes || ''
+          };
+        });
+
+        const wsPesajes = XLSX.utils.json_to_sheet(formattedWeighings);
+        wsPesajes['!cols'] = calculateColumnWidths(formattedWeighings);
+        if (wsPesajes['!ref']) wsPesajes['!autofilter'] = { ref: wsPesajes['!ref'] };
         XLSX.utils.book_append_sheet(wb, wsPesajes, "Historial Pesajes");
       }
 
@@ -288,7 +330,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       const filterSuffix = exportBatch !== 'all' ? `_${sanitizeSheetName(exportBatch)}` : '';
       XLSX.writeFile(wb, `Inventario_${cleanFarm}${filterSuffix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
       
-      setMessage({ type: 'success', text: `¡Excel generado exitosamente con ${filteredRows.length} animales y filas de totales!` });
+      setMessage({ type: 'success', text: `¡Excel profesional generado exitosamente con ${filteredRows.length} animales, anchos automáticos y totales!` });
     } catch (e) {
       setMessage({ type: 'error', text: 'Error generando Excel: ' + e.message });
     } finally {
