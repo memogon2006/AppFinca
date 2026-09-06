@@ -151,6 +151,14 @@ export function CattleListView({
 
       return true;
     }).sort((a, b) => {
+      // Prioridad: Mostrar primero los ganados Activos que aún siguen en la finca
+      const statusOrder = { 'Activo': 1, 'Vendido': 2, 'Muerto': 3 };
+      const statusA = statusOrder[a.status] || 99;
+      const statusB = statusOrder[b.status] || 99;
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
       const aWeighs = weighings.filter(w => w.cattleId === a.id);
       const bWeighs = weighings.filter(w => w.cattleId === b.id);
       const aWeight = calculateWeightMetrics(a, aWeighs);
@@ -178,20 +186,29 @@ export function CattleListView({
 
   const summary = useMemo(() => {
     const totalCount = filteredCattle.length;
+    let activeCount = 0;
+    let soldCount = 0;
+    let deadCount = 0;
     let totalKg = 0;
     let totalValue = 0;
     let totalProfit = 0;
 
     filteredCattle.forEach(c => {
+      if (c.status === 'Activo') activeCount++;
+      else if (c.status === 'Vendido') soldCount++;
+      else if (c.status === 'Muerto') deadCount++;
+
       const w = weighings.filter(item => item.cattleId === c.id);
       const wm = calculateWeightMetrics(c, w);
       const fin = calculateFinancials(c);
-      totalKg += wm.currentWeight;
+      if (c.status === 'Activo') {
+        totalKg += wm.currentWeight;
+      }
       totalValue += c.status === 'Vendido' ? (parseFloat(c.exitPrice) || 0) : (parseFloat(c.entryPrice) || 0);
       totalProfit += fin.netProfit;
     });
 
-    return { totalCount, totalKg, totalValue, totalProfit };
+    return { totalCount, activeCount, soldCount, deadCount, totalKg, totalValue, totalProfit };
   }, [filteredCattle, weighings]);
 
   const handleDeletePrompt = (animal, e) => {
@@ -214,12 +231,22 @@ export function CattleListView({
 
       {/* Barra de Herramientas y Resumen */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-        <div className="flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2.5 text-xs">
           <span className="font-extrabold text-slate-900 dark:text-white text-sm">
             {summary.totalCount} {summary.totalCount === 1 ? 'bovino' : 'bovinos'}
           </span>
+          {summary.activeCount > 0 && summary.totalCount !== summary.activeCount && (
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+              🟢 {summary.activeCount} en finca
+            </span>
+          )}
+          {summary.soldCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+              🏷️ {summary.soldCount} vendidos
+            </span>
+          )}
           <span className="text-slate-500 dark:text-slate-400">
-            Biomasa: <strong className="text-emerald-600 dark:text-emerald-400">{formatNumber(summary.totalKg, 0)} kg</strong>
+            Biomasa en finca: <strong className="text-emerald-600 dark:text-emerald-400">{formatNumber(summary.totalKg, 0)} kg</strong>
           </span>
           <span className="text-slate-500 dark:text-slate-400">
             Utilidad Neta: <strong className="text-blue-600 dark:text-blue-400">{formatCurrency(summary.totalProfit)}</strong>
@@ -360,6 +387,8 @@ export function CattleListView({
                   const wm = calculateWeightMetrics(animal, aWeighs);
                   const fin = calculateFinancials(animal);
                   const batch = animal.entryBatch || animal.paddock || 'Ingreso #1';
+                  const isSold = animal.status === 'Vendido';
+                  const isDead = animal.status === 'Muerto';
 
                   const femaleStatus = animal.femaleStatus || (
                     animal.reproductiveStatus === 'Preñada' ? 'Gestación' : animal.milkingStatus === 'En ordeño' ? 'Producción de leche' : 'Vacía'
@@ -373,16 +402,24 @@ export function CattleListView({
                     ? formatCurrency(animal.entryPrice) 
                     : '$0';
 
+                  const rowClass = isSold
+                    ? 'bg-amber-50/80 hover:bg-amber-100/90 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 border-l-4 border-l-amber-500'
+                    : isDead
+                      ? 'bg-rose-50/50 hover:bg-rose-100/60 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 border-l-4 border-l-rose-500 opacity-80'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/40 border-l-4 border-l-transparent hover:border-l-emerald-500';
+
                   return (
                     <tr 
                       key={animal.id} 
                       onClick={() => onSelectAnimal(animal)}
-                      className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition ${animal.status === 'Muerto' ? 'opacity-80 bg-rose-50/15 dark:bg-rose-950/10' : ''}`}
+                      className={`cursor-pointer transition ${rowClass}`}
                     >
                       {/* Arete y Nombre */}
                       <td className="p-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{animal.tagNumber}</span>
+                          <span className={`font-extrabold ${isSold ? 'text-amber-800 dark:text-amber-300' : isDead ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {animal.tagNumber}
+                          </span>
                           {animal.name && <span className="text-slate-500 dark:text-slate-400 font-normal">({animal.name})</span>}
                         </div>
                       </td>

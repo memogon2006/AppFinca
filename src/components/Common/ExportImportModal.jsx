@@ -95,8 +95,8 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     });
   };
 
-  // Aplicar bordes negros bien definidos, estilos de encabezado y totales
-  const applyTableStyles = (ws, isPesajesSheet = false) => {
+  // Aplicar bordes negros bien definidos, estilos de encabezado, filas destacadas de vendidos y totales
+  const applyTableStyles = (ws, isPesajesSheet = false, sheetData = null) => {
     if (!ws || !ws['!ref']) return;
     const range = XLSX.utils.decode_range(ws['!ref']);
 
@@ -126,6 +126,10 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       const isTotalRow = !isPesajesSheet && R === range.e.r && range.e.r > 1;
       const isEvenRow = R % 2 === 0;
 
+      const rowItem = (!isHeader && !isTotalRow && sheetData) ? sheetData[R - 1] : null;
+      const isSoldRow = rowItem && (rowItem['Estado'] === 'Vendido');
+      const isDeadRow = rowItem && (rowItem['Estado'] === 'Muerto');
+
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
         if (!ws[cellAddress]) {
@@ -150,10 +154,33 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
             },
             border: totalBorder,
           };
+        } else if (isSoldRow) {
+          // FILA COMPLETA DE ANIMAL VENDIDO EN COLOR ÁMBAR / DORADO DISTINTIVO
+          cell.s = {
+            fill: { fgColor: { rgb: 'FEF3C7' } }, // Ámbar suave (Yellow/Amber 100)
+            font: { name: 'Calibri', sz: 10, color: { rgb: '78350F' }, bold: C === 0 || C === 9 },
+            alignment: {
+              horizontal: typeof cell.v === 'number' ? 'right' : (String(cell.v).includes('-') || String(cell.v).length <= 10 ? 'center' : 'left'),
+              vertical: 'center'
+            },
+            border: blackBorder,
+          };
+        } else if (isDeadRow) {
+          // FILA COMPLETA DE ANIMAL MUERTO EN COLOR ROSA SUAVE
+          cell.s = {
+            fill: { fgColor: { rgb: 'FEE2E2' } }, // Rosa suave (Red 100)
+            font: { name: 'Calibri', sz: 10, color: { rgb: '991B1B' } },
+            alignment: {
+              horizontal: typeof cell.v === 'number' ? 'right' : (String(cell.v).includes('-') || String(cell.v).length <= 10 ? 'center' : 'left'),
+              vertical: 'center'
+            },
+            border: blackBorder,
+          };
         } else {
+          // FILAS NORMALES (ACTIVOS / EN FINCA)
           cell.s = {
             fill: isEvenRow ? { fgColor: { rgb: 'F8FAFC' } } : { fgColor: { rgb: 'FFFFFF' } },
-            font: { name: 'Calibri', sz: 10, color: { rgb: '0F172A' } },
+            font: { name: 'Calibri', sz: 10, color: { rgb: '0F172A' }, bold: C === 0 },
             alignment: {
               horizontal: typeof cell.v === 'number' ? 'right' : (String(cell.v).includes('-') || String(cell.v).length <= 10 ? 'center' : 'left'),
               vertical: 'center'
@@ -313,6 +340,17 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         return;
       }
 
+      // Ordenar para mostrar prioritariamente los ganados Activos (en finca), luego Vendidos y Muertos
+      filteredRows.sort((a, b) => {
+        const statusOrder = { 'Activo': 1, 'Vendido': 2, 'Muerto': 3 };
+        const orderA = statusOrder[a['Estado']] || 99;
+        const orderB = statusOrder[b['Estado']] || 99;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return (a['Número Chapa / Arete'] || '').localeCompare(b['Número Chapa / Arete'] || '', undefined, { numeric: true });
+      });
+
       const wb = XLSX.utils.book_new();
 
       // Limpiar propiedades internas antes de agregar a la hoja
@@ -330,7 +368,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       const wsMain = XLSX.utils.json_to_sheet(mainSheetData);
       wsMain['!cols'] = calculateColumnWidths(mainSheetData);
       if (wsMain['!ref']) wsMain['!autofilter'] = { ref: wsMain['!ref'] };
-      applyTableStyles(wsMain);
+      applyTableStyles(wsMain, false, mainSheetData);
       XLSX.utils.book_append_sheet(wb, wsMain, mainSheetName);
 
       // 2. Si se activó "Separar en pestañas por Lote" (y no se filtró un solo lote)
@@ -353,7 +391,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
             const wsBatch = XLSX.utils.json_to_sheet(batchSheetData);
             wsBatch['!cols'] = calculateColumnWidths(batchSheetData);
             if (wsBatch['!ref']) wsBatch['!autofilter'] = { ref: wsBatch['!ref'] };
-            applyTableStyles(wsBatch);
+            applyTableStyles(wsBatch, false, batchSheetData);
             XLSX.utils.book_append_sheet(wb, wsBatch, sheetTitle);
           }
         });
@@ -368,7 +406,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
           const wsReady = XLSX.utils.json_to_sheet(readySheetData);
           wsReady['!cols'] = calculateColumnWidths(readySheetData);
           if (wsReady['!ref']) wsReady['!autofilter'] = { ref: wsReady['!ref'] };
-          applyTableStyles(wsReady);
+          applyTableStyles(wsReady, false, readySheetData);
           XLSX.utils.book_append_sheet(wb, wsReady, '🎯 Listos Venta (≥480kg)');
         }
       }
@@ -396,7 +434,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         const wsPesajes = XLSX.utils.json_to_sheet(formattedWeighings);
         wsPesajes['!cols'] = calculateColumnWidths(formattedWeighings);
         if (wsPesajes['!ref']) wsPesajes['!autofilter'] = { ref: wsPesajes['!ref'] };
-        applyTableStyles(wsPesajes, true);
+        applyTableStyles(wsPesajes, true, formattedWeighings);
         XLSX.utils.book_append_sheet(wb, wsPesajes, "Historial Pesajes");
       }
 

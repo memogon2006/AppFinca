@@ -65,9 +65,7 @@ export function CattleCard({
         animal.status === 'Muerto' 
           ? 'opacity-85 border-rose-300 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/10' 
           : animal.status === 'Vendido'
-            ? isCompanySale
-              ? 'border-teal-300 dark:border-teal-700/70 bg-gradient-to-b from-teal-500/5 to-transparent'
-              : 'border-blue-300 dark:border-blue-700/70 bg-gradient-to-b from-blue-500/5 to-transparent'
+            ? 'border-amber-400 dark:border-amber-700/80 bg-amber-50/40 dark:bg-amber-950/20 ring-1 ring-amber-400/30'
             : isReadyForSale 
               ? 'border-emerald-500 dark:border-emerald-500/80 bg-gradient-to-b from-emerald-500/10 to-transparent ring-2 ring-emerald-500/20' 
               : ''
