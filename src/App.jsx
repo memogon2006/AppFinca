@@ -23,6 +23,7 @@ import { PartnershipSettlementModal } from './components/Finances/PartnershipSet
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { ExpenseFormModal } from './components/Finances/ExpenseFormModal';
+import { processRecurringExpenses } from './services/recurringExpensesService';
 import { calculateWeightMetrics } from './services/calculations';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -86,6 +87,7 @@ export default function App() {
     async function sync() {
       setIsSyncing(true);
       await syncCloudAndLocal(userId);
+      await processRecurringExpenses(userId).catch(() => null);
       setIsSyncing(false);
     }
 
@@ -541,6 +543,9 @@ export default function App() {
       setEditingExpense(null);
 
       if (userId) {
+        if (dataToSave.isRecurring) {
+          await processRecurringExpenses(userId).catch(() => null);
+        }
         cloudPushData(userId).catch(err => console.warn('Cloud sync error on save expense:', err));
       }
     } catch (error) {

@@ -1,6 +1,6 @@
 {
-  "version": "2.8.24",
-  "buildTime": 1789095000000,
-  "description": "Módulo opcional de control de gastos operativos de finca (sales, jornales, medicamentos, fletes, mantenimiento) con métricas y exportación a Excel."
+  "version": "2.8.25",
+  "buildTime": 1789100000000,
+  "description": "Historial de gastos mes a mes, comparativa mensual y opción de repetición recurrente automática para gastos fijos."
 }
 

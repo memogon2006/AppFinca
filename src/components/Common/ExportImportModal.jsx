@@ -448,8 +448,10 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         const sortedExpenses = [...allExpenses].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         const formattedExpenses = sortedExpenses.map(exp => ({
           'Fecha': exp.date || '',
+          'Mes': exp.date ? exp.date.slice(0, 7) : '',
           'Categoría': exp.category || 'Otros Gastos de Finca',
           'Concepto / Detalle': exp.description || '',
+          'Tipo / Frecuencia': exp.isRecurring ? `🔄 Recurrente (Día ${exp.recurringDay || '1'})` : 'Ocasional',
           'Lote Asignado': exp.batch || 'General Finca',
           'Proveedor / Responsable': exp.supplier || '',
           'Monto Total ($ COP)': Number(parseFloat(exp.amount || 0).toFixed(0))
@@ -458,8 +460,10 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         const totalExpensesAmount = formattedExpenses.reduce((sum, e) => sum + (e['Monto Total ($ COP)'] || 0), 0);
         formattedExpenses.push({
           'Fecha': '📊 TOTAL GASTOS DE FINCA',
+          'Mes': '',
           'Categoría': `${allExpenses.length} registros`,
           'Concepto / Detalle': '',
+          'Tipo / Frecuencia': '',
           'Lote Asignado': '',
           'Proveedor / Responsable': '',
           'Monto Total ($ COP)': totalExpensesAmount
