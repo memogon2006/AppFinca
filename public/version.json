@@ -1,5 +1,5 @@
 {
-  "version": "2.8.8",
-  "buildTime": 1789053000000,
-  "description": "Orden cronológico garantizado en pesajes: el peso actual siempre corresponde al pesaje más reciente."
+  "version": "2.8.9",
+  "buildTime": 1789054000000,
+  "description": "Auto-reparación y purga automática de pesajes duplicados al cargar para restaurar el peso real y GDP de animales como el 11-5."
 }

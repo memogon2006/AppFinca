@@ -114,6 +114,56 @@ export default function App() {
     [userId]
   ) || [];
 
+  // Auto-reparación y optimización de datos de pesajes al cargar
+  useEffect(() => {
+    if (!userId || cattle.length === 0 || weighings.length === 0) return;
+
+    let changed = false;
+
+    async function cleanupDuplicateWeighings() {
+      for (const animal of cattle) {
+        const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
+        const entryWeight = parseFloat(animal.entryWeight) || 0;
+
+        // 1. Detectar pesajes iniciales duplicados generados con fecha posterior
+        const duplicateInitialWeighs = animalWeighs.filter(w => {
+          if (entryWeight > 0 && 
+              (w.notes === 'Peso inicial de registro' || 
+               w.notes === 'Peso inicial de registro por lote' || 
+               w.notes === 'Peso inicial de ingreso' || 
+               (w.notes && w.notes.toLowerCase().includes('inicial'))) && 
+              parseFloat(w.weight) === entryWeight &&
+              w.date !== animal.entryDate) {
+            return true;
+          }
+          return false;
+        });
+
+        for (const dup of duplicateInitialWeighs) {
+          await db.weighings.delete(dup.id);
+          changed = true;
+        }
+
+        // 2. Recalcular y corregir currentWeight del animal si difiere del último pesaje real
+        const remainingWeighs = animalWeighs.filter(w => !duplicateInitialWeighs.some(d => d.id === w.id));
+        const metrics = calculateWeightMetrics(animal, remainingWeighs);
+        
+        if (metrics.currentWeight > 0 && animal.currentWeight !== metrics.currentWeight) {
+          await db.cattle.update(animal.id, {
+            currentWeight: metrics.currentWeight,
+          });
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        cloudPushData(userId);
+      }
+    }
+
+    cleanupDuplicateWeighings().catch(err => console.warn('Error en auto-reparación de pesajes:', err));
+  }, [userId, cattle.length, weighings.length]);
+
   if (authLoading || !isInitialized) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white space-y-4">
