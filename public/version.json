@@ -1,6 +1,6 @@
 {
-  "version": "2.8.17",
-  "buildTime": 1789076000000,
-  "description": "Unificación 100% de Peso Meta (≥ 480 kg) en Alertas, Gráficas de Rendimiento, Pesaje Rápido y Exportación a Excel."
+  "version": "2.8.18",
+  "buildTime": 1789077000000,
+  "description": "Exportación avanzada a Excel con filtros por Lote/Ingreso #, estado de ceba (≥ 480 kg), pestañas independientes por lote y fila de subtotales/promedios."
 }
 
