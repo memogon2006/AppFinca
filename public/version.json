@@ -1,5 +1,5 @@
 {
-  "version": "2.8.5",
-  "buildTime": 1789000000000,
-  "description": "Corrección automática de pesajes iniciales duplicados y recálculo preciso de GDP continuo."
+  "version": "2.8.6",
+  "buildTime": 1789050000000,
+  "description": "Validación de fechas de pesajes (solo fechas iguales o posteriores al ingreso) y eliminación de pesajes erróneos."
 }

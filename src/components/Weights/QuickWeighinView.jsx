@@ -85,6 +85,11 @@ export function QuickWeighinView({
       return;
     }
 
+    if (animal.entryDate && weighDate < animal.entryDate) {
+      alert(`⚠️ La fecha del pesaje (${weighDate}) no puede ser anterior a la fecha de ingreso del animal ${animal.tagNumber} (${animal.entryDate}). Debe ser una fecha igual o posterior.`);
+      return;
+    }
+
     const wVal = parseFloat(weightsMap[animal.id]);
     if (!wVal || wVal <= 0) {
       alert('Por favor ingresa un peso válido mayor a 0 kg');
@@ -126,6 +131,19 @@ export function QuickWeighinView({
       if (dateInputRef.current) {
         dateInputRef.current.focus();
       }
+      return;
+    }
+
+    const invalidDates = Object.keys(weightsMap).filter(cattleId => {
+      const wVal = parseFloat(weightsMap[cattleId]);
+      if (!wVal || wVal <= 0) return false;
+      const a = activeCattle.find(c => String(c.id) === String(cattleId));
+      return a && a.entryDate && weighDate < a.entryDate;
+    });
+
+    if (invalidDates.length > 0) {
+      const sample = activeCattle.find(c => String(c.id) === String(invalidDates[0]));
+      alert(`⚠️ La fecha de pesaje (${weighDate}) no puede ser anterior a la fecha de ingreso del animal ${sample?.tagNumber || ''} (${sample?.entryDate || ''}). Por favor selecciona una fecha igual o posterior.`);
       return;
     }
 

@@ -40,7 +40,13 @@ export function WeightLogModal({ isOpen, onClose, animal, onSaveWeight }) {
       return;
     }
 
-    onSaveWeight(animal.id, {
+    if (animal.entryDate && weightData.date < animal.entryDate) {
+      alert(`⚠️ La fecha del pesaje (${weightData.date}) no puede ser anterior a la fecha de ingreso del animal (${animal.entryDate}). Debe ser una fecha igual o posterior.`);
+      return;
+    }
+
+    onSaveWeight({
+      cattleId: animal.id,
       date: weightData.date,
       weight: parseFloat(weightData.weight),
       conditionScore: parseFloat(weightData.conditionScore),
@@ -62,9 +68,15 @@ export function WeightLogModal({ isOpen, onClose, animal, onSaveWeight }) {
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
             Fecha del Pesaje <span className="text-rose-500">*</span>
+            {animal.entryDate && (
+              <span className="text-[10px] text-slate-400 font-normal ml-1">
+                (Ingreso: {animal.entryDate})
+              </span>
+            )}
           </label>
           <input
             type="date"
+            min={animal.entryDate || undefined}
             value={weightData.date}
             onChange={(e) => setWeightData(prev => ({ ...prev, date: e.target.value }))}
             className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 min-h-[44px]"

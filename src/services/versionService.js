@@ -1,5 +1,5 @@
-export const CURRENT_APP_VERSION = "2.8.5";
-export const CURRENT_BUILD_TIME = 1789000000000;
+export const CURRENT_APP_VERSION = "2.8.6";
+export const CURRENT_BUILD_TIME = 1789050000000;
 
 /**
  * Consulta en la nube si hay una nueva versión publicada
