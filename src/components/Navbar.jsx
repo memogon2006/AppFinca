@@ -61,45 +61,39 @@ export function Navbar({
     <>
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-3">
+        <div className="max-w-[1600px] w-full mx-auto px-3 sm:px-5 lg:px-6">
+          <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4">
             
             {/* LADO IZQUIERDO: Logo & Identidad de la Finca */}
-            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <div 
                 onClick={onOpenProfile}
                 title="Configuración de Finca y Perfil"
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white flex-shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition"
               >
-                <span className="text-xl sm:text-2xl select-none">🐂</span>
+                <span className="text-lg sm:text-xl select-none">🐂</span>
               </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 
-                    onClick={onOpenProfile}
-                    className="text-sm sm:text-base md:text-lg font-black tracking-tight text-slate-900 dark:text-white uppercase truncate cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-                    title={currentUser?.farmName || 'Mi Finca Ganadera'}
-                  >
-                    {currentUser?.farmName || 'INVENTARIO BOVINO APP'}
-                  </h1>
-                </div>
+              <div className="flex flex-col justify-center">
+                <h1 
+                  onClick={onOpenProfile}
+                  className="text-xs sm:text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[130px] sm:max-w-[170px] 2xl:max-w-[220px] cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition leading-tight"
+                  title={currentUser?.farmName || 'Mi Finca Ganadera'}
+                >
+                  {currentUser?.farmName || 'INVENTARIO BOVINO APP'}
+                </h1>
 
-                <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/20 text-[10px] sm:text-[11px]">
+                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium mt-0.5">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/20 text-[10px]">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     {activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}
-                  </span>
-                  <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
-                  <span className="hidden sm:inline truncate text-slate-600 dark:text-slate-300 font-medium">
-                    {currentUser?.name || 'Administrador'}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* CENTRO: Navegación Principal (Pantallas Grandes >= lg) */}
-            <nav className="hidden xl:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/90 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner">
+            <nav className="hidden xl:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner shrink-0">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
@@ -107,40 +101,41 @@ export function Navbar({
                   <button
                     key={item.id}
                     onClick={() => setCurrentView(item.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 min-h-[38px] cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-2.5 2xl:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 min-h-[36px] cursor-pointer whitespace-nowrap ${
                       isActive
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/20'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/60'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
-                    <span>{item.label}</span>
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
+                    <span className="hidden 2xl:inline">{item.label}</span>
+                    <span className="2xl:hidden">{item.shortLabel || item.label}</span>
                   </button>
                 );
               })}
             </nav>
 
             {/* LADO DERECHO: Acciones, Sincronización, Perfil y Salir */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               
               {/* Botón Principal: + Registrar Bovino */}
               <button
                 onClick={onOpenNewAnimal}
-                className="py-2 px-3 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-emerald-700/25 transition min-h-[40px] cursor-pointer"
+                className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1.5 shadow-sm min-h-[36px] cursor-pointer whitespace-nowrap"
                 title="Registrar un nuevo animal al inventario"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden md:inline">Registrar Bovino</span>
-                <span className="md:hidden">Nuevo</span>
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Registrar Bovino</span>
+                <span className="sm:hidden">+</span>
               </button>
 
               {/* Botón Excel / Copia */}
               <button
                 onClick={onOpenExportImport}
                 title="Exportar a Excel / Respaldo"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold min-h-[40px] cursor-pointer transition"
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold min-h-[36px] cursor-pointer transition whitespace-nowrap"
               >
-                <DownloadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Excel</span>
               </button>
 
@@ -149,36 +144,35 @@ export function Navbar({
                 onClick={onManualSync}
                 disabled={isSyncing}
                 title={isSyncing ? 'Sincronizando con la nube...' : 'Sincronizar datos con la nube'}
-                className="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center min-h-[40px] min-w-[40px] cursor-pointer transition"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[36px] min-w-[36px] cursor-pointer transition"
               >
                 {isSyncing ? (
-                  <RefreshCw className="w-4 h-4 text-emerald-500 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
                 ) : (
-                  <Cloud className="w-4 h-4 text-sky-500" />
+                  <Cloud className="w-3.5 h-3.5 text-sky-500" />
                 )}
-                <span className="hidden 2xl:inline ml-1.5">{isSyncing ? 'Sincronizando' : 'Nube'}</span>
               </button>
 
               {/* Toggle Modo Oscuro / Claro */}
               <button
                 onClick={toggleTheme}
                 title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-                className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[40px] min-w-[40px] cursor-pointer transition"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[36px] min-w-[36px] cursor-pointer transition"
               >
-                {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+                {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
               </button>
 
               {/* SECCIÓN DE PERFIL */}
               <div 
                 onClick={onOpenProfile}
                 title="Mi Perfil, Nombre de Finca y Seguridad"
-                className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer transition group min-h-[40px]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer transition group min-h-[36px] whitespace-nowrap"
               >
-                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-sm flex-shrink-0 group-hover:scale-105 transition">
+                <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-black text-[11px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition">
                   {getInitials(currentUser?.name)}
                 </div>
-                <div className="hidden lg:flex flex-col text-left leading-tight pr-1">
-                  <span className="text-xs font-extrabold truncate max-w-[100px] text-slate-800 dark:text-slate-100">
+                <div className="hidden lg:flex flex-col text-left leading-tight pr-0.5">
+                  <span className="text-xs font-black truncate max-w-[80px] text-slate-800 dark:text-slate-100">
                     {currentUser?.name ? currentUser.name.split(' ')[0] : 'Perfil'}
                   </span>
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
@@ -191,9 +185,9 @@ export function Navbar({
               <button
                 onClick={handleLogout}
                 title="Cerrar Sesión"
-                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/40 text-xs font-bold flex items-center gap-1.5 min-h-[40px] cursor-pointer transition"
+                className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 min-h-[36px] cursor-pointer transition whitespace-nowrap"
               >
-                <LogOut className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                 <span className="hidden sm:inline">Salir</span>
               </button>
 

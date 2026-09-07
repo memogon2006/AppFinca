@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.41";
-export const CURRENT_BUILD_TIME = 1789165000000;
+export const CURRENT_APP_VERSION = "2.8.42";
+export const CURRENT_BUILD_TIME = 1789170000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.42",
+    date: "07/09/2026",
+    title: "Alineación Perfecta y Proporciones de la Barra de Navegación",
+    highlights: [
+      "Protección de identidad de finca (logo 🐂, nombre y conteo de animales) con ancho protegido para evitar que se colapse o quede oculta.",
+      "Pestañas de navegación central con espaciado optimizado y etiquetas inteligentes para resoluciones de escritorio.",
+      "Botones de acción, utilidades y perfil alineados en una sola fila continua con alturas simétricas y sin superposición."
+    ]
+  },
   {
     version: "2.8.41",
     date: "07/09/2026",
