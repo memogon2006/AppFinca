@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.40";
-export const CURRENT_BUILD_TIME = 1789160000000;
+export const CURRENT_APP_VERSION = "2.8.41";
+export const CURRENT_BUILD_TIME = 1789165000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.41",
+    date: "07/09/2026",
+    title: "Rediseño Armónico y Alineación de Barra de Inventario",
+    highlights: [
+      "Indicadores de resumen (Total, En Finca, Vendidas, Bajas, Biomasa, Utilidad) estilizados en tarjetas píldora uniformes.",
+      "Botones de acción (Liquidar Compañía, Guía, Modo Vista, Ingresar Lote) alineados en una sola fila sin saltos ni superposiciones.",
+      "Diseño adaptable que garantiza legibilidad y orden visual impecable en cualquier pantalla."
+    ]
+  },
   {
     version: "2.8.40",
     date: "07/09/2026",
