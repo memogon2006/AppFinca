@@ -1,7 +1,7 @@
 {
-  "version": "2.8.54",
-  "buildTime": 1789194000000,
-  "description": "Selector de ámbito en Lotes: Activos en finca por defecto, Historial total (todos) y Vendidos."
+  "version": "2.8.55",
+  "buildTime": 1789195000000,
+  "description": "Mini barra de progreso hacia meta de ceba en tarjetas y modo oscuro OLED de alto contraste."
 }
 
 

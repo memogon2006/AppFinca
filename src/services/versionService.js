@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.54";
-export const CURRENT_BUILD_TIME = 1789194000000;
+export const CURRENT_APP_VERSION = "2.8.55";
+export const CURRENT_BUILD_TIME = 1789195000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.55",
+    date: "07/09/2026",
+    title: "Mini Barra de Progreso a Meta de Ceba y Modo Oscuro OLED de Alto Contraste",
+    highlights: [
+      "Mini barra de progreso visual horizontal en cada tarjeta de animal activo hacia la meta de ceba (480 kg), indicando porcentaje, kilos faltantes o excedente y días estimados restantes.",
+      "Modo oscuro optimizado para pantallas OLED y trabajo en campo con fondos profundos y bordes de alto contraste."
+    ]
+  },
   {
     version: "2.8.54",
     date: "07/09/2026",

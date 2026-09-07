@@ -139,12 +139,6 @@ export function CattleCard({
             </span>
           )}
 
-          {/* Progreso hacia meta 480 kg si aún no llega */}
-          {animal.status === 'Activo' && !isReadyForSale && weightMetrics.hasWeight && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700/60 flex items-center gap-1">
-              <Target className="w-3 h-3 text-blue-600 dark:text-blue-400" /> Meta 480 kg: {weightMetrics.cebaProjection.progressPercentage}%
-            </span>
-          )}
 
           {animal.status === 'Muerto' && (
             <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1">
@@ -341,6 +335,61 @@ export function CattleCard({
                 </div>
               </div>
             </div>
+
+            {/* 3. MINI BARRA DE PROGRESO HACIA META DE CEBA (480 KG) */}
+            {weightMetrics.hasWeight && (
+              <div className={`p-2 rounded-xl border transition-all ${
+                isReadyForSale 
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700/60 shadow-sm' 
+                  : 'bg-slate-50/90 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800/80'
+              }`}>
+                <div className="flex items-center justify-between text-[11px] font-extrabold mb-1">
+                  <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                    <Target className={`w-3.5 h-3.5 ${isReadyForSale ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                    <span>{isReadyForSale ? '🎯 Meta Cumplida (≥480kg)' : 'Progreso a Meta (480 kg)'}</span>
+                  </span>
+                  <span className={`font-black ${isReadyForSale ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                    {weightMetrics.cebaProjection.progressPercentage}% ({weightMetrics.currentWeight}/480 kg)
+                  </span>
+                </div>
+
+                {/* Barra horizontal animada */}
+                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden shadow-inner">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-500 ${
+                      isReadyForSale 
+                        ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 shadow-sm animate-pulse' 
+                        : 'bg-gradient-to-r from-emerald-600 to-teal-500 shadow-sm'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(5, weightMetrics.cebaProjection.progressPercentage))}%` }}
+                  ></div>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1">
+                  {isReadyForSale ? (
+                    <>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        Superó meta por +{(weightMetrics.currentWeight - 480).toFixed(1)} kg
+                      </span>
+                      <span className="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-black">
+                        ¡Listo Venta!
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Faltan {(480 - weightMetrics.currentWeight).toFixed(1)} kg</span>
+                      {weightMetrics.cebaProjection.daysToTarget ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          ~{weightMetrics.cebaProjection.daysToTarget} días restantes
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Requiere GDP</span>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </>
         )}
 
