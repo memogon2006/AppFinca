@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.44";
-export const CURRENT_BUILD_TIME = 1789180000000;
+export const CURRENT_APP_VERSION = "2.8.45";
+export const CURRENT_BUILD_TIME = 1789182000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.45",
+    date: "07/09/2026",
+    title: "Optimización de Celular para Módulo de Lotes e Ingresos",
+    highlights: [
+      "Diseño adaptable en botones de acción (Comparativa Excel, Ingresar Lote, Exportar Todo) sin cajas sueltas ni saltos distorsionados en celular.",
+      "Pestañas selectoras 'Detalle por Lote' y 'Comparar Lotes' optimizadas para caber perfectamente en pantallas móviles sin desbordar insignias.",
+      "Cabeceras de lote y filtros de estado con desplazamiento táctil suave y etiquetas compactas para máxima legibilidad."
+    ]
+  },
   {
     version: "2.8.44",
     date: "07/09/2026",

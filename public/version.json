@@ -1,6 +1,7 @@
 {
-  "version": "2.8.44",
-  "buildTime": 1789180000000,
-  "description": "Cabecera móvil completa con acceso directo a Registrar Bovino, Excel, Nube, Tema, Perfil y Salir sin deformaciones."
+  "version": "2.8.45",
+  "buildTime": 1789182000000,
+  "description": "Optimización para celular en módulo de Lotes e Ingresos: botones uniformes, selector de pestañas limpio y filtros con scroll."
 }
+
 
