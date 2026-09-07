@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.52";
-export const CURRENT_BUILD_TIME = 1789192000000;
+export const CURRENT_APP_VERSION = "2.8.53";
+export const CURRENT_BUILD_TIME = 1789193000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.53",
+    date: "07/09/2026",
+    title: "Valor Total de Ganado Basado en Precio de Compra Inicial",
+    highlights: [
+      "El valor total de ganado, el valor de machos y el valor de hembras se calculan estrictamente sobre el precio de compra o costo inicial de los animales.",
+      "Consistencia contable patrimonial en todas las vistas y filtros del inventario."
+    ]
+  },
   {
     version: "2.8.52",
     date: "07/09/2026",

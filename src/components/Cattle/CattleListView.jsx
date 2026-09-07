@@ -213,13 +213,13 @@ export function CattleListView({
       if (c.status === 'Activo') {
         totalKg += wm.currentWeight;
       }
-      const animalVal = c.status === 'Vendido' ? (parseFloat(c.exitPrice) || 0) : (parseFloat(c.entryPrice) || 0);
-      totalValue += animalVal;
+      const entryVal = parseFloat(c.entryPrice) || 0;
+      totalValue += entryVal;
 
       if (isMale) {
-        totalMaleValue += animalVal;
+        totalMaleValue += entryVal;
       } else if (isFemale) {
-        totalFemaleValue += animalVal;
+        totalFemaleValue += entryVal;
       }
     });
 

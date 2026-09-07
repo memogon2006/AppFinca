@@ -1,7 +1,7 @@
 {
-  "version": "2.8.52",
-  "buildTime": 1789192000000,
-  "description": "Valoración Financiera de Inventario (Total Ganado, Machos y Hembras)."
+  "version": "2.8.53",
+  "buildTime": 1789193000000,
+  "description": "Valor total de ganado, machos y hembras calculado estrictamente por precio de compra o valor inicial."
 }
 
 
