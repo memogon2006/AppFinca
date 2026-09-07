@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.56";
-export const CURRENT_BUILD_TIME = 1789196000000;
+export const CURRENT_APP_VERSION = "2.8.57";
+export const CURRENT_BUILD_TIME = 1789197000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.57",
+    date: "07/09/2026",
+    title: "Tipografía Numérica Tabular y Alineación Financiera de Alta Precisión",
+    highlights: [
+      "Activación de números tabulares (tabular-nums / OpenType tnum) en toda la plataforma: todos los dígitos numéricos comparten el mismo ancho exacto.",
+      "Alineación visual perfecta en cifras monetarias, balances de compras, pesos en kg, ganancias diarias (GDP) y tablas de lotes.",
+      "Visualización nítida y profesional en tarjetas de inventario, resúmenes patrimoniales y módulos de pesajes."
+    ]
+  },
   {
     version: "2.8.56",
     date: "07/09/2026",

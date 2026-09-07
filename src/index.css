@@ -3,8 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
   body {
     @apply bg-slate-100 text-slate-800 font-sans min-h-screen antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200;
+    font-feature-settings: 'tnum' 1, 'lnum' 1, 'cv02' 1, 'cv03' 1, 'cv04' 1;
+    font-variant-numeric: tabular-nums lining-nums;
     background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px), radial-gradient(rgba(16, 185, 129, 0.04) 1px, #f1f5f9 1px);
     background-size: 32px 32px;
     background-position: 0 0, 16px 16px;
@@ -16,6 +22,12 @@
     background-image: radial-gradient(rgba(16, 185, 129, 0.06) 1px, transparent 1px), radial-gradient(rgba(16, 185, 129, 0.03) 1px, #090d16 1px);
     background-size: 40px 40px;
     background-position: 0 0, 20px 20px;
+  }
+
+  /* Números tabulares alineados en tablas, inputs y controles */
+  table, th, td, input, select, textarea, button {
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    font-variant-numeric: tabular-nums lining-nums;
   }
 }
 
@@ -43,4 +55,15 @@
 
 .custom-card-hover {
   @apply hover:border-emerald-500/50 hover:shadow-md dark:hover:shadow-emerald-950/40 hover:-translate-y-0.5;
+}
+
+.tabular-nums {
+  font-feature-settings: 'tnum' 1, 'lnum' 1 !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
+}
+
+.financial-num {
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
 }
