@@ -1,6 +1,6 @@
 {
-  "version": "2.8.34",
-  "buildTime": 1789142000000,
-  "description": "Opción de Limpiar Inventario a Ceros con doble confirmación integrada en la información del perfil del usuario."
+  "version": "2.8.35",
+  "buildTime": 1789144000000,
+  "description": "Opción de Limpiar Inventario ubicada de forma exclusiva y segura en el Perfil de Usuario."
 }
 

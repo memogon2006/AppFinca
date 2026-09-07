@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.34";
-export const CURRENT_BUILD_TIME = 1789142000000;
+export const CURRENT_APP_VERSION = "2.8.35";
+export const CURRENT_BUILD_TIME = 1789144000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.35",
+    date: "07/09/2026",
+    title: "Reorganización de Limpieza de Inventario Exclusiva en Perfil",
+    highlights: [
+      "Retiro definitivo de la opción de limpiar inventario del modal de Excel/Exportación para mantenerlo enfocado en reportes.",
+      "Ubicación exclusiva y centralizada en el Perfil de Usuario con doble confirmación de seguridad y código 'BORRAR'.",
+      "Interfaz más limpia y ordenada en el módulo de reportes."
+    ]
+  },
   {
     version: "2.8.34",
     date: "07/09/2026",

@@ -8,13 +8,12 @@ import {
   Database, 
   AlertTriangle, 
   CheckCircle2, 
-  Trash2,
   Filter,
   Layers,
   Target,
   Sparkles
 } from 'lucide-react';
-import { exportBackupData, importBackupData, loadSampleData, clearAllData, db } from '../../services/db';
+import { exportBackupData, importBackupData, loadSampleData, db } from '../../services/db';
 import { calculateWeightMetrics, calculateFinancials, formatNumber, formatDate } from '../../services/calculations';
 import { buildBatchComparisonWorksheet } from '../../services/batchExcelService';
 import { useAuth } from '../../context/AuthContext';
@@ -50,43 +49,6 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
     }
     loadBatches();
   }, [isOpen, userId]);
-
-  const handleClearAll = async () => {
-    const farm = currentUser?.farmName || 'tu finca';
-    
-    // Paso 1: Primera confirmación de advertencia
-    const step1 = window.confirm(
-      `⚠️ PASO 1 DE 2 (PRIMERA CONFIRMACIÓN):\n\n¿Estás completamente seguro de que deseas ELIMINAR TODO EL INVENTARIO de "${farm}" para comenzar en CEROS?\n\n• Se borrarán permanentemente todos los bovinos registrados.\n• Se borrarán todos los historiales de pesajes continuos.\n• Se borrarán todos los registros de ventas y gastos.\n\nEsta acción NO se puede deshacer. (Te sugerimos descargar una copia en Excel antes).`
-    );
-    if (!step1) return;
-
-    // Paso 2: Segunda confirmación de máxima seguridad con palabra clave
-    const step2 = window.prompt(
-      `🔴 PASO 2 DE 2 (SEGUNDA CONFIRMACIÓN DE MÁXIMA SEGURIDAD):\n\nEsta es la confirmación definitiva para vaciar todo el inventario de "${farm}" y dejar la cuenta en blanco.\n\nPara confirmar la eliminación total, escribe la palabra BORRAR (en mayúsculas) a continuación:`
-    );
-
-    if (step2 === null) {
-      setMessage({ type: 'error', text: 'Operación cancelada: Tu inventario se mantiene seguro e intacto.' });
-      return;
-    }
-
-    if (step2.trim().toUpperCase() !== 'BORRAR') {
-      alert(`❌ La palabra escrita ("${step2}") no coincide con "BORRAR".\n\nPor seguridad de tu finca, NO se eliminó ningún dato.`);
-      setMessage({ type: 'error', text: 'Confirmación no válida: No se realizaron cambios en el inventario.' });
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await clearAllData(userId);
-      setMessage({ type: 'success', text: '¡Inventario de tu finca limpiado por completo! Ahora tu sistema está en ceros para ingresar ganado nuevo.' });
-      if (onDataChanged) onDataChanged();
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Error al limpiar datos: ' + err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleExportJSON = async () => {
     try {
@@ -676,26 +638,6 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
             <RefreshCw className="w-3.5 h-3.5" /> Cargar Demo
           </button>
         </div>
-      </div>
-
-      {/* Botón Peligro: Limpiar Todo a Ceros */}
-      <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 flex items-center justify-between gap-3">
-        <div>
-          <h4 className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
-            <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
-            Limpiar Inventario de Mi Finca (Comenzar en Ceros)
-          </h4>
-          <p className="text-[11px] text-rose-600 dark:text-rose-400/80">
-            Borra los datos de prueba o inventario actual para empezar desde ceros.
-          </p>
-        </div>
-        <button
-          onClick={handleClearAll}
-          disabled={loading}
-          className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold whitespace-nowrap shadow transition"
-        >
-          Limpiar a Ceros
-        </button>
       </div>
 
     </Modal>
