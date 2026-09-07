@@ -192,24 +192,49 @@ export function CattleListView({
     let deadCount = 0;
     let totalKg = 0;
     let totalValue = 0;
-    let totalProfit = 0;
+    let totalMaleValue = 0;
+    let totalFemaleValue = 0;
+    let maleCount = 0;
+    let femaleCount = 0;
 
     filteredCattle.forEach(c => {
       if (c.status === 'Activo') activeCount++;
       else if (c.status === 'Vendido') soldCount++;
       else if (c.status === 'Muerto') deadCount++;
 
+      const isMale = c.sex === 'Macho';
+      const isFemale = c.sex === 'Hembra';
+
+      if (isMale) maleCount++;
+      if (isFemale) femaleCount++;
+
       const w = weighings.filter(item => item.cattleId === c.id);
       const wm = calculateWeightMetrics(c, w);
-      const fin = calculateFinancials(c);
       if (c.status === 'Activo') {
         totalKg += wm.currentWeight;
       }
-      totalValue += c.status === 'Vendido' ? (parseFloat(c.exitPrice) || 0) : (parseFloat(c.entryPrice) || 0);
-      totalProfit += fin.netProfit;
+      const animalVal = c.status === 'Vendido' ? (parseFloat(c.exitPrice) || 0) : (parseFloat(c.entryPrice) || 0);
+      totalValue += animalVal;
+
+      if (isMale) {
+        totalMaleValue += animalVal;
+      } else if (isFemale) {
+        totalFemaleValue += animalVal;
+      }
     });
 
-    return { totalCount, activeCount, soldCount, deadCount, totalKg, totalValue, totalProfit };
+    return { 
+      totalCount, 
+      activeCount, 
+      soldCount, 
+      deadCount, 
+      totalKg, 
+      totalValue, 
+      totalMaleValue, 
+      totalFemaleValue,
+      maleCount,
+      femaleCount
+    };
   }, [filteredCattle, weighings]);
 
   const handleDeletePrompt = (animal, e) => {
@@ -259,8 +284,16 @@ export function CattleListView({
             Biomasa: <strong className="text-emerald-600 dark:text-emerald-400 font-black">{formatNumber(summary.totalKg, 0)} kg</strong>
           </span>
 
+          <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap">
+            💰 Valor Total Ganado: <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatCurrency(summary.totalValue)}</strong>
+          </span>
+
           <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-blue-50/90 dark:bg-blue-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-blue-200 dark:border-blue-800 shadow-sm whitespace-nowrap">
-            Utilidad: <strong className="text-blue-600 dark:text-blue-400 font-black">{formatCurrency(summary.totalProfit)}</strong>
+            🐂 Machos ({summary.maleCount}): <strong className="text-blue-700 dark:text-blue-400 font-black">{formatCurrency(summary.totalMaleValue)}</strong>
+          </span>
+
+          <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-pink-50/90 dark:bg-pink-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-pink-200 dark:border-pink-800 shadow-sm whitespace-nowrap">
+            🐄 Hembras ({summary.femaleCount}): <strong className="text-pink-700 dark:text-pink-400 font-black">{formatCurrency(summary.totalFemaleValue)}</strong>
           </span>
         </div>
 
@@ -635,8 +668,8 @@ export function CattleListView({
                     {formatNumber(summary.totalKg, 0)} kg
                   </td>
                   <td colSpan={2} className="p-3.5"></td>
-                  <td className="p-3.5 whitespace-nowrap font-black text-blue-700 dark:text-blue-300 text-xs">
-                    {formatCurrency(summary.totalProfit)}
+                  <td className="p-3.5 whitespace-nowrap font-black text-emerald-700 dark:text-emerald-400 text-xs">
+                    {formatCurrency(summary.totalValue)}
                   </td>
                   <td className="p-3.5"></td>
                 </tr>

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.51";
-export const CURRENT_BUILD_TIME = 1789191000000;
+export const CURRENT_APP_VERSION = "2.8.52";
+export const CURRENT_BUILD_TIME = 1789192000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.52",
+    date: "07/09/2026",
+    title: "Valoración Financiera de Inventario (Total, Machos y Hembras)",
+    highlights: [
+      "Reemplazo de la métrica 'Utilidad' en el resumen superior del inventario general.",
+      "Nuevos indicadores financieros en tiempo real: Valor Total de Ganado (💰), Valor Total Machos (🐂) y Valor Total Hembras (🐄).",
+      "Conteo discriminado por sexo y valorización patrimonial adaptada tanto para dispositivos móviles como escritorio."
+    ]
+  },
   {
     version: "2.8.51",
     date: "07/09/2026",
