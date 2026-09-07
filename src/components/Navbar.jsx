@@ -69,18 +69,20 @@ export function Navbar({
             {/* LADO IZQUIERDO: Logo & Identidad de la Finca */}
             <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <div 
-                onClick={onOpenProfile}
-                title="Configuración de Finca y Perfil"
+                onClick={() => setCurrentView('dashboard')}
+                title="Ir al Tablero / Panel Principal"
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition"
               >
                 <span className="text-lg sm:text-xl select-none">🐂</span>
               </div>
 
-              <div className="flex flex-col justify-center">
+              <div 
+                onClick={() => setCurrentView('dashboard')}
+                className="flex flex-col justify-center cursor-pointer group"
+                title="Ir al Tablero / Panel Principal"
+              >
                 <h1 
-                  onClick={onOpenProfile}
-                  className="text-xs sm:text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[130px] sm:max-w-[170px] 2xl:max-w-[220px] cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition leading-tight"
-                  title={currentUser?.farmName || 'Mi Finca Ganadera'}
+                  className="text-xs sm:text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[130px] sm:max-w-[170px] 2xl:max-w-[220px] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition leading-tight"
                 >
                   {currentUser?.farmName || 'INVENTARIO BOVINO APP'}
                 </h1>
@@ -201,8 +203,12 @@ export function Navbar({
             
             {/* Fila 1 Móvil: Logo, Nombre de Finca, Tema, Perfil y Salir */}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0" onClick={onOpenProfile}>
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0 cursor-pointer">
+              <div 
+                className="flex items-center gap-2 min-w-0 cursor-pointer" 
+                onClick={() => setCurrentView('dashboard')}
+                title="Ir al Tablero / Panel Principal"
+              >
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0">
                   <span className="text-base select-none">🐂</span>
                 </div>
                 <div className="min-w-0">

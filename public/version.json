@@ -1,7 +1,7 @@
 {
-  "version": "2.8.49",
-  "buildTime": 1789189000000,
-  "description": "Cierre automático de pestañas de creación y notificaciones precisas de confirmación de guardado."
+  "version": "2.8.50",
+  "buildTime": 1789190000000,
+  "description": "Clic en logo toro dirige al tablero principal y perfil accesible en botón Ajustes."
 }
 
 

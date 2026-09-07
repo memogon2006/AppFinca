@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.49";
-export const CURRENT_BUILD_TIME = 1789189000000;
+export const CURRENT_APP_VERSION = "2.8.50";
+export const CURRENT_BUILD_TIME = 1789190000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.50",
+    date: "07/09/2026",
+    title: "Acceso Directo al Tablero desde el Logo y Perfil en Botón Ajustes",
+    highlights: [
+      "Al hacer clic en el logo del toro (emoji 🐂) o el nombre de la finca se navega directamente al Tablero / Panel Principal.",
+      "La información de la cuenta, finca y configuración se mantiene accesible exclusivamente en el botón '[LG] LUIS ⚙️ Ajustes'."
+    ]
+  },
   {
     version: "2.8.49",
     date: "07/09/2026",
