@@ -46,7 +46,7 @@ export function BatchAnalyticsView({
   const [activeTab, setActiveTab] = useState('detail'); // 'detail' | 'compare'
   const [selectedBatch, setSelectedBatch] = useState('all'); // 'all' o nombre del lote
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'Activo' | 'Vendido' | 'ready480'
+  const [statusFilter, setStatusFilter] = useState('Activo'); // 'Activo' (predeterminado) | 'all' | 'Vendido' | 'ready480'
   const [exportingExcel, setExportingExcel] = useState(false);
 
   // Estados para el Comparador de Lotes

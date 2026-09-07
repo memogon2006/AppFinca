@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.36";
-export const CURRENT_BUILD_TIME = 1789146000000;
+export const CURRENT_APP_VERSION = "2.8.37";
+export const CURRENT_BUILD_TIME = 1789148000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.37",
+    date: "07/09/2026",
+    title: "Vista Predeterminada de Animales Activos en Lotes",
+    highlights: [
+      "El módulo de Lotes e Ingresos ahora se abre de forma predeterminada filtrado en animales '🟢 En Finca' (Activos).",
+      "Listado y subtotales enfocados de inmediato en el ganado presente en finca para rápida consulta operativa.",
+      "Acceso directo con un clic para cambiar a 'Todos', 'Vendidos' o 'Listos ≥480kg'."
+    ]
+  },
   {
     version: "2.8.36",
     date: "07/09/2026",

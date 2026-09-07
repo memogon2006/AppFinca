@@ -1,6 +1,6 @@
 {
-  "version": "2.8.36",
-  "buildTime": 1789146000000,
-  "description": "Ajuste de etiqueta a 'Valor Compra Total de los Animales' en el módulo de Lotes e Ingresos."
+  "version": "2.8.37",
+  "buildTime": 1789148000000,
+  "description": "Visualización predeterminada de animales activos en finca en el módulo de Lotes e Ingresos."
 }
 
