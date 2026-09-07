@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.32";
-export const CURRENT_BUILD_TIME = 1789138000000;
+export const CURRENT_APP_VERSION = "2.8.33";
+export const CURRENT_BUILD_TIME = 1789140000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.33",
+    date: "07/09/2026",
+    title: "Doble Confirmación de Seguridad al Limpiar Inventario",
+    highlights: [
+      "Incorporación de un flujo de seguridad en dos pasos para reiniciar el inventario a ceros.",
+      "Requisito de confirmación explícita escribiendo la palabra clave 'BORRAR' antes de ejecutar cualquier limpieza irreversible.",
+      "Mensajes claros de cancelación y preservación de datos para evitar pérdidas accidentales."
+    ]
+  },
   {
     version: "2.8.32",
     date: "07/09/2026",

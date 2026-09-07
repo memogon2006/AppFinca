@@ -1,6 +1,6 @@
 {
-  "version": "2.8.32",
-  "buildTime": 1789138000000,
-  "description": "Estandarización de todas las fechas del sistema al formato Día/Mes/Año (DD/MM/YYYY) en pantallas, modales, gráficas y Excel."
+  "version": "2.8.33",
+  "buildTime": 1789140000000,
+  "description": "Doble confirmación de máxima seguridad con palabra clave al limpiar inventario para comenzar en ceros."
 }
 
