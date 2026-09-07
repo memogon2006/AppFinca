@@ -116,17 +116,17 @@ export function Navbar({
             </nav>
 
             {/* LADO DERECHO: Acciones, Sincronización, Perfil y Salir */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               
               {/* Botón Principal: + Registrar Bovino */}
               <button
                 onClick={onOpenNewAnimal}
-                className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1.5 shadow-sm min-h-[36px] cursor-pointer whitespace-nowrap"
+                className="py-1.5 px-2.5 sm:px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1 shadow-sm min-h-[34px] sm:min-h-[36px] cursor-pointer whitespace-nowrap"
                 title="Registrar un nuevo animal al inventario"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Registrar Bovino</span>
-                <span className="sm:hidden">+</span>
+                <span className="sm:hidden text-[11px]">Nuevo</span>
               </button>
 
               {/* Botón Excel / Copia */}
@@ -144,7 +144,7 @@ export function Navbar({
                 onClick={onManualSync}
                 disabled={isSyncing}
                 title={isSyncing ? 'Sincronizando con la nube...' : 'Sincronizar datos con la nube'}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[36px] min-w-[36px] cursor-pointer transition"
+                className="hidden sm:flex p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 items-center justify-center min-h-[36px] min-w-[36px] cursor-pointer transition"
               >
                 {isSyncing ? (
                   <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
@@ -157,7 +157,7 @@ export function Navbar({
               <button
                 onClick={toggleTheme}
                 title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[36px] min-w-[36px] cursor-pointer transition"
+                className="p-1.5 sm:p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[34px] min-w-[34px] sm:min-h-[36px] sm:min-w-[36px] cursor-pointer transition"
               >
                 {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
               </button>
@@ -166,7 +166,7 @@ export function Navbar({
               <div 
                 onClick={onOpenProfile}
                 title="Mi Perfil, Nombre de Finca y Seguridad"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer transition group min-h-[36px] whitespace-nowrap"
+                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer transition group min-h-[34px] sm:min-h-[36px] whitespace-nowrap"
               >
                 <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-black text-[11px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition">
                   {getInitials(currentUser?.name)}
@@ -185,10 +185,10 @@ export function Navbar({
               <button
                 onClick={handleLogout}
                 title="Cerrar Sesión"
-                className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 min-h-[36px] cursor-pointer transition whitespace-nowrap"
+                className="hidden sm:flex px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold items-center gap-1.5 min-h-[36px] cursor-pointer transition whitespace-nowrap"
               >
                 <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                <span className="hidden sm:inline">Salir</span>
+                <span>Salir</span>
               </button>
 
             </div>
@@ -221,8 +221,8 @@ export function Navbar({
       </header>
 
       {/* Mobile Bottom Navigation Bar (< md) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)] shadow-lg">
-        <div className="grid grid-cols-7 h-16 items-center px-1">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,6px)] shadow-lg">
+        <div className="grid grid-cols-6 h-15 sm:h-16 items-center px-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -232,29 +232,17 @@ export function Navbar({
                 onClick={() => setCurrentView(item.id)}
                 className={`flex flex-col items-center justify-center h-full py-1 text-[10px] font-bold transition-all ${
                   isActive
-                    ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                <div className={`p-1 rounded-lg ${isActive ? 'bg-emerald-100 dark:bg-emerald-500/20' : ''}`}>
+                <div className={`p-1 rounded-lg transition-colors ${isActive ? 'bg-emerald-100 dark:bg-emerald-500/20 shadow-sm' : ''}`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="truncate max-w-[50px] mt-0.5">{item.shortLabel}</span>
+                <span className="truncate max-w-[52px] text-[10px] mt-0.5 leading-tight">{item.shortLabel}</span>
               </button>
             );
           })}
-
-          {/* Botón Móvil: Mi Perfil */}
-          <button
-            onClick={onOpenProfile}
-            className="flex flex-col items-center justify-center h-full py-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all"
-            title="Mi Perfil y Ajustes de Finca"
-          >
-            <div className="p-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <User className="w-4 h-4" />
-            </div>
-            <span className="truncate max-w-[50px] mt-0.5 text-emerald-700 dark:text-emerald-400 font-extrabold">Perfil</span>
-          </button>
         </div>
       </nav>
     </>

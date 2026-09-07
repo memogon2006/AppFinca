@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.42";
-export const CURRENT_BUILD_TIME = 1789170000000;
+export const CURRENT_APP_VERSION = "2.8.43";
+export const CURRENT_BUILD_TIME = 1789175000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.43",
+    date: "07/09/2026",
+    title: "Optimización Total para Celulares y Pantallas Móviles",
+    highlights: [
+      "Cabecera superior optimizada en móviles con distribución equilibrada sin saturación ni superposición de iconos.",
+      "Barra de navegación inferior móvil reajustada a 6 columnas amplias con etiquetas nítidas y sin deformaciones.",
+      "Barra de herramientas de inventario con desplazamiento horizontal fluido en móviles, evitando desbordamientos de pantalla."
+    ]
+  },
   {
     version: "2.8.42",
     date: "07/09/2026",
