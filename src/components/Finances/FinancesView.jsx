@@ -157,36 +157,36 @@ export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDele
 
       {/* Tarjetas de Resumen Financiero */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-gradient-to-br dark:from-emerald-500/20 dark:to-teal-500/5 border border-emerald-200 dark:border-emerald-500/30 shadow-sm">
-          <span className="text-xs font-semibold uppercase text-emerald-800 dark:text-emerald-400">Utilidad Neta Realizada</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{formatCurrency(totalRealizedProfit)}</p>
-          <span className="text-xs text-emerald-700 dark:text-emerald-300 font-medium mt-1 inline-block">
+        <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm">
+          <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">Utilidad Neta Realizada</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalRealizedProfit)}</p>
+          <span className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold mt-1 inline-block">
             ROI Promedio: {formatNumber(overallRealizedRoi, 1)}%
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-blue-50 dark:bg-gradient-to-br dark:from-blue-500/20 dark:to-cyan-500/5 border border-blue-200 dark:border-blue-500/30 shadow-sm">
-          <span className="text-xs font-semibold uppercase text-blue-800 dark:text-blue-400">Ingresos Totales por Ventas</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{formatCurrency(totalSalesRevenue)}</p>
-          <span className="text-xs text-blue-700 dark:text-blue-300 font-medium mt-1 inline-block">
+        <div className="p-5 rounded-2xl bg-blue-50/90 dark:bg-slate-900/90 border border-blue-200/90 dark:border-blue-500/30 shadow-sm">
+          <span className="text-xs font-bold uppercase text-blue-800 dark:text-blue-400">Ingresos Totales por Ventas</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalSalesRevenue)}</p>
+          <span className="text-xs text-blue-700 dark:text-blue-400 font-semibold mt-1 inline-block">
             {filteredSoldCattle.length} animales liquidados
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-purple-50 dark:bg-gradient-to-br dark:from-purple-500/20 dark:to-pink-500/5 border border-purple-200 dark:border-purple-500/30 shadow-sm">
-          <span className="text-xs font-semibold uppercase text-purple-800 dark:text-purple-400">Inversión en Ganado Activo</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{formatCurrency(totalActiveInvestment)}</p>
-          <span className="text-xs text-purple-700 dark:text-purple-300 font-medium mt-1 inline-block">
+        <div className="p-5 rounded-2xl bg-purple-50/90 dark:bg-slate-900/90 border border-purple-200/90 dark:border-purple-500/30 shadow-sm">
+          <span className="text-xs font-bold uppercase text-purple-800 dark:text-purple-400">Inversión en Ganado Activo</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalActiveInvestment)}</p>
+          <span className="text-xs text-purple-700 dark:text-purple-400 font-semibold mt-1 inline-block">
             {activeCattle.length} cabezas en finca
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-amber-50 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-orange-500/5 border border-amber-200 dark:border-amber-500/30 shadow-sm">
-          <span className="text-xs font-semibold uppercase text-amber-800 dark:text-amber-400">Margen Comercial</span>
-          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+        <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm">
+          <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">Margen Comercial</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">
             {totalSalesRevenue > 0 ? formatNumber((totalRealizedProfit / totalSalesRevenue) * 100, 1) : 0}%
           </p>
-          <span className="text-xs text-amber-700 dark:text-amber-300 font-medium mt-1 inline-block">
+          <span className="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-1 inline-block">
             Margen sobre ventas
           </span>
         </div>

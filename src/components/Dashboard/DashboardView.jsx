@@ -218,7 +218,7 @@ export function DashboardView({
             <span className="text-xs font-bold uppercase tracking-wider">Vacas en Gestación</span>
             <Baby className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{pregnantCount}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{pregnantCount}</p>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Preñadas confirmadas</span>
         </div>
 
@@ -230,7 +230,7 @@ export function DashboardView({
             <span className="text-xs font-bold uppercase tracking-wider">En Ordeño / Leche</span>
             <Milk className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{milkingCount}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{milkingCount}</p>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Hembras en producción</span>
         </div>
 
@@ -242,7 +242,7 @@ export function DashboardView({
             <span className="text-xs font-bold uppercase tracking-wider">Matrices de Cría</span>
             <Users className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{breedingOnlyCount}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{breedingOnlyCount}</p>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Vientres exclusivos cría</span>
         </div>
 
@@ -254,7 +254,7 @@ export function DashboardView({
             <span className="text-xs font-bold uppercase tracking-wider">Lote de Ceba</span>
             <Activity className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{fatteningCount}</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{fatteningCount}</p>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Bovinos en engorde</span>
         </div>
 

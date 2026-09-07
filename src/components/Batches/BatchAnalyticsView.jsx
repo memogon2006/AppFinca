@@ -720,19 +720,20 @@ export function BatchAnalyticsView({
               </div>
 
               {/* 4 TARJETAS DINÁMICAS SEGÚN EL FILTRO SELECCIONADO */}
+              {/* 4 TARJETAS DINÁMICAS SEGÚN EL FILTRO SELECCIONADO */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 {/* 1. Valor Compra Total */}
-                <div className="p-5 rounded-2xl bg-amber-50 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-orange-500/5 border border-amber-200 dark:border-amber-500/30 shadow-sm space-y-1">
+                <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase text-amber-800 dark:text-amber-400">
+                    <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">
                       {statusFilter === 'Activo' 
                         ? 'Valor Compra en Finca (Activos)' 
                         : statusFilter === 'all' 
                         ? 'Valor Compra Histórico (Todos)' 
                         : 'Valor Compra Inicial (Vendidos)'}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-sm">
                       {statusFilter === 'Activo' 
                         ? `🟢 ${currentBatchData.activeCount} activos` 
                         : statusFilter === 'all' 
@@ -740,7 +741,7 @@ export function BatchAnalyticsView({
                         : `🏷️ ${currentBatchData.soldCount} vendidos`}
                     </span>
                   </div>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                     {formatCurrency(
                       statusFilter === 'Activo' 
                         ? currentBatchData.activePurchaseCost 
@@ -749,7 +750,7 @@ export function BatchAnalyticsView({
                         : currentBatchData.soldPurchaseCost
                     )}
                   </p>
-                  <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-amber-700/40">
+                  <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-slate-800">
                     <span>
                       Promedio: {formatCurrency(
                         statusFilter === 'Activo' 
@@ -768,21 +769,21 @@ export function BatchAnalyticsView({
                 </div>
 
                 {/* 2. Valor Kilo Compra / Ingreso por Venta */}
-                <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-gradient-to-br dark:from-emerald-500/20 dark:to-teal-500/5 border border-emerald-200 dark:border-emerald-500/30 shadow-sm space-y-1">
-                  <span className="text-xs font-semibold uppercase text-emerald-800 dark:text-emerald-400">
+                <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm space-y-1">
+                  <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">
                     {statusFilter === 'Vendido' ? 'Total Ingresos por Venta' : 'Valor del Kilo Compra ($/kg)'}
                   </span>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                     {statusFilter === 'Vendido' ? (
                       formatCurrency(currentBatchData.totalSalesRevenue)
                     ) : (
                       <>
                         {formatCurrency(statusFilter === 'Activo' ? currentBatchData.activeCostPerEntryKg : currentBatchData.costPerEntryKg)}
-                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300"> / kg</span>
+                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400"> / kg</span>
                       </>
                     )}
                   </p>
-                  <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-emerald-700/40">
+                  <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-slate-800">
                     {statusFilter === 'Vendido' ? (
                       <span>Promedio salida: {formatCurrency(currentBatchData.avgSoldPricePerKg)}/kg ({formatNumber(currentBatchData.totalSoldWeight, 0)} kg)</span>
                     ) : (
@@ -792,11 +793,11 @@ export function BatchAnalyticsView({
                 </div>
 
                 {/* 3. Kilos Promedio / Utilidad */}
-                <div className="p-5 rounded-2xl bg-blue-50 dark:bg-gradient-to-br dark:from-blue-500/20 dark:to-indigo-500/5 border border-blue-200 dark:border-blue-500/30 shadow-sm space-y-1">
-                  <span className="text-xs font-semibold uppercase text-blue-800 dark:text-blue-400">
+                <div className="p-5 rounded-2xl bg-blue-50/90 dark:bg-slate-900/90 border border-blue-200/90 dark:border-blue-500/30 shadow-sm space-y-1">
+                  <span className="text-xs font-bold uppercase text-blue-800 dark:text-blue-400">
                     {statusFilter === 'Vendido' ? 'Utilidad Neta Realizada' : 'Kilos Promedio por Animal'}
                   </span>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                     {statusFilter === 'Vendido' ? (
                       <span className={currentBatchData.totalProfitRealized >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}>
                         {formatCurrency(currentBatchData.totalProfitRealized)}
@@ -804,11 +805,11 @@ export function BatchAnalyticsView({
                     ) : (
                       <>
                         {formatNumber(currentBatchData.avgCurrentWeight, 1)}
-                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300"> kg actual</span>
+                        <span className="text-xs font-bold text-blue-700 dark:text-blue-400"> kg actual</span>
                       </>
                     )}
                   </p>
-                  <div className="text-xs text-blue-900 dark:text-blue-300 font-extrabold flex items-center justify-between pt-1 border-t border-blue-200/60 dark:border-blue-700/40">
+                  <div className="text-xs text-blue-900 dark:text-blue-300 font-extrabold flex items-center justify-between pt-1 border-t border-blue-200/60 dark:border-slate-800">
                     {statusFilter === 'Vendido' ? (
                       <span>Ganancia total acumulada</span>
                     ) : (
@@ -821,37 +822,37 @@ export function BatchAnalyticsView({
                 </div>
 
                 {/* 4. Desempeño & GDP / Animales Vendidos */}
-                <div className="p-5 rounded-2xl bg-purple-50 dark:bg-gradient-to-br dark:from-purple-500/20 dark:to-pink-500/5 border border-purple-200 dark:border-purple-500/30 shadow-sm space-y-1">
+                <div className="p-5 rounded-2xl bg-purple-50/90 dark:bg-slate-900/90 border border-purple-200/90 dark:border-purple-500/30 shadow-sm space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase text-purple-800 dark:text-purple-400">
+                    <span className="text-xs font-bold uppercase text-purple-800 dark:text-purple-400">
                       {statusFilter === 'Vendido' ? 'Salida Promedio' : 'Desempeño & GDP Lote'}
                     </span>
                     {statusFilter !== 'Vendido' && currentBatchData.readyToSellCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-200 text-purple-900 dark:bg-purple-900 dark:text-purple-200">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-200 text-purple-900 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 shadow-sm">
                         🎯 {currentBatchData.readyToSellCount} listos
                       </span>
                     )}
                   </div>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                     {statusFilter === 'Vendido' ? (
                       <>
                         {formatNumber(currentBatchData.soldAvgExitWeight, 1)}
-                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300"> kg / animal</span>
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-400"> kg / animal</span>
                       </>
                     ) : (
                       <>
                         {formatNumber(currentBatchData.avgGdp, 3)}
-                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300"> kg/día</span>
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-400"> kg/día</span>
                       </>
                     )}
                   </p>
-                  <div className="text-xs text-purple-900 dark:text-purple-300 font-medium flex items-center justify-between pt-1 border-t border-purple-200/60 dark:border-purple-700/40">
+                  <div className="text-xs text-purple-900 dark:text-purple-300 font-medium flex items-center justify-between pt-1 border-t border-purple-200/60 dark:border-slate-800">
                     {statusFilter === 'Vendido' ? (
                       <span>Entrada prom: {formatNumber(currentBatchData.soldAvgEntryWeight, 1)} kg</span>
                     ) : (
                       <>
                         <span>{currentBatchData.avgDays} días en finca</span>
-                        <span className="font-extrabold">Total: +{formatNumber(currentBatchData.totalGainKg, 0)} kg carne</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400">Total: +{formatNumber(currentBatchData.totalGainKg, 0)} kg carne</span>
                       </>
                     )}
                   </div>

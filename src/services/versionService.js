@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.57";
-export const CURRENT_BUILD_TIME = 1789197000000;
+export const CURRENT_APP_VERSION = "2.8.58";
+export const CURRENT_BUILD_TIME = 1789198000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.58",
+    date: "07/09/2026",
+    title: "Perfeccionamiento Visual y Alto Contraste en Modo Oscuro",
+    highlights: [
+      "Corrección del contraste en tarjetas principales de KPI (Dashboard, Lotes y Finanzas): eliminación de fondos claros descoloridos en modo oscuro.",
+      "Integración de fondos oscuros profundos (slate-900), bordes temáticos sutiles, íconos vibrantes y textos en alta definición.",
+      "Excelente legibilidad y contraste tanto en modo claro como en modo oscuro."
+    ]
+  },
   {
     version: "2.8.57",
     date: "07/09/2026",
