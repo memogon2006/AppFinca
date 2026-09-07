@@ -21,7 +21,8 @@ import {
   Flame,
   Zap,
   Check,
-  BarChart3
+  BarChart3,
+  PackagePlus
 } from 'lucide-react';
 import { 
   formatCurrency, 
@@ -457,10 +458,22 @@ export function BatchAnalyticsView({
           {onOpenBatchEntry && (
             <button
               onClick={onOpenBatchEntry}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer min-h-[42px]"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer min-h-[42px]"
+              title="Registrar un nuevo lote completo con cálculo por kilo o precio fijo"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>+ Nuevo Ingreso por Lote</span>
+              <PackagePlus className="w-4 h-4" />
+              <span>📦 Ingresar Lote</span>
+            </button>
+          )}
+
+          {onOpenNewAnimal && (
+            <button
+              onClick={onOpenNewAnimal}
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 border border-slate-700 shadow-sm transition cursor-pointer min-h-[42px]"
+              title="Registrar un solo bovino de forma individual"
+            >
+              <PlusCircle className="w-4 h-4 text-emerald-400" />
+              <span>➕ 1 Solo Animal</span>
             </button>
           )}
 

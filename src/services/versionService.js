@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.38";
-export const CURRENT_BUILD_TIME = 1789150000000;
+export const CURRENT_APP_VERSION = "2.8.39";
+export const CURRENT_BUILD_TIME = 1789155000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.39",
+    date: "07/09/2026",
+    title: "Corrección en Registro de Bajas por Muerte e Ingreso Directo",
+    highlights: [
+      "Solución al error 'Invalid argument to Table.get()' al registrar la muerte o baja de un animal desde el inventario.",
+      "Botón '➕ 1 Solo Animal' ubicado directamente junto a '📦 Ingresar Lote' en la barra de herramientas del Inventario y del módulo de Lotes.",
+      "Registro de fecha, motivo y notas de fallecimiento 100% sincronizado con la base de datos local y la nube."
+    ]
+  },
   {
     version: "2.8.38",
     date: "07/09/2026",

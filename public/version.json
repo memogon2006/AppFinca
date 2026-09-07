@@ -1,6 +1,6 @@
 {
-  "version": "2.8.38",
-  "buildTime": 1789150000000,
-  "description": "Sincronización total de reportes Excel con formato de fechas DD/MM/YYYY, filtro predeterminado de activos y etiquetas actualizadas."
+  "version": "2.8.39",
+  "buildTime": 1789155000000,
+  "description": "Corrección al registrar muerte/baja de animales en inventario y botón '1 Solo Animal' ubicado junto a 'Ingresar Lote'."
 }
 

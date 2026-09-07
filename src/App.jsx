@@ -368,9 +368,25 @@ export default function App() {
     showToast(`¡Liquidación de ${batchList.length} bovinos asentada y sincronizada en la nube! ☁️`);
   };
 
-  const handleConfirmDeath = async ({ id, deathDate, deathReason, deathNotes }) => {
-    const animal = await db.cattle.get(id) || await db.cattle.get(Number(id));
-    const targetId = animal ? animal.id : id;
+  const handleConfirmDeath = async (arg1, arg2) => {
+    let id, deathDate, deathReason, deathNotes;
+    if (typeof arg1 === 'object' && arg1 !== null) {
+      ({ id, deathDate, deathReason, deathNotes } = arg1);
+    } else {
+      id = arg1;
+      if (arg2) {
+        ({ deathDate, deathReason, deathNotes } = arg2);
+      }
+    }
+
+    if (!id) {
+      console.error('handleConfirmDeath: No id provided');
+      return;
+    }
+
+    const numId = Number(id);
+    const animal = (await db.cattle.get(id)) || (!isNaN(numId) ? await db.cattle.get(numId) : null);
+    const targetId = animal ? animal.id : (isNaN(numId) ? id : numId);
 
     await db.cattle.update(targetId, {
       status: 'Muerto',
