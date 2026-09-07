@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Scale, TrendingUp, PlusCircle, Search, Calendar, ChevronDown, ChevronUp, Zap, Tag, Trash2, Target, Flame, AlertTriangle } from 'lucide-react';
-import { calculateWeightMetrics, formatNumber } from '../../services/calculations';
+import { calculateWeightMetrics, formatNumber, formatDate } from '../../services/calculations';
 
 export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpenAddWeight, onDeleteWeight, onNavigate }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -265,7 +265,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
 
                       {/* Fecha Entrada */}
                       <td className="p-3.5 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200">
-                        {animal.entryDate || '-'}
+                        {animal.entryDate ? formatDate(animal.entryDate) : '-'}
                       </td>
 
                       {/* Días en Finca */}
@@ -281,7 +281,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         {metrics.lastWeighDate && (
                           <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-0.5 mt-0.5">
                             <Calendar className="w-2.5 h-2.5 text-slate-400" />
-                            <span>Pesaje: {metrics.lastWeighDate}</span>
+                            <span>Pesaje: {formatDate(metrics.lastWeighDate)}</span>
                           </div>
                         )}
                       </td>
@@ -319,7 +319,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                               <div className="h-full bg-blue-600 rounded-full" style={{ width: `${metrics.cebaProjection.progressPercentage}%` }} />
                             </div>
                             {metrics.cebaProjection.daysToTarget && (
-                              <div className="text-[9px] text-slate-500 font-bold">~{metrics.cebaProjection.daysToTarget} días (Salida: {metrics.cebaProjection.estimatedDate})</div>
+                              <div className="text-[9px] text-slate-500 font-bold">~{metrics.cebaProjection.daysToTarget} días (Salida: {formatDate(metrics.cebaProjection.estimatedDate)})</div>
                             )}
                           </div>
                         ) : (
@@ -380,7 +380,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                                         <td className="p-2.5 font-bold text-slate-900 dark:text-white">
                                           {log.name}
                                         </td>
-                                        <td className="p-2.5 font-medium">{log.date}</td>
+                                        <td className="p-2.5 font-medium">{formatDate(log.date)}</td>
                                         <td className="p-2.5 font-extrabold text-blue-600 dark:text-blue-400">
                                           {log.daysFromEntry} días
                                         </td>
@@ -409,7 +409,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                                               type="button"
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (window.confirm(`¿Deseas eliminar este registro de pesaje (${log.weight} kg del ${log.date}) del bovino ${animal.tagNumber}?`)) {
+                                                if (window.confirm(`¿Deseas eliminar este registro de pesaje (${log.weight} kg del ${formatDate(log.date)}) del bovino ${animal.tagNumber}?`)) {
                                                   onDeleteWeight(log.weighingId || log.id, animal.id, log.date, log.weight);
                                                 }
                                               }}

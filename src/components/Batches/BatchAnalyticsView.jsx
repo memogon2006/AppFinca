@@ -26,6 +26,7 @@ import {
 import { 
   formatCurrency, 
   formatNumber, 
+  formatDate,
   calculateWeightMetrics, 
   calculateFinancials 
 } from '../../services/calculations';
@@ -1135,7 +1136,7 @@ export function BatchAnalyticsView({
                       {/* Tiempo en Finca */}
                       <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                         <span className="font-extrabold text-slate-800 dark:text-slate-200">{b.avgDays} días</span>
-                        <span className="text-[10px] text-slate-500 block font-normal">Desde {b.earliestDate}</span>
+                        <span className="text-[10px] text-slate-500 block font-normal">Desde {b.earliestDate === 'Todas las fechas' || b.earliestDate === 'N/A' ? b.earliestDate : formatDate(b.earliestDate)}</span>
                       </td>
 
                       {/* Listos ≥ 480 kg */}
@@ -1183,7 +1184,7 @@ export function BatchAnalyticsView({
                       <span>{b.batchName}</span>
                     </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                      ⏱️ <span className="font-bold text-slate-700 dark:text-slate-300">{b.avgDays} días en finca</span> • Desde {b.earliestDate}
+                      ⏱️ <span className="font-bold text-slate-700 dark:text-slate-300">{b.avgDays} días en finca</span> • Desde {b.earliestDate === 'Todas las fechas' || b.earliestDate === 'N/A' ? b.earliestDate : formatDate(b.earliestDate)}
                     </div>
                   </div>
 

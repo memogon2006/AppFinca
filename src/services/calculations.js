@@ -27,6 +27,38 @@ export function formatNumber(num, decimals = 1) {
 }
 
 /**
+ * Formatea una fecha a estándar Día/Mes/Año (DD/MM/YYYY)
+ * Acepta string ISO (YYYY-MM-DD), Date object, timestamps o strings ya formateadas.
+ */
+export function formatDate(dateInput) {
+  if (!dateInput) return '-';
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (!trimmed || trimmed === 'N/A' || trimmed === 'Todas las fechas') return trimmed || '-';
+    // Si ya está en formato DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+    // Si viene en formato YYYY-MM-DD o YYYY-MM-DDTHH:mm:ss...
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+      const parts = trimmed.split('T')[0].split('-');
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+      }
+    }
+  }
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return String(dateInput);
+  }
+}
+
+/**
  * Calcula la diferencia en días entre dos fechas (YYYY-MM-DD o Date)
  */
 export function getDaysDifference(date1, date2 = new Date()) {
@@ -338,7 +370,8 @@ export function calculateCebaProjection(currentWeight, gdp, lastWeighDate, targe
       : `🎯 ¡Listo para Venta! (Alcanzó exactamente ${target} kg)`;
   } else if (rate > 0) {
     status = 'in_progress';
-    message = `Faltan ${remainingKg} kg (~${daysToTarget} días • Salida estimada: ${estimatedDate})`;
+    const formattedEstDate = formatDate(estimatedDate);
+    message = `Faltan ${remainingKg} kg (~${daysToTarget} días • Salida estimada: ${formattedEstDate})`;
   } else {
     status = 'stalled';
     message = `Faltan ${remainingKg} kg (Requiere GDP positivo para estimar fecha)`;

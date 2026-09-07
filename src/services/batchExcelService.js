@@ -1,5 +1,5 @@
 import XLSX from 'xlsx-js-style';
-import { calculateWeightMetrics, calculateFinancials, formatNumber, formatCurrency } from './calculations';
+import { calculateWeightMetrics, calculateFinancials, formatNumber, formatCurrency, formatDate } from './calculations';
 
 /**
  * Genera una barra gráfica de texto visual proporcional utilizando bloques Unicode
@@ -126,7 +126,7 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
   // Fila 0: Título Principal
   aoa.push([`⚖️ COMPARATIVA EJECUTIVA DE LOTES & INGRESOS • ${farmName.toUpperCase()}`]);
   // Fila 1: Subtítulo con fecha
-  aoa.push([`Análisis de Precios de Compra, Valor de Ingreso, Rendimientos (GDP), Biomasa y Tiempo en Finca | Generado: ${new Date().toLocaleDateString('es-CO')}`]);
+  aoa.push([`Análisis de Precios de Compra, Valor de Ingreso, Rendimientos (GDP), Biomasa y Tiempo en Finca | Generado: ${formatDate(new Date())}`]);
   // Fila 2: Vacía
   aoa.push([]);
 

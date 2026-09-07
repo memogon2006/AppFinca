@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.31";
-export const CURRENT_BUILD_TIME = 1789130000000;
+export const CURRENT_APP_VERSION = "2.8.32";
+export const CURRENT_BUILD_TIME = 1789138000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.32",
+    date: "07/09/2026",
+    title: "Estandarización Total de Fechas (Día/Mes/Año - DD/MM/YYYY)",
+    highlights: [
+      "Unificación de todas las visualizaciones de fechas al formato latinoamericano estándar Día/Mes/Año (DD/MM/YYYY).",
+      "Actualización en tarjetas de ganado, listados, modales de pesajes, proyección de ceba, reproducción y comprobantes.",
+      "Formato DD/MM/YYYY en reportes de Excel exportables y confirmaciones del sistema."
+    ]
+  },
   {
     version: "2.8.31",
     date: "06/09/2026",

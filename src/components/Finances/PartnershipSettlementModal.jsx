@@ -21,7 +21,7 @@ import {
   SplitSquareVertical,
   HelpCircle
 } from 'lucide-react';
-import { formatCurrency, formatNumber, calculateWeightMetrics } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics } from '../../services/calculations';
 import confetti from 'canvas-confetti';
 
 export function PartnershipSettlementModal({ 
@@ -925,7 +925,7 @@ export function PartnershipSettlementModal({
                     </p>
                   </div>
                   <div className="text-right text-xs">
-                    <p className="font-bold">Fecha: {saleDate}</p>
+                    <p className="font-bold">Fecha: {formatDate(saleDate)}</p>
                     <p className="text-slate-600">Comprador: {buyerName || 'Mercado Abierto'}</p>
                     <p className="text-slate-600">Precio Base: {formatCurrency(pricePerKg)} / kg</p>
                   </div>

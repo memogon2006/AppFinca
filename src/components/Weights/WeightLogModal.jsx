@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
 import { Scale, Flame } from 'lucide-react';
-import { formatNumber, getDaysDifference, calculateWeightMetrics } from '../../services/calculations';
+import { formatNumber, formatDate, getDaysDifference, calculateWeightMetrics } from '../../services/calculations';
 
 export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight }) {
   if (!animal) return null;
@@ -58,7 +58,7 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
     }
 
     if (lastRecordedDate && weightData.date < lastRecordedDate) {
-      alert(`⚠️ La fecha del pesaje (${weightData.date}) no puede ser anterior a la fecha previa registrada (${lastRecordedDate}). Debe ser una fecha igual o posterior.`);
+      alert(`⚠️ La fecha del pesaje (${formatDate(weightData.date)}) no puede ser anterior a la fecha previa registrada (${formatDate(lastRecordedDate)}). Debe ser una fecha igual o posterior.`);
       return;
     }
 
@@ -77,7 +77,7 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
       isOpen={isOpen}
       onClose={onClose}
       title={`Nuevo Pesaje en Báscula: ${animal.tagNumber}`}
-      subtitle={`${animal.name ? `Nombre: ${animal.name} • ` : ''}Hierro: ${animal.ironBrand || 'N/A'} • Sexo: ${animal.sex} • Último peso: ${lastRecordedWeight} kg${lastRecordedDate ? ` (${lastRecordedDate})` : ''}`}
+      subtitle={`${animal.name ? `Nombre: ${animal.name} • ` : ''}Hierro: ${animal.ironBrand || 'N/A'} • Sexo: ${animal.sex} • Último peso: ${lastRecordedWeight} kg${lastRecordedDate ? ` (${formatDate(lastRecordedDate)})` : ''}`}
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,7 +87,7 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
             Fecha del Pesaje <span className="text-rose-500">*</span>
             {lastRecordedDate && (
               <span className="text-[10px] text-slate-400 font-normal ml-1">
-                (Mínimo: {lastRecordedDate})
+                (Mínimo: {formatDate(lastRecordedDate)})
               </span>
             )}
           </label>

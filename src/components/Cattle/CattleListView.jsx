@@ -5,6 +5,7 @@ import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge,
 import { 
   formatCurrency, 
   formatNumber, 
+  formatDate,
   calculateWeightMetrics, 
   calculateFinancials, 
   calculateReproduction 
@@ -496,7 +497,7 @@ export function CattleListView({
                         {wm.lastWeighDate && (
                           <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-0.5 mt-0.5">
                             <Calendar className="w-2.5 h-2.5 text-slate-400" />
-                            <span>Pesaje: {wm.lastWeighDate}</span>
+                            <span>Pesaje: {formatDate(wm.lastWeighDate)}</span>
                           </div>
                         )}
                       </td>

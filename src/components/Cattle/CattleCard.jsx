@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
-import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
 import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap } from 'lucide-react';
 
 export function CattleCard({ 
@@ -148,7 +148,7 @@ export function CattleCard({
 
           {animal.status === 'Muerto' && (
             <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1">
-              <Skull className="w-3 h-3" /> Baja: {animal.deathDate || 'Fallecido'}
+              <Skull className="w-3 h-3" /> Baja: {animal.deathDate ? formatDate(animal.deathDate) : 'Fallecido'}
             </span>
           )}
 
@@ -199,7 +199,7 @@ export function CattleCard({
                   {isCompanySale ? '🤝 Liquidación en Compañía' : '💰 Liquidación de Venta Directa'}
                 </span>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                  {animal.exitDate || 'Fecha N/A'}
+                  {animal.exitDate ? formatDate(animal.exitDate) : 'Fecha N/A'}
                 </span>
               </div>
 
@@ -300,7 +300,7 @@ export function CattleCard({
                 {weightMetrics.lastWeighDate && (
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-0.5 mt-1">
                     <Calendar className="w-2.5 h-2.5 text-slate-400 flex-shrink-0" />
-                    <span className="truncate">Fecha: {weightMetrics.lastWeighDate}</span>
+                    <span className="truncate">Fecha: {formatDate(weightMetrics.lastWeighDate)}</span>
                   </span>
                 )}
               </div>

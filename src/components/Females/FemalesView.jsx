@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { HeartHandshake, Milk, Sparkles, PlusCircle, Baby, Tag, CircleDot, Activity } from 'lucide-react';
 import { Badge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge } from '../Common/Badge';
-import { calculateReproduction, calculateMilkMetrics, formatNumber } from '../../services/calculations';
+import { calculateReproduction, calculateMilkMetrics, formatNumber, formatDate } from '../../services/calculations';
 
 export function FemalesView({ cattle = [], onSelectAnimal, onOpenNewAnimal }) {
   const [subTab, setSubTab] = useState('all');
@@ -250,7 +250,7 @@ export function FemalesView({ cattle = [], onSelectAnimal, onOpenNewAnimal }) {
                   <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs">
                     <div className="flex justify-between">
                       <span className="text-slate-500 dark:text-slate-400">Fecha Servicio:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{cow.serviceDate || 'Sin registrar'}</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{cow.serviceDate ? formatDate(cow.serviceDate) : 'Sin registrar'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500 dark:text-slate-400">Días Gestación:</span>
@@ -258,7 +258,7 @@ export function FemalesView({ cattle = [], onSelectAnimal, onOpenNewAnimal }) {
                     </div>
                     <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
                       <span className="text-slate-700 dark:text-slate-300 font-semibold">Parto Estimado (+283d):</span>
-                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{repro.expectedCalvingDate}</span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{repro.expectedCalvingDate ? formatDate(repro.expectedCalvingDate) : '-'}</span>
                     </div>
                   </div>
 

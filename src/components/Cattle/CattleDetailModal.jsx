@@ -4,6 +4,7 @@ import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge,
 import { 
   formatCurrency, 
   formatNumber, 
+  formatDate,
   calculateWeightMetrics, 
   calculateFinancials, 
   calculateReproduction,
@@ -72,11 +73,12 @@ export function CattleDetailModal({
 
   const weightChartData = [];
   if (animal.entryWeight && parseFloat(animal.entryWeight) > 0) {
-    weightChartData.push({ date: animal.entryDate, weight: parseFloat(animal.entryWeight), label: 'Entrada' });
+    weightChartData.push({ date: formatDate(animal.entryDate), rawDate: animal.entryDate, weight: parseFloat(animal.entryWeight), label: 'Entrada' });
   }
   weightMetrics.sortedWeights.forEach(w => {
     weightChartData.push({
-      date: w.date,
+      date: formatDate(w.date),
+      rawDate: w.date,
       weight: parseFloat(w.weight),
       label: w.notes || 'Báscula'
     });
@@ -84,7 +86,8 @@ export function CattleDetailModal({
 
   if (animal.status === 'Vendido' && animal.exitWeight && parseFloat(animal.exitWeight) > 0) {
     weightChartData.push({
-      date: animal.exitDate,
+      date: formatDate(animal.exitDate),
+      rawDate: animal.exitDate,
       weight: parseFloat(animal.exitWeight),
       label: 'Venta'
     });
@@ -112,7 +115,7 @@ export function CattleDetailModal({
                   Animal Dado de Baja por Muerte
                 </p>
                 <p className="text-xs mt-0.5 font-bold text-rose-900 dark:text-rose-200">
-                  <strong>Fecha:</strong> {animal.deathDate || 'No registrada'} • <strong>Causa:</strong> {animal.deathReason || 'No especificada'}
+                  <strong>Fecha:</strong> {animal.deathDate ? formatDate(animal.deathDate) : 'No registrada'} • <strong>Causa:</strong> {animal.deathReason || 'No especificada'}
                 </p>
                 {animal.deathNotes && (
                   <p className="text-xs mt-1 text-slate-700 dark:text-slate-200 italic font-bold">
@@ -224,7 +227,7 @@ export function CattleDetailModal({
           <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
             <span className="text-[10px] sm:text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wide">Días en Finca</span>
             <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5">{weightMetrics.totalDays} días</p>
-            <span className="text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-300 font-bold">Ingreso: {animal.entryDate}</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-300 font-bold">Ingreso: {formatDate(animal.entryDate)}</span>
           </div>
 
           <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -238,7 +241,7 @@ export function CattleDetailModal({
             {weightMetrics.lastWeighDate && (
               <span className="text-[10px] text-slate-600 dark:text-slate-300 font-extrabold flex items-center gap-0.5 mt-0.5">
                 <Calendar className="w-3 h-3 text-slate-500" />
-                <span>Fecha: {weightMetrics.lastWeighDate}</span>
+                <span>Fecha: {formatDate(weightMetrics.lastWeighDate)}</span>
               </span>
             )}
           </div>
@@ -491,7 +494,7 @@ export function CattleDetailModal({
                       <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
                         <span className="text-[10px] uppercase text-slate-600 dark:text-slate-400 block font-black">Fecha Estimada Salida</span>
                         <p className="font-black text-purple-700 dark:text-purple-400 text-base mt-0.5">
-                          {weightMetrics.cebaProjection.estimatedDate || 'Pendiente de pesaje'}
+                          {weightMetrics.cebaProjection.estimatedDate ? formatDate(weightMetrics.cebaProjection.estimatedDate) : 'Pendiente de pesaje'}
                         </p>
                       </div>
                     </>
@@ -528,7 +531,7 @@ export function CattleDetailModal({
                         return (
                           <tr key={log.id || `${log.date}_${log.weight}`} className={log.index === 1 ? 'bg-slate-50 dark:bg-slate-900/60 font-black' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30 transition'}>
                             <td className="p-2.5 sm:p-3 font-black text-slate-950 dark:text-white">{log.name}</td>
-                            <td className="p-2.5 sm:p-3 font-black text-slate-900 dark:text-slate-100">{log.date}</td>
+                            <td className="p-2.5 sm:p-3 font-black text-slate-900 dark:text-slate-100">{formatDate(log.date)}</td>
                             <td className="p-2.5 sm:p-3 font-black text-blue-700 dark:text-blue-300">{log.daysFromEntry} días</td>
                             <td className="p-2.5 sm:p-3 font-black text-slate-950 dark:text-white">{log.weight} kg</td>
                             <td className="p-2.5 sm:p-3 font-black text-emerald-700 dark:text-emerald-400">
@@ -544,7 +547,7 @@ export function CattleDetailModal({
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm(`¿Deseas eliminar este registro de pesaje (${log.weight} kg del ${log.date}) del bovino ${animal.tagNumber}?`)) {
+                                    if (window.confirm(`¿Deseas eliminar este registro de pesaje (${log.weight} kg del ${formatDate(log.date)}) del bovino ${animal.tagNumber}?`)) {
                                       onDeleteWeight(log.weighingId || log.id, animal.id, log.date, log.weight);
                                     }
                                   }}
@@ -604,7 +607,7 @@ export function CattleDetailModal({
                     <>
                       <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                         <span className="text-slate-700 dark:text-slate-300 font-bold">Fecha Servicio:</span>
-                        <span className="font-black text-slate-950 dark:text-white">{animal.serviceDate || 'Sin registrar'}</span>
+                        <span className="font-black text-slate-950 dark:text-white">{animal.serviceDate ? formatDate(animal.serviceDate) : 'Sin registrar'}</span>
                       </div>
                       <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                         <span className="text-slate-700 dark:text-slate-300 font-bold">Días Gestación:</span>
@@ -612,7 +615,7 @@ export function CattleDetailModal({
                       </div>
                       <div className="flex justify-between pt-1 border-t border-slate-100 dark:border-slate-700">
                         <span className="text-slate-800 dark:text-slate-200 font-black">Parto Estimado (+283d):</span>
-                        <span className="font-black text-emerald-700 dark:text-emerald-400">{repro.expectedCalvingDate}</span>
+                        <span className="font-black text-emerald-700 dark:text-emerald-400">{repro.expectedCalvingDate ? formatDate(repro.expectedCalvingDate) : '-'}</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-950 dark:text-purple-100 text-xs font-black">
                         {repro.statusLabel}
@@ -740,7 +743,7 @@ export function CattleDetailModal({
                   </div>
                   <div>
                     <span className="text-slate-600 dark:text-slate-300 font-black">Comprador / Fecha:</span>
-                    <p className="font-black text-slate-900 dark:text-slate-100 truncate">{animal.saleBuyer || animal.buyer || 'N/A'} • {animal.exitDate || ''}</p>
+                    <p className="font-black text-slate-900 dark:text-slate-100 truncate">{animal.saleBuyer || animal.buyer || 'N/A'} • {animal.exitDate ? formatDate(animal.exitDate) : ''}</p>
                   </div>
                 </div>
 
@@ -793,7 +796,7 @@ export function CattleDetailModal({
               </div>
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Fecha de Ingreso</span>
-                <p className="font-black text-slate-950 dark:text-white text-sm">{animal.entryDate}</p>
+                <p className="font-black text-slate-950 dark:text-white text-sm">{formatDate(animal.entryDate)}</p>
               </div>
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Tipo de Entrada</span>

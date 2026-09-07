@@ -15,7 +15,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { exportBackupData, importBackupData, loadSampleData, clearAllData, db } from '../../services/db';
-import { calculateWeightMetrics, calculateFinancials, formatNumber } from '../../services/calculations';
+import { calculateWeightMetrics, calculateFinancials, formatNumber, formatDate } from '../../services/calculations';
 import { buildBatchComparisonWorksheet } from '../../services/batchExcelService';
 import { useAuth } from '../../context/AuthContext';
 import XLSX from 'xlsx-js-style';
@@ -210,7 +210,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       'Categoría': c.category || '',
       'Tipo de Producción': c.productionType || '',
       'Estado': c.status || 'Activo',
-      'Fecha Entrada': c.entryDate || '',
+      'Fecha Entrada': c.entryDate ? formatDate(c.entryDate) : '',
       'Días en Finca': Number(wm.totalDays),
       'Peso Entrada (kg)': c.entryWeight ? Number(parseFloat(c.entryWeight).toFixed(1)) : 0,
       'Peso Actual (kg)': Number(parseFloat(wm.currentWeight).toFixed(1)),
@@ -221,9 +221,9 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       'Avance a Meta (%)': wm.cebaProjection ? Number(wm.cebaProjection.progressPercentage.toFixed(1)) : 0,
       'Faltan para Meta (kg)': wm.cebaProjection ? Number(wm.cebaProjection.remainingKg.toFixed(1)) : 0,
       'Días Est. a Meta': wm.cebaProjection?.daysToTarget ? Number(wm.cebaProjection.daysToTarget) : '',
-      'Fecha Est. Salida': wm.cebaProjection?.estimatedDate || '',
+      'Fecha Est. Salida': wm.cebaProjection?.estimatedDate ? formatDate(wm.cebaProjection.estimatedDate) : '',
       'Estado Reproductivo': c.reproductiveStatus || 'N/A',
-      'Fecha de Servicio': c.serviceDate || '',
+      'Fecha de Servicio': c.serviceDate ? formatDate(c.serviceDate) : '',
       'Producción Leche': c.milkingStatus || 'N/A',
       'Litros / Día': c.dailyMilkLiters ? Number(parseFloat(c.dailyMilkLiters).toFixed(1)) : 0,
       'Es Solo Cría': c.isBreedingOnly ? 'Sí' : 'No',
@@ -233,7 +233,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
       'Valor Estimado / Venta ($ COP)': fin.isSold ? Number(parseFloat(c.exitPrice || 0).toFixed(0)) : Number(parseFloat(fin.totalInvested + fin.netProfit).toFixed(0)),
       'Utilidad Neta ($ COP)': Number(parseFloat(fin.netProfit).toFixed(0)),
       'Rentabilidad ROI (%)': Number(parseFloat(fin.roi).toFixed(1)),
-      'Fecha de Salida': c.exitDate || '',
+      'Fecha de Salida': c.exitDate ? formatDate(c.exitDate) : '',
       'Peso Salida (kg)': c.exitWeight ? Number(parseFloat(c.exitWeight).toFixed(1)) : '',
       'Comprador / Destino': c.buyer || '',
       'Observaciones / Notas': c.notes || '',
@@ -441,7 +441,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
             'Hierro / Marca': animal.ironBrand || '',
             'Sexo': animal.sex || '',
             'Raza': animal.breed || '',
-            'Fecha del Pesaje': w.date || '',
+            'Fecha del Pesaje': w.date ? formatDate(w.date) : '',
             'Peso Registrado (kg)': Number((parseFloat(w.weight) || 0).toFixed(1)),
             'Condición Corporal (1-5)': w.conditionScore ? Number(w.conditionScore) : '',
             'Observaciones / Notas': w.notes || ''

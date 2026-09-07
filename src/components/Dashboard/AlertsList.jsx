@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2 } from 'lucide-react';
-import { calculateReproduction } from '../../services/calculations';
+import { calculateReproduction, formatDate } from '../../services/calculations';
 
 const VACCINE_STORAGE_KEY = 'ganado_colombia_vaccine_status';
 
@@ -39,7 +39,7 @@ export function AlertsList({ cattle = [], onSelectAnimal }) {
           title: `Próximo Parto: ${animal.tagNumber} ${animal.name ? `(${animal.name})` : ''}`,
           desc: repro.daysUntilCalving <= 0 
             ? '¡Fecha estimada de parto cumplida!' 
-            : `Faltan aprox. ${repro.daysUntilCalving} días para el parto (${repro.expectedCalvingDate}).`,
+            : `Faltan aprox. ${repro.daysUntilCalving} días para el parto (${formatDate(repro.expectedCalvingDate)}).`,
           icon: HeartHandshake,
         });
       }

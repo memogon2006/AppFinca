@@ -13,7 +13,7 @@ import {
   X, 
   Filter 
 } from 'lucide-react';
-import { formatCurrency, formatNumber, calculateFinancials } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
 
 export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDeleteAnimal, onOpenPartnershipModal }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -391,7 +391,7 @@ export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDele
                         )}
                       </td>
                       <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">
-                        {animal.exitDate || '-'}
+                        {animal.exitDate ? formatDate(animal.exitDate) : '-'}
                       </td>
                       <td className="p-3 font-bold text-slate-800 dark:text-slate-200">
                         {animal.exitWeight ? `${animal.exitWeight} kg` : '-'}

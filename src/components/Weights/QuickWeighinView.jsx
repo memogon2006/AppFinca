@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Scale, Zap, CheckCircle2, Search, Tag, Flame, Check, ArrowRight, AlertCircle, Calendar, Trash2, Sparkles } from 'lucide-react';
-import { calculateWeightMetrics } from '../../services/calculations';
+import { calculateWeightMetrics, formatDate } from '../../services/calculations';
 
 const DRAFT_WEIGHTS_KEY = 'bovina_quick_weights_draft';
 
@@ -90,7 +90,7 @@ export function QuickWeighinView({
     const lastRecordedDate = existingDates.length > 0 ? existingDates[existingDates.length - 1] : (animal.entryDate || '');
 
     if (lastRecordedDate && weighDate < lastRecordedDate) {
-      alert(`⚠️ La fecha del pesaje (${weighDate}) no puede ser anterior a la última fecha registrada para el animal ${animal.tagNumber} (${lastRecordedDate}). Debe ser una fecha igual o posterior.`);
+      alert(`⚠️ La fecha del pesaje (${formatDate(weighDate)}) no puede ser anterior a la última fecha registrada para el animal ${animal.tagNumber} (${formatDate(lastRecordedDate)}). Debe ser una fecha igual o posterior.`);
       return;
     }
 
@@ -154,7 +154,7 @@ export function QuickWeighinView({
 
     if (invalidAnimals.length > 0) {
       const sample = invalidAnimals[0];
-      alert(`⚠️ La fecha de pesaje (${weighDate}) no puede ser anterior a la última fecha registrada del animal ${sample.tag} (${sample.lastDate}). Por favor selecciona una fecha igual o posterior.`);
+      alert(`⚠️ La fecha de pesaje (${formatDate(weighDate)}) no puede ser anterior a la última fecha registrada del animal ${sample.tag} (${formatDate(sample.lastDate)}). Por favor selecciona una fecha igual o posterior.`);
       return;
     }
 
