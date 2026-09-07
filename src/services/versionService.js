@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.55";
-export const CURRENT_BUILD_TIME = 1789195000000;
+export const CURRENT_APP_VERSION = "2.8.56";
+export const CURRENT_BUILD_TIME = 1789196000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.56",
+    date: "07/09/2026",
+    title: "Restauración de Diseño Limpio y Estética Original",
+    highlights: [
+      "Restauración del diseño visual limpio y minimalista en las tarjetas de ganado.",
+      "Restauración del esquema de color y fondos estándar."
+    ]
+  },
   {
     version: "2.8.55",
     date: "07/09/2026",

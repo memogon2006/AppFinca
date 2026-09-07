@@ -12,10 +12,10 @@
 
   .dark body,
   body.dark {
-    @apply bg-[#070b12] text-slate-100;
-    background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px), radial-gradient(rgba(16, 185, 129, 0.03) 1px, #070b12 1px);
-    background-size: 36px 36px;
-    background-position: 0 0, 18px 18px;
+    @apply bg-slate-950 text-slate-100;
+    background-image: radial-gradient(rgba(16, 185, 129, 0.06) 1px, transparent 1px), radial-gradient(rgba(16, 185, 129, 0.03) 1px, #090d16 1px);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
   }
 }
 
@@ -38,9 +38,9 @@
 }
 
 .custom-card {
-  @apply bg-white dark:bg-[#0c121d] border border-slate-200 dark:border-slate-800/90 rounded-2xl shadow-sm dark:shadow-md transition-all duration-200;
+  @apply bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-sm dark:shadow-lg dark:backdrop-blur-md transition-all duration-200;
 }
 
 .custom-card-hover {
-  @apply hover:border-emerald-500/50 dark:hover:border-emerald-500/60 hover:shadow-md dark:hover:shadow-emerald-950/40 hover:-translate-y-0.5;
+  @apply hover:border-emerald-500/50 hover:shadow-md dark:hover:shadow-emerald-950/40 hover:-translate-y-0.5;
 }
