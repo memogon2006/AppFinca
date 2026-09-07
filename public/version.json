@@ -1,6 +1,6 @@
 {
-  "version": "2.8.35",
-  "buildTime": 1789144000000,
-  "description": "Opción de Limpiar Inventario ubicada de forma exclusiva y segura en el Perfil de Usuario."
+  "version": "2.8.36",
+  "buildTime": 1789146000000,
+  "description": "Ajuste de etiqueta a 'Valor Compra Total de los Animales' en el módulo de Lotes e Ingresos."
 }
 

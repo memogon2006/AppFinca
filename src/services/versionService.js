@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.35";
-export const CURRENT_BUILD_TIME = 1789144000000;
+export const CURRENT_APP_VERSION = "2.8.36";
+export const CURRENT_BUILD_TIME = 1789146000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.36",
+    date: "07/09/2026",
+    title: "Ajuste de Etiqueta: Valor Compra Total de los Animales",
+    highlights: [
+      "Actualización de la tarjeta principal en el módulo de Lotes e Ingresos para indicar con claridad 'Valor Compra Total de los Animales'.",
+      "Consistencia en textos de encabezado y descripciones zootécnicas de consolidado general."
+    ]
+  },
   {
     version: "2.8.35",
     date: "07/09/2026",

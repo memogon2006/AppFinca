@@ -439,7 +439,7 @@ export function BatchAnalyticsView({
             <span>Análisis & Comparador por Lote / Ingreso</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Control de compra total, precio por animal, valor del kilo ($/kg), kilos promedio y comparativa cara a cara entre lotes.
+            Control de valor compra total de los animales, precio por animal, valor del kilo ($/kg), kilos promedio y comparativa cara a cara entre lotes.
           </p>
         </div>
 
@@ -596,10 +596,10 @@ export function BatchAnalyticsView({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                {/* 1. Compra Total del Lote & Precio por Animal */}
+                {/* 1. Valor Compra Total de los Animales & Precio por Animal */}
                 <div className="p-5 rounded-2xl bg-amber-50 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-orange-500/5 border border-amber-200 dark:border-amber-500/30 shadow-sm space-y-1">
                   <span className="text-xs font-semibold uppercase text-amber-800 dark:text-amber-400">
-                    Compra Total del Lote
+                    Valor Compra Total de los Animales
                   </span>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                     {formatCurrency(currentBatchData.totalPurchaseCost)}
