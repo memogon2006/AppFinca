@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.50";
-export const CURRENT_BUILD_TIME = 1789190000000;
+export const CURRENT_APP_VERSION = "2.8.51";
+export const CURRENT_BUILD_TIME = 1789191000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.51",
+    date: "07/09/2026",
+    title: "Retorno al Inicio Superior de Página al Clicar Logo y Navegar",
+    highlights: [
+      "Al hacer clic en el logo del toro (🐂), el sistema no solo lleva al Tablero Principal sino que desplaza automáticamente la pantalla al inicio superior exacto (scroll top: 0).",
+      "Restablecimiento automático del desplazamiento vertical al cambiar entre cualquiera de los módulos y vistas."
+    ]
+  },
   {
     version: "2.8.50",
     date: "07/09/2026",

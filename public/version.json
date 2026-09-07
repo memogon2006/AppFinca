@@ -1,7 +1,7 @@
 {
-  "version": "2.8.50",
-  "buildTime": 1789190000000,
-  "description": "Clic en logo toro dirige al tablero principal y perfil accesible en botón Ajustes."
+  "version": "2.8.51",
+  "buildTime": 1789191000000,
+  "description": "Desplazamiento automático al inicio superior exacto de la página al pulsar el logo o navegar."
 }
 
 

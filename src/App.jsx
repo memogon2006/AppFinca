@@ -100,6 +100,11 @@ export default function App() {
     };
   }, [userId]);
 
+  // Scroll automático al tope superior cada vez que se cambia de pestaña / vista
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentView]);
+
   // Consultas reactivas filtradas exclusivamente por el usuario activo (Multi-Tenancy)
   const cattle = useLiveQuery(
     () => {

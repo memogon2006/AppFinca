@@ -48,6 +48,11 @@ export function Navbar({
     }
   };
 
+  const handleNavigate = (viewId) => {
+    setCurrentView(viewId);
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  };
+
   const getInitials = (name) => {
     if (!name) return '🐂';
     const parts = name.trim().split(' ');
@@ -69,7 +74,7 @@ export function Navbar({
             {/* LADO IZQUIERDO: Logo & Identidad de la Finca */}
             <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
               <div 
-                onClick={() => setCurrentView('dashboard')}
+                onClick={() => handleNavigate('dashboard')}
                 title="Ir al Tablero / Panel Principal"
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition"
               >
@@ -77,7 +82,7 @@ export function Navbar({
               </div>
 
               <div 
-                onClick={() => setCurrentView('dashboard')}
+                onClick={() => handleNavigate('dashboard')}
                 className="flex flex-col justify-center cursor-pointer group"
                 title="Ir al Tablero / Panel Principal"
               >
@@ -104,7 +109,7 @@ export function Navbar({
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setCurrentView(item.id)}
+                    onClick={() => handleNavigate(item.id)}
                     className={`flex items-center gap-1.5 px-2.5 2xl:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 min-h-[36px] cursor-pointer whitespace-nowrap ${
                       isActive
                         ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/20'
@@ -205,7 +210,7 @@ export function Navbar({
             <div className="flex items-center justify-between gap-2">
               <div 
                 className="flex items-center gap-2 min-w-0 cursor-pointer" 
-                onClick={() => setCurrentView('dashboard')}
+                onClick={() => handleNavigate('dashboard')}
                 title="Ir al Tablero / Panel Principal"
               >
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0">
@@ -303,7 +308,7 @@ export function Navbar({
               return (
                 <button
                   key={item.id}
-                  onClick={() => setCurrentView(item.id)}
+                  onClick={() => handleNavigate(item.id)}
                   className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition min-h-[38px] cursor-pointer ${
                     isActive
                       ? 'bg-emerald-600 text-white shadow-sm'
@@ -329,7 +334,7 @@ export function Navbar({
             return (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => handleNavigate(item.id)}
                 className={`flex flex-col items-center justify-center h-full py-1 text-[10px] font-bold transition-all ${
                   isActive
                     ? 'text-emerald-600 dark:text-emerald-400 font-black'
