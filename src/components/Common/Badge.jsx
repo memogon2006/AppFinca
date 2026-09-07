@@ -60,6 +60,10 @@ export function FemaleStatusBadge({ status, liters, cycleAvg }) {
       return <Badge variant="emerald">🤰 Gestación (Preñada)</Badge>;
     case 'Vacía':
       return <Badge variant="gray">⭕ Vacía / Abierta</Badge>;
+    case 'Ceba / Levante / Engorde':
+    case 'Ceba':
+    case 'Engorde':
+      return <Badge variant="amber">🥩 Ceba / Engorde</Badge>;
     default:
       return <Badge variant="default">{status || 'Hembra'}</Badge>;
   }

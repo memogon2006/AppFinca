@@ -168,18 +168,28 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null }) {
     let repro = 'Vacía';
     let milk = 'No aplica';
     let breedingOnly = formData.isBreedingOnly;
+    let prodType = formData.productionType;
 
     if (status === 'Gestación') {
       repro = 'Preñada';
       milk = formData.milkingStatus === 'En ordeño' ? 'En ordeño' : 'Seca';
+      if (prodType === 'Ceba') prodType = 'Cría';
     } else if (status === 'Producción de leche') {
       repro = 'Vacía';
       milk = 'En ordeño';
+      prodType = 'Lechería';
       setShowAdvancedMilk(true);
     } else if (status === 'Levante de cría') {
       repro = 'Vacía';
       milk = 'No aplica';
       breedingOnly = true;
+      if (prodType === 'Ceba') prodType = 'Cría';
+    } else if (status === 'Ceba / Levante / Engorde') {
+      repro = 'No aplica';
+      milk = 'No aplica';
+      breedingOnly = false;
+      prodType = 'Ceba';
+      setShowAdvancedMilk(false);
     } else if (status === 'Vacía') {
       repro = 'Vacía';
       milk = 'Seca';
@@ -191,6 +201,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null }) {
       reproductiveStatus: repro,
       milkingStatus: milk,
       isBreedingOnly: breedingOnly,
+      productionType: prodType,
     }));
   };
 
@@ -492,11 +503,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null }) {
               <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-purple-900 dark:text-purple-200 flex items-center gap-2">
                 <span>🐄 Estado Productivo de la Hembra (Solo Hembras)</span>
               </h4>
-              <span className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">Lechería o Cría</span>
+              <span className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">Ceba, Lechería o Cría</span>
             </div>
 
             {/* Selector Principal de Estado de Hembra */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
               {FEMALE_STATUSES.map((item) => {
                 const isSelected = formData.femaleStatus === item.value;
                 return (
@@ -504,20 +515,33 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null }) {
                     type="button"
                     key={item.value}
                     onClick={() => handleFemaleStatusChange(item.value)}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition min-h-[56px] cursor-pointer ${
+                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition min-h-[60px] cursor-pointer ${
                       isSelected
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-md'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-400/50'
                         : 'bg-white dark:bg-slate-800/80 border-purple-200 dark:border-purple-500/30 text-slate-800 dark:text-slate-200 hover:border-purple-400'
                     }`}
                   >
                     <span className="text-xs font-extrabold leading-snug">{item.label}</span>
-                    <span className={`text-[10px] mt-1 ${isSelected ? 'text-purple-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {item.value === 'Producción de leche' ? 'Ordeño' : item.value === 'Levante de cría' ? 'Con ternero' : item.value === 'Gestación' ? 'Preñez' : 'Abierta'}
+                    <span className={`text-[10px] font-bold mt-1.5 ${isSelected ? 'text-purple-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                      {item.short || (item.value === 'Producción de leche' ? 'Ordeño' : item.value === 'Levante de cría' ? 'Con ternero' : item.value === 'Gestación' ? 'Preñez' : item.value === 'Ceba / Levante / Engorde' ? 'Ceba / Engorde' : 'Abierta')}
                     </span>
                   </button>
                 );
               })}
             </div>
+
+            {/* Si es Ceba / Levante / Engorde: Explicación de ceba */}
+            {formData.femaleStatus === 'Ceba / Levante / Engorde' && (
+              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700/60 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                <span className="text-base shrink-0">🥩</span>
+                <div>
+                  <span className="font-extrabold block">Espacio de Ceba, Levante o Engorde de Hembras</span>
+                  <span className="text-[11px] text-amber-800 dark:text-amber-300">
+                    Animal clasificado para ganancia de peso (GDP), engorde de novilla o vaca de ceba comercial para venta por kilo.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Si está en Gestación (Preñada): Fecha de servicio y parto */}
             {formData.femaleStatus === 'Gestación' && (

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.46";
-export const CURRENT_BUILD_TIME = 1789184000000;
+export const CURRENT_APP_VERSION = "2.8.47";
+export const CURRENT_BUILD_TIME = 1789186000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.47",
+    date: "07/09/2026",
+    title: "Módulo y Estado Productivo de Ceba, Levante y Engorde de Hembras",
+    highlights: [
+      "Nuevo estado productivo '🥩 Ceba, Levante o Engorde' en el formulario de registro y edición de hembras.",
+      "Espacio y sub-pestaña dedicada en el módulo Control de Hembras con métricas de ganancia diaria de peso (GDP), peso promedio y meta de ceba (≥480kg).",
+      "Insignias especializadas e integración automática en tarjetas de inventario y detalle del animal."
+    ]
+  },
   {
     version: "2.8.46",
     date: "07/09/2026",

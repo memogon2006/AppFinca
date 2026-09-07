@@ -21,10 +21,11 @@ export const CATEGORIES = [
 ];
 
 export const FEMALE_STATUSES = [
-  { value: 'Producción de leche', label: '🥛 Producción de leche (En ordeño activo)', color: 'blue' },
-  { value: 'Levante de cría', label: '👶 Levante de cría (Amamantando / Cría al pie)', color: 'purple' },
-  { value: 'Gestación', label: '🤰 Gestación (Preñada)', color: 'emerald' },
-  { value: 'Vacía', label: '⭕ Vacía (Abierta / Seca / Lista para servicio)', color: 'gray' },
+  { value: 'Producción de leche', label: '🥛 Producción de leche (En ordeño activo)', color: 'blue', short: 'Ordeño' },
+  { value: 'Levante de cría', label: '👶 Levante de cría (Amamantando / Cría al pie)', color: 'purple', short: 'Con ternero' },
+  { value: 'Gestación', label: '🤰 Gestación (Preñada)', color: 'emerald', short: 'Preñez' },
+  { value: 'Vacía', label: '⭕ Vacía (Abierta / Seca / Lista para servicio)', color: 'gray', short: 'Abierta' },
+  { value: 'Ceba / Levante / Engorde', label: '🥩 Ceba, Levante o Engorde (Hembra de carne)', color: 'amber', short: 'Ceba / Engorde' },
 ];
 
 export const REPRODUCTIVE_STATUSES = [

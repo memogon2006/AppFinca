@@ -664,6 +664,7 @@ export default function App() {
         {currentView === 'females' && (
           <FemalesView
             cattle={cattle}
+            weighings={weighings}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
           />

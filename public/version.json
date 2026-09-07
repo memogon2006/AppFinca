@@ -1,8 +1,9 @@
 {
-  "version": "2.8.46",
-  "buildTime": 1789184000000,
-  "description": "Opción para eliminar únicamente datos cargados de demostración conservando los animales reales intactos."
+  "version": "2.8.47",
+  "buildTime": 1789186000000,
+  "description": "Espacio y estado productivo para la ceba, levante y engorde de hembras con métricas de ganancia de peso."
 }
+
 
 
 

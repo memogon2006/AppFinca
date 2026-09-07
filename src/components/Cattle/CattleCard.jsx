@@ -172,6 +172,10 @@ export function CattleCard({
               <span className="text-blue-700 dark:text-blue-300 font-extrabold flex items-center gap-1">
                 <Milk className="w-3.5 h-3.5" /> {animal.dailyMilkLiters || 0} L/día {animal.lactationCycleTotalLiters ? `(${formatNumber(animal.lactationCycleTotalLiters, 0)} L/ciclo)` : ''}
               </span>
+            ) : femaleStatus === 'Ceba / Levante / Engorde' || femaleStatus === 'Ceba' || femaleStatus === 'Engorde' ? (
+              <span className="text-amber-700 dark:text-amber-400 font-extrabold flex items-center gap-1">
+                🥩 Ceba / Engorde
+              </span>
             ) : femaleStatus === 'Levante de cría' ? (
               <span className="text-purple-700 dark:text-purple-300 font-bold">👶 Cría al pie</span>
             ) : (

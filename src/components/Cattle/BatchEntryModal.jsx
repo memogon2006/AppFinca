@@ -199,8 +199,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch }) {
         currentWeight: weight,
         entryPrice: individualCost,
         additionalCosts: 0,
-        femaleStatus: batchInfo.sex === 'Hembra' ? 'Vacía' : 'No aplica',
-        reproductiveStatus: batchInfo.sex === 'Hembra' ? 'Vacía' : 'No aplica',
+        femaleStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'Ceba / Levante / Engorde' : 'Vacía') : 'No aplica',
+        reproductiveStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'No aplica' : 'Vacía') : 'No aplica',
         milkingStatus: 'No aplica',
         notes: batchInfo.notes || `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`,
       };

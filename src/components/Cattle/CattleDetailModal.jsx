@@ -622,8 +622,12 @@ export function CattleDetailModal({
                       </div>
                     </>
                   ) : (
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 font-bold text-xs">
-                      {femaleStatus === 'Levante de cría' ? 'Hembra amamantando ternero al pie.' : 'Hembra vacía / abierta lista para monta o inseminación.'}
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 font-bold text-xs">
+                      {femaleStatus === 'Ceba / Levante / Engorde' || femaleStatus === 'Ceba' || femaleStatus === 'Engorde'
+                        ? '🥩 Hembra destinada a ceba, levante y engorde comercial para carne y ganancia de peso.'
+                        : femaleStatus === 'Levante de cría'
+                        ? '👶 Hembra amamantando ternero al pie.'
+                        : '⭕ Hembra vacía / abierta lista para monta o inseminación.'}
                     </div>
                   )}
 
