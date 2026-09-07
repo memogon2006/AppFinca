@@ -27,7 +27,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   // Filtros interactivos para Excel
   const [availableBatches, setAvailableBatches] = useState([]);
   const [exportBatch, setExportBatch] = useState('all');
-  const [exportStatus, setExportStatus] = useState('all'); // 'all' | 'Activo' | 'Vendido' | 'ready480'
+  const [exportStatus, setExportStatus] = useState('Activo'); // 'Activo' (predeterminado) | 'all' | 'Vendido' | 'ready480'
   const [splitByBatch, setSplitByBatch] = useState(true);
 
   const userId = currentUser?.id;

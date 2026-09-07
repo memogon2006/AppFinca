@@ -1,6 +1,6 @@
 {
-  "version": "2.8.37",
-  "buildTime": 1789148000000,
-  "description": "Visualización predeterminada de animales activos en finca en el módulo de Lotes e Ingresos."
+  "version": "2.8.38",
+  "buildTime": 1789150000000,
+  "description": "Sincronización total de reportes Excel con formato de fechas DD/MM/YYYY, filtro predeterminado de activos y etiquetas actualizadas."
 }
 

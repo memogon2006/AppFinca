@@ -276,10 +276,10 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
 
   aoa.push([]);
 
-  // GRÁFICA 3: VALOR DE COMPRA / INVERSIÓN TOTAL ($ COP)
+  // GRÁFICA 3: VALOR COMPRA TOTAL DE LOS ANIMALES ($ COP)
   const graph3TitleRow = aoa.length;
-  aoa.push(['💰 GRÁFICA 3: INVERSIÓN TOTAL DE COMPRA & VALOR DEL KILO ($/kg)']);
-  aoa.push(['Lote / Ingreso', 'Compra Total ($ COP)', 'Gráfica de Inversión Monetaria', 'Valor Kilo ($/kg)', 'Precio / Animal']);
+  aoa.push(['💰 GRÁFICA 3: VALOR COMPRA TOTAL DE LOS ANIMALES & VALOR DEL KILO ($/kg)']);
+  aoa.push(['Lote / Ingreso', 'Valor Compra Total ($ COP)', 'Gráfica de Inversión Monetaria', 'Valor Kilo ($/kg)', 'Precio / Animal']);
 
   const graph3StartRow = aoa.length;
   batchesData.forEach(b => {

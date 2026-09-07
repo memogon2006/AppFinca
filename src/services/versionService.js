@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.37";
-export const CURRENT_BUILD_TIME = 1789148000000;
+export const CURRENT_APP_VERSION = "2.8.38";
+export const CURRENT_BUILD_TIME = 1789150000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.38",
+    date: "07/09/2026",
+    title: "Sincronización Total de Reportes Excel con Nuevos Estándares",
+    highlights: [
+      "Todas las fechas en todas las pestañas de Excel se generan en formato latinoamericano DD/MM/YYYY.",
+      "Etiquetas y gráficas de inversión monetaria alineadas a 'Valor Compra Total de los Animales'.",
+      "Exportación general configurada de forma predeterminada en '🟢 Solo Activos en Finca'."
+    ]
+  },
   {
     version: "2.8.37",
     date: "07/09/2026",
