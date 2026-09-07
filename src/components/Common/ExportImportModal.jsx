@@ -21,7 +21,7 @@ import { buildBatchComparisonWorksheet } from '../../services/batchExcelService'
 import { useAuth } from '../../context/AuthContext';
 import XLSX from 'xlsx-js-style';
 
-export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
+export function ExportImportModal({ isOpen, onClose, onDataChanged, zIndex = 'z-[60]' }) {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -526,7 +526,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Gestión & Exportación • ${currentUser?.farmName || 'Mi Finca'}`} subtitle="Descarga reportes Excel segmentados por lote, respaldos JSON o administra datos" maxWidth="max-w-3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Gestión & Exportación • ${currentUser?.farmName || 'Mi Finca'}`} subtitle="Descarga reportes Excel segmentados por lote, respaldos JSON o administra datos" maxWidth="max-w-3xl" zIndex={zIndex}>
       {message && (
         <div className={`p-3.5 sm:p-4 rounded-2xl flex items-center gap-3 ${message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30' : 'bg-rose-50 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30'}`}>
           {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 flex-shrink-0" />}

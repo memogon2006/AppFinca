@@ -60,7 +60,7 @@ export function CattleDetailModal({
 
   const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'financials' | 'general'
 
-  const animalWeighings = weighings.filter(w => w.cattleId === animal.id);
+  const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
   const financials = calculateFinancials(animal);
   const repro = calculateReproduction(animal);

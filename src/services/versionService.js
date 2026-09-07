@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.47";
-export const CURRENT_BUILD_TIME = 1789186000000;
+export const CURRENT_APP_VERSION = "2.8.48";
+export const CURRENT_BUILD_TIME = 1789188000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.48",
+    date: "07/09/2026",
+    title: "Prioridad Visual y Actualización Inmediata en Edición de Bovinos",
+    highlights: [
+      "El formulario de edición ahora se superpone en primer plano por encima de la ficha técnica con fondo oscurecido prioritario.",
+      "Cierre automático inmediato del modal de edición al guardar los cambios.",
+      "Actualización instantánea y en tiempo real de todos los datos en la ficha técnica sin necesidad de recargar."
+    ]
+  },
   {
     version: "2.8.47",
     date: "07/09/2026",

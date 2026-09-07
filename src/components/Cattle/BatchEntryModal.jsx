@@ -38,7 +38,7 @@ const COMMON_COLORS = [
   'Pintado / Overo'
 ];
 
-export function BatchEntryModal({ isOpen, onClose, onSaveBatch }) {
+export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]' }) {
   // Configuración general del lote
   const [batchInfo, setBatchInfo] = useState({
     entryBatch: 'Ingreso #1',
@@ -219,6 +219,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch }) {
       title="📦 Ingresar Lote Completo de Ganado"
       subtitle="Registra múltiples animales de una sola vez con cálculo por kilo o precio promedio"
       maxWidth="max-w-4xl"
+      zIndex={zIndex}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         

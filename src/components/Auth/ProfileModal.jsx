@@ -23,7 +23,7 @@ import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } fr
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
 import { cloudPushData } from '../../services/cloudSync';
 
-export function ProfileModal({ isOpen, onClose }) {
+export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout } = useAuth();
 
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'version' | 'delete'
@@ -273,6 +273,7 @@ export function ProfileModal({ isOpen, onClose }) {
       title="Mi Perfil Ganadero & Configuración"
       subtitle={`Usuario: ${currentUser.email} • Finca: ${currentUser.farmName}`}
       maxWidth="max-w-2xl"
+      zIndex={zIndex}
     >
       <div className="space-y-5">
         

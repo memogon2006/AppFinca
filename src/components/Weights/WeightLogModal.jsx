@@ -3,7 +3,7 @@ import { Modal } from '../Common/Modal';
 import { Scale, Flame } from 'lucide-react';
 import { formatNumber, formatDate, getDaysDifference, calculateWeightMetrics } from '../../services/calculations';
 
-export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight }) {
+export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight, zIndex = 'z-[60]' }) {
   if (!animal) return null;
 
   const animalWeighs = useMemo(() => {
@@ -79,6 +79,7 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
       title={`Nuevo Pesaje en Báscula: ${animal.tagNumber}`}
       subtitle={`${animal.name ? `Nombre: ${animal.name} • ` : ''}Hierro: ${animal.ironBrand || 'N/A'} • Sexo: ${animal.sex} • Último peso: ${lastRecordedWeight} kg${lastRecordedDate ? ` (${formatDate(lastRecordedDate)})` : ''}`}
       maxWidth="max-w-lg"
+      zIndex={zIndex}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         

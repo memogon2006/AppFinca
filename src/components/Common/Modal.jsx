@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-export function Modal({ isOpen, onClose, title, subtitle, children, maxWidth = 'max-w-2xl' }) {
+export function Modal({ isOpen, onClose, title, subtitle, children, maxWidth = 'max-w-2xl', zIndex = 'z-50' }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && isOpen) {
@@ -13,7 +13,12 @@ export function Modal({ isOpen, onClose, title, subtitle, children, maxWidth = '
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
-      document.body.style.overflow = '';
+      setTimeout(() => {
+        const remainingModals = document.querySelectorAll('.modal-backdrop-root');
+        if (remainingModals.length === 0) {
+          document.body.style.overflow = '';
+        }
+      }, 10);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
@@ -21,7 +26,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, maxWidth = '
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto`}>
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-slate-900/70 dark:bg-slate-950/85 backdrop-blur-sm transition-opacity"
@@ -44,7 +49,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, maxWidth = '
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition min-w-[36px] min-h-[36px] flex items-center justify-center flex-shrink-0"
+            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition min-w-[36px] min-h-[36px] flex items-center justify-center flex-shrink-0 cursor-pointer"
             title="Cerrar (Esc)"
           >
             <X className="w-5 h-5" />

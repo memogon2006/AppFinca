@@ -11,7 +11,7 @@ import {
 import { BOVINE_GESTATION_DAYS } from '../../services/calculations';
 import { Save, Milk, ChevronDown, ChevronUp } from 'lucide-react';
 
-export function CattleFormModal({ isOpen, onClose, onSave, animal = null }) {
+export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[60]' }) {
   const isEditing = Boolean(animal && animal.id);
 
   const [formData, setFormData] = useState({
@@ -318,6 +318,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null }) {
       title={isEditing ? `Editar Bovino ${formData.tagNumber}` : 'Registrar Nuevo Bovino en Finca'}
       subtitle="Ingresa la identificación, Ingreso #, procedencia, peso y costos"
       maxWidth="max-w-3xl"
+      zIndex={zIndex}
     >
       <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
         

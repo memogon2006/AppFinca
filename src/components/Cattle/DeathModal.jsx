@@ -15,7 +15,7 @@ const COMMON_DEATH_REASONS = [
   'Otra causa específica',
 ];
 
-export function DeathModal({ isOpen, onClose, animal, onConfirmDeath }) {
+export function DeathModal({ isOpen, onClose, animal, onConfirmDeath, zIndex = 'z-[60]' }) {
   const [formData, setFormData] = useState({
     deathDate: new Date().toISOString().split('T')[0],
     deathReason: 'Enfermedad general / Infección',
@@ -67,6 +67,7 @@ export function DeathModal({ isOpen, onClose, animal, onConfirmDeath }) {
       title={`💀 Registrar Muerte de Bovino • Arete: ${animal.tagNumber}`}
       subtitle={`Descarga del inventario activo por fallecimiento • ${animal.name || 'Sin nombre'}`}
       maxWidth="max-w-md"
+      zIndex={zIndex}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         

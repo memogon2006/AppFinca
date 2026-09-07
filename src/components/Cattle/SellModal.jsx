@@ -4,7 +4,7 @@ import { formatCurrency, formatNumber } from '../../services/calculations';
 import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export function SellModal({ isOpen, onClose, animal, onConfirmSale }) {
+export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-[60]' }) {
   if (!animal) return null;
 
   const entryPrice = parseFloat(animal.entryPrice) || 0;
@@ -118,6 +118,7 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale }) {
       title={`Liquidar / Vender Bovino: ${animal.tagNumber}`}
       subtitle={`Registra el peso final, precio de venta y elige si es venta propia o en compañía`}
       maxWidth="max-w-xl"
+      zIndex={zIndex}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         

@@ -29,7 +29,8 @@ export function PartnershipSettlementModal({
   onClose, 
   cattle = [], 
   weighings = [], 
-  onConfirmBatchSale 
+  onConfirmBatchSale,
+  zIndex = 'z-[60]'
 }) {
   if (!isOpen) return null;
 
@@ -366,7 +367,7 @@ export function PartnershipSettlementModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>
       <div className="relative w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Header del Modal */}

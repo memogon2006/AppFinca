@@ -189,7 +189,32 @@ export default function App() {
     if (!userId) return;
 
     if (animalData.id) {
-      await db.cattle.put({ ...animalData, userId });
+      const updated = { ...animalData, userId };
+      await db.cattle.put(updated);
+
+      // Si el peso de entrada cambió, actualizar pesaje inicial si existe
+      if (updated.entryWeight !== undefined && updated.entryWeight !== null) {
+        try {
+          const allAnimalWeighings = await db.weighings.where('cattleId').equals(String(updated.id)).toArray();
+          const initialWeighing = allAnimalWeighings.find(w => w.notes && w.notes.includes('inicial'));
+          if (initialWeighing) {
+            await db.weighings.update(initialWeighing.id, {
+              weight: parseFloat(updated.entryWeight) || 0,
+              date: updated.entryDate || initialWeighing.date
+            });
+          }
+        } catch (e) {
+          console.warn('Error sincronizando pesaje inicial:', e);
+        }
+      }
+
+      // Actualizar inmediatamente el animal seleccionado si está abierto en CattleDetailModal
+      if (selectedAnimal && String(selectedAnimal.id) === String(animalData.id)) {
+        setSelectedAnimal(updated);
+      }
+
+      setIsFormModalOpen(false);
+      setEditingAnimal(null);
       cloudPushData(userId);
       showToast(`Bovino ${animalData.tagNumber} actualizado y sincronizado en la nube ☁️`);
     } else {
@@ -215,6 +240,8 @@ export default function App() {
         });
       }
 
+      setIsFormModalOpen(false);
+      setEditingAnimal(null);
       cloudPushData(userId);
       showToast(`¡Bovino ${created.tagNumber} registrado y sincronizado en la nube! ☁️`);
     }
@@ -272,11 +299,18 @@ export default function App() {
 
     const allWeighs = await db.weighings.where('cattleId').equals(String(targetId)).toArray();
     const metrics = calculateWeightMetrics(animal || { id: targetId }, allWeighs);
+    const newWeight = metrics.currentWeight > 0 ? metrics.currentWeight : parseFloat(weight);
 
     await db.cattle.update(targetId, {
-      currentWeight: metrics.currentWeight > 0 ? metrics.currentWeight : parseFloat(weight),
+      currentWeight: newWeight,
     });
 
+    if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
+      setSelectedAnimal(prev => ({ ...prev, currentWeight: newWeight }));
+    }
+
+    setIsWeightModalOpen(false);
+    setWeighingAnimal(null);
     cloudPushData(userId);
     showToast(`Pesaje de ${weight} kg registrado y sincronizado en la nube ☁️`);
   };
@@ -312,7 +346,7 @@ export default function App() {
         currentWeight: newCurrentWeight > 0 ? newCurrentWeight : undefined,
       });
 
-      if (selectedAnimal && selectedAnimal.id === animal.id) {
+      if (selectedAnimal && String(selectedAnimal.id) === String(animal.id)) {
         setSelectedAnimal(prev => ({
           ...prev,
           currentWeight: newCurrentWeight > 0 ? newCurrentWeight : undefined,
@@ -328,7 +362,7 @@ export default function App() {
     const animal = await db.cattle.get(id) || await db.cattle.get(Number(id));
     const targetId = animal ? animal.id : id;
 
-    await db.cattle.update(targetId, {
+    const saleUpdates = {
       status: 'Vendido',
       exitDate,
       exitWeight: parseFloat(exitWeight),
@@ -338,8 +372,16 @@ export default function App() {
       exitType: exitType || 'En Pie',
       currentWeight: parseFloat(exitWeight),
       partnershipDetails: partnershipDetails || null,
-    });
+    };
 
+    await db.cattle.update(targetId, saleUpdates);
+
+    if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
+      setSelectedAnimal(prev => ({ ...prev, ...saleUpdates }));
+    }
+
+    setIsSellModalOpen(false);
+    setSellingAnimal(null);
     cloudPushData(userId);
     showToast(`Venta liquidada y sincronizada en la nube ☁️`);
   };
@@ -388,13 +430,21 @@ export default function App() {
     const animal = (await db.cattle.get(id)) || (!isNaN(numId) ? await db.cattle.get(numId) : null);
     const targetId = animal ? animal.id : (isNaN(numId) ? id : numId);
 
-    await db.cattle.update(targetId, {
+    const deathUpdates = {
       status: 'Muerto',
       deathDate: deathDate || new Date().toISOString().split('T')[0],
       deathReason: deathReason || 'Enfermedad',
       deathNotes: deathNotes || '',
-    });
+    };
 
+    await db.cattle.update(targetId, deathUpdates);
+
+    if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
+      setSelectedAnimal(prev => ({ ...prev, ...deathUpdates }));
+    }
+
+    setIsDeathModalOpen(false);
+    setDeathAnimal(null);
     cloudPushData(userId);
     showToast(`Bovino dado de baja por muerte y sincronizado ☁️`);
   };
@@ -403,12 +453,18 @@ export default function App() {
     const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
     const targetId = animal ? animal.id : animalId;
 
-    await db.cattle.update(targetId, {
+    const revertUpdates = {
       status: 'Activo',
       deathDate: null,
       deathReason: null,
       deathNotes: null,
-    });
+    };
+
+    await db.cattle.update(targetId, revertUpdates);
+
+    if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
+      setSelectedAnimal(prev => ({ ...prev, ...revertUpdates }));
+    }
 
     cloudPushData(userId);
     showToast(`Bovino reactivado en el inventario ☁️`);
@@ -418,7 +474,7 @@ export default function App() {
     const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
     const targetId = animal ? animal.id : animalId;
 
-    await db.cattle.update(targetId, {
+    const revertUpdates = {
       status: 'Activo',
       exitDate: null,
       exitWeight: null,
@@ -427,7 +483,13 @@ export default function App() {
       saleReason: null,
       exitType: null,
       partnershipDetails: null,
-    });
+    };
+
+    await db.cattle.update(targetId, revertUpdates);
+
+    if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
+      setSelectedAnimal(prev => ({ ...prev, ...revertUpdates }));
+    }
 
     cloudPushData(userId);
     showToast(`Venta anulada. El animal volvió al inventario activo ☁️`);
@@ -684,41 +746,11 @@ export default function App() {
 
       {/* MODALES */}
 
-      <BatchEntryModal
-        isOpen={isBatchEntryModalOpen}
-        onClose={() => setIsBatchEntryModalOpen(false)}
-        onSaveBatch={handleSaveBatchCattle}
-      />
-
-      <PartnershipSettlementModal
-        isOpen={isPartnershipModalOpen}
-        onClose={() => setIsPartnershipModalOpen(false)}
-        cattle={cattle}
-        weighings={weighings}
-        onConfirmBatchSale={handleConfirmBatchSale}
-      />
-
-      <GlossaryModal
-        isOpen={isGlossaryOpen}
-        onClose={() => setIsGlossaryOpen(false)}
-      />
-
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-      />
-
-      <CattleFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => setIsFormModalOpen(false)}
-        onSave={handleSaveAnimal}
-        animal={editingAnimal}
-      />
-
+      {/* 1. Modal Base de Ficha Técnica / Detalle del Bovino */}
       <CattleDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        animal={cattle.find(c => c.id === selectedAnimal?.id) || selectedAnimal}
+        animal={cattle.find(c => String(c.id) === String(selectedAnimal?.id)) || selectedAnimal}
         weighings={weighings}
         onOpenEdit={handleOpenEdit}
         onOpenSell={handleOpenSell}
@@ -730,32 +762,85 @@ export default function App() {
         onOpenGlossary={() => setIsGlossaryOpen(true)}
       />
 
+      {/* 2. Modales de Acción y Formularios (Con zIndex z-[60] para superponerse con prioridad) */}
+      <CattleFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => {
+          setIsFormModalOpen(false);
+          setEditingAnimal(null);
+        }}
+        onSave={handleSaveAnimal}
+        animal={editingAnimal}
+        zIndex="z-[60]"
+      />
+
       <SellModal
         isOpen={isSellModalOpen}
-        onClose={() => setIsSellModalOpen(false)}
+        onClose={() => {
+          setIsSellModalOpen(false);
+          setSellingAnimal(null);
+        }}
         animal={sellingAnimal}
         onConfirmSale={handleConfirmSale}
+        zIndex="z-[60]"
       />
 
       <DeathModal
         isOpen={isDeathModalOpen}
-        onClose={() => setIsDeathModalOpen(false)}
+        onClose={() => {
+          setIsDeathModalOpen(false);
+          setDeathAnimal(null);
+        }}
         animal={deathAnimal}
         onConfirmDeath={handleConfirmDeath}
+        zIndex="z-[60]"
       />
 
       <WeightLogModal
         isOpen={isWeightModalOpen}
-        onClose={() => setIsWeightModalOpen(false)}
+        onClose={() => {
+          setIsWeightModalOpen(false);
+          setWeighingAnimal(null);
+        }}
         animal={weighingAnimal}
         weighings={weighings}
         onSaveWeight={handleSaveWeight}
+        zIndex="z-[60]"
+      />
+
+      <BatchEntryModal
+        isOpen={isBatchEntryModalOpen}
+        onClose={() => setIsBatchEntryModalOpen(false)}
+        onSaveBatch={handleSaveBatchCattle}
+        zIndex="z-[60]"
+      />
+
+      <PartnershipSettlementModal
+        isOpen={isPartnershipModalOpen}
+        onClose={() => setIsPartnershipModalOpen(false)}
+        cattle={cattle}
+        weighings={weighings}
+        onConfirmBatchSale={handleConfirmBatchSale}
+        zIndex="z-[60]"
+      />
+
+      <GlossaryModal
+        isOpen={isGlossaryOpen}
+        onClose={() => setIsGlossaryOpen(false)}
+        zIndex="z-[60]"
+      />
+
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        zIndex="z-[60]"
       />
 
       <ExportImportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         onDataChanged={() => {}}
+        zIndex="z-[60]"
       />
 
     </div>

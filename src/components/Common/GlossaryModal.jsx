@@ -21,7 +21,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-export function GlossaryModal({ isOpen, onClose }) {
+export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   if (!isOpen) return null;
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,20 +93,6 @@ export function GlossaryModal({ isOpen, onClose }) {
       title: 'ROI (Retorno sobre la Inversión)',
       icon: DollarSign,
       badge: 'Finanzas & Negocios',
-      color: 'emerald',
-      formula: 'ROI = (Utilidad Neta / Inversión Total Acumulada) × 100',
-      summary: 'Indica el porcentaje de rentabilidad limpia que genera cada peso invertido en el animal (compra del ternero + fletes + vacunas + sal + suplementos + manejo).',
-      example: '• Compra + Gastos Totales: $2.000.000 COP\n• Venta al Frigorífico: $3.200.000 COP\n• Utilidad Neta: $1.200.000 COP\n• ROI = ($1.200.000 / $2.000.000) × 100 = 60.0% de rentabilidad.',
-      benchmark: [
-        { label: 'Excelente', value: 'ROI > 50% en ciclos de ceba', color: 'text-emerald-600 dark:text-emerald-400' },
-        { label: 'Regla Financiera', value: 'A mayor GDP en menos días, mayor es el ROI anualizado.', color: 'text-blue-600 dark:text-blue-400' }
-      ]
-    },
-    {
-      id: 'costPerKg',
-      title: 'Costo por Kilo Producido & Costo por Día',
-      icon: Percent,
-      badge: 'Finanzas & Negocios',
       color: 'amber',
       formula: 'Costo/Kg = Total Inversión / Kilos Ganados | Costo/Día = Total Inversión / Días en Finca',
       summary: 'Métricas financieras esenciales para saber exactamente cuánto te cuesta engordar 1 kilogramo de carne en tu finca y cuánto cuesta sostener cada cabeza por día.',
@@ -138,15 +124,15 @@ export function GlossaryModal({ isOpen, onClose }) {
       summary: 'Es el volumen total en kilogramos de carne viva que se encuentra pastando en los potreros de tu finca en este instante.',
       example: 'Si tienes 40 novillos con un peso promedio de 420 kg cada uno, la biomasa total de tu finca es de 16.800 kg (16.8 toneladas de carne en pie).',
       benchmark: [
-        { label: 'Utilidad Práctica', value: 'Fundamental para calcular la Carga Animal (Unidades Gran Ganado UGG por hectárea) y cubicaje de camiones.', color: 'text-purple-600 dark:text-purple-400' }
+        { label: 'Capacidad de Carga', value: 'Se usa para calcular la carga animal por hectárea (UGM/Ha).', color: 'text-purple-600 dark:text-purple-400' }
       ]
     },
     {
-      id: 'profitType',
-      title: 'Utilidad Proyectada vs. Utilidad Real',
-      icon: Scale,
+      id: 'projectedProfit',
+      title: 'Utilidad Proyectada vs Utilidad Real',
+      icon: Percent,
       badge: 'Finanzas & Negocios',
-      color: 'teal',
+      color: 'blue',
       formula: 'Utilidad = Valor de Venta (o Valor Mercado) - Inversión Total',
       summary: 'Distingue entre el valor patrimonial estimado del hato en pastoreo y el dinero líquido real cobrado tras la venta.',
       example: '• Utilidad Proyectada: Simulación matemática de ganancia si vendieras hoy todos los animales a precio de mercado actual.\n• Utilidad Real: Ganancia neta y definitiva tras cerrar la venta formal en báscula y recibir el pago.',
@@ -181,7 +167,7 @@ export function GlossaryModal({ isOpen, onClose }) {
   }, [selectedCategory, searchTerm]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>
       <div className="relative w-full max-w-3xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
