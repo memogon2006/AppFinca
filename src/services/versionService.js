@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.53";
-export const CURRENT_BUILD_TIME = 1789193000000;
+export const CURRENT_APP_VERSION = "2.8.54";
+export const CURRENT_BUILD_TIME = 1789194000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.54",
+    date: "07/09/2026",
+    title: "Selector de Ámbito en Lotes: Activos por Defecto, Historial Total y Vendidos",
+    highlights: [
+      "Opción para alternar entre '🟢 Activos en Finca' (seleccionado por defecto), '🌐 Historial Total' (todos los animales registrados) y '🏷️ Vendidos'.",
+      "Las tarjetas de Valor de Compra, Kilos y Rendimiento se recalculan dinámicamente según el ámbito seleccionado.",
+      "Cálculo patrimonial enfocado prioritariamente en los animales presentes en la finca."
+    ]
+  },
   {
     version: "2.8.53",
     date: "07/09/2026",

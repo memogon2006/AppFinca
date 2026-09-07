@@ -85,10 +85,18 @@ export function BatchAnalyticsView({
 
       // Totales de Compra y Entrada
       let totalPurchaseCost = 0;
+      let activePurchaseCost = 0;
+      let soldPurchaseCost = 0;
       let totalAdditionalCosts = 0;
+      let activeAdditionalCosts = 0;
       let totalEntryWeight = 0;
+      let activeEntryWeight = 0;
+      let soldEntryWeight = 0;
       let countWithEntryWeight = 0;
+      let activeCountWithEntryWeight = 0;
+      let soldCountWithEntryWeight = 0;
       let countWithEntryPrice = 0;
+      let activeCountWithEntryPrice = 0;
 
       // Totales de Biomasa Actual y Ganancia
       let totalCurrentWeight = 0;
@@ -111,6 +119,8 @@ export function BatchAnalyticsView({
         const entryPrice = parseFloat(animal.entryPrice) || 0;
         const addCost = parseFloat(animal.additionalCosts) || 0;
         const entryWeight = parseFloat(animal.entryWeight) || 0;
+        const isActive = animal.status === 'Activo';
+        const isSold = animal.status === 'Vendido';
 
         totalPurchaseCost += entryPrice;
         totalAdditionalCosts += addCost;
@@ -121,7 +131,14 @@ export function BatchAnalyticsView({
           countWithEntryWeight++;
         }
 
-        if (animal.status === 'Activo') {
+        if (isActive) {
+          activePurchaseCost += entryPrice;
+          activeAdditionalCosts += addCost;
+          if (entryPrice > 0) activeCountWithEntryPrice++;
+          if (entryWeight > 0) {
+            activeEntryWeight += entryWeight;
+            activeCountWithEntryWeight++;
+          }
           totalCurrentWeight += wm.currentWeight;
           if (wm.currentWeight >= 480) readyToSellCount++;
         }
@@ -133,7 +150,12 @@ export function BatchAnalyticsView({
         }
         totalDaysSum += wm.totalDays;
 
-        if (animal.status === 'Vendido') {
+        if (isSold) {
+          soldPurchaseCost += entryPrice;
+          if (entryWeight > 0) {
+            soldEntryWeight += entryWeight;
+            soldCountWithEntryWeight++;
+          }
           totalSalesRevenue += parseFloat(animal.exitPrice) || 0;
           totalSoldWeight += parseFloat(animal.exitWeight) || 0;
           totalProfitRealized += fin.netProfit;
@@ -141,8 +163,13 @@ export function BatchAnalyticsView({
       });
 
       const totalInvestment = totalPurchaseCost + totalAdditionalCosts;
+      const activeInvestment = activePurchaseCost + activeAdditionalCosts;
       const avgPricePerHead = headCount > 0 ? (totalPurchaseCost / headCount) : 0;
+      const activeAvgPricePerHead = activeAnimals.length > 0 ? (activePurchaseCost / activeAnimals.length) : 0;
+      const soldAvgPricePerHead = soldAnimals.length > 0 ? (soldPurchaseCost / soldAnimals.length) : 0;
       const avgEntryWeight = countWithEntryWeight > 0 ? (totalEntryWeight / countWithEntryWeight) : 0;
+      const activeAvgEntryWeight = activeCountWithEntryWeight > 0 ? (activeEntryWeight / activeCountWithEntryWeight) : 0;
+      const soldAvgEntryWeight = soldCountWithEntryWeight > 0 ? (soldEntryWeight / soldCountWithEntryWeight) : 0;
       const avgCurrentWeight = activeAnimals.length > 0 ? (totalCurrentWeight / activeAnimals.length) : 0;
       const avgGainKg = headCount > 0 ? (totalGainKg / headCount) : 0;
       const avgGdp = gdpCount > 0 ? (gdpSum / gdpCount) : 0;
@@ -150,9 +177,12 @@ export function BatchAnalyticsView({
 
       // Valor del Kilo de Compra ($/kg entrada)
       const costPerEntryKg = totalEntryWeight > 0 ? (totalPurchaseCost / totalEntryWeight) : 0;
+      const activeCostPerEntryKg = activeEntryWeight > 0 ? (activePurchaseCost / activeEntryWeight) : costPerEntryKg;
+      const soldCostPerEntryKg = soldEntryWeight > 0 ? (soldPurchaseCost / soldEntryWeight) : 0;
       
       // Valor del Kilo de Venta ($/kg salida)
       const avgSoldPricePerKg = totalSoldWeight > 0 ? (totalSalesRevenue / totalSoldWeight) : 0;
+      const soldAvgExitWeight = soldAnimals.length > 0 ? (totalSoldWeight / soldAnimals.length) : 0;
 
       return {
         batchName,
@@ -162,11 +192,21 @@ export function BatchAnalyticsView({
         deadCount: deadAnimals.length,
         earliestDate,
         totalPurchaseCost,
+        activePurchaseCost,
+        soldPurchaseCost,
         totalAdditionalCosts,
+        activeAdditionalCosts,
         totalInvestment,
+        activeInvestment,
         avgPricePerHead,
+        activeAvgPricePerHead,
+        soldAvgPricePerHead,
         totalEntryWeight,
+        activeEntryWeight,
+        soldEntryWeight,
         avgEntryWeight,
+        activeAvgEntryWeight,
+        soldAvgEntryWeight,
         totalCurrentWeight,
         avgCurrentWeight,
         totalGainKg,
@@ -174,10 +214,13 @@ export function BatchAnalyticsView({
         avgGdp,
         avgDays,
         costPerEntryKg,
+        activeCostPerEntryKg,
+        soldCostPerEntryKg,
         readyToSellCount,
         totalSalesRevenue,
         totalSoldWeight,
         avgSoldPricePerKg,
+        soldAvgExitWeight,
         totalProfitRealized,
         animals: batchAnimals
       };
@@ -200,9 +243,16 @@ export function BatchAnalyticsView({
       const deadAnimals = cattle.filter(c => c.status === 'Muerto');
 
       let totalPurchaseCost = 0;
+      let activePurchaseCost = 0;
+      let soldPurchaseCost = 0;
       let totalAdditionalCosts = 0;
+      let activeAdditionalCosts = 0;
       let totalEntryWeight = 0;
+      let activeEntryWeight = 0;
+      let soldEntryWeight = 0;
       let countWithEntryWeight = 0;
+      let activeCountWithEntryWeight = 0;
+      let soldCountWithEntryWeight = 0;
       let totalCurrentWeight = 0;
       let totalGainKg = 0;
       let gdpSum = 0;
@@ -221,6 +271,8 @@ export function BatchAnalyticsView({
         const entryPrice = parseFloat(animal.entryPrice) || 0;
         const addCost = parseFloat(animal.additionalCosts) || 0;
         const entryWeight = parseFloat(animal.entryWeight) || 0;
+        const isActive = animal.status === 'Activo';
+        const isSold = animal.status === 'Vendido';
 
         totalPurchaseCost += entryPrice;
         totalAdditionalCosts += addCost;
@@ -230,7 +282,13 @@ export function BatchAnalyticsView({
           countWithEntryWeight++;
         }
 
-        if (animal.status === 'Activo') {
+        if (isActive) {
+          activePurchaseCost += entryPrice;
+          activeAdditionalCosts += addCost;
+          if (entryWeight > 0) {
+            activeEntryWeight += entryWeight;
+            activeCountWithEntryWeight++;
+          }
           totalCurrentWeight += wm.currentWeight;
           if (wm.currentWeight >= 480) readyToSellCount++;
         }
@@ -242,7 +300,12 @@ export function BatchAnalyticsView({
         }
         totalDaysSum += wm.totalDays;
 
-        if (animal.status === 'Vendido') {
+        if (isSold) {
+          soldPurchaseCost += entryPrice;
+          if (entryWeight > 0) {
+            soldEntryWeight += entryWeight;
+            soldCountWithEntryWeight++;
+          }
           totalSalesRevenue += parseFloat(animal.exitPrice) || 0;
           totalSoldWeight += parseFloat(animal.exitWeight) || 0;
           totalProfitRealized += fin.netProfit;
@@ -250,14 +313,22 @@ export function BatchAnalyticsView({
       });
 
       const totalInvestment = totalPurchaseCost + totalAdditionalCosts;
+      const activeInvestment = activePurchaseCost + activeAdditionalCosts;
       const avgPricePerHead = headCount > 0 ? (totalPurchaseCost / headCount) : 0;
+      const activeAvgPricePerHead = activeAnimals.length > 0 ? (activePurchaseCost / activeAnimals.length) : 0;
+      const soldAvgPricePerHead = soldAnimals.length > 0 ? (soldPurchaseCost / soldAnimals.length) : 0;
       const avgEntryWeight = countWithEntryWeight > 0 ? (totalEntryWeight / countWithEntryWeight) : 0;
+      const activeAvgEntryWeight = activeCountWithEntryWeight > 0 ? (activeEntryWeight / activeCountWithEntryWeight) : 0;
+      const soldAvgEntryWeight = soldCountWithEntryWeight > 0 ? (soldEntryWeight / soldCountWithEntryWeight) : 0;
       const avgCurrentWeight = activeAnimals.length > 0 ? (totalCurrentWeight / activeAnimals.length) : 0;
       const avgGainKg = headCount > 0 ? (totalGainKg / headCount) : 0;
       const avgGdp = gdpCount > 0 ? (gdpSum / gdpCount) : 0;
       const avgDays = headCount > 0 ? Math.round(totalDaysSum / headCount) : 0;
       const costPerEntryKg = totalEntryWeight > 0 ? (totalPurchaseCost / totalEntryWeight) : 0;
+      const activeCostPerEntryKg = activeEntryWeight > 0 ? (activePurchaseCost / activeEntryWeight) : costPerEntryKg;
+      const soldCostPerEntryKg = soldEntryWeight > 0 ? (soldPurchaseCost / soldEntryWeight) : 0;
       const avgSoldPricePerKg = totalSoldWeight > 0 ? (totalSalesRevenue / totalSoldWeight) : 0;
+      const soldAvgExitWeight = soldAnimals.length > 0 ? (totalSoldWeight / soldAnimals.length) : 0;
 
       return {
         batchName: 'Todos los Lotes (Consolidado General)',
@@ -267,11 +338,21 @@ export function BatchAnalyticsView({
         deadCount: deadAnimals.length,
         earliestDate: 'Todas las fechas',
         totalPurchaseCost,
+        activePurchaseCost,
+        soldPurchaseCost,
         totalAdditionalCosts,
+        activeAdditionalCosts,
         totalInvestment,
+        activeInvestment,
         avgPricePerHead,
+        activeAvgPricePerHead,
+        soldAvgPricePerHead,
         totalEntryWeight,
+        activeEntryWeight,
+        soldEntryWeight,
         avgEntryWeight,
+        activeAvgEntryWeight,
+        soldAvgEntryWeight,
         totalCurrentWeight,
         avgCurrentWeight,
         totalGainKg,
@@ -279,10 +360,13 @@ export function BatchAnalyticsView({
         avgGdp,
         avgDays,
         costPerEntryKg,
+        activeCostPerEntryKg,
+        soldCostPerEntryKg,
         readyToSellCount,
         totalSalesRevenue,
         totalSoldWeight,
         avgSoldPricePerKg,
+        soldAvgExitWeight,
         totalProfitRealized,
         animals: cattle
       };
@@ -545,7 +629,7 @@ export function BatchAnalyticsView({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>📊 Todos los Lotes ({cattle.length} cab)</span>
+                <span>📊 Todos los Lotes ({cattle.filter(c => c.status === 'Activo').length} en finca)</span>
               </button>
 
               {/* Chips por cada lote */}
@@ -579,87 +663,197 @@ export function BatchAnalyticsView({
           {currentBatchData && (
             <div className="space-y-4">
               
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 min-w-0">
-                  <span className="text-emerald-600 dark:text-emerald-400 shrink-0">🏷️</span>
-                  <span className="truncate">{currentBatchData.batchName}</span>
-                </h2>
-                <div className="flex items-center gap-1.5 text-xs font-bold shrink-0 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 whitespace-nowrap text-[11px]">
-                    🟢 {currentBatchData.activeCount} en finca
-                  </span>
-                  {currentBatchData.soldCount > 0 && (
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800 whitespace-nowrap text-[11px]">
-                      🏷️ {currentBatchData.soldCount} vendidas
-                    </span>
-                  )}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 min-w-0">
+                    <span className="text-emerald-600 dark:text-emerald-400 shrink-0">🏷️</span>
+                    <span className="truncate">{currentBatchData.batchName}</span>
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {statusFilter === 'Activo' 
+                      ? 'Mostrando animales activos en finca (prioridad patrimonial)' 
+                      : statusFilter === 'all' 
+                      ? 'Consolidado histórico general (todos los animales registrados)' 
+                      : 'Historial exclusivo de animales vendidos y liquidados'}
+                  </p>
+                </div>
+
+                {/* Selector de Ámbito / Estado: Activos (Defecto), Todos (Histórico), Vendidos */}
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold overflow-x-auto no-scrollbar shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('Activo')}
+                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      statusFilter === 'Activo'
+                        ? 'bg-emerald-600 text-white font-black shadow-sm'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${statusFilter === 'Activo' ? 'bg-white' : 'bg-emerald-500'}`}></span>
+                    <span>🟢 Activos ({currentBatchData.activeCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      statusFilter === 'all'
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black shadow-sm'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>🌐 Histórico Total ({currentBatchData.headCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('Vendido')}
+                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      statusFilter === 'Vendido'
+                        ? 'bg-amber-600 text-white font-black shadow-sm'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>🏷️ Vendidos ({currentBatchData.soldCount})</span>
+                  </button>
                 </div>
               </div>
 
+              {/* 4 TARJETAS DINÁMICAS SEGÚN EL FILTRO SELECCIONADO */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                {/* 1. Valor Compra Total de los Animales & Precio por Animal */}
+                {/* 1. Valor Compra Total */}
                 <div className="p-5 rounded-2xl bg-amber-50 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-orange-500/5 border border-amber-200 dark:border-amber-500/30 shadow-sm space-y-1">
-                  <span className="text-xs font-semibold uppercase text-amber-800 dark:text-amber-400">
-                    Valor Compra Total de los Animales
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase text-amber-800 dark:text-amber-400">
+                      {statusFilter === 'Activo' 
+                        ? 'Valor Compra en Finca (Activos)' 
+                        : statusFilter === 'all' 
+                        ? 'Valor Compra Histórico (Todos)' 
+                        : 'Valor Compra Inicial (Vendidos)'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                      {statusFilter === 'Activo' 
+                        ? `🟢 ${currentBatchData.activeCount} activos` 
+                        : statusFilter === 'all' 
+                        ? `🌐 ${currentBatchData.headCount} cabezas` 
+                        : `🏷️ ${currentBatchData.soldCount} vendidos`}
+                    </span>
+                  </div>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {formatCurrency(currentBatchData.totalPurchaseCost)}
+                    {formatCurrency(
+                      statusFilter === 'Activo' 
+                        ? currentBatchData.activePurchaseCost 
+                        : statusFilter === 'all' 
+                        ? currentBatchData.totalPurchaseCost 
+                        : currentBatchData.soldPurchaseCost
+                    )}
                   </p>
-                  <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center gap-1 pt-1 border-t border-amber-200/60 dark:border-amber-700/40">
-                    <span>Promedio:</span>
-                    <span>{formatCurrency(currentBatchData.avgPricePerHead)} / animal</span>
+                  <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-amber-700/40">
+                    <span>
+                      Promedio: {formatCurrency(
+                        statusFilter === 'Activo' 
+                          ? currentBatchData.activeAvgPricePerHead 
+                          : statusFilter === 'all' 
+                          ? currentBatchData.avgPricePerHead 
+                          : currentBatchData.soldAvgPricePerHead
+                      )} / animal
+                    </span>
+                    {statusFilter === 'Activo' && currentBatchData.soldCount > 0 && (
+                      <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
+                        Histórico: {formatCurrency(currentBatchData.totalPurchaseCost)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* 2. Valor del Kilo de Compra ($/kg entrada) */}
+                {/* 2. Valor Kilo Compra / Ingreso por Venta */}
                 <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-gradient-to-br dark:from-emerald-500/20 dark:to-teal-500/5 border border-emerald-200 dark:border-emerald-500/30 shadow-sm space-y-1">
                   <span className="text-xs font-semibold uppercase text-emerald-800 dark:text-emerald-400">
-                    Valor del Kilo Compra ($/kg)
+                    {statusFilter === 'Vendido' ? 'Total Ingresos por Venta' : 'Valor del Kilo Compra ($/kg)'}
                   </span>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {formatCurrency(currentBatchData.costPerEntryKg)}
-                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300"> / kg</span>
+                    {statusFilter === 'Vendido' ? (
+                      formatCurrency(currentBatchData.totalSalesRevenue)
+                    ) : (
+                      <>
+                        {formatCurrency(statusFilter === 'Activo' ? currentBatchData.activeCostPerEntryKg : currentBatchData.costPerEntryKg)}
+                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300"> / kg</span>
+                      </>
+                    )}
                   </p>
                   <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-emerald-700/40">
-                    <span>Sobre {formatNumber(currentBatchData.totalEntryWeight, 0)} kg totales de entrada</span>
+                    {statusFilter === 'Vendido' ? (
+                      <span>Promedio salida: {formatCurrency(currentBatchData.avgSoldPricePerKg)}/kg ({formatNumber(currentBatchData.totalSoldWeight, 0)} kg)</span>
+                    ) : (
+                      <span>Sobre {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeEntryWeight : currentBatchData.totalEntryWeight, 0)} kg totales de entrada</span>
+                    )}
                   </div>
                 </div>
 
-                {/* 3. Kilos Promedio por Animal (Entrada vs Actual) */}
+                {/* 3. Kilos Promedio / Utilidad */}
                 <div className="p-5 rounded-2xl bg-blue-50 dark:bg-gradient-to-br dark:from-blue-500/20 dark:to-indigo-500/5 border border-blue-200 dark:border-blue-500/30 shadow-sm space-y-1">
                   <span className="text-xs font-semibold uppercase text-blue-800 dark:text-blue-400">
-                    Kilos Promedio por Animal
+                    {statusFilter === 'Vendido' ? 'Utilidad Neta Realizada' : 'Kilos Promedio por Animal'}
                   </span>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {formatNumber(currentBatchData.avgCurrentWeight, 1)}
-                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300"> kg actual</span>
+                    {statusFilter === 'Vendido' ? (
+                      <span className={currentBatchData.totalProfitRealized >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}>
+                        {formatCurrency(currentBatchData.totalProfitRealized)}
+                      </span>
+                    ) : (
+                      <>
+                        {formatNumber(currentBatchData.avgCurrentWeight, 1)}
+                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300"> kg actual</span>
+                      </>
+                    )}
                   </p>
                   <div className="text-xs text-blue-900 dark:text-blue-300 font-extrabold flex items-center justify-between pt-1 border-t border-blue-200/60 dark:border-blue-700/40">
-                    <span>Entrada: {formatNumber(currentBatchData.avgEntryWeight, 1)} kg</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black">+{formatNumber(currentBatchData.avgGainKg, 1)} kg ganados</span>
+                    {statusFilter === 'Vendido' ? (
+                      <span>Ganancia total acumulada</span>
+                    ) : (
+                      <>
+                        <span>Entrada: {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeAvgEntryWeight : currentBatchData.avgEntryWeight, 1)} kg</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-black">+{formatNumber(currentBatchData.avgGainKg, 1)} kg ganados</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* 4. Ganancia de Peso & GDP Promedio */}
+                {/* 4. Desempeño & GDP / Animales Vendidos */}
                 <div className="p-5 rounded-2xl bg-purple-50 dark:bg-gradient-to-br dark:from-purple-500/20 dark:to-pink-500/5 border border-purple-200 dark:border-purple-500/30 shadow-sm space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold uppercase text-purple-800 dark:text-purple-400">
-                      Desempeño & GDP Lote
+                      {statusFilter === 'Vendido' ? 'Salida Promedio' : 'Desempeño & GDP Lote'}
                     </span>
-                    {currentBatchData.readyToSellCount > 0 && (
+                    {statusFilter !== 'Vendido' && currentBatchData.readyToSellCount > 0 && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-200 text-purple-900 dark:bg-purple-900 dark:text-purple-200">
                         🎯 {currentBatchData.readyToSellCount} listos
                       </span>
                     )}
                   </div>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {formatNumber(currentBatchData.avgGdp, 3)}
-                    <span className="text-xs font-bold text-purple-700 dark:text-purple-300"> kg/día</span>
+                    {statusFilter === 'Vendido' ? (
+                      <>
+                        {formatNumber(currentBatchData.soldAvgExitWeight, 1)}
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300"> kg / animal</span>
+                      </>
+                    ) : (
+                      <>
+                        {formatNumber(currentBatchData.avgGdp, 3)}
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300"> kg/día</span>
+                      </>
+                    )}
                   </p>
                   <div className="text-xs text-purple-900 dark:text-purple-300 font-medium flex items-center justify-between pt-1 border-t border-purple-200/60 dark:border-purple-700/40">
-                    <span>{currentBatchData.avgDays} días en finca</span>
-                    <span className="font-extrabold">Total: +{formatNumber(currentBatchData.totalGainKg, 0)} kg carne</span>
+                    {statusFilter === 'Vendido' ? (
+                      <span>Entrada prom: {formatNumber(currentBatchData.soldAvgEntryWeight, 1)} kg</span>
+                    ) : (
+                      <>
+                        <span>{currentBatchData.avgDays} días en finca</span>
+                        <span className="font-extrabold">Total: +{formatNumber(currentBatchData.totalGainKg, 0)} kg carne</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
