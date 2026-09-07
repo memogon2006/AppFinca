@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.43";
-export const CURRENT_BUILD_TIME = 1789175000000;
+export const CURRENT_APP_VERSION = "2.8.44";
+export const CURRENT_BUILD_TIME = 1789180000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.44",
+    date: "07/09/2026",
+    title: "Cabecera Móvil Completa con Acceso a Todas las Funciones",
+    highlights: [
+      "Disponibilidad 100% visible en celulares de: [+ Bovino], [Excel], [Nube], [Tema], [Perfil LG] y [Salir].",
+      "Organización en 2 micro-filas limpias y ergonómicas en móviles que evita la saturación y deformación de la pantalla.",
+      "Excelente experiencia táctil con botones anchos y legibles en cualquier tamaño de celular."
+    ]
+  },
   {
     version: "2.8.43",
     date: "07/09/2026",
