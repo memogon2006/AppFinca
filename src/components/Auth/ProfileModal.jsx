@@ -20,6 +20,7 @@ import {
   Tag
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
+import { clearAllData } from '../../services/db';
 
 export function ProfileModal({ isOpen, onClose }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout } = useAuth();
@@ -52,6 +53,7 @@ export function ProfileModal({ isOpen, onClose }) {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingSecurity, setLoadingSecurity] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [loadingClearInventory, setLoadingClearInventory] = useState(false);
 
   // Version check
   const [versionChecking, setVersionChecking] = useState(false);
@@ -169,6 +171,44 @@ export function ProfileModal({ isOpen, onClose }) {
 
   const handleApplyUpdate = async () => {
     await applyAppUpdate();
+  };
+
+  const handleClearInventory = async () => {
+    const farm = currentUser?.farmName || 'tu finca';
+    const userId = currentUser?.id;
+    
+    // Paso 1: Primera confirmación de advertencia
+    const step1 = window.confirm(
+      `⚠️ PASO 1 DE 2 (PRIMERA CONFIRMACIÓN):\n\n¿Estás completamente seguro de que deseas ELIMINAR TODO EL INVENTARIO de "${farm}" para comenzar en CEROS?\n\n• Se borrarán permanentemente todos los bovinos registrados.\n• Se borrarán todos los historiales de pesajes continuos.\n• Se borrarán todos los registros de ventas y gastos.\n\nEsta acción NO se puede deshacer. (Te sugerimos descargar una copia en Excel antes).`
+    );
+    if (!step1) return;
+
+    // Paso 2: Segunda confirmación de máxima seguridad con palabra clave
+    const step2 = window.prompt(
+      `🔴 PASO 2 DE 2 (SEGUNDA CONFIRMACIÓN DE MÁXIMA SEGURIDAD):\n\nEsta es la confirmación definitiva para vaciar todo el inventario de "${farm}" y dejar la cuenta en blanco.\n\nPara confirmar la eliminación total, escribe la palabra BORRAR (en mayúsculas) a continuación:`
+    );
+
+    if (step2 === null) {
+      setProfileMsg({ type: 'error', text: 'Operación cancelada: Tu inventario se mantiene seguro e intacto.' });
+      return;
+    }
+
+    if (step2.trim().toUpperCase() !== 'BORRAR') {
+      alert(`❌ La palabra escrita ("${step2}") no coincide con "BORRAR".\n\nPor seguridad de tu finca, NO se eliminó ningún dato.`);
+      setProfileMsg({ type: 'error', text: 'Confirmación no válida: No se realizaron cambios en el inventario.' });
+      return;
+    }
+
+    try {
+      setLoadingClearInventory(true);
+      await clearAllData(userId);
+      setProfileMsg({ type: 'success', text: '¡Inventario de tu finca limpiado por completo! Ahora tu sistema está en ceros para ingresar ganado nuevo.' });
+      alert('✅ ¡Inventario limpiado exitosamente! Ahora puedes registrar tu ganado desde ceros.');
+    } catch (err) {
+      setProfileMsg({ type: 'error', text: 'Error al limpiar inventario: ' + err.message });
+    } finally {
+      setLoadingClearInventory(false);
+    }
   };
 
   const handleLogout = () => {
@@ -332,6 +372,30 @@ export function ProfileModal({ isOpen, onClose }) {
                 <Save className="w-4 h-4" />
                 <span>{loadingProfile ? 'Guardando...' : 'Guardar Cambios'}</span>
               </button>
+            </div>
+
+            {/* Zona de Gestión de Inventario: Limpiar a Ceros */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                    <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+                    Limpiar Inventario de Mi Finca (Comenzar en Ceros)
+                  </h4>
+                  <p className="text-[11px] text-rose-700 dark:text-rose-300/80 mt-0.5 leading-relaxed">
+                    Borra los datos de prueba o inventario actual para empezar desde ceros. Requiere doble confirmación con palabra clave.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearInventory}
+                  disabled={loadingClearInventory}
+                  className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold whitespace-nowrap shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{loadingClearInventory ? 'Limpiando...' : 'Limpiar a Ceros'}</span>
+                </button>
+              </div>
             </div>
 
           </form>
@@ -564,6 +628,27 @@ export function ProfileModal({ isOpen, onClose }) {
                 <li>Historial de pesajes continuos, ventas y estadísticas.</li>
                 <li>Los datos sincronizados en la Nube Global e Internet.</li>
               </ul>
+            </div>
+
+            {/* Opción Alternativa: Solo vaciar inventario sin borrar cuenta */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  ¿Solo deseas reiniciar tu ganado y empezar en ceros?
+                </h5>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Puedes vaciar únicamente el inventario conservando tu usuario y contraseña.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleClearInventory}
+                disabled={loadingClearInventory}
+                className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold whitespace-nowrap transition cursor-pointer flex-shrink-0"
+              >
+                Limpiar Solo Inventario
+              </button>
             </div>
 
             {deleteMsg && (

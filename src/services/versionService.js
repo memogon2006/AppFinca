@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.33";
-export const CURRENT_BUILD_TIME = 1789140000000;
+export const CURRENT_APP_VERSION = "2.8.34";
+export const CURRENT_BUILD_TIME = 1789142000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.34",
+    date: "07/09/2026",
+    title: "Limpieza de Inventario Integrada en Perfil de Usuario",
+    highlights: [
+      "Opción 'Limpiar Inventario de Mi Finca (Comenzar en Ceros)' integrada directamente en la pestaña de Datos de Finca del Perfil.",
+      "Acceso alternativo en la Zona de Peligro del Perfil para vaciar inventario sin necesidad de borrar la cuenta de usuario.",
+      "Protección con doble confirmación y código de seguridad 'BORRAR' en todos los puntos de acceso."
+    ]
+  },
   {
     version: "2.8.33",
     date: "07/09/2026",
