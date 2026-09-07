@@ -307,6 +307,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       expectedCalvingDate: isFemale ? (formData.expectedCalvingDate || '') : '',
       isBreedingOnly: isFemale ? Boolean(formData.isBreedingOnly) : false,
     });
+    onClose();
   };
 
   const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === formData.sex);

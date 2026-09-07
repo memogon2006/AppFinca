@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.48";
-export const CURRENT_BUILD_TIME = 1789188000000;
+export const CURRENT_APP_VERSION = "2.8.49";
+export const CURRENT_BUILD_TIME = 1789189000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.49",
+    date: "07/09/2026",
+    title: "Cierre Automático y Notificaciones Claras en Todas las Acciones",
+    highlights: [
+      "Cierre automático y fluido de las pestañas/modales tras crear animales individuales o lotes completos.",
+      "Confirmación visual instantánea con banner superior de alta visibilidad para cada acción (Creación, Lotes, Pesajes, Ventas, Bajas y Eliminaciones).",
+      "Actualización reactiva del inventario en tiempo real sin recargar la pantalla."
+    ]
+  },
   {
     version: "2.8.48",
     date: "07/09/2026",

@@ -1,7 +1,7 @@
 {
-  "version": "2.8.48",
-  "buildTime": 1789188000000,
-  "description": "Prioridad visual para modal de edición, superposición en primer plano y actualización en vivo de la ficha técnica."
+  "version": "2.8.49",
+  "buildTime": 1789189000000,
+  "description": "Cierre automático de pestañas de creación y notificaciones precisas de confirmación de guardado."
 }
 
 

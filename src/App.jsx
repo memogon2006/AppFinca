@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, initializeDatabase, deleteDemoData, isDemoAnimal } from './services/db';
 import { useAuth } from './context/AuthContext';
@@ -24,13 +24,14 @@ import { PartnershipSettlementModal } from './components/Finances/PartnershipSet
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
-import { CheckCircle2, Sparkles, Trash2 } from 'lucide-react';
+import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const toastTimeoutRef = useRef(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Modales
@@ -56,12 +57,13 @@ export default function App() {
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   const [isPartnershipModalOpen, setIsPartnershipModalOpen] = useState(false);
 
-  // Mostrar notificación de guardado automático
-  const showToast = (text) => {
-    setToastMessage(text);
-    setTimeout(() => {
+  // Mostrar notificación de confirmación de acción
+  const showToast = (text, type = 'success') => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToastMessage({ text, type });
+    toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null);
-    }, 3500);
+    }, 4000);
   };
 
   // Inicializar base de datos y auto-sincronizar cuentas existentes
@@ -276,8 +278,9 @@ export default function App() {
       }
     }
 
+    setIsBatchEntryModalOpen(false);
     cloudPushData(userId);
-    showToast(`¡Lote de ${batchAnimals.length} bovinos registrado y sincronizado en la nube! ☁️`);
+    showToast(`¡Lote de ${batchAnimals.length} bovinos registrado y guardado exitosamente! 📦☁️`, 'success');
   };
 
   const handleSaveWeight = async ({ cattleId, date, weight, conditionScore, notes }) => {
@@ -527,10 +530,18 @@ export default function App() {
   const handleDeleteAnimal = async (animalId) => {
     const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
     const targetId = animal ? animal.id : animalId;
+    const tag = animal?.tagNumber || 'Bovino';
+
     await db.cattle.delete(targetId);
     await db.weighings.where('cattleId').equals(String(targetId)).delete();
+
+    if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
+      setIsDetailModalOpen(false);
+      setSelectedAnimal(null);
+    }
+
     cloudPushData(userId);
-    showToast(`Animal eliminado y sincronizado en la nube ☁️`);
+    showToast(`Bovino ${tag} eliminado del inventario 🗑️`, 'danger');
   };
 
   const handleManualSync = async () => {
@@ -538,7 +549,7 @@ export default function App() {
     setIsSyncing(true);
     await syncCloudAndLocal(userId);
     setIsSyncing(false);
-    showToast(`¡Sincronización con la nube completada! ☁️`);
+    showToast(`¡Sincronización con la nube completada! ☁️`, 'success');
   };
 
   const handleOpenNew = () => {
@@ -582,7 +593,7 @@ export default function App() {
       try {
         const result = await deleteDemoData(userId);
         await cloudPushData(userId).catch(() => null);
-        showToast(result.message);
+        showToast(result.message, 'warning');
       } catch (err) {
         alert('Error al eliminar demo: ' + err.message);
       }
@@ -595,11 +606,34 @@ export default function App() {
       {/* Notificación de Actualización PWA / Versión */}
       <UpdateNotificationBanner />
 
-      {/* Toast Notification Flotante */}
+      {/* Toast Notification Flotante de Máxima Prioridad */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 animate-bounce bg-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold border border-emerald-400/40">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-md w-[92%] sm:w-auto animate-fade-in shadow-2xl pointer-events-auto">
+          <div className={`px-4 py-3 rounded-2xl text-white flex items-center gap-3 text-xs sm:text-sm font-black border backdrop-blur-md shadow-2xl ${
+            (typeof toastMessage === 'object' && (toastMessage.type === 'danger' || toastMessage.type === 'error'))
+              ? 'bg-rose-600/95 border-rose-400 text-white shadow-rose-950/40'
+              : (typeof toastMessage === 'object' && toastMessage.type === 'warning')
+                ? 'bg-amber-600/95 border-amber-400 text-white shadow-amber-950/40'
+                : 'bg-emerald-600/95 border-emerald-400 text-white shadow-emerald-950/40'
+          }`}>
+            {(typeof toastMessage === 'object' && (toastMessage.type === 'danger' || toastMessage.type === 'error')) ? (
+              <Trash2 className="w-5 h-5 flex-shrink-0" />
+            ) : (typeof toastMessage === 'object' && toastMessage.type === 'warning') ? (
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-100" />
+            )}
+            <span className="flex-1 font-bold leading-tight">
+              {typeof toastMessage === 'string' ? toastMessage : toastMessage.text}
+            </span>
+            <button 
+              onClick={() => setToastMessage(null)}
+              className="p-1 hover:bg-white/20 rounded-lg transition shrink-0 cursor-pointer ml-1"
+              title="Cerrar notificación"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
