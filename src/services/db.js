@@ -1,5 +1,14 @@
 import Dexie from 'dexie';
-import { INITIAL_CATTLE, INITIAL_WEIGHINGS, INITIAL_EXPENSES } from './sampleData';
+import { 
+  INITIAL_CATTLE, 
+  INITIAL_WEIGHINGS, 
+  INITIAL_EXPENSES, 
+  isDemoAnimal,
+  DEMO_WEIGHING_IDS,
+  DEMO_EXPENSE_IDS 
+} from './sampleData';
+
+export { isDemoAnimal };
 
 export const db = new Dexie('GanadoProDB');
 
@@ -46,34 +55,131 @@ export async function clearAllData(userId) {
   });
 }
 
-// Cargar datos de prueba para el usuario activo
+// Cargar datos de prueba para el usuario activo preservando sus datos reales
 export async function loadSampleData(userId) {
   if (!userId) return;
   await db.transaction('rw', db.cattle, db.weighings, db.expenses, async () => {
-    await db.cattle.where('userId').equals(userId).delete();
-    await db.weighings.where('userId').equals(userId).delete();
-    await db.expenses.where('userId').equals(userId).delete();
+    // 1. Eliminar datos de prueba previos si ya existían para no duplicar
+    const userCattle = await db.cattle.where('userId').equals(userId).toArray();
+    const existingDemoCattle = userCattle.filter(isDemoAnimal);
+    const existingDemoIds = new Set(existingDemoCattle.map(c => String(c.id)));
 
+    for (const c of existingDemoCattle) {
+      if (c.id) await db.cattle.delete(c.id);
+    }
+
+    const userWeighings = await db.weighings.where('userId').equals(userId).toArray();
+    const existingDemoWeighings = userWeighings.filter(w => 
+      w.isDemo === true || 
+      existingDemoIds.has(String(w.cattleId)) || 
+      DEMO_WEIGHING_IDS.includes(String(w.id))
+    );
+    for (const w of existingDemoWeighings) {
+      if (w.id) await db.weighings.delete(w.id);
+    }
+
+    const userExpenses = await db.expenses.where('userId').equals(userId).toArray();
+    const existingDemoExpenses = userExpenses.filter(e => 
+      e.isDemo === true || 
+      existingDemoIds.has(String(e.cattleId)) || 
+      DEMO_EXPENSE_IDS.includes(String(e.id))
+    );
+    for (const e of existingDemoExpenses) {
+      if (e.id) await db.expenses.delete(e.id);
+    }
+
+    // 2. Insertar el lote de animales y pesajes demo adaptados
     const adaptedCattle = INITIAL_CATTLE.map(c => ({
       ...c,
       userId,
+      isDemo: true,
       entryBatch: c.entryBatch || c.paddock || 'Ingreso #1'
     }));
 
     const adaptedWeighings = INITIAL_WEIGHINGS.map(w => ({
       ...w,
       userId,
+      isDemo: true,
     }));
 
     const adaptedExpenses = INITIAL_EXPENSES.map(e => ({
       ...e,
       userId,
+      isDemo: true,
     }));
 
     await db.cattle.bulkAdd(adaptedCattle);
     await db.weighings.bulkAdd(adaptedWeighings);
     await db.expenses.bulkAdd(adaptedExpenses);
   });
+}
+
+// Eliminar ÚNICAMENTE los datos cargados de demostración
+export async function deleteDemoData(userId) {
+  if (!userId) return { success: false, count: 0, message: 'Usuario no identificado' };
+  
+  let deletedCattleCount = 0;
+  let deletedWeighingsCount = 0;
+  let deletedExpensesCount = 0;
+
+  await db.transaction('rw', db.cattle, db.weighings, db.expenses, async () => {
+    // 1. Encontrar todos los animales de demostración del usuario
+    const userCattle = await db.cattle.where('userId').equals(userId).toArray();
+    const demoCattle = userCattle.filter(isDemoAnimal);
+
+    if (demoCattle.length === 0) {
+      return;
+    }
+
+    deletedCattleCount = demoCattle.length;
+    const demoCattleIds = new Set(demoCattle.map(c => String(c.id)));
+
+    // 2. Eliminar animales demo
+    for (const c of demoCattle) {
+      if (c.id) await db.cattle.delete(c.id);
+    }
+
+    // 3. Eliminar pesajes de animales demo
+    const userWeighings = await db.weighings.where('userId').equals(userId).toArray();
+    const demoWeighings = userWeighings.filter(w => 
+      w.isDemo === true || 
+      demoCattleIds.has(String(w.cattleId)) || 
+      DEMO_WEIGHING_IDS.includes(String(w.id))
+    );
+    deletedWeighingsCount = demoWeighings.length;
+    for (const w of demoWeighings) {
+      if (w.id) await db.weighings.delete(w.id);
+    }
+
+    // 4. Eliminar gastos de animales demo
+    const userExpenses = await db.expenses.where('userId').equals(userId).toArray();
+    const demoExpenses = userExpenses.filter(e => 
+      e.isDemo === true || 
+      demoCattleIds.has(String(e.cattleId)) || 
+      DEMO_EXPENSE_IDS.includes(String(e.id))
+    );
+    deletedExpensesCount = demoExpenses.length;
+    for (const e of demoExpenses) {
+      if (e.id) await db.expenses.delete(e.id);
+    }
+  });
+
+  return {
+    success: true,
+    count: deletedCattleCount,
+    weighingsCount: deletedWeighingsCount,
+    expensesCount: deletedExpensesCount,
+    message: deletedCattleCount > 0
+      ? `Se eliminaron exitosamente ${deletedCattleCount} animales de demostración (${deletedWeighingsCount} pesajes y ${deletedExpensesCount} gastos). Tu inventario real está intacto.`
+      : 'No hay datos de demostración para eliminar en el sistema.'
+  };
+}
+
+// Consultar si el usuario tiene datos de demostración activos
+export async function hasDemoData(userId) {
+  if (!userId) return false;
+  const userCattle = await db.cattle.where('userId').equals(userId).toArray();
+  return userCattle.some(isDemoAnimal);
 }
 
 // Exportar respaldo de datos del usuario activo a JSON

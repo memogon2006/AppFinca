@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.45";
-export const CURRENT_BUILD_TIME = 1789182000000;
+export const CURRENT_APP_VERSION = "2.8.46";
+export const CURRENT_BUILD_TIME = 1789184000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.46",
+    date: "07/09/2026",
+    title: "Gestión y Eliminación Exclusiva de Datos de Demostración",
+    highlights: [
+      "Opción inteligente para eliminar únicamente los animales y pesajes de prueba/demostración dejando 100% intactos los datos reales.",
+      "Deshabilitación automática de la acción cuando no hay datos de demostración cargados en el sistema.",
+      "Banner informativo directo y accesos en el panel de Exportar/Importar y Perfil Ganadero para limpieza rápida."
+    ]
+  },
   {
     version: "2.8.45",
     date: "07/09/2026",

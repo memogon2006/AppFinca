@@ -20,12 +20,15 @@ import {
   Tag
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
-import { clearAllData } from '../../services/db';
+import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
+import { cloudPushData } from '../../services/cloudSync';
 
 export function ProfileModal({ isOpen, onClose }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout } = useAuth();
 
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'version' | 'delete'
+  const [demoCount, setDemoCount] = useState(0);
+  const [loadingDeleteDemo, setLoadingDeleteDemo] = useState(false);
 
   // Perfil form
   const [profileData, setProfileData] = useState({
@@ -202,12 +205,55 @@ export function ProfileModal({ isOpen, onClose }) {
     try {
       setLoadingClearInventory(true);
       await clearAllData(userId);
+      await cloudPushData(userId).catch(() => null);
+      setDemoCount(0);
       setProfileMsg({ type: 'success', text: '¡Inventario de tu finca limpiado por completo! Ahora tu sistema está en ceros para ingresar ganado nuevo.' });
       alert('✅ ¡Inventario limpiado exitosamente! Ahora puedes registrar tu ganado desde ceros.');
     } catch (err) {
       setProfileMsg({ type: 'error', text: 'Error al limpiar inventario: ' + err.message });
     } finally {
       setLoadingClearInventory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !currentUser?.id) return;
+    async function checkDemo() {
+      try {
+        const cattle = await db.cattle.where('userId').equals(currentUser.id).toArray();
+        const demoAnimals = cattle.filter(isDemoAnimal);
+        setDemoCount(demoAnimals.length);
+      } catch (e) {
+        console.warn('Error checking demo in profile:', e);
+      }
+    }
+    checkDemo();
+  }, [isOpen, currentUser?.id]);
+
+  const handleDeleteDemoData = async () => {
+    if (!userId || demoCount === 0) {
+      alert('ℹ️ No hay datos de demostración presentes en tu cuenta para eliminar.');
+      return;
+    }
+
+    if (!window.confirm(`¿Deseas eliminar únicamente los ${demoCount} registros de demostración/ejemplo?\n\nTus animales reales registrados permanecerán intactos.`)) {
+      return;
+    }
+
+    try {
+      setLoadingDeleteDemo(true);
+      const result = await deleteDemoData(userId);
+      await cloudPushData(userId).catch(() => null);
+      
+      const cattle = await db.cattle.where('userId').equals(userId).toArray();
+      setDemoCount(cattle.filter(isDemoAnimal).length);
+      
+      setProfileMsg({ type: 'success', text: result.message });
+      alert('✅ ' + result.message);
+    } catch (err) {
+      setProfileMsg({ type: 'error', text: 'Error al eliminar datos demo: ' + err.message });
+    } finally {
+      setLoadingDeleteDemo(false);
     }
   };
 
@@ -628,6 +674,44 @@ export function ProfileModal({ isOpen, onClose }) {
                 <li>Historial de pesajes continuos, ventas y estadísticas.</li>
                 <li>Los datos sincronizados en la Nube Global e Internet.</li>
               </ul>
+            </div>
+
+            {/* Opción: Eliminar únicamente datos de demostración */}
+            <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <RefreshCw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Eliminar Únicamente Datos de Demostración</span>
+                  {demoCount > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                      {demoCount} demo presentes
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                      Sin demo
+                    </span>
+                  )}
+                </h5>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {demoCount > 0
+                    ? `Elimina exclusivamente los ${demoCount} animales de demostración y sus pesajes, protegiendo tus datos reales.`
+                    : 'Esta opción solo se encuentra disponible cuando hay datos de prueba cargados en la cuenta.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDeleteDemoData}
+                disabled={loadingDeleteDemo || demoCount === 0}
+                title={demoCount === 0 ? "No hay datos de demostración para eliminar" : "Eliminar únicamente los datos de demostración"}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex-shrink-0 flex items-center gap-1.5 ${
+                  demoCount > 0
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm cursor-pointer'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{loadingDeleteDemo ? 'Eliminando Demo...' : demoCount > 0 ? `Eliminar Demo (${demoCount})` : 'Sin Datos Demo'}</span>
+              </button>
             </div>
 
             {/* Opción Alternativa: Solo vaciar inventario sin borrar cuenta */}

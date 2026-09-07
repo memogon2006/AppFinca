@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, initializeDatabase } from './services/db';
+import { db, initializeDatabase, deleteDemoData, isDemoAnimal } from './services/db';
 import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal, syncAllLocalAccountsToCloud } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
@@ -24,7 +24,7 @@ import { PartnershipSettlementModal } from './components/Finances/PartnershipSet
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Sparkles, Trash2 } from 'lucide-react';
 
 export default function App() {
   const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
@@ -510,6 +510,23 @@ export default function App() {
     setIsWeightModalOpen(true);
   };
 
+  // Detección de animales demo cargados
+  const demoAnimals = cattle.filter(isDemoAnimal);
+  const demoCount = demoAnimals.length;
+
+  const handleDeleteDemoDirect = async () => {
+    if (demoCount === 0) return;
+    if (window.confirm(`¿Estás seguro de que deseas eliminar los ${demoCount} animales de demostración/ejemplo?\n\nTus animales reales registrados permanecerán 100% seguros e intactos.`)) {
+      try {
+        const result = await deleteDemoData(userId);
+        await cloudPushData(userId).catch(() => null);
+        showToast(result.message);
+      } catch (err) {
+        alert('Error al eliminar demo: ' + err.message);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
       
@@ -535,6 +552,42 @@ export default function App() {
         isSyncing={isSyncing}
         activeCattleCount={activeCattleCount}
       />
+
+      {/* Banner Informativo de Modo Demostración Activo */}
+      {demoCount > 0 && (
+        <div className="max-w-[1600px] w-full mx-auto px-3 sm:px-5 lg:px-6 pt-3">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-100/60 to-orange-50 dark:from-amber-950/70 dark:via-amber-900/50 dark:to-orange-950/50 border border-amber-300 dark:border-amber-700/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs sm:text-sm font-extrabold text-amber-950 dark:text-amber-200">
+                    Modo Demostración Activo
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 border border-amber-400/50">
+                    {demoCount} {demoCount === 1 ? 'animal de prueba' : 'animales de prueba'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 truncate">
+                  Tienes datos de ejemplo cargados para probar el sistema. Puedes borrarlos en cualquier momento sin afectar tus datos reales.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                onClick={handleDeleteDemoDirect}
+                className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                title="Eliminar únicamente los animales y pesajes de demostración"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Eliminar Datos Demo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contenedor Principal */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-5 sm:py-8 mb-20 md:mb-8 space-y-6">

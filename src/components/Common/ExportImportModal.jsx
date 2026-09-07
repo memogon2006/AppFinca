@@ -11,9 +11,11 @@ import {
   Filter,
   Layers,
   Target,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
-import { exportBackupData, importBackupData, loadSampleData, db } from '../../services/db';
+import { exportBackupData, importBackupData, loadSampleData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
+import { cloudPushData } from '../../services/cloudSync';
 import { calculateWeightMetrics, calculateFinancials, formatNumber, formatDate } from '../../services/calculations';
 import { buildBatchComparisonWorksheet } from '../../services/batchExcelService';
 import { useAuth } from '../../context/AuthContext';
@@ -29,25 +31,30 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   const [exportBatch, setExportBatch] = useState('all');
   const [exportStatus, setExportStatus] = useState('Activo'); // 'Activo' (predeterminado) | 'all' | 'Vendido' | 'ready480'
   const [splitByBatch, setSplitByBatch] = useState(true);
+  const [demoCount, setDemoCount] = useState(0);
 
   const userId = currentUser?.id;
 
+  const refreshData = async () => {
+    try {
+      const cattle = userId ? await db.cattle.where('userId').equals(userId).toArray() : await db.cattle.toArray();
+      const batchesSet = new Set();
+      cattle.forEach(c => {
+        const b = c.entryBatch || c.paddock;
+        if (b && String(b).trim()) batchesSet.add(String(b).trim());
+      });
+      setAvailableBatches(Array.from(batchesSet));
+
+      const demoAnimals = cattle.filter(isDemoAnimal);
+      setDemoCount(demoAnimals.length);
+    } catch (e) {
+      console.warn('Error cargando datos en modal:', e);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
-    async function loadBatches() {
-      try {
-        const cattle = userId ? await db.cattle.where('userId').equals(userId).toArray() : await db.cattle.toArray();
-        const batchesSet = new Set();
-        cattle.forEach(c => {
-          const b = c.entryBatch || c.paddock;
-          if (b && String(b).trim()) batchesSet.add(String(b).trim());
-        });
-        setAvailableBatches(Array.from(batchesSet));
-      } catch (e) {
-        console.warn('Error cargando lotes:', e);
-      }
-    }
-    loadBatches();
+    refreshData();
   }, [isOpen, userId]);
 
   const handleExportJSON = async () => {
@@ -476,12 +483,45 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
   };
 
   const handleLoadSample = async () => {
-    if (window.confirm('¿Cargar datos de ejemplo/demostración para ver cómo funciona el sistema?')) {
-      setLoading(true);
-      await loadSampleData(userId);
-      setMessage({ type: 'success', text: 'Datos de ejemplo cargados correctamente en tu cuenta.' });
-      if (onDataChanged) onDataChanged();
-      setLoading(false);
+    if (window.confirm('¿Cargar datos de ejemplo/demostración para ver cómo funciona el sistema? Tus registros reales no se modificarán.')) {
+      try {
+        setLoading(true);
+        await loadSampleData(userId);
+        await cloudPushData(userId).catch(() => null);
+        await refreshData();
+        setMessage({ type: 'success', text: 'Datos de demostración cargados correctamente en tu cuenta.' });
+        if (onDataChanged) onDataChanged();
+      } catch (err) {
+        setMessage({ type: 'error', text: 'Error cargando demo: ' + err.message });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleDeleteDemo = async () => {
+    if (demoCount === 0) {
+      alert('ℹ️ No hay datos de demostración presentes en el sistema para eliminar.');
+      return;
+    }
+
+    if (window.confirm(`¿Estás seguro de que deseas eliminar únicamente los ${demoCount} registros de demostración/ejemplo?\n\nTus animales reales registrados permanecerán 100% seguros e intactos.`)) {
+      try {
+        setLoading(true);
+        const result = await deleteDemoData(userId);
+        await cloudPushData(userId).catch(() => null);
+        await refreshData();
+        if (result.success) {
+          setMessage({ type: 'success', text: result.message });
+          if (onDataChanged) onDataChanged();
+        } else {
+          setMessage({ type: 'error', text: result.message });
+        }
+      } catch (err) {
+        setMessage({ type: 'error', text: 'Error al eliminar datos demo: ' + err.message });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -624,19 +664,59 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged }) {
         {/* Datos Demo */}
         <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
           <div>
-            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-2">
-              <RefreshCw className="w-5 h-5" />
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+              {demoCount > 0 ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                  ⚡ {demoCount} demo
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                  Sin demo
+                </span>
+              )}
             </div>
             <h4 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">Datos de Demostración</h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Carga animales de ejemplo para probar cálculos y reportes.</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {demoCount > 0
+                ? `Tienes ${demoCount} registros demo cargados. Puedes eliminarlos en cualquier momento sin afectar tus datos reales.`
+                : 'Carga animales de ejemplo para probar cálculos, reportes y gráficas.'}
+            </p>
           </div>
-          <button
-            onClick={handleLoadSample}
-            disabled={loading}
-            className="w-full py-2 px-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold rounded-xl flex items-center justify-center gap-1.5 transition text-xs cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Cargar Demo
-          </button>
+
+          <div className="space-y-1.5">
+            {demoCount > 0 ? (
+              <button
+                type="button"
+                onClick={handleDeleteDemo}
+                disabled={loading}
+                className="w-full py-2 px-3 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition text-xs shadow-sm cursor-pointer"
+                title="Eliminar únicamente los registros de demostración"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Eliminar Demo ({demoCount})
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={true}
+                className="w-full py-2 px-3 bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs cursor-not-allowed opacity-60"
+                title="No se puede realizar esta acción: no hay datos de demostración cargados"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Eliminar Demo (No disponible)
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleLoadSample}
+              disabled={loading}
+              className="w-full py-1.5 px-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold rounded-xl flex items-center justify-center gap-1.5 transition text-xs cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> {demoCount > 0 ? 'Recargar Demo' : 'Cargar Demo'}
+            </button>
+          </div>
         </div>
       </div>
 

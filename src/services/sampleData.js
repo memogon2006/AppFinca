@@ -1,6 +1,28 @@
+export const DEMO_TAG_NUMBERS = ['EP-101', 'EP-102', 'EP-205', 'RG-042', 'RG-045', 'SJ-301', 'EP-088', 'EP-092'];
+export const DEMO_ANIMAL_NAMES = ['El Sultán', 'Diamante', 'Maravilla', 'La Consentida', 'Paloma', 'Centella', 'El Trueno', 'Cariñoso'];
+export const DEMO_WEIGHING_IDS = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 'w10', 'w11', 'w12', 'w13', 'w14', 'w15', 'w16', 'w17', 'w18', 'w19', 'w20', 'w21'];
+export const DEMO_EXPENSE_IDS = ['e1', 'e2', 'e3', 'e4', 'e5'];
+
+/**
+ * Determina con alta precisión si un registro de animal corresponde a datos de demostración
+ */
+export function isDemoAnimal(animal) {
+  if (!animal) return false;
+  if (animal.isDemo === true || animal.isSample === true) return true;
+  if (DEMO_TAG_NUMBERS.includes(animal.tagNumber)) {
+    if (DEMO_ANIMAL_NAMES.includes(animal.name) || 
+        ['Hacienda El Porvenir', 'Don Roberto Gómez (Compañía)', 'Inversiones Ganaderas San José'].includes(animal.owner) ||
+        ['1', '2', '3', '4', '5', '6', '7', '8'].includes(String(animal.id))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export const INITIAL_CATTLE = [
   {
     id: '1',
+    isDemo: true,
     tagNumber: 'EP-101',
     name: 'El Sultán',
     ironBrand: 'EP-01',
@@ -25,6 +47,7 @@ export const INITIAL_CATTLE = [
   },
   {
     id: '2',
+    isDemo: true,
     tagNumber: 'EP-102',
     name: 'Diamante',
     ironBrand: 'EP-01',
@@ -49,6 +72,7 @@ export const INITIAL_CATTLE = [
   },
   {
     id: '3',
+    isDemo: true,
     tagNumber: 'EP-205',
     name: 'Maravilla',
     ironBrand: 'EP-01',
@@ -76,6 +100,7 @@ export const INITIAL_CATTLE = [
   },
   {
     id: '4',
+    isDemo: true,
     tagNumber: 'RG-042',
     name: 'La Consentida',
     ironBrand: 'RG-★',
@@ -103,6 +128,7 @@ export const INITIAL_CATTLE = [
   },
   {
     id: '5',
+    isDemo: true,
     tagNumber: 'RG-045',
     name: 'Paloma',
     ironBrand: 'RG-★',
@@ -129,6 +155,7 @@ export const INITIAL_CATTLE = [
   },
   {
     id: '6',
+    isDemo: true,
     tagNumber: 'SJ-301',
     name: 'Centella',
     ironBrand: 'SJ-7',
@@ -155,6 +182,7 @@ export const INITIAL_CATTLE = [
   },
   {
     id: '7',
+    isDemo: true,
     tagNumber: 'EP-088',
     name: 'El Trueno',
     ironBrand: 'EP-01',
@@ -184,6 +212,7 @@ export const INITIAL_CATTLE = [
   },
   {
     id: '8',
+    isDemo: true,
     tagNumber: 'EP-092',
     name: 'Cariñoso',
     ironBrand: 'EP-01',
@@ -215,43 +244,43 @@ export const INITIAL_CATTLE = [
 
 export const INITIAL_WEIGHINGS = [
   // Pesajes para EP-101 (Sultán)
-  { id: 'w1', cattleId: '1', date: '2025-11-15', weight: 280, conditionScore: 3.0, notes: 'Pesaje inicial de ingreso' },
-  { id: 'w2', cattleId: '1', date: '2026-01-15', weight: 330, conditionScore: 3.5, notes: 'Control de rutina 60 días' },
-  { id: 'w3', cattleId: '1', date: '2026-04-10', weight: 395, conditionScore: 4.0, notes: 'Buen rebrote de pastos' },
-  { id: 'w4', cattleId: '1', date: '2026-07-20', weight: 445, conditionScore: 4.5, notes: 'Lote de ceba adelantada' },
+  { id: 'w1', isDemo: true, cattleId: '1', date: '2025-11-15', weight: 280, conditionScore: 3.0, notes: 'Pesaje inicial de ingreso' },
+  { id: 'w2', isDemo: true, cattleId: '1', date: '2026-01-15', weight: 330, conditionScore: 3.5, notes: 'Control de rutina 60 días' },
+  { id: 'w3', isDemo: true, cattleId: '1', date: '2026-04-10', weight: 395, conditionScore: 4.0, notes: 'Buen rebrote de pastos' },
+  { id: 'w4', isDemo: true, cattleId: '1', date: '2026-07-20', weight: 445, conditionScore: 4.5, notes: 'Lote de ceba adelantada' },
 
   // Pesajes para EP-102 (Diamante)
-  { id: 'w5', cattleId: '2', date: '2025-11-15', weight: 265, conditionScore: 3.0, notes: 'Pesaje inicial de ingreso' },
-  { id: 'w6', cattleId: '2', date: '2026-01-15', weight: 315, conditionScore: 3.5, notes: 'Buen arranque' },
-  { id: 'w7', cattleId: '2', date: '2026-04-10', weight: 375, conditionScore: 4.0, notes: 'Suplementación con sal mineralizada' },
-  { id: 'w8', cattleId: '2', date: '2026-07-20', weight: 428, conditionScore: 4.0, notes: 'Peso sostenido' },
+  { id: 'w5', isDemo: true, cattleId: '2', date: '2025-11-15', weight: 265, conditionScore: 3.0, notes: 'Pesaje inicial de ingreso' },
+  { id: 'w6', isDemo: true, cattleId: '2', date: '2026-01-15', weight: 315, conditionScore: 3.5, notes: 'Buen arranque' },
+  { id: 'w7', isDemo: true, cattleId: '2', date: '2026-04-10', weight: 375, conditionScore: 4.0, notes: 'Suplementación con sal mineralizada' },
+  { id: 'w8', isDemo: true, cattleId: '2', date: '2026-07-20', weight: 428, conditionScore: 4.0, notes: 'Peso sostenido' },
 
   // Pesajes para EP-205 (Maravilla)
-  { id: 'w9', cattleId: '3', date: '2025-05-10', weight: 410, conditionScore: 3.5, notes: 'Ingreso al lote de lechería' },
-  { id: 'w10', cattleId: '3', date: '2025-11-12', weight: 450, conditionScore: 3.5, notes: 'Pico de producción de leche' },
-  { id: 'w11', cattleId: '3', date: '2026-06-01', weight: 485, conditionScore: 4.0, notes: 'Gestante en 5to mes' },
+  { id: 'w9', isDemo: true, cattleId: '3', date: '2025-05-10', weight: 410, conditionScore: 3.5, notes: 'Ingreso al lote de lechería' },
+  { id: 'w10', isDemo: true, cattleId: '3', date: '2025-11-12', weight: 450, conditionScore: 3.5, notes: 'Pico de producción de leche' },
+  { id: 'w11', isDemo: true, cattleId: '3', date: '2026-06-01', weight: 485, conditionScore: 4.0, notes: 'Gestante en 5to mes' },
 
   // Pesajes para RG-042 (La Consentida)
-  { id: 'w12', cattleId: '4', date: '2025-08-20', weight: 430, conditionScore: 3.5, notes: 'Ingreso en compañía' },
-  { id: 'w13', cattleId: '4', date: '2026-02-15', weight: 465, conditionScore: 3.5, notes: 'Confirmación de preñez por ecografía' },
-  { id: 'w14', cattleId: '4', date: '2026-08-01', weight: 495, conditionScore: 4.0, notes: 'Ingreso a lote maternidad' },
+  { id: 'w12', isDemo: true, cattleId: '4', date: '2025-08-20', weight: 430, conditionScore: 3.5, notes: 'Ingreso en compañía' },
+  { id: 'w13', isDemo: true, cattleId: '4', date: '2026-02-15', weight: 465, conditionScore: 3.5, notes: 'Confirmación de preñez por ecografía' },
+  { id: 'w14', isDemo: true, cattleId: '4', date: '2026-08-01', weight: 495, conditionScore: 4.0, notes: 'Ingreso a lote maternidad' },
 
   // Pesajes para EP-088 (Vendido)
-  { id: 'w15', cattleId: '7', date: '2025-03-10', weight: 310, conditionScore: 3.0, notes: 'Ingreso lote ceba' },
-  { id: 'w16', cattleId: '7', date: '2025-07-15', weight: 410, conditionScore: 4.0, notes: 'Control intermedio' },
-  { id: 'w17', cattleId: '7', date: '2025-11-20', weight: 490, conditionScore: 4.5, notes: 'Fase final de ceba' },
-  { id: 'w18', cattleId: '7', date: '2026-02-28', weight: 565, conditionScore: 5.0, notes: 'Pesaje final de salida a frigorífico' },
+  { id: 'w15', isDemo: true, cattleId: '7', date: '2025-03-10', weight: 310, conditionScore: 3.0, notes: 'Ingreso lote ceba' },
+  { id: 'w16', isDemo: true, cattleId: '7', date: '2025-07-15', weight: 410, conditionScore: 4.0, notes: 'Control intermedio' },
+  { id: 'w17', isDemo: true, cattleId: '7', date: '2025-11-20', weight: 490, conditionScore: 4.5, notes: 'Fase final de ceba' },
+  { id: 'w18', isDemo: true, cattleId: '7', date: '2026-02-28', weight: 565, conditionScore: 5.0, notes: 'Pesaje final de salida a frigorífico' },
 
   // Pesajes para EP-092 (Vendido)
-  { id: 'w19', cattleId: '8', date: '2025-04-12', weight: 295, conditionScore: 3.0, notes: 'Ingreso lote ceba' },
-  { id: 'w20', cattleId: '8', date: '2025-09-10', weight: 405, conditionScore: 4.0, notes: 'Control de báscula' },
-  { id: 'w21', cattleId: '8', date: '2026-03-15', weight: 540, conditionScore: 4.5, notes: 'Pesaje de venta' }
+  { id: 'w19', isDemo: true, cattleId: '8', date: '2025-04-12', weight: 295, conditionScore: 3.0, notes: 'Ingreso lote ceba' },
+  { id: 'w20', isDemo: true, cattleId: '8', date: '2025-09-10', weight: 405, conditionScore: 4.0, notes: 'Control de báscula' },
+  { id: 'w21', isDemo: true, cattleId: '8', date: '2026-03-15', weight: 540, conditionScore: 4.5, notes: 'Pesaje de venta' }
 ];
 
 export const INITIAL_EXPENSES = [
-  { id: 'e1', cattleId: '1', date: '2025-11-20', concept: 'Vacunación Aftosa y Carbón', amount: 35000, category: 'Sanidad' },
-  { id: 'e2', cattleId: '1', date: '2026-01-10', concept: 'Desparasitación y Vitaminas', amount: 45000, category: 'Sanidad' },
-  { id: 'e3', cattleId: '1', date: '2026-03-01', concept: 'Sal mineralizada y melaza', amount: 40000, category: 'Alimentación' },
-  { id: 'e4', cattleId: '3', date: '2026-01-10', concept: 'Inseminación artificial + pajilla importada', amount: 180000, category: 'Reproducción' },
-  { id: 'e5', cattleId: '3', date: '2026-03-15', concept: 'Concentrado lácteo 16% proteína', amount: 70000, category: 'Alimentación' },
+  { id: 'e1', isDemo: true, cattleId: '1', date: '2025-11-20', concept: 'Vacunación Aftosa y Carbón', amount: 35000, category: 'Sanidad' },
+  { id: 'e2', isDemo: true, cattleId: '1', date: '2026-01-10', concept: 'Desparasitación y Vitaminas', amount: 45000, category: 'Sanidad' },
+  { id: 'e3', isDemo: true, cattleId: '1', date: '2026-03-01', concept: 'Sal mineralizada y melaza', amount: 40000, category: 'Alimentación' },
+  { id: 'e4', isDemo: true, cattleId: '3', date: '2026-01-10', concept: 'Inseminación artificial + pajilla importada', amount: 180000, category: 'Reproducción' },
+  { id: 'e5', isDemo: true, cattleId: '3', date: '2026-03-15', concept: 'Concentrado lácteo 16% proteína', amount: 70000, category: 'Alimentación' },
 ];

@@ -1,7 +1,8 @@
 {
-  "version": "2.8.45",
-  "buildTime": 1789182000000,
-  "description": "Optimización para celular en módulo de Lotes e Ingresos: botones uniformes, selector de pestañas limpio y filtros con scroll."
+  "version": "2.8.46",
+  "buildTime": 1789184000000,
+  "description": "Opción para eliminar únicamente datos cargados de demostración conservando los animales reales intactos."
 }
+
 
 
