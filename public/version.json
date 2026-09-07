@@ -1,6 +1,6 @@
 {
-  "version": "2.8.39",
-  "buildTime": 1789155000000,
-  "description": "Corrección al registrar muerte/baja de animales en inventario y botón '1 Solo Animal' ubicado junto a 'Ingresar Lote'."
+  "version": "2.8.40",
+  "buildTime": 1789160000000,
+  "description": "Retiro del botón '+1 Solo Animal' de las barras de herramientas de Inventario y Lotes, manteniendo la interfaz limpia y ordenada."
 }
 

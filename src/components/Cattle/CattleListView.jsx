@@ -311,16 +311,6 @@ export function CattleListView({
               <span>📦 Ingresar Lote</span>
             </button>
           )}
-
-          {/* Botón 1 Solo Animal */}
-          <button
-            onClick={handleOpenNewAnimalSafe}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black text-xs flex items-center gap-1.5 border border-slate-700 shadow-sm transition min-h-[38px] cursor-pointer"
-            title="Registrar un solo bovino de forma individual"
-          >
-            <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
-            <span>➕ 1 Solo Animal</span>
-          </button>
         </div>
       </div>
 

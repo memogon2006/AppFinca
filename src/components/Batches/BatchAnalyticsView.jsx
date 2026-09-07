@@ -466,17 +466,6 @@ export function BatchAnalyticsView({
             </button>
           )}
 
-          {onOpenNewAnimal && (
-            <button
-              onClick={onOpenNewAnimal}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 border border-slate-700 shadow-sm transition cursor-pointer min-h-[42px]"
-              title="Registrar un solo bovino de forma individual"
-            >
-              <PlusCircle className="w-4 h-4 text-emerald-400" />
-              <span>➕ 1 Solo Animal</span>
-            </button>
-          )}
-
           {onOpenExportImport && (
             <button
               onClick={onOpenExportImport}
