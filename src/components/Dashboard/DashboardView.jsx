@@ -8,14 +8,12 @@ import {
   Calendar, 
   ArrowRight, 
   PlusCircle, 
-  DownloadCloud, 
   Zap,
   Activity,
   Layers,
   Baby,
   Milk,
   ShieldCheck,
-  FileSpreadsheet,
   BookOpen,
   HelpCircle,
   PieChart as PieIcon,
@@ -143,31 +141,6 @@ export function DashboardView({
             </button>
           </div>
         </div>
-      </div>
-
-      {/* CONSEJO DE SEGURIDAD & RESPALDO PERIÓDICO */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border border-blue-300/60 dark:border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex-shrink-0 mt-0.5">
-            <FileSpreadsheet className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span>💡 Sugerencia de Seguridad: Ten tu copia de seguridad en archivo</span>
-            </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-              Descarga periódicamente tu copia de seguridad en archivo (.json / Excel). Si cambias de teléfono, computador o dispositivo, tendrás todo tu ganado, pesajes y ventas siempre protegidos y listos para restaurar al instante.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={onOpenExportImport}
-          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-sm whitespace-nowrap self-end sm:self-auto cursor-pointer"
-        >
-          <DownloadCloud className="w-4 h-4" />
-          <span>Exportar / Respaldo</span>
-        </button>
       </div>
 
       {/* 4 KPIs Clave Principales */}

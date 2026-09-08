@@ -1,10 +1,18 @@
-export const CURRENT_APP_VERSION = "2.8.58";
-export const CURRENT_BUILD_TIME = 1789198000000;
+export const CURRENT_APP_VERSION = "2.8.59";
+export const CURRENT_BUILD_TIME = 1789199000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.59",
+    date: "07/09/2026",
+    title: "Limpieza Visual del Tablero Principal",
+    highlights: [
+      "Eliminación del banner de sugerencia de seguridad en el inicio para una interfaz más despejada, directa y enfocada en los indicadores."
+    ]
+  },
   {
     version: "2.8.58",
     date: "07/09/2026",
