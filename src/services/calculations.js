@@ -59,14 +59,45 @@ export function formatDate(dateInput) {
 }
 
 /**
- * Calcula la diferencia en días entre dos fechas (YYYY-MM-DD o Date)
+ * Parsea una fecha a objeto Date puro a medianoche local sin sesgo de zona horaria UTC
+ */
+export function parseDateOnly(dateInput) {
+  if (!dateInput) return null;
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) return null;
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+  }
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (!trimmed || trimmed === 'N/A' || trimmed === 'Todas las fechas' || trimmed === '-') return null;
+    // Formato YYYY-MM-DD o ISO
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+      const [y, m, d] = trimmed.split('T')[0].split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    // Formato DD/MM/YYYY
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(trimmed)) {
+      const parts = trimmed.split('/').map(Number);
+      if (parts.length === 3) {
+        const [d, m, y] = parts;
+        return new Date(y, m - 1, d);
+      }
+    }
+  }
+  const d = new Date(dateInput);
+  return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * Calcula la diferencia exacta en días entre dos fechas (YYYY-MM-DD, DD/MM/YYYY o Date)
  */
 export function getDaysDifference(date1, date2 = new Date()) {
   if (!date1) return 0;
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
+  const d1 = parseDateOnly(date1);
+  const d2 = parseDateOnly(date2);
+  if (!d1 || !d2) return 0;
   const diffTime = Math.abs(d2.getTime() - d1.getTime());
-  return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
 }
 
 /**

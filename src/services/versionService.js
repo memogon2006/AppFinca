@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.62";
-export const CURRENT_BUILD_TIME = 1789201500000;
+export const CURRENT_APP_VERSION = "2.8.64";
+export const CURRENT_BUILD_TIME = 1789202500000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.64",
+    date: "07/09/2026",
+    title: "Corrección y Sincronización Exacta de Días en Finca por Lote",
+    highlights: [
+      "Ajuste en la métrica de Tiempo en Finca: ahora los días en finca del lote coinciden exactamente con los días individuales de los animales activos en el inventario y con el calendario.",
+      "Parsing de fechas sin desfase horario: cálculo exacto de días entre la fecha de ingreso y la fecha actual en todas las vistas de la aplicación."
+    ]
+  },
   {
     version: "2.8.62",
     date: "07/09/2026",

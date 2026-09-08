@@ -106,6 +106,8 @@ export function BatchAnalyticsView({
       let gdpSum = 0;
       let gdpCount = 0;
       let totalDaysSum = 0;
+      let activeDaysSum = 0;
+      let soldDaysSum = 0;
       let readyToSellCount = 0;
 
       // Totales de Salida / Ventas
@@ -143,6 +145,7 @@ export function BatchAnalyticsView({
           }
           totalCurrentWeight += wm.currentWeight;
           if (wm.currentWeight >= 480) readyToSellCount++;
+          activeDaysSum += wm.totalDays;
         }
 
         totalGainKg += wm.totalGain > 0 ? wm.totalGain : 0;
@@ -161,6 +164,7 @@ export function BatchAnalyticsView({
           totalSalesRevenue += parseFloat(animal.exitPrice) || 0;
           totalSoldWeight += parseFloat(animal.exitWeight) || 0;
           totalProfitRealized += fin.netProfit;
+          soldDaysSum += wm.totalDays;
         }
       });
 
@@ -175,7 +179,11 @@ export function BatchAnalyticsView({
       const avgCurrentWeight = activeAnimals.length > 0 ? (totalCurrentWeight / activeAnimals.length) : 0;
       const avgGainKg = headCount > 0 ? (totalGainKg / headCount) : 0;
       const avgGdp = gdpCount > 0 ? (gdpSum / gdpCount) : 0;
-      const avgDays = headCount > 0 ? Math.round(totalDaysSum / headCount) : 0;
+      
+      // Días en finca del lote: Si hay animales activos, corresponde exactamente al tiempo de los animales activos en finca
+      const activeAvgDays = activeAnimals.length > 0 ? Math.round(activeDaysSum / activeAnimals.length) : 0;
+      const soldAvgDays = soldAnimals.length > 0 ? Math.round(soldDaysSum / soldAnimals.length) : 0;
+      const avgDays = activeAnimals.length > 0 ? activeAvgDays : (headCount > 0 ? Math.round(totalDaysSum / headCount) : 0);
 
       // Valor del Kilo de Compra ($/kg entrada)
       const costPerEntryKg = totalEntryWeight > 0 ? (totalPurchaseCost / totalEntryWeight) : 0;

@@ -64,10 +64,21 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
       }
 
       totalDaysSum += wm.totalDays;
-      if (animal.status === 'Activo' && wm.currentWeight >= 480) {
-        readyToSellCount++;
+      if (animal.status === 'Activo') {
+        if (wm.currentWeight >= 480) {
+          readyToSellCount++;
+        }
       }
     });
+
+    const activeAnimals = animals.filter(c => c.status === 'Activo');
+    const activeDaysSum = activeAnimals.reduce((sum, a) => {
+      const animalWeighs = weighings.filter(w => String(w.cattleId) === String(a.id));
+      const wm = calculateWeightMetrics(a, animalWeighs);
+      return sum + wm.totalDays;
+    }, 0);
+    const activeAvgDays = activeCount > 0 ? Math.round(activeDaysSum / activeCount) : 0;
+    const avgDays = activeCount > 0 ? activeAvgDays : (headCount > 0 ? Math.round(totalDaysSum / headCount) : 0);
 
     const avgPricePerHead = headCount > 0 ? (totalPurchaseCost / headCount) : 0;
     const costPerEntryKg = totalEntryWeight > 0 ? (totalPurchaseCost / totalEntryWeight) : 0;
@@ -75,7 +86,6 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
     const avgCurrentWeight = headCount > 0 ? (totalCurrentWeight / headCount) : 0;
     const avgGainKg = headCount > 0 ? (totalGainKg / headCount) : 0;
     const avgGdp = gdpCount > 0 ? (gdpSum / gdpCount) : 0;
-    const avgDays = headCount > 0 ? Math.round(totalDaysSum / headCount) : 0;
 
     return {
       batchName: name,
