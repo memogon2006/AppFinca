@@ -111,7 +111,117 @@ export function WhatsAppReportModal({
     });
   }, [cattle, selectedOwner, selectedBatch]);
 
-  // Métricas calculadas para el reporte
+  // Función para obtener desglose completo por Dueño / Marca
+  const getOwnerBreakdown = (ownerName, ownerBrand) => {
+    const ownerCattle = cattle.filter(c => (c.owner || 'Hacienda Principal').trim() === ownerName);
+    const active = ownerCattle.filter(c => c.status === 'Activo');
+    const sold = ownerCattle.filter(c => c.status === 'Vendido');
+    const dead = ownerCattle.filter(c => c.status === 'Muerto');
+
+    const males = active.filter(c => c.sex === 'Macho');
+    const females = active.filter(c => c.sex === 'Hembra');
+
+    let totalWeight = 0;
+    let totalInvestedActive = 0;
+    let totalMaleInvested = 0;
+    let totalFemaleInvested = 0;
+    let readyToSell = [];
+    let fatteningCount = 0;
+    let pregnantCount = 0;
+    let milkingCount = 0;
+
+    let gdpSum = 0;
+    let gdpCount = 0;
+    let totalGainKg = 0;
+    const animals = [];
+
+    active.forEach(c => {
+      const animalWeighings = (weighings || []).filter(w => w.cattleId === c.id);
+      const fin = calculateFinancials(c);
+      const wm = calculateWeightMetrics(c, animalWeighings);
+      const currentWeight = wm.currentWeight || parseFloat(c.currentWeight) || parseFloat(c.entryWeight) || 0;
+
+      totalWeight += currentWeight;
+      totalInvestedActive += fin.totalInvested;
+
+      if (c.sex === 'Macho') totalMaleInvested += fin.totalInvested;
+      if (c.sex === 'Hembra') totalFemaleInvested += fin.totalInvested;
+
+      if (wm.overallGdp > 0) {
+        gdpSum += wm.overallGdp;
+        gdpCount++;
+      }
+      if (wm.totalGain > 0) totalGainKg += wm.totalGain;
+
+      const isReady = currentWeight >= 480;
+      if (isReady) {
+        readyToSell.push({
+          tag: c.tagNumber,
+          name: c.name,
+          weight: currentWeight,
+          sex: c.sex,
+          gdp: wm.overallGdp
+        });
+      } else {
+        fatteningCount++;
+      }
+
+      if (c.reproductiveStatus === 'Gestando' || c.reproductiveStatus === 'Preñada') pregnantCount++;
+      if (c.milkingStatus === 'En Ordeño') milkingCount++;
+
+      animals.push({
+        tag: c.tagNumber,
+        name: c.name,
+        weight: currentWeight,
+        sex: c.sex,
+        gdp: wm.overallGdp,
+        batch: c.entryBatch,
+        isReady,
+        invested: fin.totalInvested
+      });
+    });
+
+    const avgWeight = active.length > 0 ? totalWeight / active.length : 0;
+    const avgGdp = gdpCount > 0 ? gdpSum / gdpCount : 0;
+    const avgCostPerHead = active.length > 0 ? totalInvestedActive / active.length : 0;
+
+    // Ventas y Utilidades
+    let totalSalesRevenue = 0;
+    let totalRealizedProfit = 0;
+    sold.forEach(c => {
+      const fin = calculateFinancials(c);
+      totalSalesRevenue += parseFloat(c.exitPrice) || 0;
+      totalRealizedProfit += fin.netProfit;
+    });
+
+    return {
+      name: ownerName,
+      brand: ownerBrand || 'Sin marca',
+      totalCount: ownerCattle.length,
+      activeCount: active.length,
+      soldCount: sold.length,
+      deadCount: dead.length,
+      maleCount: males.length,
+      femaleCount: females.length,
+      totalWeight,
+      avgWeight,
+      avgGdp,
+      totalGainKg,
+      totalInvestedActive,
+      totalMaleInvested,
+      totalFemaleInvested,
+      avgCostPerHead,
+      readyToSell,
+      fatteningCount,
+      pregnantCount,
+      milkingCount,
+      animals: animals.sort((a, b) => b.weight - a.weight),
+      totalSalesRevenue,
+      totalRealizedProfit
+    };
+  };
+
+  // Métricas calculadas para el reporte según filtros
   const metrics = useMemo(() => {
     const active = filteredCattle.filter(c => c.status === 'Activo');
     const sold = filteredCattle.filter(c => c.status === 'Vendido');
@@ -130,8 +240,9 @@ export function WhatsAppReportModal({
     let milkingCount = 0;
 
     active.forEach(c => {
+      const animalWeighings = (weighings || []).filter(w => w.cattleId === c.id);
       const fin = calculateFinancials(c);
-      const wm = calculateWeightMetrics(c);
+      const wm = calculateWeightMetrics(c, animalWeighings);
       const currentWeight = wm.currentWeight || parseFloat(c.currentWeight) || parseFloat(c.entryWeight) || 0;
       
       totalWeight += currentWeight;
@@ -165,7 +276,8 @@ export function WhatsAppReportModal({
     const weighingDetails = [];
 
     active.forEach(c => {
-      const wm = calculateWeightMetrics(c);
+      const animalWeighings = (weighings || []).filter(w => w.cattleId === c.id);
+      const wm = calculateWeightMetrics(c, animalWeighings);
       if (wm.overallGdp > 0) {
         gdpSum += wm.overallGdp;
         gdpCount++;
@@ -178,7 +290,8 @@ export function WhatsAppReportModal({
         currentWeight: wm.currentWeight,
         gain: wm.totalGain,
         gdp: wm.overallGdp,
-        days: wm.totalDays
+        days: wm.totalDays,
+        brand: c.ironBrand
       });
     });
 
@@ -217,14 +330,15 @@ export function WhatsAppReportModal({
       totalSalesRevenue,
       totalRealizedProfit
     };
-  }, [filteredCattle]);
+  }, [filteredCattle, weighings]);
 
   // Generación dinámica del texto del mensaje
   const generatedMessage = useMemo(() => {
     const today = formatDate(new Date());
+    const ownerObj = ownersList.find(o => o.name === selectedOwner);
     const ownerLabel = selectedOwner === 'all' 
       ? 'Finca Completa (Todos los Dueños)' 
-      : `${selectedOwner} ${ownersList.find(o => o.name === selectedOwner)?.brands ? `(Hierro: ${ownersList.find(o => o.name === selectedOwner).brands})` : ''}`;
+      : `${selectedOwner} ${ownerObj?.brands ? `(Hierro: ${ownerObj.brands})` : ''}`;
     const batchLabel = selectedBatch === 'all' ? 'Todos los lotes' : `Lote ${selectedBatch}`;
 
     let text = '';
@@ -241,14 +355,14 @@ export function WhatsAppReportModal({
       text += `• Biomasa Total en Finca: *${formatNumber(metrics.totalWeight, 0)} kg*\n`;
       text += `• Peso Promedio: *${formatNumber(metrics.avgWeight, 1)} kg / animal*\n`;
       if (metrics.avgGdp > 0) {
-        text += `• Ganancia Diaria Promedio (GDP): *+${formatNumber(metrics.avgGdp, 3)} kg/día*\n`;
+        text += `• Ganancia Diaria Promedio (GDP): *+${formatNumber(metrics.avgGdp, 3)} kg/día* (+${formatNumber(metrics.totalGainKg, 0)} kg ganados)\n`;
       }
       text += `\n`;
 
       text += `💰 *VALORIZACIÓN DEL GANADO:*\n`;
       text += `• Inversión Activa Total: *${formatCurrency(metrics.totalInvestedActive)}*\n`;
-      text += `• Valor Machos (${metrics.maleCount}): *${formatCurrency(metrics.totalMaleInvested)}*\n`;
-      text += `• Valor Hembras (${metrics.femaleCount}): *${formatCurrency(metrics.totalFemaleInvested)}*\n`;
+      if (metrics.maleCount > 0) text += `• Valor Machos (${metrics.maleCount}): *${formatCurrency(metrics.totalMaleInvested)}*\n`;
+      if (metrics.femaleCount > 0) text += `• Valor Hembras (${metrics.femaleCount}): *${formatCurrency(metrics.totalFemaleInvested)}*\n`;
       text += `• Promedio Inversión / Cabeza: *${formatCurrency(metrics.avgCostPerHead)}*\n\n`;
 
       text += `🎯 *ESTADO PRODUCTIVO:*\n`;
@@ -269,6 +383,7 @@ export function WhatsAppReportModal({
       text += `🎯 *REPORTE DE GANADO LISTO PARA VENTA (≥ 480 KG)*\n`;
       text += `🏡 *Finca:* ${farmName}\n`;
       text += `👤 *Dueño / Marca:* ${ownerLabel}\n`;
+      if (selectedBatch !== 'all') text += `🏷️ *Lote:* ${batchLabel}\n`;
       text += `📅 *Fecha:* ${today}\n\n`;
 
       text += `🐂 *TOTAL LISTOS PARA DESPACHO: ${metrics.readyToSell.length} CABEZAS*\n`;
@@ -277,18 +392,23 @@ export function WhatsAppReportModal({
       text += `• Kilos Totales en Báscula: *${formatNumber(totalReadyKg, 0)} kg*\n`;
       text += `• Peso Promedio: *${formatNumber(avgReadyKg, 1)} kg / animal*\n\n`;
 
-      text += `📋 *LISTADO DETALLADO POR CHAPETA:*\n`;
-      metrics.readyToSell.forEach((item, idx) => {
-        text += `${idx + 1}. *#${item.tag}*${item.name ? ` (${item.name})` : ''} - *${formatNumber(item.weight, 1)} kg*`;
-        if (item.gdp > 0) text += ` (GDP: +${formatNumber(item.gdp, 3)} kg/d)`;
-        if (item.brand) text += ` [Hierro: ${item.brand}]`;
-        text += `\n`;
-      });
+      if (metrics.readyToSell.length > 0) {
+        text += `📋 *LISTADO DETALLADO POR CHAPETA:*\n`;
+        metrics.readyToSell.forEach((item, idx) => {
+          text += `${idx + 1}. *#${item.tag}*${item.name ? ` (${item.name})` : ''} - *${formatNumber(item.weight, 1)} kg*`;
+          if (item.gdp > 0) text += ` (GDP: +${formatNumber(item.gdp, 3)} kg/d)`;
+          if (item.brand && selectedOwner === 'all') text += ` [Hierro: ${item.brand}]`;
+          text += `\n`;
+        });
+      } else {
+        text += `ℹ️ *No hay animales con peso igual o superior a 480 kg actualmente.*\n`;
+      }
     }
     else if (reportType === 'weighing') {
       text += `⚖️ *REPORTE DE JORNADA DE PESAJE Y RENDIMIENTO*\n`;
       text += `🏡 *Finca:* ${farmName}\n`;
       text += `👤 *Dueño / Marca:* ${ownerLabel}\n`;
+      if (selectedBatch !== 'all') text += `🏷️ *Lote:* ${batchLabel}\n`;
       text += `📅 *Fecha:* ${today}\n\n`;
 
       text += `📈 *RESUMEN DE RENDIMIENTO:*\n`;
@@ -297,41 +417,98 @@ export function WhatsAppReportModal({
       text += `• Carne Total Ganada en Finca: *+${formatNumber(metrics.totalGainKg, 0)} kg*\n`;
       text += `• Peso Promedio Actual: *${formatNumber(metrics.avgWeight, 1)} kg*\n\n`;
 
-      text += `🏆 *TOP RENDIMIENTO DEL LOTE:*\n`;
-      const top3 = metrics.weighingDetails.slice(0, 5);
-      top3.forEach((item, idx) => {
-        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '⭐';
-        text += `${medal} *#${item.tag}* - *${formatNumber(item.currentWeight, 1)} kg* (+${formatNumber(item.gdp, 3)} kg/d • +${formatNumber(item.gain, 1)} kg)\n`;
-      });
-
-      const delayed = metrics.weighingDetails.filter(item => item.gdp <= 0.1 && item.days > 15);
-      if (delayed.length > 0) {
-        text += `\n⚠️ *ATENCIÓN / ANIMALES ATRASADOS (${delayed.length}):*\n`;
-        delayed.slice(0, 4).forEach(item => {
-          text += `• *#${item.tag}*: ${formatNumber(item.currentWeight, 1)} kg (GDP: ${formatNumber(item.gdp, 3)} kg/d - Revisar sanidad)\n`;
+      if (metrics.weighingDetails.length > 0) {
+        text += `🏆 *TOP RENDIMIENTO:*\n`;
+        const top5 = metrics.weighingDetails.slice(0, 5);
+        top5.forEach((item, idx) => {
+          const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '⭐';
+          text += `${medal} *#${item.tag}* - *${formatNumber(item.currentWeight, 1)} kg* (+${formatNumber(item.gdp, 3)} kg/d • +${formatNumber(item.gain, 1)} kg)\n`;
         });
+
+        const delayed = metrics.weighingDetails.filter(item => item.gdp <= 0.1 && item.days > 15);
+        if (delayed.length > 0) {
+          text += `\n⚠️ *ATENCIÓN / ANIMALES ATRASADOS (${delayed.length}):*\n`;
+          delayed.slice(0, 5).forEach(item => {
+            text += `• *#${item.tag}*: ${formatNumber(item.currentWeight, 1)} kg (GDP: ${formatNumber(item.gdp, 3)} kg/d - Revisar sanidad)\n`;
+          });
+        }
       }
     }
     else if (reportType === 'owners') {
-      text += `👥 *BALANCE CONSOLIDADO POR DUEÑO / MARCA*\n`;
-      text += `🏡 *Finca:* ${farmName}\n`;
-      text += `📅 *Fecha:* ${today}\n\n`;
+      if (selectedOwner !== 'all') {
+        // DUEÑO ESPECÍFICO SELECCIONADO
+        const data = getOwnerBreakdown(selectedOwner, ownerObj?.brands);
 
-      ownersList.forEach(o => {
-        const ownerCattle = cattle.filter(c => (c.owner || 'Hacienda Principal').trim() === o.name);
-        const active = ownerCattle.filter(c => c.status === 'Activo');
-        const sold = ownerCattle.filter(c => c.status === 'Vendido');
-        const invested = active.reduce((sum, c) => sum + calculateFinancials(c).totalInvested, 0);
-        const profit = sold.reduce((sum, c) => sum + calculateFinancials(c).netProfit, 0);
+        text += `👥 *INFORME CONSOLIDADO POR DUEÑO / MARCA*\n`;
+        text += `🏡 *Finca:* ${farmName}\n`;
+        text += `👤 *Dueño:* ${data.name}\n`;
+        text += `🏷️ *Hierro / Marca:* ${data.brand}\n`;
+        text += `📅 *Fecha:* ${today}\n\n`;
 
-        text += `👤 *${o.name}* [Hierro: ${o.brands}]\n`;
-        text += `• Activos en Finca: *${active.length} cabezas*\n`;
-        text += `• Inversión Activa: *${formatCurrency(invested)}*\n`;
-        if (sold.length > 0) {
-          text += `• Vendidos: *${sold.length} cabezas* (Utilidad: *${formatCurrency(profit)}*)\n`;
+        text += `🐂 *RESUMEN DEL HATO ACTIVO:*\n`;
+        text += `• Cabezas Activas: *${data.activeCount} animales* (${data.maleCount} machos • ${data.femaleCount} hembras)\n`;
+        text += `• Biomasa Total en Finca: *${formatNumber(data.totalWeight, 0)} kg*\n`;
+        text += `• Peso Promedio: *${formatNumber(data.avgWeight, 1)} kg / animal*\n`;
+        if (data.avgGdp > 0) {
+          text += `• Ganancia Diaria Promedio (GDP): *+${formatNumber(data.avgGdp, 3)} kg/día* (+${formatNumber(data.totalGainKg, 0)} kg carne)\n`;
         }
         text += `\n`;
-      });
+
+        text += `💰 *INVERSIÓN Y VALORIZACIÓN:*\n`;
+        text += `• Inversión Activa Total: *${formatCurrency(data.totalInvestedActive)}*\n`;
+        if (data.maleCount > 0) text += `• Inversión Machos (${data.maleCount}): *${formatCurrency(data.totalMaleInvested)}*\n`;
+        if (data.femaleCount > 0) text += `• Inversión Hembras (${data.femaleCount}): *${formatCurrency(data.totalFemaleInvested)}*\n`;
+        text += `• Promedio Inversión / Cabeza: *${formatCurrency(data.avgCostPerHead)}*\n\n`;
+
+        text += `🎯 *ESTADO PRODUCTIVO:*\n`;
+        text += `• Listos para Venta (≥ 480 kg): *${data.readyToSell.length} novillos*\n`;
+        text += `• En Engorde / Ceba: *${data.fatteningCount} animales*\n`;
+        if (data.pregnantCount > 0) text += `• Vacas en Gestación: *${data.pregnantCount} hembras*\n`;
+        if (data.milkingCount > 0) text += `• Vacas en Ordeño: *${data.milkingCount} hembras*\n`;
+        if (data.deadCount > 0) text += `• Bajas / Muertes: *${data.deadCount} cabezas*\n`;
+
+        if (data.animals.length > 0) {
+          text += `\n📋 *DETALLE POR ANIMAL / CHAPETA (${data.animals.length}):*\n`;
+          data.animals.forEach((a, idx) => {
+            text += `${idx + 1}. *#${a.tag}*${a.name ? ` (${a.name})` : ''} - *${formatNumber(a.weight, 1)} kg* • ${a.sex}${a.gdp > 0 ? ` • GDP: +${formatNumber(a.gdp, 3)} kg/d` : ''}${a.isReady ? ' 🎯' : ''}\n`;
+          });
+        }
+
+        if (data.soldCount > 0) {
+          text += `\n💵 *HISTORIAL DE VENTAS Y UTILIDADES:*\n`;
+          text += `• Animales Liquidados: *${data.soldCount} cabezas*\n`;
+          text += `• Ingresos Totales por Ventas: *${formatCurrency(data.totalSalesRevenue)}*\n`;
+          text += `• Utilidad Neta Realizada: *${formatCurrency(data.totalRealizedProfit)}*\n`;
+        }
+      } else {
+        // TODOS LOS DUEÑOS Y MARCAS (DESGLOSE COMPLETO POR CADA DUEÑO)
+        text += `👥 *BALANCE CONSOLIDADO POR CADA DUEÑO / MARCA*\n`;
+        text += `🏡 *Finca:* ${farmName}\n`;
+        text += `📅 *Fecha:* ${today}\n`;
+        text += `📊 *Total Registrados:* ${ownersList.length} Dueños/Marcas • *Hato Total:* ${metrics.activeCount} activos\n\n`;
+
+        ownersList.forEach((o) => {
+          const data = getOwnerBreakdown(o.name, o.brands);
+          text += `━━━━━━━━━━━━━━━━━━━━\n`;
+          text += `👤 *DUEÑO: ${data.name.toUpperCase()}*\n`;
+          text += `🏷️ *Hierro / Marca:* ${data.brand}\n`;
+          text += `• Activos en Finca: *${data.activeCount} cabezas* (${data.maleCount} machos • ${data.femaleCount} hembras)\n`;
+          text += `• Biomasa Total: *${formatNumber(data.totalWeight, 0)} kg* (Promedio: *${formatNumber(data.avgWeight, 1)} kg*)\n`;
+          if (data.avgGdp > 0) {
+            text += `• GDP Promedio: *+${formatNumber(data.avgGdp, 3)} kg/día* (+${formatNumber(data.totalGainKg, 0)} kg carne)\n`;
+          }
+          text += `• Inversión Activa: *${formatCurrency(data.totalInvestedActive)}* (Prom: *${formatCurrency(data.avgCostPerHead)}/cab*)\n`;
+          text += `• Listos para Venta (≥ 480 kg): *${data.readyToSell.length} novillos*\n`;
+          if (data.soldCount > 0) {
+            text += `• Ventas Realizadas: *${data.soldCount} cabezas* (Ingresos: *${formatCurrency(data.totalSalesRevenue)}* • Utilidad: *${formatCurrency(data.totalRealizedProfit)}*)\n`;
+          }
+          if (data.animals.length > 0) {
+            const tagsSummary = data.animals.map(a => `#${a.tag} (${formatNumber(a.weight, 0)}kg)`).join(', ');
+            text += `• Chapetas: ${tagsSummary}\n`;
+          }
+          text += `\n`;
+        });
+      }
     }
 
     if (customNote.trim()) {
@@ -340,7 +517,7 @@ export function WhatsAppReportModal({
 
     text += `\n_Reporte generado automáticamente desde App Inventario Bovino_`;
     return text;
-  }, [reportType, selectedOwner, selectedBatch, farmName, metrics, ownersList, cattle, customNote]);
+  }, [reportType, selectedOwner, selectedBatch, farmName, metrics, ownersList, cattle, customNote, weighings]);
 
   // Manejo de guardado de número y envío
   const handleSendWhatsApp = () => {

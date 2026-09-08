@@ -1,7 +1,7 @@
 {
-  "version": "2.8.61",
-  "buildTime": 1789201000000,
-  "description": "Opción para eliminar contactos y limpiar números en el módulo de WhatsApp."
+  "version": "2.8.62",
+  "buildTime": 1789201500000,
+  "description": "Reporte de WhatsApp ajustado para entregar balance completo y detallado por cada dueño o marca."
 }
 
 

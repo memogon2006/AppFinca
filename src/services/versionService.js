@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.61";
-export const CURRENT_BUILD_TIME = 1789201000000;
+export const CURRENT_APP_VERSION = "2.8.62";
+export const CURRENT_BUILD_TIME = 1789201500000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.62",
+    date: "07/09/2026",
+    title: "Reportes WhatsApp Detallados por Cada Dueño o Marca",
+    highlights: [
+      "Ajuste completo en el reporte por Dueño/Marca: entrega el desglose zootécnico y financiero completo (cabezas, machos, hembras, biomasa en kg, GDP promedio, inversión activa, listos para venta y listado de chapetas) para el dueño seleccionado o para cada dueño registrado.",
+      "Cálculo zootécnico de pesajes continuos y GDP integrado con el registro de pesajes de cada animal."
+    ]
+  },
   {
     version: "2.8.61",
     date: "07/09/2026",
