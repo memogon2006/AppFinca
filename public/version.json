@@ -1,7 +1,7 @@
 {
-  "version": "2.8.66",
-  "buildTime": 1789203500000,
-  "description": "Báscula rápida con Número, Marca/Dueño y Color del animal + Auditoría de datos."
+  "version": "2.8.67",
+  "buildTime": 1789204000000,
+  "description": "Menú lateral izquierdo desplegable con cierre automático y navegación optimizada."
 }
 
 

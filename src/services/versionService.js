@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.66";
-export const CURRENT_BUILD_TIME = 1789203500000;
+export const CURRENT_APP_VERSION = "2.8.67";
+export const CURRENT_BUILD_TIME = 1789204000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.67",
+    date: "08/09/2026",
+    title: "Menú Lateral Izquierdo Desplegable con Cierre Automático",
+    highlights: [
+      "Menú Lateral Izquierdo (Offcanvas Drawer): Ahora toda la navegación se despliega limpiamente desde el lateral izquierdo mediante el botón de Menú.",
+      "Cierre Automático: Al seleccionar cualquier módulo o acción rápida, el menú se oculta de inmediato y te lleva directamente a la sección elegida.",
+      "Cabecera Fija Optimizada: Barra superior más limpia y espaciosa con botón de Menú, acceso rápido a Registro, Excel, WhatsApp y Perfil."
+    ]
+  },
   {
     version: "2.8.66",
     date: "07/09/2026",
