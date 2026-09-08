@@ -395,6 +395,19 @@ export function WhatsAppReportModal({
     setShowAddContact(false);
   };
 
+  const handleDeleteContact = (e, nameToDelete) => {
+    e.stopPropagation();
+    if (window.confirm(`¿Deseas eliminar a "${nameToDelete}" de la agenda de contactos de WhatsApp?`)) {
+      const updated = quickContacts.filter(c => c.name !== nameToDelete);
+      setQuickContacts(updated);
+      try {
+        localStorage.setItem(STORAGE_CONTACTS_KEY, JSON.stringify(updated));
+      } catch (err) {
+        console.warn('Error saving contacts:', err);
+      }
+    }
+  };
+
   const handleSelectQuickContact = (contact) => {
     setPhoneNumber(contact.phone);
   };
@@ -574,20 +587,41 @@ export function WhatsAppReportModal({
               {/* Botones de Contactos Rápidos */}
               {quickContacts.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {quickContacts.map((c, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => handleSelectQuickContact(c)}
-                      className={`px-2 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
-                        phoneNumber.includes(c.phone)
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
-                      }`}
-                    >
-                      👤 {c.name}
-                    </button>
-                  ))}
+                  {quickContacts.map((c, i) => {
+                    const isSelected = phoneNumber.includes(c.phone);
+                    return (
+                      <div
+                        key={i}
+                        className={`group inline-flex items-center rounded-lg border transition text-[11px] font-bold overflow-hidden shadow-sm ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSelectQuickContact(c)}
+                          className="px-2 py-1 flex items-center gap-1 cursor-pointer"
+                          title={`Usar teléfono de ${c.name} (${c.phone})`}
+                        >
+                          <span>👤 {c.name}</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteContact(e, c.name)}
+                          className={`px-1.5 py-1 transition cursor-pointer flex items-center justify-center border-l ${
+                            isSelected
+                              ? 'border-emerald-500 hover:bg-emerald-700 text-emerald-100 hover:text-white'
+                              : 'border-slate-200 dark:border-slate-700 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-400 hover:text-rose-600'
+                          }`}
+                          title={`Eliminar ${c.name} de la agenda`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -597,9 +631,22 @@ export function WhatsAppReportModal({
                   placeholder="Ej: 3101234567 o +573101234567"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm tabular-nums"
+                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm tabular-nums"
                 />
                 <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3 top-2.5" />
+                {phoneNumber && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhoneNumber('');
+                      try { localStorage.removeItem(STORAGE_PHONE_KEY); } catch (e) {}
+                    }}
+                    className="p-1 text-slate-400 hover:text-rose-500 absolute right-2.5 top-2 transition cursor-pointer"
+                    title="Limpiar número"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 pt-0.5">

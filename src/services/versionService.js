@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.60";
-export const CURRENT_BUILD_TIME = 1789200000000;
+export const CURRENT_APP_VERSION = "2.8.61";
+export const CURRENT_BUILD_TIME = 1789201000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.61",
+    date: "07/09/2026",
+    title: "Gestión y Eliminación de Contactos en Módulo de WhatsApp",
+    highlights: [
+      "Opción directa para eliminar contactos individuales de la agenda rápida de WhatsApp con confirmación de seguridad.",
+      "Botón rápido para limpiar el campo de teléfono y desvincular números predeterminados con un solo clic."
+    ]
+  },
   {
     version: "2.8.60",
     date: "07/09/2026",
