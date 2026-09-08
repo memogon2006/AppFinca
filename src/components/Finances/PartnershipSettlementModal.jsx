@@ -95,7 +95,7 @@ export function PartnershipSettlementModal({
       if (exists) {
         return prev.filter(id => id !== animal.id);
       } else {
-        const animalWeighs = weighings.filter(w => w.cattleId === animal.id);
+        const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
         const wm = calculateWeightMetrics(animal, animalWeighs);
         const exitW = wm.currentWeight || parseFloat(animal.entryWeight) || 0;
         setCustomExitWeights(cw => ({ ...cw, [animal.id]: exitW }));
@@ -127,7 +127,7 @@ export function PartnershipSettlementModal({
       const newModes = { ...animalModes };
       filteredAvailable.forEach(c => {
         if (!newWeights[c.id]) {
-          const animalWeighs = weighings.filter(w => w.cattleId === c.id);
+          const animalWeighs = weighings.filter(w => String(w.cattleId) === String(c.id));
           const wm = calculateWeightMetrics(c, animalWeighs);
           newWeights[c.id] = wm.currentWeight || parseFloat(c.entryWeight) || 0;
         }
@@ -180,7 +180,7 @@ export function PartnershipSettlementModal({
       const animal = cattle.find(c => c.id === id);
       if (!animal) return null;
 
-      const animalWeighs = weighings.filter(w => w.cattleId === animal.id);
+      const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
       const wm = calculateWeightMetrics(animal, animalWeighs);
 
       const entryW = parseFloat(animal.entryWeight) || 0;
@@ -545,7 +545,7 @@ export function PartnershipSettlementModal({
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {filteredAvailable.map(animal => {
                         const isSelected = selectedIds.includes(animal.id);
-                        const animalWeighs = weighings.filter(w => w.cattleId === animal.id);
+                        const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
                         const wm = calculateWeightMetrics(animal, animalWeighs);
                         const exitWeightVal = customExitWeights[animal.id] !== undefined 
                           ? customExitWeights[animal.id] 

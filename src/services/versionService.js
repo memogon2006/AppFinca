@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.65";
-export const CURRENT_BUILD_TIME = 1789203000000;
+export const CURRENT_APP_VERSION = "2.8.66";
+export const CURRENT_BUILD_TIME = 1789203500000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.66",
+    date: "07/09/2026",
+    title: "Báscula Rápida con Arete, Marca/Dueño y Color + Auditoría Completa",
+    highlights: [
+      "Báscula Rápida Mejorada: Ahora cada tarjeta de pesaje destaca con máxima prioridad el Número/Arete, la Marca/Hierro, el Dueño/Propietario y el Color visual del animal.",
+      "Buscador de Báscula Ampliado: Permite buscar y filtrar animales por color, marca, dueño, nombre, arete o lote de ingreso.",
+      "Auditoría y Sincronización de Datos: Homogeneización estricta de IDs en todos los módulos de pesaje, hembras, gráficos y compañía."
+    ]
+  },
   {
     version: "2.8.65",
     date: "07/09/2026",

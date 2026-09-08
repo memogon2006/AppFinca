@@ -59,7 +59,10 @@ export function QuickWeighinView({
       const tag = (c.tagNumber || '').toLowerCase();
       const name = (c.name || '').toLowerCase();
       const brand = (c.ironBrand || '').toLowerCase();
-      return tag.includes(q) || name.includes(q) || brand.includes(q) || batch.includes(q);
+      const owner = (c.owner || '').toLowerCase();
+      const color = (c.color || '').toLowerCase();
+      const breed = (c.breed || '').toLowerCase();
+      return tag.includes(q) || name.includes(q) || brand.includes(q) || owner.includes(q) || color.includes(q) || breed.includes(q) || batch.includes(q);
     }
     return true;
   });
@@ -314,7 +317,7 @@ export function QuickWeighinView({
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Buscar por arete, nombre, hierro o Ingreso #..."
+                placeholder="Buscar por arete, marca/hierro, dueño, color, nombre o Ingreso #..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 shadow-sm min-h-[44px]"
@@ -348,7 +351,7 @@ export function QuickWeighinView({
           {/* Grid de pesaje rápido */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
             {filteredActive.map(animal => {
-              const animalWeighs = weighings.filter(w => w.cattleId === String(animal.id) || w.cattleId === animal.id);
+              const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
               const wm = calculateWeightMetrics(animal, animalWeighs);
               const currentWeightInput = weightsMap[animal.id] || '';
               const newWeightNum = parseFloat(currentWeightInput) || 0;
@@ -376,38 +379,60 @@ export function QuickWeighinView({
                   }`}
                 >
                   {/* Encabezado del animal */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-base font-black text-slate-900 dark:text-white">
-                          {animal.tagNumber}
-                        </span>
-                        {animal.name && (
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                            ({animal.name})
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                            {animal.tagNumber}
                           </span>
-                        )}
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800">
-                          {batch}
-                        </span>
-                        {isRegistered && (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black animate-fade-in">
-                            ✓ REGISTRADO
+                          {animal.name && (
+                            <span className="text-xs text-slate-600 dark:text-slate-300 font-bold">
+                              ({animal.name})
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800">
+                            {batch}
                           </span>
-                        )}
+                          {isRegistered && (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black animate-fade-in shadow-sm">
+                              ✓ REGISTRADO
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      
-                      <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                        Hierro: <strong className="text-slate-700 dark:text-slate-300">{animal.ironBrand || 'N/A'}</strong> • {animal.sex}
+
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-[10px] text-slate-400 block font-semibold">
+                          {isRegistered ? 'Peso Registrado' : 'Peso Anterior'}
+                        </span>
+                        <span className={`text-xs font-black ${isRegistered ? 'text-emerald-600 dark:text-emerald-400 text-sm' : 'text-slate-800 dark:text-slate-200'}`}>
+                          {isRegistered ? `${registeredWeight} kg` : `${wm.currentWeight} kg`}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block">
-                        {isRegistered ? 'Peso Registrado' : 'Peso Anterior'}
+                    {/* Fila Destacada: Marca/Hierro, Dueño y Color del Animal */}
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold border border-slate-200 dark:border-slate-700">
+                        🏷️ Hierro: <strong className="text-slate-900 dark:text-white font-black">{animal.ironBrand || 'N/A'}</strong>
                       </span>
-                      <span className={`text-xs font-black ${isRegistered ? 'text-emerald-600 dark:text-emerald-400 text-sm' : 'text-slate-700 dark:text-slate-300'}`}>
-                        {isRegistered ? `${registeredWeight} kg` : `${wm.currentWeight} kg`}
+                      {animal.owner && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800/60 max-w-[200px] truncate" title={animal.owner}>
+                          👤 Dueño: <strong className="text-blue-900 dark:text-blue-200 font-black truncate">{animal.owner}</strong>
+                        </span>
+                      )}
+                      {animal.color ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-300 font-extrabold border border-amber-200 dark:border-amber-800/60">
+                          🎨 Color: <strong className="text-amber-950 dark:text-amber-100 font-black">{animal.color}</strong>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 font-medium text-[10px]">
+                          🎨 Color: S/R
+                        </span>
+                      )}
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                        {animal.breed || 'Sin raza'} • {animal.sex}
                       </span>
                     </div>
                   </div>

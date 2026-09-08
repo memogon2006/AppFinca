@@ -10,7 +10,7 @@ export function WeightPerformanceChart({ cattle = [], weighings = [] }) {
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   
   const performanceData = activeCattle.map(animal => {
-    const animalWeighs = weighings.filter(w => w.cattleId === animal.id);
+    const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
     const wm = calculateWeightMetrics(animal, animalWeighs);
     return {
       name: animal.tagNumber,

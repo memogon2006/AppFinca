@@ -30,7 +30,7 @@ export function ProductionTypeChart({ cattle = [], weighings = [] }) {
   };
 
   activeCattle.forEach(c => {
-    const w = weighings.filter(item => item.cattleId === c.id);
+    const w = weighings.filter(item => String(item.cattleId) === String(c.id));
     const wm = calculateWeightMetrics(c, w);
     const weight = wm.currentWeight || parseFloat(c.entryWeight) || 0;
 

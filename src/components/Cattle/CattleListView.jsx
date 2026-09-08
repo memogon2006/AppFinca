@@ -96,7 +96,7 @@ export function CattleListView({
 
       // Filtro de Rendimiento / Ceba (Meta 480 kg y Semáforo)
       if (filters.status === 'Activo' && filters.performanceFilter) {
-        const aWeighs = weighings.filter(w => w.cattleId === animal.id);
+        const aWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
         const wm = calculateWeightMetrics(animal, aWeighs);
         if (filters.performanceFilter === 'ready480' && !wm.cebaProjection?.isReady) return false;
         if (filters.performanceFilter === 'highGdp' && wm.performance?.level !== 'excelente') return false;
@@ -162,8 +162,8 @@ export function CattleListView({
         return statusA - statusB;
       }
 
-      const aWeighs = weighings.filter(w => w.cattleId === a.id);
-      const bWeighs = weighings.filter(w => w.cattleId === b.id);
+      const aWeighs = weighings.filter(w => String(w.cattleId) === String(a.id));
+      const bWeighs = weighings.filter(w => String(w.cattleId) === String(b.id));
       const aWeight = calculateWeightMetrics(a, aWeighs);
       const bWeight = calculateWeightMetrics(b, bWeighs);
       const aFin = calculateFinancials(a);
@@ -210,7 +210,7 @@ export function CattleListView({
       if (isMale) maleCount++;
       if (isFemale) femaleCount++;
 
-      const w = weighings.filter(item => item.cattleId === c.id);
+      const w = weighings.filter(item => String(item.cattleId) === String(c.id));
       const wm = calculateWeightMetrics(c, w);
       if (c.status === 'Activo') {
         totalKg += wm.currentWeight;
@@ -433,7 +433,7 @@ export function CattleListView({
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {filteredCattle.map(animal => {
-                  const aWeighs = weighings.filter(w => w.cattleId === animal.id);
+                  const aWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
                   const wm = calculateWeightMetrics(animal, aWeighs);
                   const fin = calculateFinancials(animal);
                   const batch = animal.entryBatch || animal.paddock || 'Ingreso #1';

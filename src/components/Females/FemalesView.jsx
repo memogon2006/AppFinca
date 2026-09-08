@@ -36,9 +36,20 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
   const avgMilkPerCow = milkingFemales.length > 0 ? (totalMilkToday / milkingFemales.length).toFixed(1) : 0;
 
   // Estadísticas de Ceba & Engorde de Hembras
-  const totalFatteningWeight = fatteningFemales.reduce((sum, c) => sum + (parseFloat(c.currentWeight) || parseFloat(c.entryWeight) || 0), 0);
-  const avgFatteningWeight = fatteningFemales.length > 0 ? (totalFatteningWeight / fatteningFemales.length).toFixed(1) : 0;
-  const readyToSellFattening = fatteningFemales.filter(c => (parseFloat(c.currentWeight) || 0) >= 480).length;
+  const fatteningWithMetrics = femaleCattle.filter(c => 
+    c.femaleStatus === 'Ceba / Levante / Engorde' || 
+    c.femaleStatus === 'Ceba' || 
+    c.femaleStatus === 'Engorde' ||
+    (c.productionType === 'Ceba' && c.femaleStatus !== 'Producción de leche' && c.femaleStatus !== 'Gestación' && c.femaleStatus !== 'Levante de cría')
+  ).map(cow => {
+    const animalWeighs = weighings.filter(w => String(w.cattleId) === String(cow.id));
+    const wm = calculateWeightMetrics(cow, animalWeighs);
+    return { cow, wm, currentWeight: wm.currentWeight || parseFloat(cow.currentWeight) || parseFloat(cow.entryWeight) || 0 };
+  });
+
+  const totalFatteningWeight = fatteningWithMetrics.reduce((sum, item) => sum + item.currentWeight, 0);
+  const avgFatteningWeight = fatteningWithMetrics.length > 0 ? (totalFatteningWeight / fatteningWithMetrics.length).toFixed(1) : 0;
+  const readyToSellFattening = fatteningWithMetrics.filter(item => item.currentWeight >= 480).length;
 
   return (
     <div className="space-y-6">
@@ -213,7 +224,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
               const batch = cow.entryBatch || cow.paddock || 'Ingreso #1';
               const animalWeighs = weighings.filter(w => String(w.cattleId) === String(cow.id));
               const weightMetrics = calculateWeightMetrics(cow, animalWeighs);
-              const currentWeight = parseFloat(cow.currentWeight) || parseFloat(cow.entryWeight) || 0;
+              const currentWeight = weightMetrics.currentWeight || parseFloat(cow.currentWeight) || parseFloat(cow.entryWeight) || 0;
               const isReady = currentWeight >= 480;
               const progressPct = Math.min(100, Math.round((currentWeight / 480) * 100));
 

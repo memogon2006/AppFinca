@@ -18,7 +18,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
 
   const cattleWithMetrics = useMemo(() => {
     return activeCattle.map(animal => {
-      const animalWeighs = weighings.filter(w => w.cattleId === animal.id);
+      const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
       const metrics = calculateWeightMetrics(animal, animalWeighs);
       return {
         animal,

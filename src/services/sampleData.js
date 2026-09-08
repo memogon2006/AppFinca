@@ -1,6 +1,6 @@
 export const DEMO_TAG_NUMBERS = ['EP-101', 'EP-102', 'EP-205', 'RG-042', 'RG-045', 'SJ-301', 'EP-088', 'EP-092'];
 export const DEMO_ANIMAL_NAMES = ['El Sultán', 'Diamante', 'Maravilla', 'La Consentida', 'Paloma', 'Centella', 'El Trueno', 'Cariñoso'];
-export const DEMO_WEIGHING_IDS = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 'w10', 'w11', 'w12', 'w13', 'w14', 'w15', 'w16', 'w17', 'w18', 'w19', 'w20', 'w21'];
+export const DEMO_WEIGHING_IDS = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 'w10', 'w11', 'w12', 'w13', 'w14', 'w15', 'w16', 'w17', 'w18', 'w19', 'w20', 'w21', 'w22', 'w23', 'w24', 'w25'];
 export const DEMO_EXPENSE_IDS = ['e1', 'e2', 'e3', 'e4', 'e5'];
 
 /**
@@ -264,6 +264,14 @@ export const INITIAL_WEIGHINGS = [
   { id: 'w12', isDemo: true, cattleId: '4', date: '2025-08-20', weight: 430, conditionScore: 3.5, notes: 'Ingreso en compañía' },
   { id: 'w13', isDemo: true, cattleId: '4', date: '2026-02-15', weight: 465, conditionScore: 3.5, notes: 'Confirmación de preñez por ecografía' },
   { id: 'w14', isDemo: true, cattleId: '4', date: '2026-08-01', weight: 495, conditionScore: 4.0, notes: 'Ingreso a lote maternidad' },
+
+  // Pesajes para RG-045 (Paloma)
+  { id: 'w22', isDemo: true, cattleId: '5', date: '2026-01-15', weight: 190, conditionScore: 3.0, notes: 'Pesaje inicial de nacimiento/levante' },
+  { id: 'w23', isDemo: true, cattleId: '5', date: '2026-07-20', weight: 310, conditionScore: 3.5, notes: 'Control de levante de novilla' },
+
+  // Pesajes para SJ-301 (Centella)
+  { id: 'w24', isDemo: true, cattleId: '6', date: '2025-06-01', weight: 440, conditionScore: 3.5, notes: 'Ingreso al lote de lechería' },
+  { id: 'w25', isDemo: true, cattleId: '6', date: '2026-06-01', weight: 520, conditionScore: 4.0, notes: 'Control anual de producción' },
 
   // Pesajes para EP-088 (Vendido)
   { id: 'w15', isDemo: true, cattleId: '7', date: '2025-03-10', weight: 310, conditionScore: 3.0, notes: 'Ingreso lote ceba' },
