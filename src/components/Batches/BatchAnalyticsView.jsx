@@ -22,7 +22,8 @@ import {
   Zap,
   Check,
   BarChart3,
-  PackagePlus
+  PackagePlus,
+  MessageCircle
 } from 'lucide-react';
 import { 
   formatCurrency, 
@@ -41,7 +42,8 @@ export function BatchAnalyticsView({
   onSelectAnimal,
   onOpenBatchEntry,
   onOpenNewAnimal,
-  onOpenExportImport
+  onOpenExportImport,
+  onOpenWhatsAppReport
 }) {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('detail'); // 'detail' | 'compare'
@@ -678,44 +680,59 @@ export function BatchAnalyticsView({
                   </p>
                 </div>
 
-                {/* Selector de Ámbito / Estado: Activos (Defecto), Todos (Histórico), Vendidos */}
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold overflow-x-auto no-scrollbar shadow-sm">
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter('Activo')}
-                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                      statusFilter === 'Activo'
-                        ? 'bg-emerald-600 text-white font-black shadow-sm'
-                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${statusFilter === 'Activo' ? 'bg-white' : 'bg-emerald-500'}`}></span>
-                    <span>🟢 Activos ({currentBatchData.activeCount})</span>
-                  </button>
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  {/* Selector de Ámbito / Estado: Activos (Defecto), Todos (Histórico), Vendidos */}
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold overflow-x-auto no-scrollbar shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setStatusFilter('Activo')}
+                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        statusFilter === 'Activo'
+                          ? 'bg-emerald-600 text-white font-black shadow-sm'
+                          : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${statusFilter === 'Activo' ? 'bg-white' : 'bg-emerald-500'}`}></span>
+                      <span>🟢 Activos ({currentBatchData.activeCount})</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter('all')}
-                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                      statusFilter === 'all'
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black shadow-sm'
-                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <span>🌐 Histórico Total ({currentBatchData.headCount})</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setStatusFilter('all')}
+                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        statusFilter === 'all'
+                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black shadow-sm'
+                          : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span>🌐 Histórico ({currentBatchData.headCount})</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter('Vendido')}
-                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                      statusFilter === 'Vendido'
-                        ? 'bg-amber-600 text-white font-black shadow-sm'
-                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <span>🏷️ Vendidos ({currentBatchData.soldCount})</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setStatusFilter('Vendido')}
+                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        statusFilter === 'Vendido'
+                          ? 'bg-amber-600 text-white font-black shadow-sm'
+                          : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span>🏷️ Vendidos ({currentBatchData.soldCount})</span>
+                    </button>
+                  </div>
+
+                  {/* Botón WhatsApp Reporte Lote */}
+                  {onOpenWhatsAppReport && (
+                    <button
+                      type="button"
+                      onClick={onOpenWhatsAppReport}
+                      className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer whitespace-nowrap"
+                      title="Generar y Enviar Reporte por WhatsApp con filtro por Dueño/Marca"
+                    >
+                      <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>📲 WhatsApp</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

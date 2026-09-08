@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.59";
-export const CURRENT_BUILD_TIME = 1789199000000;
+export const CURRENT_APP_VERSION = "2.8.60";
+export const CURRENT_BUILD_TIME = 1789200000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.60",
+    date: "07/09/2026",
+    title: "Envío Automático de Reportes a WhatsApp con Filtro por Dueño o Marca",
+    highlights: [
+      "Generador de reportes ejecutivos para WhatsApp: Inventario & Patrimonio, Ganado Listo para Venta, Jornada de Pesajes y Balance por Dueño.",
+      "Selector dinámico de Dueño / Marca: filtra y recalcula automáticamente todas las cifras (cabezas, biomasa, inversión y ganancias) para ese socio o hierro específico.",
+      "Agenda rápida de WhatsApp: guarda números predeterminados y contactos de mayordomos o socios.",
+      "Vista previa en vivo estilo chat de WhatsApp y botón de 1 clic para abrir WhatsApp o copiar al portapapeles."
+    ]
+  },
   {
     version: "2.8.59",
     date: "07/09/2026",

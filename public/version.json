@@ -1,7 +1,7 @@
 {
-  "version": "2.8.59",
-  "buildTime": 1789199000000,
-  "description": "Limpieza y simplificación del inicio eliminando banner de seguridad."
+  "version": "2.8.60",
+  "buildTime": 1789200000000,
+  "description": "Envío automático de reportes a WhatsApp con filtro por Dueño o Marca y cálculo en vivo."
 }
 
 

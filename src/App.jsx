@@ -22,6 +22,7 @@ import { ProfileModal } from './components/Auth/ProfileModal';
 import { GlossaryModal } from './components/Common/GlossaryModal';
 import { PartnershipSettlementModal } from './components/Finances/PartnershipSettlementModal';
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
+import { WhatsAppReportModal } from './components/Common/WhatsAppReportModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
@@ -53,6 +54,7 @@ export default function App() {
   const [weighingAnimal, setWeighingAnimal] = useState(null);
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   const [isPartnershipModalOpen, setIsPartnershipModalOpen] = useState(false);
@@ -648,6 +650,7 @@ export default function App() {
         setCurrentView={setCurrentView}
         onOpenNewAnimal={handleOpenNew}
         onOpenExportImport={() => setIsExportModalOpen(true)}
+        onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
@@ -702,6 +705,7 @@ export default function App() {
             onOpenNewAnimal={handleOpenNew}
             onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
             onOpenExportImport={() => setIsExportModalOpen(true)}
+            onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
           />
         )}
@@ -723,6 +727,7 @@ export default function App() {
             onAddWeight={handleOpenAddWeight}
             onOpenAddWeight={handleOpenAddWeight}
             onOpenExportImport={() => setIsExportModalOpen(true)}
+            onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
           />
@@ -736,6 +741,7 @@ export default function App() {
             onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
             onOpenNewAnimal={handleOpenNew}
             onOpenExportImport={() => setIsExportModalOpen(true)}
+            onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
           />
         )}
 
@@ -879,6 +885,15 @@ export default function App() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         onDataChanged={() => {}}
+        zIndex="z-[60]"
+      />
+
+      <WhatsAppReportModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        cattle={cattle}
+        weighings={weighings}
+        farmName={currentUser?.farmName || 'INVENTARIO BOVINO APP'}
         zIndex="z-[60]"
       />
 

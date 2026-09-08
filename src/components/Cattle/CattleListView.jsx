@@ -26,7 +26,8 @@ import {
   BookOpen, 
   HelpCircle,
   Users,
-  PackagePlus
+  PackagePlus,
+  MessageCircle
 } from 'lucide-react';
 
 export function CattleListView({ 
@@ -45,7 +46,8 @@ export function CattleListView({
   onDeleteAnimal,
   onDelete,
   onOpenGlossary,
-  onOpenPartnershipModal
+  onOpenPartnershipModal,
+  onOpenWhatsAppReport
 }) {
   const handleOpenNewAnimalSafe = onOpenNewAnimal || onOpenNew;
   const handleDeleteAnimalSafe = onDeleteAnimal || onDelete;
@@ -308,6 +310,18 @@ export function CattleListView({
             >
               <Users className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
               <span>🤝 Liquidar Compañía</span>
+            </button>
+          )}
+
+          {/* Botón WhatsApp Report */}
+          {onOpenWhatsAppReport && (
+            <button
+              onClick={onOpenWhatsAppReport}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-emerald-300 dark:border-emerald-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
+              title="Generar y Enviar Reporte por WhatsApp con filtro por Dueño/Marca"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>📲 WhatsApp</span>
             </button>
           )}
 

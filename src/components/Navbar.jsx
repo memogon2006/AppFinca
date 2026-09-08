@@ -15,7 +15,8 @@ import {
   Cloud,
   RefreshCw,
   Settings,
-  Boxes
+  Boxes,
+  MessageCircle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +26,7 @@ export function Navbar({
   setCurrentView, 
   onOpenNewAnimal, 
   onOpenExportImport, 
+  onOpenWhatsAppReport,
   onOpenProfile, 
   onManualSync,
   isSyncing = false,
@@ -145,6 +147,16 @@ export function Navbar({
               >
                 <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Excel</span>
+              </button>
+
+              {/* Botón WhatsApp Reportes */}
+              <button
+                onClick={onOpenWhatsAppReport}
+                title="Generar y Enviar Reporte por WhatsApp"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold min-h-[36px] cursor-pointer transition whitespace-nowrap shadow-sm"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>WhatsApp</span>
               </button>
 
               {/* Botón Sincronización Nube */}
@@ -277,17 +289,26 @@ export function Navbar({
               <button
                 onClick={onOpenExportImport}
                 title="Exportar a Excel / Respaldo"
-                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
+                className="flex-1 py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
               >
                 <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Excel</span>
               </button>
 
               <button
+                onClick={onOpenWhatsAppReport}
+                title="Enviar Reporte por WhatsApp"
+                className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>WhatsApp</span>
+              </button>
+
+              <button
                 onClick={onManualSync}
                 disabled={isSyncing}
                 title={isSyncing ? 'Sincronizando con la nube...' : 'Sincronizar datos con la nube'}
-                className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
+                className="flex-1 py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
               >
                 {isSyncing ? (
                   <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />

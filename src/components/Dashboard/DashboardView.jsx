@@ -18,7 +18,8 @@ import {
   HelpCircle,
   PieChart as PieIcon,
   BarChart3,
-  PackagePlus
+  PackagePlus,
+  MessageCircle
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
@@ -35,6 +36,7 @@ export function DashboardView({
   onOpenNewAnimal,
   onOpenBatchEntry,
   onOpenExportImport,
+  onOpenWhatsAppReport,
   onOpenGlossary
 }) {
   const activeCattle = cattle.filter(c => c.status === 'Activo');
@@ -112,6 +114,17 @@ export function DashboardView({
               >
                 <BookOpen className="w-4 h-4 text-emerald-300" />
                 <span>💡 Guía de Métricas</span>
+              </button>
+            )}
+
+            {onOpenWhatsAppReport && (
+              <button
+                onClick={onOpenWhatsAppReport}
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-400/40 transition backdrop-blur-sm cursor-pointer shadow-sm"
+                title="Generar y Enviar Reporte por WhatsApp con filtro por Dueño/Marca"
+              >
+                <MessageCircle className="w-4 h-4 text-emerald-300" />
+                <span>📲 Reporte WhatsApp</span>
               </button>
             )}
             
