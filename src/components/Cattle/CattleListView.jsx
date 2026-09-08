@@ -27,7 +27,8 @@ import {
   HelpCircle,
   Users,
   PackagePlus,
-  MessageCircle
+  MessageCircle,
+  ClipboardList
 } from 'lucide-react';
 
 export function CattleListView({ 
@@ -47,7 +48,8 @@ export function CattleListView({
   onDelete,
   onOpenGlossary,
   onOpenPartnershipModal,
-  onOpenWhatsAppReport
+  onOpenWhatsAppReport,
+  onOpenFieldSheet
 }) {
   const handleOpenNewAnimalSafe = onOpenNewAnimal || onOpenNew;
   const handleDeleteAnimalSafe = onDeleteAnimal || onDelete;
@@ -322,6 +324,18 @@ export function CattleListView({
             >
               <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>📲 WhatsApp</span>
+            </button>
+          )}
+
+          {/* Botón Planilla de Campo */}
+          {onOpenFieldSheet && (
+            <button
+              onClick={onOpenFieldSheet}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-blue-300 dark:border-blue-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
+              title="Generar Planilla Imprimible de Campo o Cargar Excel/Foto"
+            >
+              <ClipboardList className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span>📋 Planilla</span>
             </button>
           )}
 

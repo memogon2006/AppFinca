@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.62";
-export const CURRENT_BUILD_TIME = 1789201500000;
+export const CURRENT_APP_VERSION = "2.8.63";
+export const CURRENT_BUILD_TIME = 1789202000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.63",
+    date: "07/09/2026",
+    title: "Módulo de Planillas de Campo Imprimibles, Carga por Excel y Escaneo de Foto",
+    highlights: [
+      "Generador de Planillas Imprimibles de Campo (PDF / Físico): formato estandarizado para báscula y toma de datos a mano con precarga por Lote/Dueño y cuadrícula nítida.",
+      "Plantilla en Excel (.xlsx) descargable con columnas estructuradas para diligenciamiento digital.",
+      "Carga Masiva por Excel: sube la planilla diligenciada y actualiza automáticamente los pesos, GDP y ganancias del lote en el sistema.",
+      "Carga por Foto de Planilla Escrita (Escáner): toma foto a la hoja de papel o sube imagen con mesa de validación interactiva para confirmar los datos antes de guardar."
+    ]
+  },
   {
     version: "2.8.62",
     date: "07/09/2026",

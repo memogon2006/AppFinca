@@ -16,7 +16,8 @@ import {
   RefreshCw,
   Settings,
   Boxes,
-  MessageCircle
+  MessageCircle,
+  ClipboardList
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +28,7 @@ export function Navbar({
   onOpenNewAnimal, 
   onOpenExportImport, 
   onOpenWhatsAppReport,
+  onOpenFieldSheet,
   onOpenProfile, 
   onManualSync,
   isSyncing = false,
@@ -157,6 +159,16 @@ export function Navbar({
               >
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>WhatsApp</span>
+              </button>
+
+              {/* Botón Planilla de Campo */}
+              <button
+                onClick={onOpenFieldSheet}
+                title="Generar Planilla Imprimible o Cargar Excel / Foto de Báscula"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700 text-xs font-bold min-h-[36px] cursor-pointer transition whitespace-nowrap shadow-sm"
+              >
+                <ClipboardList className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Planilla</span>
               </button>
 
               {/* Botón Sincronización Nube */}
@@ -302,6 +314,15 @@ export function Navbar({
               >
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>WhatsApp</span>
+              </button>
+
+              <button
+                onClick={onOpenFieldSheet}
+                title="Planilla de Campo (Imprimir / Excel / Foto)"
+                className="flex-1 py-1.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
+              >
+                <ClipboardList className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Planilla</span>
               </button>
 
               <button

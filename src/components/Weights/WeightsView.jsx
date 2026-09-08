@@ -1,8 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { Scale, TrendingUp, PlusCircle, Search, Calendar, ChevronDown, ChevronUp, Zap, Tag, Trash2, Target, Flame, AlertTriangle } from 'lucide-react';
+import { Scale, TrendingUp, PlusCircle, Search, Calendar, ChevronDown, ChevronUp, Zap, Tag, Trash2, Target, Flame, AlertTriangle, ClipboardList } from 'lucide-react';
 import { calculateWeightMetrics, formatNumber, formatDate } from '../../services/calculations';
 
-export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpenAddWeight, onDeleteWeight, onNavigate }) {
+export function WeightsView({ 
+  cattle = [], 
+  weighings = [], 
+  onSelectAnimal, 
+  onOpenAddWeight, 
+  onDeleteWeight, 
+  onNavigate,
+  onOpenFieldSheet 
+}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('');
   const [performanceFilter, setPerformanceFilter] = useState(''); // '' | 'ready480' | 'highGdp' | 'lowGdp'
@@ -103,10 +111,21 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {onOpenFieldSheet && (
+            <button
+              onClick={onOpenFieldSheet}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md transition min-h-[44px] cursor-pointer"
+              title="Generar Planilla Imprimible o Cargar Pesajes por Excel / Foto"
+            >
+              <ClipboardList className="w-4 h-4" />
+              <span>📋 Planilla de Campo</span>
+            </button>
+          )}
+
           <button
             onClick={() => onNavigate('quickWeigh')}
-            className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md transition min-h-[44px]"
+            className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md transition min-h-[44px] cursor-pointer"
           >
             <Zap className="w-4 h-4" />
             <span>Báscula Rápida</span>

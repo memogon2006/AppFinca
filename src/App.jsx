@@ -23,6 +23,7 @@ import { GlossaryModal } from './components/Common/GlossaryModal';
 import { PartnershipSettlementModal } from './components/Finances/PartnershipSettlementModal';
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { WhatsAppReportModal } from './components/Common/WhatsAppReportModal';
+import { FieldSheetModal } from './components/FieldSheets/FieldSheetModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
@@ -55,6 +56,7 @@ export default function App() {
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  const [isFieldSheetModalOpen, setIsFieldSheetModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   const [isPartnershipModalOpen, setIsPartnershipModalOpen] = useState(false);
@@ -651,6 +653,7 @@ export default function App() {
         onOpenNewAnimal={handleOpenNew}
         onOpenExportImport={() => setIsExportModalOpen(true)}
         onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
+        onOpenFieldSheet={() => setIsFieldSheetModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
@@ -706,6 +709,7 @@ export default function App() {
             onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
+            onOpenFieldSheet={() => setIsFieldSheetModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
           />
         )}
@@ -728,6 +732,7 @@ export default function App() {
             onOpenAddWeight={handleOpenAddWeight}
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
+            onOpenFieldSheet={() => setIsFieldSheetModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
           />
@@ -753,6 +758,7 @@ export default function App() {
             onAddWeight={handleOpenAddWeight}
             onDeleteWeight={handleDeleteWeight}
             onNavigate={setCurrentView}
+            onOpenFieldSheet={() => setIsFieldSheetModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
           />
         )}
@@ -774,15 +780,22 @@ export default function App() {
             weighings={weighings}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
+            onOpenEdit={handleOpenEdit}
+            onNavigate={setCurrentView}
           />
         )}
 
         {currentView === 'finances' && (
           <FinancesView
             cattle={cattle}
+            weighings={weighings}
             onSelectAnimal={handleSelectAnimal}
             onRevertSale={handleRevertSale}
             onDeleteAnimal={handleDeleteAnimal}
+            onOpenSell={handleOpenSell}
+            onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
+            onOpenExportImport={() => setIsExportModalOpen(true)}
+            onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
           />
         )}
@@ -794,7 +807,10 @@ export default function App() {
       {/* 1. Modal Base de Ficha Técnica / Detalle del Bovino */}
       <CattleDetailModal
         isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedAnimal(null);
+        }}
         animal={cattle.find(c => String(c.id) === String(selectedAnimal?.id)) || selectedAnimal}
         weighings={weighings}
         onOpenEdit={handleOpenEdit}
@@ -894,6 +910,16 @@ export default function App() {
         cattle={cattle}
         weighings={weighings}
         farmName={currentUser?.farmName || 'INVENTARIO BOVINO APP'}
+        zIndex="z-[60]"
+      />
+
+      <FieldSheetModal
+        isOpen={isFieldSheetModalOpen}
+        onClose={() => setIsFieldSheetModalOpen(false)}
+        cattle={cattle}
+        weighings={weighings}
+        farmName={currentUser?.farmName || 'Hacienda Ganadera'}
+        onDataChanged={() => {}}
         zIndex="z-[60]"
       />
 
