@@ -1,7 +1,7 @@
 {
-  "version": "2.8.64",
-  "buildTime": 1789202500000,
-  "description": "Sincronización y cálculo exacto de días en finca por lote para que coincida con los animales activos."
+  "version": "2.8.65",
+  "buildTime": 1789203000000,
+  "description": "Sincronización total de días en finca en inventario y lotes sin desfases de zona horaria."
 }
 
 

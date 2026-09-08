@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.64";
-export const CURRENT_BUILD_TIME = 1789202500000;
+export const CURRENT_APP_VERSION = "2.8.65";
+export const CURRENT_BUILD_TIME = 1789203000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.65",
+    date: "07/09/2026",
+    title: "Sincronización Total de Días en Finca en Inventario y Lotes",
+    highlights: [
+      "Eliminación de cualquier desfase de zona horaria en el cálculo de métricas de peso y días de permanencia individual.",
+      "Coincidencia matemática exacta entre los días del animal activo, los días del lote y la diferencia en el calendario."
+    ]
+  },
   {
     version: "2.8.64",
     date: "07/09/2026",

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2 } from 'lucide-react';
-import { calculateReproduction, formatDate } from '../../services/calculations';
+import { calculateReproduction, formatDate, getDaysDifference } from '../../services/calculations';
 
 const VACCINE_STORAGE_KEY = 'ganado_colombia_vaccine_status';
 
@@ -47,7 +47,7 @@ export function AlertsList({ cattle = [], onSelectAnimal }) {
 
     // ALERTA 3: Chequeo reproductivo (+45 días post-servicio)
     if (animal.sex === 'Hembra' && animal.reproductiveStatus === 'En Servicio' && animal.serviceDate) {
-      const serviceDays = Math.floor((new Date() - new Date(animal.serviceDate)) / (1000 * 60 * 60 * 24));
+      const serviceDays = getDaysDifference(animal.serviceDate, new Date());
       if (serviceDays >= 45) {
         animalAlerts.push({
           id: `check-${animal.id}`,

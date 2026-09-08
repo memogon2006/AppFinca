@@ -247,7 +247,7 @@ export function calculateContinuousWeighings(animal, weighings = []) {
  */
 export function calculateWeightMetrics(animal, weighings = []) {
   const entryWeight = parseFloat(animal.entryWeight) || 0;
-  const entryDate = animal.entryDate ? new Date(animal.entryDate) : new Date();
+  const entryDate = animal.entryDate || new Date().toISOString().split('T')[0];
 
   // Filtrar pesajes que no sean posteriores a la fecha de entrada o sean iniciales duplicados
   const validWeighings = weighings.filter(w => {
@@ -275,7 +275,7 @@ export function calculateWeightMetrics(animal, weighings = []) {
   }
 
   // Días totales en finca (hasta hoy o hasta fecha de salida)
-  const totalDays = getDaysDifference(entryDate, animal.exitDate ? new Date(animal.exitDate) : new Date());
+  const totalDays = getDaysDifference(entryDate, animal.exitDate || new Date());
 
   // Días transcurridos desde el ingreso a la finca hasta la fecha del último pesaje registrado
   const daysToLastWeigh = lastWeighDate ? getDaysDifference(entryDate, lastWeighDate) : 0;
@@ -385,10 +385,12 @@ export function calculateCebaProjection(currentWeight, gdp, lastWeighDate, targe
 
   if (!isReady && rate > 0) {
     daysToTarget = Math.ceil(remainingKg / rate);
-    const baseDate = lastWeighDate ? new Date(lastWeighDate) : new Date();
-    const est = new Date(baseDate);
-    est.setDate(est.getDate() + daysToTarget);
-    estimatedDate = est.toISOString().split('T')[0];
+    const baseDate = parseDateOnly(lastWeighDate) || new Date();
+    const est = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + daysToTarget);
+    const y = est.getFullYear();
+    const m = String(est.getMonth() + 1).padStart(2, '0');
+    const d = String(est.getDate()).padStart(2, '0');
+    estimatedDate = `${y}-${m}-${d}`;
   }
 
   let status = 'in_progress';
@@ -510,18 +512,29 @@ export function calculateReproduction(animal) {
     };
   }
 
-  const sDate = new Date(animal.serviceDate);
-  const today = new Date();
+  const sDate = parseDateOnly(animal.serviceDate);
+  if (!sDate) {
+    return {
+      isPregnant: true,
+      daysPregnant: 0,
+      expectedCalvingDate: null,
+      daysUntilCalving: null,
+      statusLabel: 'Gestante (Sin fecha de servicio registrada)',
+    };
+  }
+  const today = parseDateOnly(new Date()) || new Date();
   
   // Gestación bovina: servicio + 283 días
-  const dueDate = new Date(sDate);
-  dueDate.setDate(dueDate.getDate() + BOVINE_GESTATION_DAYS);
+  const dueDate = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate() + BOVINE_GESTATION_DAYS);
 
-  const daysPregnant = getDaysDifference(sDate, today);
+  const daysPregnant = getDaysDifference(animal.serviceDate, new Date());
   const diffDueTime = dueDate.getTime() - today.getTime();
   const daysUntilCalving = Math.ceil(diffDueTime / (1000 * 60 * 60 * 24));
 
-  const dueDateFormatted = dueDate.toISOString().split('T')[0];
+  const y = dueDate.getFullYear();
+  const m = String(dueDate.getMonth() + 1).padStart(2, '0');
+  const d = String(dueDate.getDate()).padStart(2, '0');
+  const dueDateFormatted = `${y}-${m}-${d}`;
 
   return {
     isPregnant: true,
