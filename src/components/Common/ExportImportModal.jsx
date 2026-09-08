@@ -186,7 +186,7 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged, zIndex = 'z-
 
   // Función constructora de fila de datos Excel
   const buildExcelRow = (c, weighings) => {
-    const animalWeighs = weighings.filter(w => w.cattleId === String(c.id) || w.cattleId === c.id);
+    const animalWeighs = weighings.filter(w => String(w.cattleId) === String(c.id));
     const wm = calculateWeightMetrics(c, animalWeighs);
     const fin = calculateFinancials(c);
 

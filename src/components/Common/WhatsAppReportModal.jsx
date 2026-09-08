@@ -136,7 +136,7 @@ export function WhatsAppReportModal({
     const animals = [];
 
     active.forEach(c => {
-      const animalWeighings = (weighings || []).filter(w => w.cattleId === c.id);
+      const animalWeighings = (weighings || []).filter(w => String(w.cattleId) === String(c.id));
       const fin = calculateFinancials(c);
       const wm = calculateWeightMetrics(c, animalWeighings);
       const currentWeight = wm.currentWeight || parseFloat(c.currentWeight) || parseFloat(c.entryWeight) || 0;
@@ -240,7 +240,7 @@ export function WhatsAppReportModal({
     let milkingCount = 0;
 
     active.forEach(c => {
-      const animalWeighings = (weighings || []).filter(w => w.cattleId === c.id);
+      const animalWeighings = (weighings || []).filter(w => String(w.cattleId) === String(c.id));
       const fin = calculateFinancials(c);
       const wm = calculateWeightMetrics(c, animalWeighings);
       const currentWeight = wm.currentWeight || parseFloat(c.currentWeight) || parseFloat(c.entryWeight) || 0;
@@ -276,7 +276,7 @@ export function WhatsAppReportModal({
     const weighingDetails = [];
 
     active.forEach(c => {
-      const animalWeighings = (weighings || []).filter(w => w.cattleId === c.id);
+      const animalWeighings = (weighings || []).filter(w => String(w.cattleId) === String(c.id));
       const wm = calculateWeightMetrics(c, animalWeighings);
       if (wm.overallGdp > 0) {
         gdpSum += wm.overallGdp;

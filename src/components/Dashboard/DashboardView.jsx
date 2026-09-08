@@ -63,7 +63,7 @@ export function DashboardView({
     const fin = calculateFinancials(animal);
     totalInvestedActive += fin.totalInvested;
 
-    const animalWeighings = weighings.filter(w => w.cattleId === animal.id || w.cattleId === String(animal.id));
+    const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
     const metrics = calculateWeightMetrics(animal, animalWeighings);
     totalCurrentWeight += metrics.currentWeight;
   });
@@ -77,7 +77,7 @@ export function DashboardView({
   let totalGdpSum = 0;
   let gdpValidAnimals = 0;
   activeCattle.forEach(animal => {
-    const animalWeighings = weighings.filter(w => w.cattleId === animal.id || w.cattleId === String(animal.id));
+    const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
     const metrics = calculateWeightMetrics(animal, animalWeighings);
     if (metrics.overallGdp > 0) {
       totalGdpSum += metrics.overallGdp;
