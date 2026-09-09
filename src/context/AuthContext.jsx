@@ -8,6 +8,7 @@ import {
   changeUserPassword,
   deleteUserAccount
 } from '../services/auth';
+import { triggerFeedback } from '../services/soundService';
 
 const AuthContext = createContext();
 
@@ -24,12 +25,14 @@ export function AuthProvider({ children }) {
   const handleLogin = async (credentials) => {
     const user = await loginUser(credentials);
     setCurrentUser(user);
+    triggerFeedback('login');
     return user;
   };
 
   const handleRegister = async (userData) => {
     const user = await registerUser(userData);
     setCurrentUser(user);
+    triggerFeedback('login');
     return user;
   };
 
@@ -59,6 +62,7 @@ export function AuthProvider({ children }) {
   const handleSetSessionUser = (user) => {
     localStorage.setItem('ganado_current_user_session', JSON.stringify(user));
     setCurrentUser(user);
+    triggerFeedback('login');
   };
 
   return (

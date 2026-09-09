@@ -81,6 +81,40 @@ export function playScaleBeep() {
 }
 
 /**
+ * Genera acorde armónico de bienvenida / ingreso a la finca ganadera
+ */
+export function playLoginSound() {
+  if (!isSoundEnabled()) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    const now = ctx.currentTime;
+    // Secuencia armónica ascendente cálida de bienvenida (C4, G4, C5, E5, G5)
+    const notes = [261.63, 392.00, 523.25, 659.25, 783.99];
+
+    notes.forEach((freq, idx) => {
+      const start = now + (idx * 0.065);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.35);
+    });
+  } catch (err) {
+    console.warn('Login sound error:', err);
+  }
+}
+
+/**
  * Genera sonido melódico para guardado en lote / masivo
  */
 export function playBatchSuccessSound() {
@@ -181,6 +215,8 @@ export function playUpdateChime() {
 export function triggerFeedback(type = 'single') {
   if (type === 'batch') {
     playBatchSuccessSound();
+  } else if (type === 'login') {
+    playLoginSound();
   } else if (type === 'update') {
     playUpdateChime();
   } else if (type === 'warning') {

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.70";
-export const CURRENT_BUILD_TIME = 1789252000000;
+export const CURRENT_APP_VERSION = "2.8.71";
+export const CURRENT_BUILD_TIME = 1789252500000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.71",
+    date: "08/09/2026",
+    title: "Sonido Armónico de Bienvenida al Ingresar a la Finca",
+    highlights: [
+      "Acorde Armónico de Entrada: Sonido melódico cálido y distinguido al iniciar sesión o ingresar a la plataforma.",
+      "Integrado con el Control de Perfil: Respeta la configuración de sonido del usuario (activado o silenciado).",
+      "Experiencia de Acceso Dinámica: Confirmación sonora al conectar con la finca y sincronizar datos."
+    ]
+  },
   {
     version: "2.8.70",
     date: "08/09/2026",
