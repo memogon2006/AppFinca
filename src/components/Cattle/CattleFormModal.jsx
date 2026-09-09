@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
 import { 
   SEX_OPTIONS, 
@@ -9,10 +9,16 @@ import {
   COMMON_BREEDS 
 } from '../../types/cattle';
 import { BOVINE_GESTATION_DAYS } from '../../services/calculations';
-import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
+import { 
+  analyzeFarmConsecutives, 
+  evaluateCandidateConsecutive, 
+  saveConsecutiveTraceabilityLog 
+} from '../../services/consecutiveService';
+import { ConsecutiveWarningModal } from './ConsecutiveWarningModal';
 
 export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[60]', cattleList = [] }) {
   const { currentUser } = useAuth();
@@ -21,6 +27,16 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const [detectedDuplicates, setDetectedDuplicates] = useState([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [highlightDuplicates, setHighlightDuplicates] = useState(false);
+
+  // Estado para Control de Numeración Consecutiva
+  const [isConsecutiveModalOpen, setIsConsecutiveModalOpen] = useState(false);
+  const [consecutiveWarningData, setConsecutiveWarningData] = useState(null);
+  const [consecutiveConfirmed, setConsecutiveConfirmed] = useState(false);
+
+  // Estadísticas de consecutivos en la finca seleccionada
+  const farmConsecutiveStats = useMemo(() => {
+    return analyzeFarmConsecutives(cattleList);
+  }, [cattleList]);
 
   const [formData, setFormData] = useState({
     tagNumber: '',
@@ -130,7 +146,13 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     }
     setErrors({});
     setHighlightDuplicates(false);
+    setConsecutiveConfirmed(false);
   }, [animal, isOpen]);
+
+  // Evaluación en tiempo real del consecutivo
+  const consecutiveEvaluation = useMemo(() => {
+    return evaluateCandidateConsecutive(formData.tagNumber, farmConsecutiveStats);
+  }, [formData.tagNumber, farmConsecutiveStats]);
 
   // Validación en tiempo real con Debounce para detectar identificaciones duplicadas
   useEffect(() => {
@@ -344,7 +366,65 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       return;
     }
 
-    // VALIDACIÓN OBLIGATORIA FINAL DE DUPLICADOS EN ACTIVO
+    // 1. VALIDACIÓN DE CONSECUTIVO PRINCIPAL (Si no ha sido confirmada)
+    if (!consecutiveConfirmed && !consecutiveEvaluation.isValid && consecutiveEvaluation.isNumeric) {
+      setConsecutiveWarningData({
+        enteredTag: formData.tagNumber,
+        enteredConsecutive: consecutiveEvaluation.enteredConsecutive,
+        lastConsecutive: farmConsecutiveStats.maxConsecutive,
+        expectedConsecutive: farmConsecutiveStats.nextSuggestedConsecutive,
+        warningType: consecutiveEvaluation.warningType,
+        warningTitle: consecutiveEvaluation.title,
+        warningMessage: consecutiveEvaluation.message,
+        jump: consecutiveEvaluation.details?.jump || 0,
+        matchingAnimals: consecutiveEvaluation.details?.matchingAnimals || [],
+      });
+      setIsConsecutiveModalOpen(true);
+      return;
+    }
+
+    // 2. VALIDACIÓN OBLIGATORIA FINAL DE DUPLICADOS EN ACTIVO
+    const finalDuplicates = findDuplicateCattle(
+      {
+        tagNumber: formData.tagNumber,
+        ironBrand: formData.ironBrand,
+        owner: formData.owner,
+        id: animal?.id,
+      },
+      cattleList,
+      animal?.id
+    );
+
+    if (finalDuplicates.length > 0) {
+      setDetectedDuplicates(finalDuplicates);
+      setIsDuplicateModalOpen(true);
+      setHighlightDuplicates(true);
+      return;
+    }
+
+    executeSave(formData);
+  };
+
+  const handleConfirmContinueConsecutive = () => {
+    // Registrar auditoría en el sistema de trazabilidad de consecutivos
+    saveConsecutiveTraceabilityLog({
+      userId: currentUser?.id,
+      farmName: currentUser?.farmName,
+      tagNumberEntered: formData.tagNumber,
+      consecutiveExtracted: consecutiveEvaluation.enteredConsecutive,
+      lastConsecutive: farmConsecutiveStats.maxConsecutive,
+      expectedConsecutive: farmConsecutiveStats.nextSuggestedConsecutive,
+      warningType: consecutiveEvaluation.warningType,
+      warningTitle: consecutiveEvaluation.title,
+      warningMessage: consecutiveEvaluation.message,
+      actionTaken: 'Continuó pese a advertencia',
+      notes: isEditing ? 'Modificación confirmada por el usuario pese a advertencia de numeración' : 'Registro de nuevo animal confirmado por el usuario pese a advertencia de numeración',
+    });
+
+    setIsConsecutiveModalOpen(false);
+    setConsecutiveConfirmed(true);
+
+    // Proceder inmediatamente a validación de duplicados
     const finalDuplicates = findDuplicateCattle(
       {
         tagNumber: formData.tagNumber,
@@ -405,6 +485,74 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             1. Identificación y Propiedad
           </h4>
 
+          {/* Panel de Control de Numeración Consecutiva de la Finca */}
+          <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/10 via-slate-900/5 to-slate-900/10 dark:from-emerald-950/30 dark:via-slate-900/40 dark:to-slate-900/40 border border-emerald-200 dark:border-emerald-800/60 text-xs">
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm">
+                  <Hash className="w-3.5 h-3.5" />
+                </span>
+                <span className="font-extrabold uppercase tracking-wide text-[11px] text-slate-900 dark:text-white">
+                  Control de Numeración de Finca
+                </span>
+              </div>
+
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextNum = farmConsecutiveStats.nextSuggestedConsecutive;
+                    setFormData(prev => ({
+                      ...prev,
+                      tagNumber: prev.tagNumber.includes('-') 
+                        ? `${nextNum}-${prev.tagNumber.split('-')[1]}` 
+                        : prev.tagNumber.includes('/') 
+                          ? `${nextNum}/${prev.tagNumber.split('/')[1]}` 
+                          : String(nextNum)
+                    }));
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow-sm flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  <span>Usar sugerido (#{farmConsecutiveStats.nextSuggestedConsecutive})</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center mb-2">
+              <div className="p-2 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 font-semibold block">Último Registrado:</span>
+                <strong className="text-sm font-black text-slate-800 dark:text-slate-200">
+                  {farmConsecutiveStats.maxConsecutive > 0 ? `#${farmConsecutiveStats.maxConsecutive}` : 'Ninguno'}
+                </strong>
+              </div>
+              <div className="p-2 rounded-xl bg-emerald-500/15 dark:bg-emerald-950/60 border border-emerald-400/80 dark:border-emerald-600/60">
+                <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold block">Siguiente Sugerido:</span>
+                <strong className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                  #{farmConsecutiveStats.nextSuggestedConsecutive}
+                </strong>
+              </div>
+              <div className="col-span-2 sm:col-span-1 p-2 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col justify-center">
+                <span className="text-[10px] text-slate-500 font-semibold block">Total Histórico:</span>
+                <strong className="text-sm font-black text-slate-700 dark:text-slate-300">
+                  {farmConsecutiveStats.distinctConsecutivesCount} consecutivos
+                </strong>
+              </div>
+            </div>
+
+            {/* Faltantes en secuencia si existen */}
+            {farmConsecutiveStats.missingConsecutives.length > 0 && (
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold mb-1 flex items-center gap-1">
+                <span>⚠️</span>
+                <span>Faltan en la secuencia histórica: <strong>{farmConsecutiveStats.missingConsecutives.slice(0, 6).join(', ')}{farmConsecutiveStats.missingConsecutives.length > 6 ? '...' : ''}</strong></span>
+              </p>
+            )}
+
+            <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight">
+              ℹ️ La numeración se calcula usando únicamente el número <strong>antes de <code>-</code> o <code>/</code></strong>. Los números posteriores no modifican el consecutivo.
+            </p>
+          </div>
+
           {/* Banner de Advertencia de Duplicado Detectado en Vivo */}
           {detectedDuplicates.length > 0 && (
             <div className="mb-4 p-3.5 rounded-xl border border-amber-300 dark:border-amber-600/50 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs shadow-sm animate-fadeIn">
@@ -444,7 +592,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 name="tagNumber"
                 value={formData.tagNumber}
                 onChange={handleChange}
-                placeholder="Ej. EP-105, 452, A-12"
+                placeholder="Ej. 25-6, 25/5, 452"
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
                   detectedDuplicates.length > 0 
                     ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40 dark:bg-amber-950/20' 
@@ -453,6 +601,29 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                       : 'border-slate-300 dark:border-slate-700'
                 } text-slate-900 dark:text-white font-bold placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
               />
+              
+              {/* Badge de estado del consecutivo en tiempo real */}
+              {formData.tagNumber.trim() && consecutiveEvaluation.isNumeric && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] animate-fadeIn">
+                  {consecutiveEvaluation.status === 'exact_match' || consecutiveEvaluation.status === 'first_animal' ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-600/50">
+                      <Check className="w-3 h-3" />
+                      <span>✓ Consecutivo correcto (#{consecutiveEvaluation.enteredConsecutive})</span>
+                    </span>
+                  ) : consecutiveEvaluation.status === 'jump_ahead' ? (
+                    <span className="inline-flex items-center gap-1 text-amber-800 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-600/50">
+                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                      <span>⚠️ Salto (+{consecutiveEvaluation.details?.jump}): Ingresando #{consecutiveEvaluation.enteredConsecutive} (Esperado #{farmConsecutiveStats.nextSuggestedConsecutive})</span>
+                    </span>
+                  ) : consecutiveEvaluation.status === 'lower_or_reused' ? (
+                    <span className="inline-flex items-center gap-1 text-blue-800 dark:text-blue-300 font-bold bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-md border border-blue-300 dark:border-blue-600/50">
+                      <Info className="w-3 h-3 text-blue-600" />
+                      <span>ℹ️ Consecutivo #{consecutiveEvaluation.enteredConsecutive} (menor/histórico)</span>
+                    </span>
+                  ) : null}
+                </div>
+              )}
+
               {errors.tagNumber && <p className="text-[11px] text-rose-500 mt-1">{errors.tagNumber}</p>}
             </div>
 
@@ -912,6 +1083,15 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
       </form>
     </Modal>
+
+    {/* Modal de Advertencia de Consecutivo */}
+    <ConsecutiveWarningModal
+      isOpen={isConsecutiveModalOpen}
+      onClose={() => setIsConsecutiveModalOpen(false)}
+      onConfirmContinue={handleConfirmContinueConsecutive}
+      warningData={consecutiveWarningData}
+      zIndex="z-[75]"
+    />
 
     {/* Modal de Advertencia de Identificación Duplicada */}
     <DuplicateWarningModal

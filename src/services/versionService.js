@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.76";
-export const CURRENT_BUILD_TIME = 1789260000000;
+export const CURRENT_APP_VERSION = "2.8.77";
+export const CURRENT_BUILD_TIME = 1789264000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.77",
+    date: "09/09/2026",
+    title: "Control de Numeración Consecutiva por Finca y Detección de Saltos",
+    highlights: [
+      "Regla Fundamental de Consecutivos: El consecutivo principal se extrae exclusivamente antes del primer guion o slash (ej. '1-6' = 1, '25-6' = 25, '25/5' = 25). Los números posteriores no alteran la numeración.",
+      "Control y Sugerencia Automática: Muestra el último consecutivo registrado en la finca y sugiere automáticamente el siguiente número consecutivo.",
+      "Detección Inteligente de Saltos y Faltantes: Alerta en tiempo real si se ingresa un número no consecutivo o si faltan números en la secuencia histórica.",
+      "Generador de Series con Sufijo en Lotes: Permite generar aretes con formato de año o lote (ej. 25-6, 26-6...) en un solo clic con trazabilidad completa."
+    ]
+  },
   {
     version: "2.8.76",
     date: "09/09/2026",

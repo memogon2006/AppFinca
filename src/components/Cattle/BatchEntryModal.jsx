@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Modal } from '../Common/Modal';
 import { 
   SEX_OPTIONS, 
@@ -22,11 +22,14 @@ import {
   Calendar,
   User,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Hash,
+  Info
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
+import { analyzeFarmConsecutives, extractConsecutiveNumber } from '../../services/consecutiveService';
 
 const COMMON_COLORS = [
   'Castaño',
@@ -47,6 +50,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const [batchDuplicates, setBatchDuplicates] = useState([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
+
+  // Estadísticas de consecutivos en la finca
+  const farmConsecutiveStats = useMemo(() => {
+    return analyzeFarmConsecutives(cattleList);
+  }, [cattleList]);
 
   // Configuración general del lote
   const [batchInfo, setBatchInfo] = useState({
@@ -77,11 +85,23 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const [seriesConfig, setSeriesConfig] = useState({
     prefix: '',
     startNumber: 1,
+    suffix: '',
+    separator: '-',
     count: 5,
     defaultColor: 'Castaño',
     defaultWeight: '',
   });
   const [showSeriesGenerator, setShowSeriesGenerator] = useState(false);
+
+  // Sincronizar automáticamente el número inicial con el consecutivo sugerido de la finca
+  useEffect(() => {
+    if (farmConsecutiveStats?.nextSuggestedConsecutive) {
+      setSeriesConfig(prev => ({
+        ...prev,
+        startNumber: farmConsecutiveStats.nextSuggestedConsecutive
+      }));
+    }
+  }, [farmConsecutiveStats?.nextSuggestedConsecutive, isOpen]);
 
   const [errors, setErrors] = useState(null);
 
@@ -110,13 +130,21 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     const count = parseInt(seriesConfig.count) || 5;
     const start = parseInt(seriesConfig.startNumber) || 1;
     const prefix = seriesConfig.prefix.trim();
+    const suffix = seriesConfig.suffix.trim();
+    const sep = seriesConfig.separator || '-';
     const color = seriesConfig.defaultColor.trim();
     const weight = seriesConfig.defaultWeight ? String(seriesConfig.defaultWeight) : '';
 
     const newRows = [];
     for (let i = 0; i < count; i++) {
       const num = start + i;
-      const tag = prefix ? `${prefix}-${num}` : String(num);
+      let tag = String(num);
+      if (prefix) tag = `${prefix}-${tag}`;
+      if (suffix) {
+        const cleanSuffix = suffix.replace(/^[-\/–—\\_]/, '');
+        const chosenSep = suffix.startsWith('/') ? '/' : sep;
+        tag = `${tag}${chosenSep}${cleanSuffix}`;
+      }
       newRows.push({
         id: String(Date.now() + i),
         tagNumber: tag,
@@ -540,11 +568,17 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>3. Lista de Bovinos del Lote (Arete, Color y Peso)</span>
-              </h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>3. Lista de Bovinos del Lote (Arete, Color y Peso)</span>
+                </h4>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600/50 text-[10px] font-extrabold flex items-center gap-1">
+                  <Hash className="w-3 h-3" />
+                  <span>Sugerido Finca: #{farmConsecutiveStats.nextSuggestedConsecutive}</span>
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 Cada animal aparecerá de forma individual en tu inventario general
               </p>
             </div>
@@ -579,6 +613,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   <Sparkles className="w-4 h-4 text-amber-600" />
                   <span>Configurar Serie Consecutiva Automática</span>
                 </span>
+                <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold bg-white/80 dark:bg-slate-900/80 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700">
+                  Último de la finca: #{farmConsecutiveStats.maxConsecutive || 0}
+                </span>
                 <button
                   type="button"
                   onClick={() => setShowSeriesGenerator(false)}
@@ -588,14 +625,14 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Prefijo (Opcional):</label>
                   <input
                     type="text"
                     value={seriesConfig.prefix}
                     onChange={(e) => setSeriesConfig(prev => ({ ...prev, prefix: e.target.value }))}
-                    placeholder="Ej. EP, LOTE"
+                    placeholder="Ej. EP"
                     className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -607,12 +644,24 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                     value={seriesConfig.startNumber}
                     onChange={(e) => setSeriesConfig(prev => ({ ...prev, startNumber: e.target.value }))}
                     min="1"
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-slate-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Cantidad de Animales:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Sufijo / Año:</label>
+                  <input
+                    type="text"
+                    value={seriesConfig.suffix}
+                    onChange={(e) => setSeriesConfig(prev => ({ ...prev, suffix: e.target.value }))}
+                    placeholder="Ej. 6 o /5"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                    title="Ejemplo: escribiendo 6 generará 25-6, 26-6..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Cantidad:</label>
                   <input
                     type="number"
                     value={seriesConfig.count}
@@ -641,7 +690,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                     onClick={handleGenerateSeries}
                     className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs transition shadow cursor-pointer min-h-[34px]"
                   >
-                    Generar ({seriesConfig.count} filas)
+                    Generar ({seriesConfig.count})
                   </button>
                 </div>
               </div>
