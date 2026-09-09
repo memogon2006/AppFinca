@@ -62,24 +62,24 @@ export const SOUND_PROFILES = [
   },
   {
     id: 'digital',
-    name: 'Báscula Digital (Manga)',
+    name: 'Báscula Digital',
     emoji: '⚖️',
     tag: 'Ganadero',
-    description: 'Doble beep nítido característico de indicador de pesaje.'
+    description: 'Doble beep nítido característico de indicador de pesaje en manga.'
   },
   {
     id: 'pop',
-    name: 'Burbuja / Pop Acústico',
+    name: 'Burbuja Pop',
     emoji: '🫧',
     tag: 'Minimalista',
-    description: 'Sonido orgánico, redondeado y sutil estilo iOS.'
+    description: 'Sonido orgánico, redondeado y sutil estilo Apple iOS.'
   },
   {
     id: 'marimba',
     name: 'Marimba Cálida',
     emoji: '🪵',
     tag: 'Relajante',
-    description: 'Dos notas amaderadas y suaves para largas jornadas.'
+    description: 'Dos notas amaderadas y suaves ideales para largas jornadas de trabajo.'
   },
   {
     id: 'click',
@@ -93,7 +93,7 @@ export const SOUND_PROFILES = [
     name: 'Acorde Triunfal',
     emoji: '🎺',
     tag: 'Alegre',
-    description: 'Arpegio brillante de logro y registro exitoso.'
+    description: 'Arpegio brillante de logro y registro exitoso en finca.'
   }
 ];
 

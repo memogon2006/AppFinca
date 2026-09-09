@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.74";
-export const CURRENT_BUILD_TIME = 1789255000000;
+export const CURRENT_APP_VERSION = "2.8.75";
+export const CURRENT_BUILD_TIME = 1789256000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.75",
+    date: "08/09/2026",
+    title: "Cinta de Texto en Movimiento Continuo (Marquee) en Selector de Tonos",
+    highlights: [
+      "Texto en Movimiento Continuo: La descripción completa de cada tono se desplaza suavemente de derecha a izquierda en una marquesina continua para leer toda su información sin recortes.",
+      "Pausa al Interactuar: Al tocar o pasar el cursor por encima del tono, la animación se detiene para facilitar la lectura detallada.",
+      "Diseño de Tarjetas de Sonido Optimizado: Nombres y etiquetas organizados con máxima claridad tanto en celular como en computador."
+    ]
+  },
   {
     version: "2.8.74",
     date: "08/09/2026",

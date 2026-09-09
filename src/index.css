@@ -67,3 +67,27 @@
   font-variant-numeric: tabular-nums lining-nums;
   letter-spacing: -0.01em;
 }
+
+/* Animación Marquee / Cinta Deslizante de Texto en Movimiento */
+@keyframes marquee-ticker {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-ticker {
+  display: inline-flex;
+  white-space: nowrap;
+  width: max-content;
+  animation: marquee-ticker 14s linear infinite;
+  will-change: transform;
+}
+
+.group:hover .animate-marquee-ticker,
+.animate-marquee-ticker:hover {
+  animation-play-state: paused;
+}
+

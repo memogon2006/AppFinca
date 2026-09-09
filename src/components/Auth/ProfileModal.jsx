@@ -498,64 +498,87 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {SOUND_PROFILES.map((profile) => {
                       const isSelected = activeSoundProfile === profile.id;
                       return (
                         <div
                           key={profile.id}
                           onClick={() => handleSelectSoundProfile(profile.id)}
-                          className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 text-left ${
+                          className={`group p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 text-left ${
                             isSelected
-                              ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-500 ring-1 ring-emerald-500/40 shadow-sm'
-                              : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-700/80 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                              ? 'bg-emerald-50/95 dark:bg-emerald-950/50 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md'
+                              : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-700/80 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 shadow-sm'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="text-xl shrink-0 select-none">{profile.emoji}</span>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-xs font-bold truncate ${
-                                  isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-800 dark:text-slate-200'
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
+                            <span className="text-2xl shrink-0 select-none">{profile.emoji}</span>
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              {/* Título y Etiqueta del Tono */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`text-xs font-black tracking-tight ${
+                                  isSelected ? 'text-emerald-900 dark:text-emerald-200' : 'text-slate-900 dark:text-slate-100'
                                 }`}>
                                   {profile.name}
                                 </span>
                                 {profile.tag && (
-                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase shrink-0 ${
                                     isSelected 
-                                      ? 'bg-emerald-200 dark:bg-emerald-800/80 text-emerald-800 dark:text-emerald-100'
-                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                      ? 'bg-emerald-200/90 dark:bg-emerald-800/90 text-emerald-900 dark:text-emerald-100'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
                                   }`}>
                                     {profile.tag}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                                {profile.description}
-                              </p>
+
+                              {/* Cinta Deslizante / Marquee en Movimiento Continuo */}
+                              <div 
+                                className="overflow-hidden whitespace-nowrap w-full relative mt-1"
+                                style={{
+                                  maskImage: 'linear-gradient(to right, transparent, black 4px, black calc(100% - 8px), transparent)',
+                                  WebkitMaskImage: 'linear-gradient(to right, transparent, black 4px, black calc(100% - 8px), transparent)'
+                                }}
+                              >
+                                <div className="inline-flex items-center gap-6 animate-marquee-ticker">
+                                  <span className={`text-[10.5px] font-semibold ${
+                                    isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'
+                                  }`}>
+                                    {profile.description}
+                                  </span>
+                                  <span className="text-[10px] text-emerald-500/70 select-none">•</span>
+                                  <span className={`text-[10.5px] font-semibold ${
+                                    isSelected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'
+                                  }`} aria-hidden="true">
+                                    {profile.description}
+                                  </span>
+                                  <span className="text-[10px] text-emerald-500/70 select-none" aria-hidden="true">•</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Botón Probar y Estado de Selección */}
+                          <div className="flex items-center gap-1.5 shrink-0 pl-1">
                             <button
                               type="button"
                               onClick={(e) => handlePreviewSoundProfile(e, profile.id)}
-                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95 ${
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm ${
                                 isSelected
                                   ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                               }`}
                               title={`Escuchar ${profile.name}`}
                             >
                               <Play className="w-3 h-3 fill-current" />
-                              <span className="text-[10px]">Probar</span>
+                              <span className="text-[11px]">Probar</span>
                             </button>
-                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                               isSelected 
-                                ? 'border-emerald-500 bg-emerald-500 text-white' 
-                                : 'border-slate-300 dark:border-slate-600'
+                                ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm' 
+                                : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
                             }`}>
-                              {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                             </div>
                           </div>
                         </div>

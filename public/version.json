@@ -1,7 +1,7 @@
 {
-  "version": "2.8.74",
-  "buildTime": 1789255000000,
-  "description": "Detección instantánea de actualizaciones (cada 10s y al interactuar) con sonido de campana de alta fidelidad desbloqueado para celulares."
+  "version": "2.8.75",
+  "buildTime": 1789256000000,
+  "description": "Cinta de texto en movimiento continuo (Marquee) en cada tono de confirmación para leer toda la información sin recortes."
 }
 
 
