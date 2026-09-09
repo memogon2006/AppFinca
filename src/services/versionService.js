@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.69";
-export const CURRENT_BUILD_TIME = 1789251500000;
+export const CURRENT_APP_VERSION = "2.8.70";
+export const CURRENT_BUILD_TIME = 1789252000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.70",
+    date: "08/09/2026",
+    title: "Control de Sonido Exclusivo en Configuración de Perfil (Sin Vibración)",
+    highlights: [
+      "Control de Sonido Centralizado: El botón para activar o silenciar los efectos de sonido ahora se encuentra ubicado única y exclusivamente dentro del modal de Configuración de Perfil.",
+      "Eliminación Total de Vibración: Se retiró cualquier comportamiento o referencia de vibración en toda la app.",
+      "Interfaz de Báscula Rápida Limpia: Se eliminaron los botones de sonido de la pantalla de pesaje para un diseño 100% despejado."
+    ]
+  },
   {
     version: "2.8.69",
     date: "08/09/2026",

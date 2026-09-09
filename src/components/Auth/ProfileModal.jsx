@@ -17,11 +17,14 @@ import {
   Trash2, 
   AlertTriangle,
   History,
-  Tag
+  Tag,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
 import { cloudPushData } from '../../services/cloudSync';
+import { isSoundEnabled, setSoundEnabled, playScaleBeep } from '../../services/soundService';
 
 export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout } = useAuth();
@@ -29,6 +32,22 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'version' | 'delete'
   const [demoCount, setDemoCount] = useState(0);
   const [loadingDeleteDemo, setLoadingDeleteDemo] = useState(false);
+
+  // Configuración de Sonido
+  const [soundEnabled, setSoundState] = useState(() => isSoundEnabled());
+
+  const handleToggleSound = () => {
+    const next = !soundEnabled;
+    setSoundState(next);
+    setSoundEnabled(next);
+    if (next) {
+      playScaleBeep();
+    }
+  };
+
+  const handleTestSound = () => {
+    playScaleBeep();
+  };
 
   // Perfil form
   const [profileData, setProfileData] = useState({
@@ -400,6 +419,59 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[44px]"
                   required
                 />
+              </div>
+            </div>
+
+            {/* CONFIGURACIÓN EXCLUSIVA DE SONIDO DEL SISTEMA */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    soundEnabled 
+                      ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/60' 
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                  }`}>
+                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      Efectos de Sonido del Sistema
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      {soundEnabled 
+                        ? 'Beep activo al registrar, editar animales, guardar pesajes, ventas y recibir actualizaciones.' 
+                        : 'Sonidos del sistema desactivados.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Botones de Control de Sonido */}
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleToggleSound}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border shadow-sm ${
+                      soundEnabled
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600'
+                        : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600'
+                    }`}
+                    title={soundEnabled ? "Silenciar efectos de sonido" : "Activar efectos de sonido"}
+                  >
+                    {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    <span>{soundEnabled ? 'Sonido Activado' : 'Sonido Desactivado'}</span>
+                  </button>
+
+                  {soundEnabled && (
+                    <button
+                      type="button"
+                      onClick={handleTestSound}
+                      className="px-2.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                      title="Probar sonido Beep"
+                    >
+                      <span>🎯 Probar</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

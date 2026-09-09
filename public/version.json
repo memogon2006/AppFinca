@@ -1,7 +1,7 @@
 {
-  "version": "2.8.69",
-  "buildTime": 1789251500000,
-  "description": "Sonido confirmatorio Beep en registro y edición de animales, y campana en nuevas actualizaciones."
+  "version": "2.8.70",
+  "buildTime": 1789252000000,
+  "description": "Control de sonido exclusivo en Configuración de Perfil y vibración eliminada."
 }
 
 

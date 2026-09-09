@@ -1,10 +1,9 @@
 /**
- * Servicio de Feedback Sonoro y Háptico (Vibración) para Báscula Ganadera
- * 100% Offline mediante Web Audio API y Navigator.vibrate.
+ * Servicio de Feedback Sonoro para Finca Ganadera
+ * 100% Offline mediante Web Audio API nativo.
  */
 
 const STORAGE_KEY_SOUND = 'bovina_feedback_sound_enabled';
-const STORAGE_KEY_HAPTIC = 'bovina_feedback_haptic_enabled';
 
 let audioCtx = null;
 
@@ -38,36 +37,8 @@ export function setSoundEnabled(enabled) {
   } catch {}
 }
 
-export function isHapticEnabled() {
-  if (typeof window === 'undefined') return true;
-  try {
-    const val = localStorage.getItem(STORAGE_KEY_HAPTIC);
-    return val === null ? true : val === 'true';
-  } catch {
-    return true;
-  }
-}
-
-export function setHapticEnabled(enabled) {
-  try {
-    localStorage.setItem(STORAGE_KEY_HAPTIC, enabled ? 'true' : 'false');
-  } catch {}
-}
-
 /**
- * Emite una vibración táctil en celulares compatibles
- */
-export function triggerHaptic(pattern = [50, 30, 50]) {
-  if (!isHapticEnabled()) return;
-  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-    try {
-      navigator.vibrate(pattern);
-    } catch {}
-  }
-}
-
-/**
- * Genera el sonido "Beep" característico de indicador de báscula ganadera
+ * Genera el sonido "Beep" característico de indicador de báscula ganadera y confirmación
  */
 export function playScaleBeep() {
   if (!isSoundEnabled()) return;
@@ -172,7 +143,7 @@ export function playWarningSound() {
 }
 
 /**
- * Genera tono de actualización o novedad importante
+ * Genera tono de campana armoniosa para actualización o novedad importante
  */
 export function playUpdateChime() {
   if (!isSoundEnabled()) return;
@@ -205,23 +176,18 @@ export function playUpdateChime() {
 }
 
 /**
- * Función integral que ejecuta sonido + vibración según la acción realizada
+ * Función integral que ejecuta el sonido correspondiente según la acción realizada
  */
 export function triggerFeedback(type = 'single') {
   if (type === 'batch') {
     playBatchSuccessSound();
-    triggerHaptic([60, 40, 60, 40, 120]);
   } else if (type === 'update') {
     playUpdateChime();
-    triggerHaptic([80, 50, 80, 50, 150]);
   } else if (type === 'warning') {
     playWarningSound();
-    triggerHaptic([150, 70, 150]);
   } else {
     playScaleBeep();
-    triggerHaptic([50, 30, 50]);
   }
 }
 
 export const triggerWeighingFeedback = triggerFeedback;
-
