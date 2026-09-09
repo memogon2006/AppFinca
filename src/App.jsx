@@ -663,7 +663,6 @@ export default function App() {
         onOpenExportImport={() => setIsExportModalOpen(true)}
         onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
-        onOpenCalendar={() => setIsCalendarOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
         activeCattleCount={activeCattleCount}

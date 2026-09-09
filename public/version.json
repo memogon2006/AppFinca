@@ -1,5 +1,5 @@
 {
-  "version": "2.8.83",
-  "buildTime": 1789275200000,
-  "description": "Reorganización del Tablero: Biomasa e indicadores clave arriba y Calendario Ganadero abajo."
+  "version": "2.8.84",
+  "buildTime": 1789275500000,
+  "description": "Limpieza total de la barra superior sin botón de calendario para una distribución 100% holgada."
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   LayoutDashboard, 
   Layers, 
@@ -16,8 +16,7 @@ import {
   RefreshCw,
   Settings,
   Boxes,
-  MessageCircle,
-  Calendar
+  MessageCircle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -29,31 +28,12 @@ export function Navbar({
   onOpenExportImport, 
   onOpenWhatsAppReport,
   onOpenProfile, 
-  onOpenCalendar,
   onManualSync,
   isSyncing = false,
   activeCattleCount = 0 
 }) {
   const { isDark, toggleTheme } = useTheme();
   const { currentUser, logout } = useAuth();
-
-  // Fecha y hora en tiempo real
-  const [currentDate, setCurrentDate] = useState(new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentDate(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formattedDateShort = currentDate.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short'
-  }).replace('.', '');
-
-  const formattedTimeShort = currentDate.toLocaleTimeString('es-CO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
 
   const navItems = [
     { id: 'dashboard', label: 'Tablero', shortLabel: 'Tablero', icon: LayoutDashboard },
@@ -147,45 +127,16 @@ export function Navbar({
             </nav>
 
             {/* LADO DERECHO: Acciones, Sincronización, Perfil y Salir */}
-            <div className="flex items-center gap-1 sm:gap-1.5 2xl:gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               
-              {/* Botón de Calendario y Fecha Actual */}
-              {onOpenCalendar && (
-                <>
-                  {/* Vista 2XL: Fecha y hora completas */}
-                  <button
-                    onClick={onOpenCalendar}
-                    title="Abrir Calendario Ganadero & Fecha Actual"
-                    className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 dark:bg-slate-800 dark:hover:bg-teal-950/40 border border-slate-200 hover:border-teal-400 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer group shadow-sm shrink-0 min-h-[36px]"
-                  >
-                    <div className="p-0.5 rounded-lg text-teal-600 dark:text-teal-400 group-hover:scale-110 transition">
-                      <Calendar className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="capitalize text-[11px] font-extrabold">{formattedDateShort}</span>
-                    <span className="text-slate-300 dark:text-slate-600">•</span>
-                    <span className="font-mono text-[11px] text-teal-700 dark:text-teal-400 font-black">{formattedTimeShort}</span>
-                  </button>
-
-                  {/* Vista XL y menores: Botón compacto de calendario */}
-                  <button
-                    onClick={onOpenCalendar}
-                    title={`Abrir Calendario (${formattedDateShort} • ${formattedTimeShort})`}
-                    className="flex 2xl:hidden items-center justify-center p-2 rounded-xl bg-slate-100 hover:bg-teal-50 dark:bg-slate-800 dark:hover:bg-teal-950/40 border border-slate-200 hover:border-teal-400 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer group shadow-sm shrink-0 min-h-[36px] min-w-[36px]"
-                  >
-                    <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition" />
-                  </button>
-                </>
-              )}
-
               {/* Botón Principal: + Registrar Bovino */}
               <button
                 onClick={onOpenNewAnimal}
-                className="py-1.5 px-2.5 2xl:px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1.5 shadow-sm min-h-[36px] cursor-pointer whitespace-nowrap"
+                className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1.5 shadow-sm min-h-[36px] cursor-pointer whitespace-nowrap"
                 title="Registrar un nuevo animal al inventario"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span className="hidden 2xl:inline">Registrar Bovino</span>
-                <span className="2xl:hidden">+ Bovino</span>
+                <span>Registrar Bovino</span>
               </button>
 
               {/* Botón Excel / Copia */}
@@ -290,17 +241,6 @@ export function Navbar({
 
               {/* Botones rápidos de control */}
               <div className="flex items-center gap-1.5 shrink-0">
-                {/* Calendario & Fecha Hoy Móvil */}
-                {onOpenCalendar && (
-                  <button
-                    onClick={onOpenCalendar}
-                    title="Ver Calendario & Fecha Hoy"
-                    className="p-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 dark:hover:bg-teal-900 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center justify-center min-h-[32px] min-w-[32px] cursor-pointer shadow-sm"
-                  >
-                    <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  </button>
-                )}
-
                 {/* Tema */}
                 <button
                   onClick={toggleTheme}

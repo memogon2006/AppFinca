@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.83";
-export const CURRENT_BUILD_TIME = 1789275200000;
+export const CURRENT_APP_VERSION = "2.8.84";
+export const CURRENT_BUILD_TIME = 1789275500000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.84",
+    date: "09/09/2026",
+    title: "Limpieza Total de la Barra Superior y Distribución Óptima",
+    highlights: [
+      "Retiro de Calendario en Navbar: Se eliminó el botón de fecha/calendario de la barra superior para mantener la cabecera 100% limpia, despejada y sin desbordes.",
+      "Espacio de Calendario Centralizado: El Calendario Ganadero y la Agenda en Tiempo Real se consultan cómodamente desde su tarjeta en el Tablero Principal.",
+      "Alineación Perfecta de Acciones: Todos los botones de acción rápida caben holgadamente en una sola fila sin cortarse."
+    ]
+  },
   {
     version: "2.8.83",
     date: "09/09/2026",
