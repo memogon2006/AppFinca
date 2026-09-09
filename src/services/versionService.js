@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.82";
-export const CURRENT_BUILD_TIME = 1789275000000;
+export const CURRENT_APP_VERSION = "2.8.83";
+export const CURRENT_BUILD_TIME = 1789275200000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.83",
+    date: "09/09/2026",
+    title: "Reorganización del Tablero: KPIs de Biomasa e Inventario en la Cima",
+    highlights: [
+      "Prioridad a Métricas Clave: Las tarjetas de Total Bovinos, Biomasa en kg, GDP promedio e Inversión Activa ahora se ubican en la parte superior del Tablero para consulta inmediata.",
+      "Ubicación del Calendario: La tarjeta de Calendario Ganadero y Fecha Actual se posicionó justo después de los KPIs de inventario y manejo.",
+      "Flujo Visual Optimizado: Vista limpia y jerarquía de información enfocada en la producción ganadera."
+    ]
+  },
   {
     version: "2.8.82",
     date: "09/09/2026",

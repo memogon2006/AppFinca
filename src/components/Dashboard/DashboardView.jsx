@@ -158,13 +158,6 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Widget de Calendario Ganadero & Fecha Actual en Tiempo Real */}
-      <FarmCalendarWidget
-        cattle={cattle}
-        weighings={weighings}
-        onOpenCalendar={onOpenCalendar}
-      />
-
       {/* 4 KPIs Clave Principales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
@@ -254,6 +247,13 @@ export function DashboardView({
         </div>
 
       </div>
+
+      {/* Widget de Calendario Ganadero & Fecha Actual en Tiempo Real */}
+      <FarmCalendarWidget
+        cattle={cattle}
+        weighings={weighings}
+        onOpenCalendar={onOpenCalendar}
+      />
 
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
