@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.78";
-export const CURRENT_BUILD_TIME = 1789266000000;
+export const CURRENT_APP_VERSION = "2.8.79";
+export const CURRENT_BUILD_TIME = 1789270000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.79",
+    date: "09/09/2026",
+    title: "Diseño Limpio en Control de Consecutivos (Sin Aviso de Faltantes)",
+    highlights: [
+      "Eliminación de Aviso de Faltantes: Se retiró el mensaje de números faltantes en la secuencia histórica para mantener la interfaz 100% limpia y despejada.",
+      "Enfoque en Último y Siguiente Sugerido: La visualización se concentra exclusivamente en el último consecutivo registrado y el siguiente sugerido.",
+      "Optimización Visual: Tarjetas y paneles ordenados con máxima claridad."
+    ]
+  },
   {
     version: "2.8.78",
     date: "09/09/2026",

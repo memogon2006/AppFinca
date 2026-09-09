@@ -1,7 +1,7 @@
 {
-  "version": "2.8.78",
-  "buildTime": 1789266000000,
-  "description": "Visualización ampliada, resaltada y de alto impacto del control de numeración consecutiva en registro individual y lotes."
+  "version": "2.8.79",
+  "buildTime": 1789270000000,
+  "description": "Eliminación del aviso de números faltantes en la secuencia para una interfaz de consecutivos más limpia y enfocada."
 }
 
 

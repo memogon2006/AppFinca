@@ -545,14 +545,6 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               </div>
             </div>
 
-            {/* Faltantes en secuencia si existen */}
-            {farmConsecutiveStats.missingConsecutives.length > 0 && (
-              <p className="text-xs text-amber-800 dark:text-amber-300 font-bold mb-1.5 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-200 dark:border-amber-800/40">
-                <span>⚠️</span>
-                <span>Faltan en la secuencia histórica: <strong>{farmConsecutiveStats.missingConsecutives.slice(0, 6).join(', ')}{farmConsecutiveStats.missingConsecutives.length > 6 ? '...' : ''}</strong></span>
-              </p>
-            )}
-
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
               ℹ️ La numeración se calcula usando únicamente el número <strong>antes de <code>-</code> o <code>/</code></strong> (ej. <strong>25-6 → 25</strong>). Los números posteriores no modifican el consecutivo principal.
             </p>
