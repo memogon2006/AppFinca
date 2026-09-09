@@ -9,11 +9,14 @@ export function UpdateNotificationBanner() {
   const [updating, setUpdating] = useState(false);
   const hasAnnouncedUpdateRef = useRef(false);
 
-  // Comprobar actualizaciones al cargar, al cambiar visibilidad en celular y periódicamente
+  // Comprobar actualizaciones al cargar, al cambiar visibilidad en celular, al interactuar y periódicamente
   useEffect(() => {
     let mounted = true;
+    let lastCheckTime = 0;
 
     async function check() {
+      const now = Date.now();
+      lastCheckTime = now;
       try {
         const res = await checkAppUpdate();
         if (mounted && res && res.hasUpdate) {
@@ -41,13 +44,21 @@ export function UpdateNotificationBanner() {
     const handleOnline = () => check();
     const handleFocus = () => check();
 
+    // Comprobación al interactuar (toques en celular / clics), con límite de 8 segundos
+    const handleUserInteraction = () => {
+      if (Date.now() - lastCheckTime > 8000) {
+        check();
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('pageshow', handlePageShow);
     window.addEventListener('online', handleOnline);
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('pointerdown', handleUserInteraction, { passive: true });
 
-    // Sondeo cada 25 segundos
-    const interval = setInterval(check, 25 * 1000);
+    // Sondeo ultra frecuente cada 10 segundos
+    const interval = setInterval(check, 10 * 1000);
 
     return () => {
       mounted = false;
@@ -55,6 +66,7 @@ export function UpdateNotificationBanner() {
       window.removeEventListener('pageshow', handlePageShow);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pointerdown', handleUserInteraction);
       clearInterval(interval);
     };
   }, []);

@@ -22,6 +22,36 @@ function getAudioContext() {
   return audioCtx;
 }
 
+// Desbloqueo proactivo de AudioContext para iOS Safari / Android en el primer toque
+function unlockMobileAudio() {
+  const ctx = getAudioContext();
+  if (ctx) {
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    } catch (e) {}
+  }
+}
+
+if (typeof window !== 'undefined') {
+  const unlockEvents = ['touchstart', 'touchend', 'pointerdown', 'click', 'keydown'];
+  const handleFirstGesture = () => {
+    unlockMobileAudio();
+    unlockEvents.forEach(ev => {
+      window.removeEventListener(ev, handleFirstGesture, { capture: true });
+    });
+  };
+  unlockEvents.forEach(ev => {
+    window.addEventListener(ev, handleFirstGesture, { capture: true, passive: true });
+  });
+}
+
 export const SOUND_PROFILES = [
   {
     id: 'chime',
@@ -407,28 +437,37 @@ export function playUpdateChime() {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  try {
-    const now = ctx.currentTime;
-    const notes = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
+  const playChimeInternal = () => {
+    try {
+      const now = ctx.currentTime;
+      // Secuencia armónica de 4 campanas en La Mayor (A4, C#5, E5, A5) nítida y audible
+      const notes = [440, 554.37, 659.25, 880];
 
-    notes.forEach((freq, idx) => {
-      const start = now + (idx * 0.08);
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, start);
+      notes.forEach((freq, idx) => {
+        const start = now + (idx * 0.08);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, start);
 
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.25, start + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.35, start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.22);
-    });
-  } catch (err) {
-    console.warn('Update chime error:', err);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.35);
+      });
+    } catch (err) {
+      console.warn('Update chime error:', err);
+    }
+  };
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(playChimeInternal).catch(playChimeInternal);
+  } else {
+    playChimeInternal();
   }
 }
 

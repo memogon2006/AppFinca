@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.73";
-export const CURRENT_BUILD_TIME = 1789254000000;
+export const CURRENT_APP_VERSION = "2.8.74";
+export const CURRENT_BUILD_TIME = 1789255000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.74",
+    date: "08/09/2026",
+    title: "Detección Instantánea y Sonido de Actualización Optimizado para Móviles",
+    highlights: [
+      "Detección Ultrarrápida en Celulares: Sondeo cada 10 segundos y comprobación instantánea al volver a la app o interactuar en la pantalla.",
+      "Desbloqueo de Audio en Móviles: Desbloqueo nativo del sistema de audio para que la campana de actualización suene siempre con claridad en Safari y Chrome móvil.",
+      "Cero Caché: Cabeceras de servidor directas para garantizar que la nueva versión se anuncie inmediatamente."
+    ]
+  },
   {
     version: "2.8.73",
     date: "08/09/2026",
@@ -480,13 +490,19 @@ export const APP_CHANGELOG = [
  */
 export async function checkAppUpdate() {
   try {
-    const response = await fetch(`/version.json?_nocache=${Date.now()}`, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const cacheBuster = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const response = await fetch(`/version.json?_nocache=${cacheBuster}`, {
       cache: 'no-store',
+      signal: controller.signal,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
       }
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) return { hasUpdate: false };
 

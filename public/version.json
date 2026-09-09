@@ -1,7 +1,7 @@
 {
-  "version": "2.8.73",
-  "buildTime": 1789254000000,
-  "description": "Selector de tonos de confirmación personalizables (Campana, Báscula, Pop, Marimba, Clic y Triunfo) en Configuración de Perfil."
+  "version": "2.8.74",
+  "buildTime": 1789255000000,
+  "description": "Detección instantánea de actualizaciones (cada 10s y al interactuar) con sonido de campana de alta fidelidad desbloqueado para celulares."
 }
 
 
