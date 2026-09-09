@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.72";
-export const CURRENT_BUILD_TIME = 1789253000000;
+export const CURRENT_APP_VERSION = "2.8.73";
+export const CURRENT_BUILD_TIME = 1789254000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.73",
+    date: "08/09/2026",
+    title: "Selector de Tonos de Confirmación y Síntesis de Sonidos Personalizables",
+    highlights: [
+      "6 Tonos Exclusivos a Escoger: Campana Cristalina 🔔 (por defecto), Báscula Digital Ganadera ⚖️, Burbuja / Pop Acústico 🫧, Marimba Cálida 🪵, Clic Tecnológico 🎯 y Acorde Triunfal 🎺.",
+      "Selector Interactivo con Vista Previa en Perfil: Prueba cada tono en tiempo real con el botón 'Probar' y activa tu favorito con un solo toque en Configuración de Perfil.",
+      "Síntesis 100% Offline: Generación de sonido nativa mediante Web Audio API ultraligera y sin descargas de archivos."
+    ]
+  },
   {
     version: "2.8.72",
     date: "08/09/2026",

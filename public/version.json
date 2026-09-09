@@ -1,7 +1,7 @@
 {
-  "version": "2.8.72",
-  "buildTime": 1789253000000,
-  "description": "Aviso y botón de actualización 100% adaptados a la pantalla de celular sin recortes."
+  "version": "2.8.73",
+  "buildTime": 1789254000000,
+  "description": "Selector de tonos de confirmación personalizables (Campana, Báscula, Pop, Marimba, Clic y Triunfo) en Configuración de Perfil."
 }
 
 
