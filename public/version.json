@@ -1,9 +1,5 @@
 {
-  "version": "2.8.79",
-  "buildTime": 1789270000000,
-  "description": "Eliminación del aviso de números faltantes en la secuencia para una interfaz de consecutivos más limpia y enfocada."
+  "version": "2.8.80",
+  "buildTime": 1789274000000,
+  "description": "Módulo de Calendario Ganadero, Agenda de Finca y Fecha Actual en Tiempo Real."
 }
-
-
-
-

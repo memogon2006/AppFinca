@@ -23,6 +23,7 @@ import { GlossaryModal } from './components/Common/GlossaryModal';
 import { PartnershipSettlementModal } from './components/Finances/PartnershipSettlementModal';
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { WhatsAppReportModal } from './components/Common/WhatsAppReportModal';
+import { FarmCalendarModal } from './components/Calendar/FarmCalendarModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
@@ -37,6 +38,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Modales
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingAnimal, setEditingAnimal] = useState(null);
 
@@ -661,6 +663,7 @@ export default function App() {
         onOpenExportImport={() => setIsExportModalOpen(true)}
         onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenCalendar={() => setIsCalendarOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
         activeCattleCount={activeCattleCount}
@@ -716,6 +719,7 @@ export default function App() {
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
+            onOpenCalendar={() => setIsCalendarOpen(true)}
           />
         )}
 
@@ -905,6 +909,14 @@ export default function App() {
         cattle={cattle}
         weighings={weighings}
         farmName={currentUser?.farmName || 'INVENTARIO BOVINO APP'}
+        zIndex="z-[60]"
+      />
+
+      <FarmCalendarModal
+        isOpen={isCalendarOpen}
+        onClose={() => setIsCalendarOpen(false)}
+        cattle={cattle}
+        weighings={weighings}
         zIndex="z-[60]"
       />
 

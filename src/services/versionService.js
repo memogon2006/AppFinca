@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.79";
-export const CURRENT_BUILD_TIME = 1789270000000;
+export const CURRENT_APP_VERSION = "2.8.80";
+export const CURRENT_BUILD_TIME = 1789274000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.80",
+    date: "09/09/2026",
+    title: "Módulo de Calendario Ganadero, Agenda de Finca y Fecha Actual en Vivo",
+    highlights: [
+      "Fecha Actual en Tiempo Real: Visualizador interactivo de fecha completa (día de la semana, día, mes y año) con reloj digital en vivo tanto en el Tablero principal como en la Barra de Navegación.",
+      "Calendario Ganadero Interactivo: Cuadrícula mensual con navegación entre meses, selector rápido para volver a 'Hoy' y leyenda de actividades.",
+      "Trazabilidad Automática de Eventos: Mapeo inteligente de pesajes de báscula, ingresos de lotes, ventas/salidas y fechas estimadas de parto en vacas preñadas.",
+      "Agenda de Finca y Tareas Offline: Sistema de notas y recordatorios de campo organizados por categorías (Vacunación, Potreros, Pesajes, Insumos, Reproducción) 100% offline."
+    ]
+  },
   {
     version: "2.8.79",
     date: "09/09/2026",

@@ -24,6 +24,7 @@ import {
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
 import { VaccinationCalendar } from './VaccinationCalendar';
+import { FarmCalendarWidget } from '../Calendar/FarmCalendarWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials } from '../../services/calculations';
@@ -37,7 +38,8 @@ export function DashboardView({
   onOpenBatchEntry,
   onOpenExportImport,
   onOpenWhatsAppReport,
-  onOpenGlossary
+  onOpenGlossary,
+  onOpenCalendar
 }) {
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
@@ -155,6 +157,13 @@ export function DashboardView({
           </div>
         </div>
       </div>
+
+      {/* Widget de Calendario Ganadero & Fecha Actual en Tiempo Real */}
+      <FarmCalendarWidget
+        cattle={cattle}
+        weighings={weighings}
+        onOpenCalendar={onOpenCalendar}
+      />
 
       {/* 4 KPIs Clave Principales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Layers, 
@@ -16,7 +16,8 @@ import {
   RefreshCw,
   Settings,
   Boxes,
-  MessageCircle
+  MessageCircle,
+  Calendar
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -28,12 +29,32 @@ export function Navbar({
   onOpenExportImport, 
   onOpenWhatsAppReport,
   onOpenProfile, 
+  onOpenCalendar,
   onManualSync,
   isSyncing = false,
   activeCattleCount = 0 
 }) {
   const { isDark, toggleTheme } = useTheme();
   const { currentUser, logout } = useAuth();
+
+  // Fecha y hora en tiempo real
+  const [currentDate, setCurrentDate] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentDate(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedDateShort = currentDate.toLocaleDateString('es-CO', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
+  });
+
+  const formattedTimeShort = currentDate.toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
 
   const navItems = [
     { id: 'dashboard', label: 'Tablero', shortLabel: 'Tablero', icon: LayoutDashboard },
@@ -129,6 +150,22 @@ export function Navbar({
             {/* LADO DERECHO: Acciones, Sincronización, Perfil y Salir */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               
+              {/* Botón de Calendario y Fecha Actual */}
+              {onOpenCalendar && (
+                <button
+                  onClick={onOpenCalendar}
+                  title="Abrir Calendario Ganadero & Fecha Actual"
+                  className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 dark:bg-slate-800 dark:hover:bg-teal-950/40 border border-slate-200 hover:border-teal-400 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer group shadow-sm shrink-0 min-h-[36px]"
+                >
+                  <div className="p-1 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="capitalize">{formattedDateShort}</span>
+                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                  <span className="font-mono text-[11px] text-teal-700 dark:text-teal-400 font-black">{formattedTimeShort}</span>
+                </button>
+              )}
+
               {/* Botón Principal: + Registrar Bovino */}
               <button
                 onClick={onOpenNewAnimal}
@@ -241,6 +278,17 @@ export function Navbar({
 
               {/* Botones rápidos de control */}
               <div className="flex items-center gap-1.5 shrink-0">
+                {/* Calendario & Fecha Hoy Móvil */}
+                {onOpenCalendar && (
+                  <button
+                    onClick={onOpenCalendar}
+                    title="Ver Calendario & Fecha Hoy"
+                    className="p-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 dark:hover:bg-teal-900 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center justify-center min-h-[32px] min-w-[32px] cursor-pointer shadow-sm"
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  </button>
+                )}
+
                 {/* Tema */}
                 <button
                   onClick={toggleTheme}
