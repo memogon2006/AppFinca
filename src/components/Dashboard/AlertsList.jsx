@@ -1,12 +1,14 @@
 import React from 'react';
-import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { calculateReproduction, formatDate, getDaysDifference } from '../../services/calculations';
+import { findDuplicateCattle, normalizeTagNumber, normalizeText } from '../../services/duplicateDetectionService';
 
 const VACCINE_STORAGE_KEY = 'ganado_colombia_vaccine_status';
 
 export function AlertsList({ cattle = [], onSelectAnimal }) {
   const animalAlerts = [];
   const sanitaryAlerts = [];
+  const duplicateAlerts = [];
 
   // 1. Alertas individuales de bovinos prioritarios (Pesos de venta, partos, chequeos)
   cattle.forEach(animal => {
@@ -62,7 +64,48 @@ export function AlertsList({ cattle = [], onSelectAnimal }) {
     }
   });
 
-  // 2. Alerta Sanitaria de Ciclos Oficiales ICA
+  // 2. Alertas de Identificaciones Duplicadas Activas
+  const checkedTagKeys = new Set();
+  const activeAnimals = cattle.filter(c => c.status === 'Activo');
+
+  activeAnimals.forEach(animal => {
+    if (!animal.tagNumber) return;
+    const matches = findDuplicateCattle(
+      {
+        tagNumber: animal.tagNumber,
+        ironBrand: animal.ironBrand,
+        owner: animal.owner,
+        id: animal.id,
+      },
+      activeAnimals,
+      animal.id
+    );
+
+    if (matches.length > 0) {
+      const match = matches[0];
+      const otherAnimal = match.animal;
+      const norm1 = normalizeTagNumber(animal.tagNumber);
+      const norm2 = normalizeTagNumber(otherAnimal.tagNumber);
+      const pairKey = [norm1, animal.id, otherAnimal.id].sort().join('::');
+
+      if (!checkedTagKeys.has(pairKey)) {
+        checkedTagKeys.add(pairKey);
+        duplicateAlerts.push({
+          id: `dup-${animal.id}-${otherAnimal.id}`,
+          animal,
+          priority: 1,
+          type: 'urgent',
+          title: `⚠️ Posible Identificación Duplicada: ${animal.tagNumber}`,
+          desc: `Coincide con otro animal activo (${otherAnimal.tagNumber}) con misma ${
+            match.matchType === 'tag_brand_and_owner' ? 'marca y dueño' : match.matchType === 'tag_and_brand' ? 'marca' : 'propiedad'
+          }.`,
+          icon: ShieldAlert,
+        });
+      }
+    }
+  });
+
+  // 3. Alerta Sanitaria de Ciclos Oficiales ICA
   let farmVaccineState = { isVaccinated: false, ruvNumber: '' };
   try {
     const saved = localStorage.getItem(VACCINE_STORAGE_KEY);
@@ -124,8 +167,8 @@ export function AlertsList({ cattle = [], onSelectAnimal }) {
     });
   }
 
-  // Combinar: Los animales con peso de venta o parto urgente van primero; si no hay alertas de animales, la alerta sanitaria toma todo el protagonismo
-  const combinedAlerts = [...animalAlerts, ...sanitaryAlerts];
+  // Combinar: Duplicados y animales urgentes van primero
+  const combinedAlerts = [...duplicateAlerts, ...animalAlerts, ...sanitaryAlerts];
 
   if (combinedAlerts.length === 0) {
     return (

@@ -9,10 +9,18 @@ import {
   COMMON_BREEDS 
 } from '../../types/cattle';
 import { BOVINE_GESTATION_DAYS } from '../../services/calculations';
-import { Save, Milk, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
+import { DuplicateWarningModal } from './DuplicateWarningModal';
 
-export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[60]' }) {
+export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[60]', cattleList = [] }) {
+  const { currentUser } = useAuth();
   const isEditing = Boolean(animal && animal.id);
+
+  const [detectedDuplicates, setDetectedDuplicates] = useState([]);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [highlightDuplicates, setHighlightDuplicates] = useState(false);
 
   const [formData, setFormData] = useState({
     tagNumber: '',
@@ -121,7 +129,32 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       setShowAdvancedMilk(false);
     }
     setErrors({});
+    setHighlightDuplicates(false);
   }, [animal, isOpen]);
+
+  // Validación en tiempo real con Debounce para detectar identificaciones duplicadas
+  useEffect(() => {
+    if (!isOpen || !formData.tagNumber || !formData.tagNumber.trim()) {
+      setDetectedDuplicates([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const matches = findDuplicateCattle(
+        {
+          tagNumber: formData.tagNumber,
+          ironBrand: formData.ironBrand,
+          owner: formData.owner,
+          id: animal?.id,
+        },
+        cattleList,
+        animal?.id
+      );
+      setDetectedDuplicates(matches);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [formData.tagNumber, formData.ironBrand, formData.owner, cattleList, animal?.id, isOpen]);
 
   const handleServiceDateChange = (date) => {
     let expected = '';
@@ -257,6 +290,33 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const isFatteningFemale = isFemale && formData.productionType === 'Ceba';
   const isWeightRequired = formData.sex === 'Macho' || isFatteningFemale;
 
+  const executeSave = (dataToSave) => {
+    const parsedEntryWeight = dataToSave.entryWeight && parseFloat(dataToSave.entryWeight) > 0 ? parseFloat(dataToSave.entryWeight) : null;
+    const parsedCurrentWeight = dataToSave.currentWeight && parseFloat(dataToSave.currentWeight) > 0 ? parseFloat(dataToSave.currentWeight) : parsedEntryWeight;
+
+    onSave({
+      ...dataToSave,
+      entryBatch: dataToSave.entryBatch || 'Ingreso #1',
+      paddock: dataToSave.entryBatch || 'Ingreso #1',
+      entryWeight: parsedEntryWeight,
+      currentWeight: parsedCurrentWeight,
+      entryPrice: parseFloat(dataToSave.entryPrice || 0),
+      additionalCosts: parseFloat(dataToSave.additionalCosts || 0),
+      // Campos de hembra: se guardan sólo si es hembra, si es macho se limpian por completo
+      femaleStatus: isFemale ? (dataToSave.femaleStatus || 'Vacía') : 'No aplica',
+      reproductiveStatus: isFemale ? (dataToSave.reproductiveStatus || 'Vacía') : 'No aplica',
+      milkingStatus: isFemale ? (dataToSave.milkingStatus || 'No aplica') : 'No aplica',
+      dailyMilkLiters: isFemale ? parseFloat(dataToSave.dailyMilkLiters || 0) : 0,
+      lactationCycleDays: isFemale ? parseInt(dataToSave.lactationCycleDays || 305) : 0,
+      lactationCycleTotalLiters: isFemale ? parseFloat(dataToSave.lactationCycleTotalLiters || 0) : 0,
+      lactationCycleAvgLiters: isFemale ? parseFloat(dataToSave.lactationCycleAvgLiters || 0) : 0,
+      serviceDate: isFemale ? (dataToSave.serviceDate || '') : '',
+      expectedCalvingDate: isFemale ? (dataToSave.expectedCalvingDate || '') : '',
+      isBreedingOnly: isFemale ? Boolean(dataToSave.isBreedingOnly) : false,
+    });
+    onClose();
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const newErrors = {};
@@ -284,35 +344,50 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       return;
     }
 
-    const parsedEntryWeight = formData.entryWeight && parseFloat(formData.entryWeight) > 0 ? parseFloat(formData.entryWeight) : null;
-    const parsedCurrentWeight = formData.currentWeight && parseFloat(formData.currentWeight) > 0 ? parseFloat(formData.currentWeight) : parsedEntryWeight;
+    // VALIDACIÓN OBLIGATORIA FINAL DE DUPLICADOS EN ACTIVO
+    const finalDuplicates = findDuplicateCattle(
+      {
+        tagNumber: formData.tagNumber,
+        ironBrand: formData.ironBrand,
+        owner: formData.owner,
+        id: animal?.id,
+      },
+      cattleList,
+      animal?.id
+    );
 
-    onSave({
-      ...formData,
-      entryBatch: formData.entryBatch || 'Ingreso #1',
-      paddock: formData.entryBatch || 'Ingreso #1',
-      entryWeight: parsedEntryWeight,
-      currentWeight: parsedCurrentWeight,
-      entryPrice: parseFloat(formData.entryPrice || 0),
-      additionalCosts: parseFloat(formData.additionalCosts || 0),
-      // Campos de hembra: se guardan sólo si es hembra, si es macho se limpian por completo
-      femaleStatus: isFemale ? (formData.femaleStatus || 'Vacía') : 'No aplica',
-      reproductiveStatus: isFemale ? (formData.reproductiveStatus || 'Vacía') : 'No aplica',
-      milkingStatus: isFemale ? (formData.milkingStatus || 'No aplica') : 'No aplica',
-      dailyMilkLiters: isFemale ? parseFloat(formData.dailyMilkLiters || 0) : 0,
-      lactationCycleDays: isFemale ? parseInt(formData.lactationCycleDays || 305) : 0,
-      lactationCycleTotalLiters: isFemale ? parseFloat(formData.lactationCycleTotalLiters || 0) : 0,
-      lactationCycleAvgLiters: isFemale ? parseFloat(formData.lactationCycleAvgLiters || 0) : 0,
-      serviceDate: isFemale ? (formData.serviceDate || '') : '',
-      expectedCalvingDate: isFemale ? (formData.expectedCalvingDate || '') : '',
-      isBreedingOnly: isFemale ? Boolean(formData.isBreedingOnly) : false,
+    if (finalDuplicates.length > 0) {
+      setDetectedDuplicates(finalDuplicates);
+      setIsDuplicateModalOpen(true);
+      setHighlightDuplicates(true);
+      return;
+    }
+
+    executeSave(formData);
+  };
+
+  const handleConfirmContinueDuplicate = () => {
+    // Registrar decisión en el sistema de trazabilidad
+    saveTraceabilityLog({
+      userId: currentUser?.id,
+      farmName: currentUser?.farmName,
+      tagNumberEntered: formData.tagNumber,
+      ironBrand: formData.ironBrand,
+      owner: formData.owner,
+      matchingAnimals: detectedDuplicates.map(d => d.animal),
+      priority: detectedDuplicates[0]?.priority || 'MEDIA',
+      reasons: detectedDuplicates.map(d => d.matchType),
+      notes: isEditing ? 'Modificación confirmada por el usuario pese a alerta de duplicado' : 'Registro de nuevo animal confirmado por el usuario pese a alerta de duplicado',
     });
-    onClose();
+
+    setIsDuplicateModalOpen(false);
+    executeSave(formData);
   };
 
   const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === formData.sex);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -330,6 +405,35 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             1. Identificación y Propiedad
           </h4>
 
+          {/* Banner de Advertencia de Duplicado Detectado en Vivo */}
+          {detectedDuplicates.length > 0 && (
+            <div className="mb-4 p-3.5 rounded-xl border border-amber-300 dark:border-amber-600/50 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs shadow-sm animate-fadeIn">
+              <div className="flex items-start gap-2.5">
+                <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide text-[11px]">
+                      ⚠️ Posible Identificación Duplicada Detectada ({detectedDuplicates[0]?.priority === 'ALTA' ? 'Prioridad ALTA' : 'Prioridad MEDIA'})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsDuplicateModalOpen(true)}
+                      className="text-xs font-bold text-amber-700 dark:text-amber-300 underline hover:text-amber-900 dark:hover:text-amber-100 cursor-pointer"
+                    >
+                      Ver detalle de coincidencia ({detectedDuplicates.length}) →
+                    </button>
+                  </div>
+                  <p className="text-amber-700 dark:text-amber-300/90 leading-relaxed">
+                    Ya existe {detectedDuplicates.length === 1 ? 'un animal activo' : `${detectedDuplicates.length} animales activos`} con la identificación <strong className="font-mono bg-amber-100 dark:bg-amber-900/60 px-1 py-0.5 rounded">{detectedDuplicates[0]?.animal?.tagNumber}</strong>
+                    {detectedDuplicates[0]?.matchType === 'tag_brand_and_owner' && ' y la misma marca y propietario.'}
+                    {detectedDuplicates[0]?.matchType === 'tag_and_brand' && ' y la misma marca de hierro.'}
+                    {detectedDuplicates[0]?.matchType === 'tag_and_owner' && ' y el mismo propietario.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -341,7 +445,13 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 value={formData.tagNumber}
                 onChange={handleChange}
                 placeholder="Ej. EP-105, 452, A-12"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
+                  detectedDuplicates.length > 0 
+                    ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40 dark:bg-amber-950/20' 
+                    : errors.tagNumber 
+                      ? 'border-rose-500 ring-2 ring-rose-500/20' 
+                      : 'border-slate-300 dark:border-slate-700'
+                } text-slate-900 dark:text-white font-bold placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
               />
               {errors.tagNumber && <p className="text-[11px] text-rose-500 mt-1">{errors.tagNumber}</p>}
             </div>
@@ -386,7 +496,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 value={formData.ironBrand}
                 onChange={handleChange}
                 placeholder="Ej. EP-01, RG-★"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
+                  detectedDuplicates.some(d => d.matchType === 'tag_and_brand' || d.matchType === 'tag_brand_and_owner')
+                    ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40 dark:bg-amber-950/20'
+                    : 'border-slate-300 dark:border-slate-700'
+                } text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
               />
             </div>
 
@@ -400,7 +514,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 value={formData.owner}
                 onChange={handleChange}
                 placeholder="Ej. Hacienda Principal, Ganado en Compañía"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
+                  detectedDuplicates.some(d => d.matchType === 'tag_and_owner' || d.matchType === 'tag_brand_and_owner')
+                    ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40 dark:bg-amber-950/20'
+                    : 'border-slate-300 dark:border-slate-700'
+                } text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
               />
             </div>
           </div>
@@ -794,5 +912,16 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
       </form>
     </Modal>
+
+    {/* Modal de Advertencia de Identificación Duplicada */}
+    <DuplicateWarningModal
+      isOpen={isDuplicateModalOpen}
+      onClose={() => setIsDuplicateModalOpen(false)}
+      onConfirmContinue={handleConfirmContinueDuplicate}
+      duplicates={detectedDuplicates}
+      candidateData={formData}
+      zIndex="z-[70]"
+    />
+    </>
   );
 }

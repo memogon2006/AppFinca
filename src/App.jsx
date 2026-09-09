@@ -825,6 +825,7 @@ export default function App() {
         }}
         onSave={handleSaveAnimal}
         animal={editingAnimal}
+        cattleList={cattle}
         zIndex="z-[60]"
       />
 
@@ -866,6 +867,7 @@ export default function App() {
         isOpen={isBatchEntryModalOpen}
         onClose={() => setIsBatchEntryModalOpen(false)}
         onSaveBatch={handleSaveBatchCattle}
+        cattleList={cattle}
         zIndex="z-[60]"
       />
 

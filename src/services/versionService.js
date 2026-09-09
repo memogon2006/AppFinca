@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.75";
-export const CURRENT_BUILD_TIME = 1789256000000;
+export const CURRENT_APP_VERSION = "2.8.76";
+export const CURRENT_BUILD_TIME = 1789260000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.76",
+    date: "09/09/2026",
+    title: "Detección Inteligente de Identificaciones Duplicadas y Trazabilidad",
+    highlights: [
+      "Detección Inteligente de Duplicados: Alerta preventiva si el número de arete ya existe en un animal ACTIVO con la misma marca de hierro o mismo dueño/propietario.",
+      "Normalización Avanzada de Formatos: Reconoce equivalencias de separadores (/ , - , _ , \\) y espacios (ej. '1/6' = '1 - 6' = '1-6') sin alterar el texto original guardado.",
+      "Modal Interactivo de Advertencia: Opciones claras para '🔍 Revisar Registro' o '➡️ Continuar de Todas Formas' registrando auditoría en el libro de trazabilidad.",
+      "Integrado en Registro Individual y por Lotes: Validación en vivo en el formulario individual y en el módulo de ingreso masivo por lote con alertas en el Dashboard."
+    ]
+  },
   {
     version: "2.8.75",
     date: "08/09/2026",

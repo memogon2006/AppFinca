@@ -1,7 +1,7 @@
 {
-  "version": "2.8.75",
-  "buildTime": 1789256000000,
-  "description": "Cinta de texto en movimiento continuo (Marquee) en cada tono de confirmación para leer toda la información sin recortes."
+  "version": "2.8.76",
+  "buildTime": 1789260000000,
+  "description": "Detección inteligente de identificaciones duplicadas en animales activos con misma marca o dueño, normalización de formatos y trazabilidad."
 }
 
 

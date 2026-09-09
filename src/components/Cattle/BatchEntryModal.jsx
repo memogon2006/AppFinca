@@ -21,8 +21,12 @@ import {
   Wand2,
   Calendar,
   User,
-  ShieldCheck
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
+import { DuplicateWarningModal } from './DuplicateWarningModal';
 
 const COMMON_COLORS = [
   'Castaño',
@@ -38,7 +42,12 @@ const COMMON_COLORS = [
   'Pintado / Overo'
 ];
 
-export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]' }) {
+export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]', cattleList = [] }) {
+  const { currentUser } = useAuth();
+  const [batchDuplicates, setBatchDuplicates] = useState([]);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState(null);
+
   // Configuración general del lote
   const [batchInfo, setBatchInfo] = useState({
     entryBatch: 'Ingreso #1',
@@ -147,6 +156,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const avgWeight = totalAnimals > 0 ? (totalKilos / totalAnimals) : 0;
   const avgCostPerHead = totalAnimals > 0 ? (totalInvestment / totalAnimals) : 0;
 
+  const executeSaveBatch = (batchAnimalsPayload) => {
+    onSaveBatch(batchAnimalsPayload);
+    onClose();
+  };
+
   // Guardar Lote
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -206,13 +220,58 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       };
     });
 
-    onSaveBatch(batchAnimalsPayload);
-    onClose();
+    // Detectar duplicados frente a animales activos existentes
+    const duplicatesFound = [];
+    validRows.forEach(r => {
+      const matches = findDuplicateCattle(
+        {
+          tagNumber: r.tagNumber,
+          ironBrand: batchInfo.ironBrand,
+          owner: batchInfo.owner,
+        },
+        cattleList
+      );
+      if (matches.length > 0) {
+        duplicatesFound.push(...matches);
+      }
+    });
+
+    if (duplicatesFound.length > 0) {
+      setBatchDuplicates(duplicatesFound);
+      setPendingPayload(batchAnimalsPayload);
+      setIsDuplicateModalOpen(true);
+      return;
+    }
+
+    executeSaveBatch(batchAnimalsPayload);
+  };
+
+  const handleConfirmContinueDuplicate = () => {
+    // Registrar decisiones de bypass en el sistema de trazabilidad
+    batchDuplicates.forEach(dup => {
+      saveTraceabilityLog({
+        userId: currentUser?.id,
+        farmName: currentUser?.farmName,
+        tagNumberEntered: dup.candidate?.tagNumber || dup.animal?.tagNumber,
+        ironBrand: batchInfo.ironBrand,
+        owner: batchInfo.owner,
+        matchingAnimals: [dup.animal],
+        priority: dup.priority || 'MEDIA',
+        reasons: [dup.matchType],
+        notes: `Ingreso por lote (${batchInfo.entryBatch}) confirmado por el usuario pese a alerta de duplicado`,
+      });
+    });
+
+    setIsDuplicateModalOpen(false);
+    if (pendingPayload) {
+      executeSaveBatch(pendingPayload);
+    }
   };
 
   const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === batchInfo.sex);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -605,22 +664,46 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {rows.map((row, idx) => {
                   const rowCost = calculateRowCost(row.entryWeight);
+                  const rowDuplicates = row.tagNumber?.trim() ? findDuplicateCattle(
+                    {
+                      tagNumber: row.tagNumber,
+                      ironBrand: batchInfo.ironBrand,
+                      owner: batchInfo.owner,
+                    },
+                    cattleList
+                  ) : [];
+                  const isRowDuplicate = rowDuplicates.length > 0;
+
                   return (
-                    <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <tr key={row.id} className={`transition ${isRowDuplicate ? 'bg-amber-50/60 dark:bg-amber-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}`}>
                       <td className="p-2.5 text-center font-bold text-slate-400">
                         {idx + 1}
                       </td>
 
                       {/* Arete */}
                       <td className="p-2.5">
-                        <input
-                          type="text"
-                          value={row.tagNumber}
-                          onChange={(e) => handleRowChange(row.id, 'tagNumber', e.target.value)}
-                          placeholder={`Ej. ${idx + 1}`}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 font-extrabold text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
-                          required
-                        />
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={row.tagNumber}
+                            onChange={(e) => handleRowChange(row.id, 'tagNumber', e.target.value)}
+                            placeholder={`Ej. ${idx + 1}`}
+                            className={`w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border ${
+                              isRowDuplicate
+                                ? 'border-amber-500 ring-2 ring-amber-500/20 text-amber-900 dark:text-amber-200'
+                                : 'border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
+                            } font-extrabold text-xs focus:outline-none focus:border-emerald-500`}
+                            required
+                          />
+                          {isRowDuplicate && (
+                            <span 
+                              title={`Coincide con un animal activo existente (${rowDuplicates[0]?.animal?.tagNumber})`}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400 text-[10px] font-bold"
+                            >
+                              ⚠️ Duplicado
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Color */}
@@ -757,5 +840,20 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
       </form>
     </Modal>
+
+    {/* Modal de Advertencia de Identificaciones Duplicadas en Lote */}
+    <DuplicateWarningModal
+      isOpen={isDuplicateModalOpen}
+      onClose={() => setIsDuplicateModalOpen(false)}
+      onConfirmContinue={handleConfirmContinueDuplicate}
+      duplicates={batchDuplicates}
+      candidateData={{
+        tagNumber: batchDuplicates.map(d => d.candidate?.tagNumber || d.animal?.tagNumber).join(', '),
+        ironBrand: batchInfo.ironBrand,
+        owner: batchInfo.owner,
+      }}
+      zIndex="z-[70]"
+    />
+    </>
   );
 }
