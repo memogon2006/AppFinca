@@ -486,15 +486,20 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
           </h4>
 
           {/* Panel de Control de Numeración Consecutiva de la Finca */}
-          <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/10 via-slate-900/5 to-slate-900/10 dark:from-emerald-950/30 dark:via-slate-900/40 dark:to-slate-900/40 border border-emerald-200 dark:border-emerald-800/60 text-xs">
-            <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-sm">
-                  <Hash className="w-3.5 h-3.5" />
+          <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/15 via-slate-900/10 to-slate-900/15 dark:from-emerald-950/40 dark:via-slate-900/50 dark:to-slate-900/50 border-2 border-emerald-500/40 dark:border-emerald-500/50 text-xs shadow-sm">
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/30">
+                  <Hash className="w-4 h-4" />
                 </span>
-                <span className="font-extrabold uppercase tracking-wide text-[11px] text-slate-900 dark:text-white">
-                  Control de Numeración de Finca
-                </span>
+                <div>
+                  <span className="font-black uppercase tracking-wider text-xs sm:text-sm text-slate-900 dark:text-white block">
+                    Control de Numeración de Finca
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Calculado automáticamente sobre todo el historial
+                  </span>
+                </div>
               </div>
 
               {!isEditing && (
@@ -511,45 +516,45 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                           : String(nextNum)
                     }));
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow-sm flex items-center gap-1 cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer min-h-[36px]"
                 >
-                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>Usar sugerido (#{farmConsecutiveStats.nextSuggestedConsecutive})</span>
                 </button>
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center mb-2">
-              <div className="p-2 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 font-semibold block">Último Registrado:</span>
-                <strong className="text-sm font-black text-slate-800 dark:text-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-center mb-2.5">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <span className="text-[10px] sm:text-[11px] text-slate-500 font-bold uppercase block">Último Registrado:</span>
+                <strong className="text-base sm:text-xl font-black text-slate-800 dark:text-slate-200 mt-0.5 block">
                   {farmConsecutiveStats.maxConsecutive > 0 ? `#${farmConsecutiveStats.maxConsecutive}` : 'Ninguno'}
                 </strong>
               </div>
-              <div className="p-2 rounded-xl bg-emerald-500/15 dark:bg-emerald-950/60 border border-emerald-400/80 dark:border-emerald-600/60">
-                <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold block">Siguiente Sugerido:</span>
-                <strong className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+              <div className="p-2.5 rounded-xl bg-emerald-500/20 dark:bg-emerald-950/80 border-2 border-emerald-500 dark:border-emerald-500/80 shadow-xs">
+                <span className="text-[10px] sm:text-[11px] text-emerald-800 dark:text-emerald-300 font-black uppercase block">Siguiente Sugerido:</span>
+                <strong className="text-lg sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5 block">
                   #{farmConsecutiveStats.nextSuggestedConsecutive}
                 </strong>
               </div>
-              <div className="col-span-2 sm:col-span-1 p-2 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col justify-center">
-                <span className="text-[10px] text-slate-500 font-semibold block">Total Histórico:</span>
-                <strong className="text-sm font-black text-slate-700 dark:text-slate-300">
-                  {farmConsecutiveStats.distinctConsecutivesCount} consecutivos
+              <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col justify-center shadow-xs">
+                <span className="text-[10px] sm:text-[11px] text-slate-500 font-bold uppercase block">Total Histórico:</span>
+                <strong className="text-base sm:text-xl font-black text-slate-700 dark:text-slate-300 mt-0.5 block">
+                  {farmConsecutiveStats.distinctConsecutivesCount}
                 </strong>
               </div>
             </div>
 
             {/* Faltantes en secuencia si existen */}
             {farmConsecutiveStats.missingConsecutives.length > 0 && (
-              <p className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold mb-1 flex items-center gap-1">
+              <p className="text-xs text-amber-800 dark:text-amber-300 font-bold mb-1.5 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-lg border border-amber-200 dark:border-amber-800/40">
                 <span>⚠️</span>
                 <span>Faltan en la secuencia histórica: <strong>{farmConsecutiveStats.missingConsecutives.slice(0, 6).join(', ')}{farmConsecutiveStats.missingConsecutives.length > 6 ? '...' : ''}</strong></span>
               </p>
             )}
 
-            <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight">
-              ℹ️ La numeración se calcula usando únicamente el número <strong>antes de <code>-</code> o <code>/</code></strong>. Los números posteriores no modifican el consecutivo.
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+              ℹ️ La numeración se calcula usando únicamente el número <strong>antes de <code>-</code> o <code>/</code></strong> (ej. <strong>25-6 → 25</strong>). Los números posteriores no modifican el consecutivo principal.
             </p>
           </div>
 

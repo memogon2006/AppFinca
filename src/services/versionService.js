@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.77";
-export const CURRENT_BUILD_TIME = 1789264000000;
+export const CURRENT_APP_VERSION = "2.8.78";
+export const CURRENT_BUILD_TIME = 1789266000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.78",
+    date: "09/09/2026",
+    title: "Panel Destacado y Visualización Ampliada del Consecutivo de Finca",
+    highlights: [
+      "Banner de Consecutivo Prominente en Lotes: Se amplió y rediseñó el panel de numeración en el ingreso por lotes con tipografía grande, alto contraste y botón directo para generar series.",
+      "Cifras Grandes y Legibles: Tanto en el registro individual como en lotes, el 'Último Registrado' y el 'Siguiente Sugerido' ahora destacan con máxima visibilidad.",
+      "Acceso Rápido al Generador: Botón directo para iniciar la serie automática con el número sugerido de la finca."
+    ]
+  },
   {
     version: "2.8.77",
     date: "09/09/2026",

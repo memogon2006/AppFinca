@@ -1,7 +1,7 @@
 {
-  "version": "2.8.77",
-  "buildTime": 1789264000000,
-  "description": "Control de numeración consecutiva por finca, extracción antes de guion/slash, detección de saltos y sugerencias automáticas."
+  "version": "2.8.78",
+  "buildTime": 1789266000000,
+  "description": "Visualización ampliada, resaltada y de alto impacto del control de numeración consecutiva en registro individual y lotes."
 }
 
 
