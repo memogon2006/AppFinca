@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.66";
-export const CURRENT_BUILD_TIME = 1789203500000;
+export const CURRENT_APP_VERSION = "2.8.68";
+export const CURRENT_BUILD_TIME = 1789251000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.68",
+    date: "08/09/2026",
+    title: "Feedback Sonoro (Beep de Báscula) y Háptico (Vibración) en Báscula Rápida",
+    highlights: [
+      "Confirmación Auditiva Real: Sonido característico tipo indicador de báscula ganadera ('Beep') sintetizado 100% offline al guardar cada pesaje.",
+      "Vibración Háptica en Móviles: Emisión de vibración táctil confirmatoria al registrar pesos en manga o corral.",
+      "Melodía de Guardado Masivo: Tono arpegiado especial de éxito al guardar el lote completo con 'Guardar Todo'.",
+      "Controles Rápidos en Pantalla: Botones para activar/silenciar sonido, activar/desactivar vibración y botón para 'Probar Beep'."
+    ]
+  },
   {
     version: "2.8.66",
     date: "07/09/2026",

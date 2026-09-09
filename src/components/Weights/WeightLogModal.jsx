@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
 import { Scale, Flame } from 'lucide-react';
 import { formatNumber, formatDate, getDaysDifference, calculateWeightMetrics } from '../../services/calculations';
+import { triggerWeighingFeedback } from '../../services/soundService';
 
 export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight, zIndex = 'z-[60]' }) {
   if (!animal) return null;
@@ -53,15 +54,18 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!weightData.weight || Number(weightData.weight) <= 0) {
+      triggerWeighingFeedback('warning');
       alert('Por favor ingresa un peso válido mayor a 0 kg');
       return;
     }
 
     if (lastRecordedDate && weightData.date < lastRecordedDate) {
+      triggerWeighingFeedback('warning');
       alert(`⚠️ La fecha del pesaje (${formatDate(weightData.date)}) no puede ser anterior a la fecha previa registrada (${formatDate(lastRecordedDate)}). Debe ser una fecha igual o posterior.`);
       return;
     }
 
+    triggerWeighingFeedback('single');
     onSaveWeight({
       cattleId: animal.id,
       date: weightData.date,

@@ -1,7 +1,7 @@
 {
-  "version": "2.8.66",
-  "buildTime": 1789203500000,
-  "description": "Báscula rápida con Número, Marca/Dueño y Color del animal + Auditoría de datos."
+  "version": "2.8.68",
+  "buildTime": 1789251000000,
+  "description": "Feedback Sonoro (Beep de Báscula) y Vibración Háptica en Báscula Rápida y Registro de Pesos."
 }
 
 

@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Scale, Zap, CheckCircle2, Search, Tag, Flame, Check, ArrowRight, AlertCircle, Calendar, Trash2, Sparkles } from 'lucide-react';
+import { 
+  Scale, 
+  Zap, 
+  CheckCircle2, 
+  Search, 
+  Tag, 
+  Flame, 
+  Check, 
+  ArrowRight, 
+  AlertCircle, 
+  Calendar, 
+  Trash2, 
+  Sparkles,
+  Volume2,
+  VolumeX,
+  Smartphone
+} from 'lucide-react';
 import { calculateWeightMetrics, formatDate } from '../../services/calculations';
+import { 
+  triggerWeighingFeedback, 
+  playScaleBeep, 
+  isSoundEnabled, 
+  setSoundEnabled, 
+  isHapticEnabled, 
+  setHapticEnabled 
+} from '../../services/soundService';
 
 const DRAFT_WEIGHTS_KEY = 'bovina_quick_weights_draft';
 
@@ -16,6 +40,32 @@ export function QuickWeighinView({
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const dateInputRef = useRef(null);
   
+  // Feedback sonoro y háptico
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+  const [hapticOn, setHapticOn] = useState(() => isHapticEnabled());
+
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) {
+      triggerWeighingFeedback('single');
+    }
+  };
+
+  const toggleHaptic = () => {
+    const next = !hapticOn;
+    setHapticOn(next);
+    setHapticEnabled(next);
+    if (next) {
+      triggerWeighingFeedback('single');
+    }
+  };
+
+  const handleTestBeep = () => {
+    triggerWeighingFeedback('single');
+  };
+
   // La fecha SIEMPRE inicia vacía por solicitud explícita del usuario
   const [weighDate, setWeighDate] = useState('');
 
@@ -81,6 +131,7 @@ export function QuickWeighinView({
 
   const handleSaveSingle = async (animal) => {
     if (!weighDate || weighDate.trim() === '') {
+      triggerWeighingFeedback('warning');
       alert('⚠️ Se tiene que añadir fecha para continuar. Los pesos ingresados se mantendrán intactos.');
       if (dateInputRef.current) {
         dateInputRef.current.focus();
@@ -93,12 +144,14 @@ export function QuickWeighinView({
     const lastRecordedDate = existingDates.length > 0 ? existingDates[existingDates.length - 1] : (animal.entryDate || '');
 
     if (lastRecordedDate && weighDate < lastRecordedDate) {
+      triggerWeighingFeedback('warning');
       alert(`⚠️ La fecha del pesaje (${formatDate(weighDate)}) no puede ser anterior a la última fecha registrada para el animal ${animal.tagNumber} (${formatDate(lastRecordedDate)}). Debe ser una fecha igual o posterior.`);
       return;
     }
 
     const wVal = parseFloat(weightsMap[animal.id]);
     if (!wVal || wVal <= 0) {
+      triggerWeighingFeedback('warning');
       alert('Por favor ingresa un peso válido mayor a 0 kg');
       return;
     }
@@ -118,6 +171,9 @@ export function QuickWeighinView({
         notes: 'Pesaje rápido de báscula'
       }]);
 
+      // FEEDBACK SONORO (BEEP DE BÁSCULA) Y HÁPTICO (VIBRACIÓN)
+      triggerWeighingFeedback('single');
+
       // Marcar en VERDE permanente en esta sesión y limpiar el input de borrador
       setSavedSuccessMap(prev => ({ ...prev, [animal.id]: wVal }));
       setWeightsMap(prev => {
@@ -126,6 +182,7 @@ export function QuickWeighinView({
         return next;
       });
     } catch (e) {
+      triggerWeighingFeedback('warning');
       alert('Error guardando pesaje: ' + (e.message || e));
     } finally {
       setSaving(false);
@@ -134,6 +191,7 @@ export function QuickWeighinView({
 
   const handleSaveAllFilled = async () => {
     if (!weighDate || weighDate.trim() === '') {
+      triggerWeighingFeedback('warning');
       alert('⚠️ Se tiene que añadir fecha para continuar. Todos los pesos ingresados se mantendrán guardados.');
       if (dateInputRef.current) {
         dateInputRef.current.focus();
@@ -156,6 +214,7 @@ export function QuickWeighinView({
     });
 
     if (invalidAnimals.length > 0) {
+      triggerWeighingFeedback('warning');
       const sample = invalidAnimals[0];
       alert(`⚠️ La fecha de pesaje (${formatDate(weighDate)}) no puede ser anterior a la última fecha registrada del animal ${sample.tag} (${formatDate(sample.lastDate)}). Por favor selecciona una fecha igual o posterior.`);
       return;
@@ -179,6 +238,7 @@ export function QuickWeighinView({
     });
 
     if (batch.length === 0) {
+      triggerWeighingFeedback('warning');
       alert('No has ingresado ningún peso nuevo todavía.');
       return;
     }
@@ -192,6 +252,9 @@ export function QuickWeighinView({
       setSaving(true);
       await saveBatchFn(batch);
       
+      // FEEDBACK SONORO MELÓDICO Y VIBRACIÓN DE LOTE
+      triggerWeighingFeedback('batch');
+
       // Marcar en VERDE todos los registrados
       setSavedSuccessMap(prev => ({ ...prev, ...savedIds }));
       
@@ -204,6 +267,7 @@ export function QuickWeighinView({
         return next;
       });
     } catch (e) {
+      triggerWeighingFeedback('warning');
       alert('Error guardando pesajes: ' + (e.message || e));
     } finally {
       setSaving(false);
@@ -303,6 +367,52 @@ export function QuickWeighinView({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Barra de Controles Rápidos: Sonido Beep & Vibración Háptica */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm text-xs">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-amber-500" /> Feedback en Manga:
+          </span>
+
+          {/* Toggle Sonido */}
+          <button
+            onClick={toggleSound}
+            className={`px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer border text-xs ${
+              soundOn
+                ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/60'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700'
+            }`}
+            title={soundOn ? 'Desactivar sonido Beep de báscula' : 'Activar sonido Beep de báscula'}
+          >
+            {soundOn ? <Volume2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span>{soundOn ? '🔊 Beep Báscula: Activado' : '🔇 Beep: Silenciado'}</span>
+          </button>
+
+          {/* Toggle Vibración */}
+          <button
+            onClick={toggleHaptic}
+            className={`px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer border text-xs ${
+              hapticOn
+                ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700/60'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700'
+            }`}
+            title={hapticOn ? 'Desactivar vibración en celular' : 'Activar vibración en celular'}
+          >
+            <Smartphone className={`w-3.5 h-3.5 ${hapticOn ? 'text-teal-600 dark:text-teal-400' : ''}`} />
+            <span>{hapticOn ? '📳 Vibración: Activada' : '📳 Vibración: Desactivada'}</span>
+          </button>
+        </div>
+
+        {/* Botón Probar Beep */}
+        <button
+          onClick={handleTestBeep}
+          className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-extrabold flex items-center gap-1.5 transition cursor-pointer active:scale-95 text-xs shadow-sm"
+          title="Emitir sonido y vibración de prueba"
+        >
+          <span>🎯 Probar Beep</span>
+        </button>
       </div>
 
       {activeCattle.length === 0 ? (
