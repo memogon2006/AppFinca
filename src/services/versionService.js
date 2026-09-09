@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.81";
-export const CURRENT_BUILD_TIME = 1789274600000;
+export const CURRENT_APP_VERSION = "2.8.82";
+export const CURRENT_BUILD_TIME = 1789275000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.82",
+    date: "09/09/2026",
+    title: "Ajuste de Tamaño y Adaptabilidad Perfecta de la Barra Superior",
+    highlights: [
+      "Diseño Compacto en Barra Superior: Ajuste de dimensiones y espaciados en la cabecera para que todos los botones (Calendario, Bovino, Excel, WhatsApp, Nube, Tema, Perfil y Salir) encajen al 100% sin desbordarse ni cortarse.",
+      "Indicador de Fecha y Calendario Adaptativo: Formato ultracompacto en laptops y expandido en pantallas gigantes.",
+      "Alineación Impecable: Botones equilibrados con tipografía limpia y sin saltos de línea."
+    ]
+  },
   {
     version: "2.8.81",
     date: "09/09/2026",
