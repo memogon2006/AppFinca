@@ -1,7 +1,7 @@
 {
-  "version": "2.8.68",
-  "buildTime": 1789251000000,
-  "description": "Feedback Sonoro (Beep de Báscula) y Vibración Háptica en Báscula Rápida y Registro de Pesos."
+  "version": "2.8.69",
+  "buildTime": 1789251500000,
+  "description": "Sonido confirmatorio Beep en registro y edición de animales, y campana en nuevas actualizaciones."
 }
 
 

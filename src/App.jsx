@@ -25,6 +25,7 @@ import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { WhatsAppReportModal } from './components/Common/WhatsAppReportModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
+import { triggerFeedback } from './services/soundService';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -225,6 +226,7 @@ export default function App() {
       setIsFormModalOpen(false);
       setEditingAnimal(null);
       cloudPushData(userId);
+      triggerFeedback('single');
       showToast(`Bovino ${animalData.tagNumber} actualizado y sincronizado en la nube ☁️`);
     } else {
       const newId = 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -252,6 +254,7 @@ export default function App() {
       setIsFormModalOpen(false);
       setEditingAnimal(null);
       cloudPushData(userId);
+      triggerFeedback('single');
       showToast(`¡Bovino ${created.tagNumber} registrado y sincronizado en la nube! ☁️`);
     }
   };
@@ -287,6 +290,7 @@ export default function App() {
 
     setIsBatchEntryModalOpen(false);
     cloudPushData(userId);
+    triggerFeedback('batch');
     showToast(`¡Lote de ${batchAnimals.length} bovinos registrado y guardado exitosamente! 📦☁️`, 'success');
   };
 
@@ -322,6 +326,7 @@ export default function App() {
     setIsWeightModalOpen(false);
     setWeighingAnimal(null);
     cloudPushData(userId);
+    triggerFeedback('single');
     showToast(`Pesaje de ${weight} kg registrado y sincronizado en la nube ☁️`);
   };
 
@@ -365,6 +370,7 @@ export default function App() {
     }
 
     cloudPushData(userId);
+    triggerFeedback('warning');
     showToast('Registro de pesaje eliminado y peso actual recalculado ⚖️');
   };
 
@@ -393,6 +399,7 @@ export default function App() {
     setIsSellModalOpen(false);
     setSellingAnimal(null);
     cloudPushData(userId);
+    triggerFeedback('single');
     showToast(`Venta liquidada y sincronizada en la nube ☁️`);
   };
 
@@ -417,6 +424,7 @@ export default function App() {
     }
 
     cloudPushData(userId);
+    triggerFeedback('batch');
     showToast(`¡Liquidación de ${batchList.length} bovinos asentada y sincronizada en la nube! ☁️`);
   };
 
@@ -456,6 +464,7 @@ export default function App() {
     setIsDeathModalOpen(false);
     setDeathAnimal(null);
     cloudPushData(userId);
+    triggerFeedback('warning');
     showToast(`Bovino dado de baja por muerte y sincronizado ☁️`);
   };
 

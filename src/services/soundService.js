@@ -172,12 +172,48 @@ export function playWarningSound() {
 }
 
 /**
- * Función integral que ejecuta sonido + vibración al confirmar pesaje
+ * Genera tono de actualización o novedad importante
  */
-export function triggerWeighingFeedback(type = 'single') {
+export function playUpdateChime() {
+  if (!isSoundEnabled()) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    const now = ctx.currentTime;
+    const notes = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
+
+    notes.forEach((freq, idx) => {
+      const start = now + (idx * 0.08);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.22);
+    });
+  } catch (err) {
+    console.warn('Update chime error:', err);
+  }
+}
+
+/**
+ * Función integral que ejecuta sonido + vibración según la acción realizada
+ */
+export function triggerFeedback(type = 'single') {
   if (type === 'batch') {
     playBatchSuccessSound();
     triggerHaptic([60, 40, 60, 40, 120]);
+  } else if (type === 'update') {
+    playUpdateChime();
+    triggerHaptic([80, 50, 80, 50, 150]);
   } else if (type === 'warning') {
     playWarningSound();
     triggerHaptic([150, 70, 150]);
@@ -186,3 +222,6 @@ export function triggerWeighingFeedback(type = 'single') {
     triggerHaptic([50, 30, 50]);
   }
 }
+
+export const triggerWeighingFeedback = triggerFeedback;
+

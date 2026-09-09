@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.68";
-export const CURRENT_BUILD_TIME = 1789251000000;
+export const CURRENT_APP_VERSION = "2.8.69";
+export const CURRENT_BUILD_TIME = 1789251500000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.69",
+    date: "08/09/2026",
+    title: "Sonido y Vibración en Registro, Edición de Animales y Detección de Actualizaciones",
+    highlights: [
+      "Confirmación Auditiva en Registro & Edición: Cada vez que creas o modificas un animal, lote, pesaje o venta, el sistema emite el 'Beep' confirmatorio con vibración.",
+      "Tono Melódico de Actualización: Al detectarse una nueva versión o generarse una actualización en el sistema, la app emite una campana / acorde de anuncio.",
+      "Operación 100% Offline: Síntesis de sonido Web Audio nativa ultrarrápida sin consumo de datos ni dependencias externas."
+    ]
+  },
   {
     version: "2.8.68",
     date: "08/09/2026",

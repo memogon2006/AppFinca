@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
 import { checkAppUpdate, applyAppUpdate } from '../../services/versionService';
+import { triggerFeedback } from '../../services/soundService';
 
 export function UpdateNotificationBanner() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const hasAnnouncedUpdateRef = useRef(false);
 
   // Comprobar actualizaciones al cargar y periódicamente cada 3 minutos
   useEffect(() => {
@@ -15,6 +17,11 @@ export function UpdateNotificationBanner() {
       const res = await checkAppUpdate();
       if (mounted && res.hasUpdate) {
         setUpdateInfo(res);
+        if (!hasAnnouncedUpdateRef.current) {
+          hasAnnouncedUpdateRef.current = true;
+          // SONIDO Y VIBRACIÓN AL DETECTAR NUEVA ACTUALIZACIÓN
+          triggerFeedback('update');
+        }
       }
     }
 
@@ -34,6 +41,7 @@ export function UpdateNotificationBanner() {
   }, []);
 
   const handleUpdateClick = async () => {
+    triggerFeedback('update');
     setUpdating(true);
     await applyAppUpdate();
   };
