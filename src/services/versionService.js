@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.71";
-export const CURRENT_BUILD_TIME = 1789252500000;
+export const CURRENT_APP_VERSION = "2.8.72";
+export const CURRENT_BUILD_TIME = 1789253000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.72",
+    date: "08/09/2026",
+    title: "Ajuste y Adaptabilidad Total del Aviso de Actualización en Celulares",
+    highlights: [
+      "Diseño 100% Responsivo en Celulares: El aviso de actualización ahora se adapta perfectamente al ancho de cualquier pantalla móvil sin cortar textos ni botones.",
+      "Lectura Completa de Novedades: Eliminado el recorte de texto para que puedas leer todas las mejoras de la nueva versión con claridad.",
+      "Botones Ergonómicos de Acción: Botones amplios y cómodos para actualizar de inmediato o posponer con un solo toque."
+    ]
+  },
   {
     version: "2.8.71",
     date: "08/09/2026",
