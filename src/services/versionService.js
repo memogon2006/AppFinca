@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.80";
-export const CURRENT_BUILD_TIME = 1789274000000;
+export const CURRENT_APP_VERSION = "2.8.81";
+export const CURRENT_BUILD_TIME = 1789274600000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.81",
+    date: "09/09/2026",
+    title: "Actualización Instantánea en 1 Clic & Calendario Ganadero en Tiempo Real",
+    highlights: [
+      "Espacio de Calendario & Fecha en Tiempo Real: Tarjeta interactiva en el Tablero principal y botón directo en la barra superior.",
+      "Actualización Instantánea en 1 Clic: Limpieza profunda de cachés obsoletos y desregistro automático de Service Worker para aplicar cambios de inmediato sin trabarse.",
+      "Trazabilidad Automática de Finca: Mapeo de pesajes, ingresos, ventas, partos estimados y notas de campo 100% offline."
+    ]
+  },
   {
     version: "2.8.80",
     date: "09/09/2026",
@@ -585,24 +595,33 @@ export async function checkAppUpdate() {
 }
 
 /**
- * Aplica la actualización limpiando cachés del navegador y recargando la aplicación
+ * Aplica la actualización limpiando cachés del navegador, desregistrando service workers obsoletos y recargando limpiamente
  */
 export async function applyAppUpdate() {
   try {
+    // 1. Desregistrar todos los service workers antiguos para forzar el nuevo código
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        try {
+          await registration.unregister();
+        } catch (swErr) {
+          console.warn('Error desregistrando service worker:', swErr);
+        }
+      }
+    }
+
+    // 2. Limpiar todos los cachés del navegador
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
     }
 
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        await registration.update();
-      }
-    }
+    // 3. Redireccionar con parámetro anti-caché
+    const cleanUrl = window.location.origin + window.location.pathname + `?_v=${Date.now()}`;
+    window.location.replace(cleanUrl);
   } catch (e) {
     console.warn('Error limpiando caché:', e);
-  } finally {
-    window.location.reload(true);
+    window.location.reload();
   }
 }
