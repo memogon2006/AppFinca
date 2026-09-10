@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.93";
-export const CURRENT_BUILD_TIME = 1789320000000;
+export const CURRENT_APP_VERSION = "2.8.94";
+export const CURRENT_BUILD_TIME = 1789324000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.94",
+    date: "10/09/2026",
+    title: "Meses y Ciclos Sanitarios Oficiales Marcados en el Calendario",
+    highlights: [
+      "Ribbon de 12 Meses con Ciclos Sanitarios: Navegador rápido de los 12 meses del año con insignias interactivas que destacan los meses oficiales ICA (Mayo, Junio, Noviembre, Diciembre) y temporadas preventivas (Marzo, Abril, Septiembre, Octubre).",
+      "Banner Informativo de Ciclo en Pantalla: Muestra en tiempo real qué biológicos corresponden al mes visualizado, si el hato ya fue vacunado (con RUV y fecha) o si el ciclo está en curso.",
+      "Marcación en Celdas del Calendario: Cada día del mes dentro de un ciclo sanitario cuenta con un distintivo visual (💉 / 🔥 / 💊) que contextualiza la jornada.",
+      "Widget de Calendario en Tablero: Alerta activa del ciclo en el widget principal del tablero con botón directo a la agenda completa."
+    ]
+  },
   {
     version: "2.8.93",
     date: "10/09/2026",

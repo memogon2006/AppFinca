@@ -18,7 +18,12 @@ import {
   Bell, 
   Sparkles,
   MapPin,
-  CalendarDays
+  CalendarDays,
+  ShieldCheck,
+  AlertTriangle,
+  FileText,
+  Activity,
+  Info
 } from 'lucide-react';
 import { formatDate, formatNumber, formatCurrency, BOVINE_GESTATION_DAYS } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
@@ -28,7 +33,76 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
+const MONTH_SHORT_NAMES = [
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+];
+
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+// Definición oficial de temporadas y ciclos de vacunación en Colombia
+export const SANITARY_CYCLES_INFO = [
+  {
+    id: 'ciclo-1',
+    months: [4, 5, 6], // Mayo (4), Junio (5), Julio (6)
+    name: 'Ciclo I Oficial FEDEGAN / ICA',
+    shortName: 'Ciclo I ICA',
+    focus: 'Fiebre Aftosa + Brucelosis Bovina (Obligatoria ICA)',
+    badge: '🏛️ CICLO I OFICIAL ICA',
+    badgeClass: 'bg-emerald-600 text-white',
+    borderClass: 'border-emerald-500/50 bg-emerald-50/90 dark:bg-emerald-950/40',
+    textClass: 'text-emerald-900 dark:text-emerald-200',
+    type: 'official',
+    desc: 'Periodo oficial nacional de vacunación obligatoria contra Fiebre Aftosa y Brucelosis Bovina (3-9 meses). Requiere expedición del RUV para venta y movilización.',
+    pillIcon: '💉',
+    pillColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-400'
+  },
+  {
+    id: 'ciclo-2',
+    months: [10, 11, 0, 1], // Noviembre (10), Diciembre (11), Enero (0), Febrero (1)
+    name: 'Ciclo II Oficial FEDEGAN / ICA',
+    shortName: 'Ciclo II ICA',
+    focus: 'Revacunación Fiebre Aftosa + Brucelosis (Obligatoria ICA)',
+    badge: '🏛️ CICLO II OFICIAL ICA',
+    badgeClass: 'bg-emerald-600 text-white',
+    borderClass: 'border-emerald-500/50 bg-emerald-50/90 dark:bg-emerald-950/40',
+    textClass: 'text-emerald-900 dark:text-emerald-200',
+    type: 'official',
+    desc: 'Segundo ciclo obligatorio nacional para sostener el estatus sanitario libre de aftosa. Se aplica a todo el hato y terneras nuevas.',
+    pillIcon: '💉',
+    pillColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-400'
+  },
+  {
+    id: 'carbon',
+    months: [2, 3], // Marzo (2), Abril (3)
+    name: 'Temporada Preventiva: Entrada de Aguas',
+    shortName: 'Carbón Triple',
+    focus: 'Carbón Sintomático / Mancha / Gangrena (Triple Clostridial)',
+    badge: '🔥 PREVENTIVA CLOSTRIDIOSIS',
+    badgeClass: 'bg-amber-500 text-slate-950',
+    borderClass: 'border-amber-500/50 bg-amber-50/90 dark:bg-amber-950/40',
+    textClass: 'text-amber-900 dark:text-amber-200',
+    type: 'preventive',
+    desc: 'Vacunación preventiva recomendada antes de la temporada de lluvias para evitar mortandad súbita por Clostridiosis en animales jóvenes y adultos.',
+    pillIcon: '🔥',
+    pillColor: 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border-amber-400'
+  },
+  {
+    id: 'refuerzo',
+    months: [7, 8, 9], // Agosto (7), Septiembre (8), Octubre (9)
+    name: 'Temporada: Refuerzo Sanitario & Vitaminización',
+    shortName: 'Refuerzo & Vitaminas',
+    focus: 'Refuerzo Carbón Triple + Vitaminas A, D, E + Desparasitación',
+    badge: '💊 REFUERZO & VITAMINAS',
+    badgeClass: 'bg-teal-600 text-white',
+    borderClass: 'border-teal-500/50 bg-teal-50/90 dark:bg-teal-950/40',
+    textClass: 'text-teal-900 dark:text-teal-200',
+    type: 'preventive',
+    desc: 'Refuerzo inmunitario y nutricional de mitad de semestre para maximizar la ganancia diaria de peso (GDP) y sostener la fertilidad del hato.',
+    pillIcon: '💊',
+    pillColor: 'bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-300 border-teal-400'
+  }
+];
 
 const NOTE_CATEGORIES = [
   { id: 'general', label: 'General', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
@@ -369,6 +443,62 @@ export function FarmCalendarModal({
     }
   };
 
+  // Temporada o ciclo sanitario del mes en pantalla
+  const currentViewCycle = useMemo(() => {
+    const cycle = SANITARY_CYCLES_INFO.find(c => c.months.includes(viewMonth));
+    if (!cycle) return null;
+
+    let recorded = null;
+    if (cycle.type === 'official') {
+      recorded = vaccinations.find(v => 
+        (v.vaccineCodes?.includes('aftosa') || v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
+        (new Date(v.date).getFullYear() === viewYear || (viewMonth <= 1 && new Date(v.date).getFullYear() === viewYear - 1))
+      );
+    } else {
+      recorded = vaccinations.find(v => 
+        (v.vaccineCodes?.includes('carbon') || v.vaccineCodes?.includes('vitaminas') || v.vaccineCodes?.includes('desparasitante') ||
+         v.vaccineCode === 'carbon' || (v.vaccineType && (v.vaccineType.toLowerCase().includes('carbón') || v.vaccineType.toLowerCase().includes('vitamina') || v.vaccineType.toLowerCase().includes('desparasitante')))) &&
+        new Date(v.date).getFullYear() === viewYear
+      );
+    }
+
+    return {
+      ...cycle,
+      isRecorded: !!recorded,
+      recordedData: recorded
+    };
+  }, [viewMonth, viewYear, vaccinations]);
+
+  // Mapa de ciclos por cada uno de los 12 meses del año
+  const monthsCycleMap = useMemo(() => {
+    return MONTH_SHORT_NAMES.map((mName, idx) => {
+      const cycle = SANITARY_CYCLES_INFO.find(c => c.months.includes(idx));
+      if (!cycle) return { monthIndex: idx, name: mName, cycle: null, isRecorded: false, recordedData: null };
+
+      let recorded = null;
+      if (cycle.type === 'official') {
+        recorded = vaccinations.find(v => 
+          (v.vaccineCodes?.includes('aftosa') || v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
+          (new Date(v.date).getFullYear() === viewYear || (idx <= 1 && new Date(v.date).getFullYear() === viewYear - 1))
+        );
+      } else {
+        recorded = vaccinations.find(v => 
+          (v.vaccineCodes?.includes('carbon') || v.vaccineCodes?.includes('vitaminas') || v.vaccineCodes?.includes('desparasitante') ||
+           v.vaccineCode === 'carbon' || (v.vaccineType && (v.vaccineType.toLowerCase().includes('carbón') || v.vaccineType.toLowerCase().includes('vitamina') || v.vaccineType.toLowerCase().includes('desparasitante')))) &&
+          new Date(v.date).getFullYear() === viewYear
+        );
+      }
+
+      return {
+        monthIndex: idx,
+        name: mName,
+        cycle,
+        isRecorded: !!recorded,
+        recordedData: recorded
+      };
+    });
+  }, [viewYear, vaccinations]);
+
   return (
     <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>
       <div className="relative w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
@@ -470,12 +600,106 @@ export function FarmCalendarModal({
 
         </div>
 
+        {/* Ribbon de los 12 Meses del Año con Indicadores de Ciclos Sanitarios */}
+        <div className="px-4 sm:px-6 py-2 bg-slate-100/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 whitespace-nowrap mr-1 flex items-center gap-1">
+            <CalendarDays className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Meses {viewYear}:</span>
+          </span>
+          {monthsCycleMap.map((m) => {
+            const isCurrentView = m.monthIndex === viewMonth;
+            const isActualMonth = now.getMonth() === m.monthIndex && now.getFullYear() === viewYear;
+            const hasCycle = !!m.cycle;
+
+            return (
+              <button
+                key={m.monthIndex}
+                onClick={() => {
+                  setViewMonth(m.monthIndex);
+                  triggerFeedback('click');
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 whitespace-nowrap cursor-pointer select-none border ${
+                  isCurrentView
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm ring-2 ring-emerald-500/30 font-black'
+                    : hasCycle
+                      ? m.cycle.type === 'official'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100'
+                        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100'
+                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                }`}
+                title={hasCycle ? `${m.name}: ${m.cycle.name} (${m.cycle.focus})` : m.name}
+              >
+                <span>{m.name}</span>
+                {hasCycle && (
+                  <span className="text-[11px]">{m.cycle.pillIcon}</span>
+                )}
+                {m.isRecorded && (
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/20 ml-0.5" />
+                )}
+                {isActualMonth && !isCurrentView && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-0.5 animate-pulse" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Cuerpo Principal del Calendario (Grid Dividido: Calendario + Agenda del Día) */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* COLUMNA 1 (lg:col-span-7): Cuadrícula del Calendario Mensual */}
           <div className="lg:col-span-7 space-y-3">
             
+            {/* Banner Informativo de Ciclo Sanitario Activo del Mes */}
+            {currentViewCycle && (
+              <div className={`p-3.5 sm:p-4 rounded-2xl border ${currentViewCycle.borderClass} shadow-sm space-y-2 animate-fadeIn`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm flex-shrink-0 mt-0.5">
+                      <Syringe className={`w-4 h-4 ${currentViewCycle.iconColor}`} />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`px-2.5 py-0.5 rounded-full font-black text-[10px] uppercase tracking-wide ${currentViewCycle.badgeClass}`}>
+                          {currentViewCycle.badge}
+                        </span>
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                          {currentViewCycle.name}
+                        </h4>
+                      </div>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">
+                        💉 <strong>Biológicos Requeridos:</strong> {currentViewCycle.focus}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Estado de Vacunación en Finca */}
+                  <div className="flex items-center gap-2 self-start sm:self-center flex-shrink-0">
+                    {currentViewCycle.isRecorded ? (
+                      <div className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center gap-1.5 shadow-sm">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>✅ Vacunado {currentViewCycle.recordedData?.ruvNumber ? `(RUV: ${currentViewCycle.recordedData.ruvNumber})` : ''}</span>
+                      </div>
+                    ) : (
+                      onOpenVaccinationModal && (
+                        <button
+                          onClick={onOpenVaccinationModal}
+                          className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-700/30 transition cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Registrar Vacuna</span>
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60">
+                  {currentViewCycle.desc}
+                </p>
+              </div>
+            )}
+
             {/* Cabecera de Días de la Semana */}
             <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
               {DAY_NAMES.map(d => (
@@ -520,11 +744,19 @@ export function FarmCalendarModal({
                         {day.dayNumber}
                       </span>
 
-                      {day.isToday && (
-                        <span className="text-[8px] font-black uppercase px-1 rounded bg-amber-400 text-slate-950">
-                          HOY
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {day.isCurrentMonth && currentViewCycle && !day.isToday && !isSelected && (
+                          <span className="text-[10px] opacity-75" title={`Mes de ${currentViewCycle.name}`}>
+                            {currentViewCycle.pillIcon}
+                          </span>
+                        )}
+
+                        {day.isToday && (
+                          <span className="text-[8px] font-black uppercase px-1 rounded bg-amber-400 text-slate-950">
+                            HOY
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Indicadores de Eventos del Día */}
@@ -561,11 +793,16 @@ export function FarmCalendarModal({
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Ventas
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Partos
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Vacunaciones
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-teal-500"></span> Notas / Tareas
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Partos
               </span>
+              {currentViewCycle && (
+                <span className={`flex items-center gap-1 font-bold ${currentViewCycle.textClass}`}>
+                  <span>{currentViewCycle.pillIcon}</span> {currentViewCycle.shortName}
+                </span>
+              )}
             </div>
 
           </div>

@@ -10,9 +10,11 @@ import {
   Baby, 
   Sparkles,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Syringe
 } from 'lucide-react';
 import { formatDate, BOVINE_GESTATION_DAYS } from '../../services/calculations';
+import { SANITARY_CYCLES_INFO } from './FarmCalendarModal';
 
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -205,12 +207,30 @@ export function FarmCalendarWidget({
     day: 'numeric'
   });
 
-  const timeFormatted = now.toLocaleTimeString('es-CO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  });
+  const activeCycle = useMemo(() => {
+    const cycle = SANITARY_CYCLES_INFO.find(c => c.months.includes(viewMonth));
+    if (!cycle) return null;
+
+    let recorded = null;
+    if (cycle.type === 'official') {
+      recorded = vaccinations.find(v => 
+        (v.vaccineCodes?.includes('aftosa') || v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
+        (new Date(v.date).getFullYear() === viewYear || (viewMonth <= 1 && new Date(v.date).getFullYear() === viewYear - 1))
+      );
+    } else {
+      recorded = vaccinations.find(v => 
+        (v.vaccineCodes?.includes('carbon') || v.vaccineCodes?.includes('vitaminas') || v.vaccineCodes?.includes('desparasitante') ||
+         v.vaccineCode === 'carbon' || (v.vaccineType && (v.vaccineType.toLowerCase().includes('carbón') || v.vaccineType.toLowerCase().includes('vitamina') || v.vaccineType.toLowerCase().includes('desparasitante')))) &&
+        new Date(v.date).getFullYear() === viewYear
+      );
+    }
+
+    return {
+      ...cycle,
+      isRecorded: !!recorded,
+      recordedData: recorded
+    };
+  }, [viewMonth, viewYear, vaccinations]);
 
   return (
     <div className="rounded-3xl bg-gradient-to-br from-white via-slate-50 to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-teal-950/20 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all p-5 overflow-hidden relative group">
@@ -268,6 +288,45 @@ export function FarmCalendarWidget({
         </button>
 
       </div>
+
+      {/* Banner de Ciclo Sanitario Activo si corresponde al mes actual */}
+      {activeCycle && (
+        <div 
+          onClick={onOpenCalendar}
+          className={`mt-4 p-3 rounded-2xl border ${activeCycle.borderClass} flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs cursor-pointer hover:opacity-95 transition shadow-sm`}
+        >
+          <div className="flex items-start sm:items-center gap-2.5">
+            <span className="text-lg mt-0.5 sm:mt-0">{activeCycle.pillIcon}</span>
+            <div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className={`px-2 py-0.5 rounded-full font-black text-[9px] uppercase tracking-wider ${activeCycle.badgeClass}`}>
+                  {activeCycle.badge}
+                </span>
+                <span className="font-black text-slate-900 dark:text-white">
+                  {activeCycle.name}
+                </span>
+              </div>
+              <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-0.5">
+                💉 {activeCycle.focus}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 self-start sm:self-center shrink-0">
+            {activeCycle.isRecorded ? (
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-sm">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Vacunado {activeCycle.recordedData?.ruvNumber ? `(RUV: ${activeCycle.recordedData.ruvNumber})` : ''}</span>
+              </span>
+            ) : (
+              <span className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] flex items-center gap-1.5 shadow-sm">
+                <Syringe className="w-3.5 h-3.5" />
+                <span>⏳ Ciclo en curso</span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bottom Grid: Mini Calendar Preview & Today's Summary */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4">
