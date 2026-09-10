@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.91";
-export const CURRENT_BUILD_TIME = 1789312000000;
+export const CURRENT_APP_VERSION = "2.8.92";
+export const CURRENT_BUILD_TIME = 1789316000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.92",
+    date: "10/09/2026",
+    title: "Acceso Directo a Censo ICA y Registro de Vacunación en el Banner Principal",
+    highlights: [
+      "Botones en Banner Principal: Integración de los botones directos '📄 Censo ICA / RUV' y '+ Registrar Vacunación' en la barra superior del Tablero (Control de Inventario, Pesos & Rentabilidad).",
+      "Acceso Rápido en Inventario: Disponibles también en la barra de herramientas del inventario de ganado para acceso instantáneo.",
+      "Flujo Sanitario Fluido: Abre el reporte oficial para imprimir o registra jornadas de vacunación directamente desde cualquier sección clave sin tener que desplazarte."
+    ]
+  },
   {
     version: "2.8.91",
     date: "10/09/2026",

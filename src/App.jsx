@@ -780,6 +780,8 @@ export default function App() {
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
+            onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
+            onOpenCensusModal={() => setIsCensusModalOpen(true)}
           />
         )}
 

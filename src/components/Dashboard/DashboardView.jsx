@@ -19,7 +19,9 @@ import {
   PieChart as PieIcon,
   BarChart3,
   PackagePlus,
-  MessageCircle
+  MessageCircle,
+  FileText,
+  Syringe
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
@@ -112,6 +114,28 @@ export function DashboardView({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {onOpenCensusModal && (
+              <button
+                onClick={onOpenCensusModal}
+                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-emerald-400/30 transition backdrop-blur-sm cursor-pointer shadow-sm"
+                title="Ver y exportar censo poblacional oficial ICA / FEDEGAN"
+              >
+                <FileText className="w-4 h-4 text-emerald-300" />
+                <span>📄 Censo ICA / RUV</span>
+              </button>
+            )}
+
+            {onOpenVaccinationModal && (
+              <button
+                onClick={onOpenVaccinationModal}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 border border-emerald-400/40 transition cursor-pointer"
+                title="Registrar vacunación o plan sanitario oficial"
+              >
+                <Syringe className="w-4 h-4 text-emerald-200" />
+                <span>+ Registrar Vacunación</span>
+              </button>
+            )}
+
             {onOpenGlossary && (
               <button
                 onClick={onOpenGlossary}

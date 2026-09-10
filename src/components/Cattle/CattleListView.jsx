@@ -27,7 +27,9 @@ import {
   HelpCircle,
   Users,
   PackagePlus,
-  MessageCircle
+  MessageCircle,
+  FileText,
+  Syringe
 } from 'lucide-react';
 
 export function CattleListView({ 
@@ -47,7 +49,9 @@ export function CattleListView({
   onDelete,
   onOpenGlossary,
   onOpenPartnershipModal,
-  onOpenWhatsAppReport
+  onOpenWhatsAppReport,
+  onOpenCensusModal,
+  onOpenVaccinationModal
 }) {
   const handleOpenNewAnimalSafe = onOpenNewAnimal || onOpenNew;
   const handleDeleteAnimalSafe = onDeleteAnimal || onDelete;
@@ -301,6 +305,30 @@ export function CattleListView({
 
         {/* Botones de Acción a la Derecha */}
         <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto overflow-x-auto no-scrollbar py-0.5 justify-start xl:justify-end shrink-0">
+          {/* Botón Censo Sanitario ICA */}
+          {onOpenCensusModal && (
+            <button
+              onClick={onOpenCensusModal}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-slate-300 dark:border-slate-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
+              title="Ver y exportar censo poblacional oficial ICA / FEDEGAN"
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>📄 Censo ICA</span>
+            </button>
+          )}
+
+          {/* Botón Registrar Vacunación */}
+          {onOpenVaccinationModal && (
+            <button
+              onClick={onOpenVaccinationModal}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 sm:gap-1.5 shadow-sm shadow-emerald-600/30 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
+              title="Registrar vacunación o tratamiento sanitario"
+            >
+              <Syringe className="w-3.5 h-3.5 text-white shrink-0" />
+              <span>+ Vacunación</span>
+            </button>
+          )}
+
           {/* Botón Liquidar Lote / Compañía */}
           {onOpenPartnershipModal && (
             <button
