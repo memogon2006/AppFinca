@@ -1,5 +1,5 @@
 {
-  "version": "2.8.94",
-  "buildTime": 1789324000000,
-  "description": "Meses y ciclos oficiales de vacunación ICA marcados interactivamente en el calendario ganadero."
+  "version": "2.8.95",
+  "buildTime": 1789326000000,
+  "description": "Corrección y estabilización del Calendario Ganadero y widget de inicio con ciclos sanitarios ICA."
 }

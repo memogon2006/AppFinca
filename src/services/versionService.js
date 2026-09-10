@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.94";
-export const CURRENT_BUILD_TIME = 1789324000000;
+export const CURRENT_APP_VERSION = "2.8.95";
+export const CURRENT_BUILD_TIME = 1789326000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.95",
+    date: "10/09/2026",
+    title: "Estabilización y Carga Fluida de Calendario Ganadero & Ciclos Sanitarios ICA",
+    highlights: [
+      "Optimización de Renderizado en Vivo: Resolución de referencias de reloj y calendario en tiempo real para evitar pantallas en blanco.",
+      "Ribbon de 12 Meses con Ciclos ICA: Navegador rápido interactivo por los meses de vacunación oficial FEDEGAN/ICA (Mayo, Junio, Noviembre, Diciembre) y temporadas preventivas (Carbón y Vitaminas).",
+      "Banner Informativo en Tiempo Real: Alerta visual instantánea de ciclos sanitarios en curso o con vacunación ya registrada con RUV.",
+      "Carga Inmediata y Fluida: Estabilidad garantizada en dispositivos móviles y de escritorio sin bloqueos de interfaz."
+    ]
+  },
   {
     version: "2.8.94",
     date: "10/09/2026",

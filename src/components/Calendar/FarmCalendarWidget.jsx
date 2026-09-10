@@ -14,12 +14,7 @@ import {
   Syringe
 } from 'lucide-react';
 import { formatDate, BOVINE_GESTATION_DAYS } from '../../services/calculations';
-import { SANITARY_CYCLES_INFO } from './FarmCalendarModal';
-
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
+import { SANITARY_CYCLES_INFO, MONTH_NAMES } from './calendarConstants';
 
 const DAY_NAMES = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -206,6 +201,15 @@ export function FarmCalendarWidget({
     month: 'long',
     day: 'numeric'
   });
+
+  const timeFormatted = useMemo(() => {
+    return now.toLocaleTimeString('es-CO', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  }, [now]);
 
   const activeCycle = useMemo(() => {
     const cycle = SANITARY_CYCLES_INFO.find(c => c.months.includes(viewMonth));
