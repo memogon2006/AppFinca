@@ -764,6 +764,7 @@ export default function App() {
           <CattleListView
             cattle={cattle}
             weighings={weighings}
+            vaccinations={vaccinations}
             onSelectAnimal={handleSelectAnimal}
             onOpenNew={handleOpenNew}
             onOpenNewAnimal={handleOpenNew}

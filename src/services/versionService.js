@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.92";
-export const CURRENT_BUILD_TIME = 1789316000000;
+export const CURRENT_APP_VERSION = "2.8.93";
+export const CURRENT_BUILD_TIME = 1789320000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.93",
+    date: "10/09/2026",
+    title: "Trazabilidad Sanitaria y Vacunas Visible Directamente en Inventario",
+    highlights: [
+      "Insignia Sanitaria en Tarjetas: Cada bovino en el inventario muestra su total de vacunas registradas (ej. '💉 2 vacunas' o 'RUV') con tooltip de la última fecha y tipo de biológico.",
+      "Columna de Sanidad en Tabla: En la vista de tabla se visualiza la trazabilidad sanitaria de cada animal con su última aplicación y fecha correspondiente.",
+      "Pestaña Sanidad & Vacunas en Ficha Técnica: Al hacer clic en cualquier animal, la pestaña 'Sanidad & Vacunas' muestra el desglose completo de dosis, ciclos ICA, RUV, lote biológico, vacunador y observaciones."
+    ]
+  },
   {
     version: "2.8.92",
     date: "10/09/2026",

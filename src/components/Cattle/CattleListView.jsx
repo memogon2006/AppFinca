@@ -35,6 +35,7 @@ import {
 export function CattleListView({ 
   cattle = [], 
   weighings = [], 
+  vaccinations = [],
   onSelectAnimal, 
   onOpenNewAnimal,
   onOpenNew,
@@ -424,6 +425,7 @@ export function CattleListView({
               key={animal.id}
               animal={animal}
               weighings={weighings}
+              vaccinations={vaccinations}
               onSelect={onSelectAnimal}
               onOpenSell={onOpenSell}
               onOpenAddWeight={handleAddWeightSafe}
@@ -446,7 +448,7 @@ export function CattleListView({
                   <th className="p-3.5">Estado</th>
                   <th className="p-3.5">Ingreso #</th>
                   <th className="p-3.5">Hierro & Dueño</th>
-                  <th className="p-3.5">Color & Categoría</th>
+                  <th className="p-3.5">Color & Sanidad</th>
                   <th className="p-3.5">Compra / Inicial</th>
                   <th className="p-3.5">Peso Actual</th>
                   <th className="p-3.5">Ganancia Total</th>
@@ -467,6 +469,15 @@ export function CattleListView({
                   const batch = animal.entryBatch || animal.paddock || 'Ingreso #1';
                   const isSold = animal.status === 'Vendido';
                   const isDead = animal.status === 'Muerto';
+
+                  const aVaccines = (vaccinations || []).filter(v => {
+                    if (v.targetType === 'all') return true;
+                    if (v.targetType === 'batch' && (v.batchName === animal.entryBatch || v.batchName === animal.paddock)) return true;
+                    if (v.targetType === 'individual' && String(v.cattleId) === String(animal.id)) return true;
+                    if (v.targetType === 'multiple' && (v.selectedCattleIds?.some(id => String(id) === String(animal.id)))) return true;
+                    if (v.targetType === 'young_females' && animal.sex === 'Hembra') return true;
+                    return false;
+                  }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
                   const femaleStatus = animal.femaleStatus || (
                     animal.reproductiveStatus === 'Preñada' ? 'Gestación' : animal.milkingStatus === 'En ordeño' ? 'Producción de leche' : 'Vacía'
@@ -533,15 +544,27 @@ export function CattleListView({
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[110px]">{animal.owner}</div>
                       </td>
 
-                      {/* Color & Sexo */}
+                      {/* Color & Sanidad */}
                       <td className="p-3.5">
-                        <div className="text-slate-800 dark:text-slate-200">{animal.color || animal.breed || 'Sin especificar'}</div>
+                        <div className="text-slate-800 dark:text-slate-200 font-medium">{animal.color || animal.breed || 'Sin especificar'}</div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400">
                           {animal.sex === 'Macho' ? '🐂 Macho' : '🐄 Hembra'} • {animal.category}
                         </div>
                         {animal.sex === 'Hembra' && (
-                          <div className="mt-1">
+                          <div className="mt-0.5">
                             <FemaleStatusBadge status={femaleStatus} liters={animal.dailyMilkLiters} />
+                          </div>
+                        )}
+                        {aVaccines.length > 0 && (
+                          <div className="mt-1">
+                            <span 
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold text-[10px] bg-rose-50 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                              title={`Trazabilidad Sanitaria: ${aVaccines.length} vacunas aplicadas. Última: ${aVaccines[0].vaccineType} (${formatDate(aVaccines[0].date)})`}
+                            >
+                              <Syringe className="w-2.5 h-2.5 text-rose-600" />
+                              <span>{aVaccines.length} {aVaccines.length === 1 ? 'vacuna' : 'vacunas'}</span>
+                              {aVaccines[0]?.ruvNumber && <span className="text-[8px] bg-emerald-600 text-white px-0.5 rounded font-black">RUV</span>}
+                            </span>
                           </div>
                         )}
                       </td>

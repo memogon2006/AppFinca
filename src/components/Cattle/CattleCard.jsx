@@ -1,11 +1,12 @@
 import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
-import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap } from 'lucide-react';
+import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe } from 'lucide-react';
 
 export function CattleCard({ 
   animal, 
   weighings = [], 
+  vaccinations = [],
   onSelect, 
   onOpenSell, 
   onOpenAddWeight, 
@@ -18,6 +19,15 @@ export function CattleCard({
   const financials = calculateFinancials(animal);
   const repro = calculateReproduction(animal);
   const milk = calculateMilkMetrics(animal);
+
+  const animalVaccinations = (vaccinations || []).filter(v => {
+    if (v.targetType === 'all') return true;
+    if (v.targetType === 'batch' && (v.batchName === animal.entryBatch || v.batchName === animal.paddock)) return true;
+    if (v.targetType === 'individual' && String(v.cattleId) === String(animal.id)) return true;
+    if (v.targetType === 'multiple' && (v.selectedCattleIds?.some(id => String(id) === String(animal.id)))) return true;
+    if (v.targetType === 'young_females' && animal.sex === 'Hembra') return true;
+    return false;
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const handleDelete = (e) => {
     e.stopPropagation();
@@ -161,6 +171,19 @@ export function CattleCard({
 
           {(animal.color || animal.breed) && <Badge variant="default">{animal.color || animal.breed}</Badge>}
           {animal.isBreedingOnly && <Badge variant="purple">⭐ Solo Cría</Badge>}
+
+          {animalVaccinations.length > 0 && (
+            <span 
+              className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1 shadow-sm"
+              title={`Trazabilidad Sanitaria: ${animalVaccinations.length} dosis registradas. Última: ${animalVaccinations[0].vaccineType} (${formatDate(animalVaccinations[0].date)})`}
+            >
+              <Syringe className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+              <span>💉 {animalVaccinations.length} {animalVaccinations.length === 1 ? 'vacuna' : 'vacunas'}</span>
+              {animalVaccinations.some(v => v.ruvNumber) && (
+                <span className="text-[9px] px-1 rounded bg-emerald-600 text-white font-extrabold">RUV</span>
+              )}
+            </span>
+          )}
         </div>
 
         {/* Reproducción o Leche si es Hembra */}

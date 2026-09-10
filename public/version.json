@@ -1,5 +1,5 @@
 {
-  "version": "2.8.92",
-  "buildTime": 1789316000000,
-  "description": "Acceso directo a Censo ICA / RUV y Registro de Vacunación en el banner principal y barra de herramientas."
+  "version": "2.8.93",
+  "buildTime": 1789320000000,
+  "description": "Trazabilidad de vacunas visible en tarjetas de inventario, tabla y ficha técnica individual."
 }
