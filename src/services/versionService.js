@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.85";
-export const CURRENT_BUILD_TIME = 1789276500000;
+export const CURRENT_APP_VERSION = "2.8.86";
+export const CURRENT_BUILD_TIME = 1789277200000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.86",
+    date: "09/09/2026",
+    title: "Campo de Color de Pelaje Obligatorio al Registrar Animales",
+    highlights: [
+      "Obligatoriedad de Color: El campo de color de pelaje o señas particulares es ahora de diligenciamiento obligatorio al registrar o editar cualquier bovino.",
+      "Botones de Selección Rápida: Se agregaron botones de acceso rápido para los colores más comunes (Blanco, Negro, Hosco, Castaño, Sardo, Colorado, Bayo, etc.) facilitando el registro en 1 clic.",
+      "Validación en Lotes: El registro masivo de lotes ahora verifica y exige que cada animal tenga su color asignado."
+    ]
+  },
   {
     version: "2.8.85",
     date: "09/09/2026",

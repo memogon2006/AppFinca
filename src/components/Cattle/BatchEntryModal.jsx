@@ -207,6 +207,13 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       return;
     }
 
+    // Validar color obligatorio para cada animal del lote
+    const missingColorRows = validRows.filter(r => !r.color || !r.color.trim());
+    if (missingColorRows.length > 0) {
+      setErrors(`El color de pelaje es obligatorio para todos los animales del lote (Hay ${missingColorRows.length} animales sin color asignado).`);
+      return;
+    }
+
     // Validar pesos si es ceba o por kilo
     if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
       setErrors('Por favor ingresa un precio pactado por kilo ($/kg) válido.');
@@ -710,6 +717,22 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                     placeholder="Ej. Castaño"
                     className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {['Blanco', 'Negro', 'Hosco', 'Castaño', 'Sardo', 'Colorado', 'Bayo'].map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setSeriesConfig(prev => ({ ...prev, defaultColor: c }))}
+                        className={`text-[9px] px-1.5 py-0.5 rounded border transition cursor-pointer ${
+                          seriesConfig.defaultColor === c
+                            ? 'bg-amber-600 text-white border-amber-600 font-bold'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="col-span-2 sm:col-span-1 flex items-end">
@@ -732,7 +755,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 <tr>
                   <th className="p-3 w-12 text-center">#</th>
                   <th className="p-3">N° Arete / Chapa <span className="text-rose-500">*</span></th>
-                  <th className="p-3">Color / Pelaje</th>
+                  <th className="p-3">Color / Pelaje <span className="text-rose-500">*</span></th>
                   <th className="p-3">Peso Entrada (kg)</th>
                   <th className="p-3 text-right">Costo Calculado (COP)</th>
                   <th className="p-3 w-10 text-center"></th>
