@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.87";
-export const CURRENT_BUILD_TIME = 1789278000000;
+export const CURRENT_APP_VERSION = "2.8.88";
+export const CURRENT_BUILD_TIME = 1789278800000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.88",
+    date: "09/09/2026",
+    title: "Distribución Automática de Gastos Globales en Lotes de Ganado",
+    highlights: [
+      "Prorrateo Inteligente de Gastos: Nueva sección en el ingreso de lotes para ingresar gastos globales (flete de camión, comisión de compra, vacunas, báscula, guías de movilización, etc.).",
+      "Reparto Equitativo por Cabeza: El sistema calcula y distribuye automáticamente el gasto por animal entre todas las cabezas del lote, sumándolo a sus costos adicionales.",
+      "Desglose y KPIs Transparentes: Visualización en tiempo real del costo de compra neto, gasto por cabeza e inversión total consolidada con costo real unitario."
+    ]
+  },
   {
     version: "2.8.87",
     date: "09/09/2026",

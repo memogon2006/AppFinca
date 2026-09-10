@@ -25,7 +25,9 @@ import {
   ShieldCheck,
   ShieldAlert,
   Hash,
-  Info
+  Info,
+  Truck,
+  Receipt
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
@@ -60,6 +62,10 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const [costMode, setCostMode] = useState('pricePerKg');
   const [fixedPricePerHead, setFixedPricePerHead] = useState('');
   const [pricePerKg, setPricePerKg] = useState('');
+
+  // Gastos Adicionales Globales del Lote (Flete, Comisión, Vacunación, Báscula, etc.)
+  const [batchExpenses, setBatchExpenses] = useState('');
+  const [expensesConcept, setExpensesConcept] = useState('');
 
   // Filas de animales del lote
   const [rows, setRows] = useState([
@@ -165,16 +171,21 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const totalAnimals = validRows.length;
   
   let totalKilos = 0;
-  let totalInvestment = 0;
+  let totalPurchaseCost = 0;
 
   validRows.forEach(r => {
     const w = parseFloat(r.entryWeight) || 0;
     totalKilos += w;
-    totalInvestment += calculateRowCost(r.entryWeight);
+    totalPurchaseCost += calculateRowCost(r.entryWeight);
   });
 
+  const totalBatchExpensesNum = parseFloat(batchExpenses) || 0;
+  const expensePerAnimal = totalAnimals > 0 && totalBatchExpensesNum > 0 ? Math.round(totalBatchExpensesNum / totalAnimals) : 0;
+  const totalInvestmentWithExpenses = totalPurchaseCost + totalBatchExpensesNum;
+
   const avgWeight = totalAnimals > 0 ? (totalKilos / totalAnimals) : 0;
-  const avgCostPerHead = totalAnimals > 0 ? (totalInvestment / totalAnimals) : 0;
+  const avgPurchaseCostPerHead = totalAnimals > 0 ? (totalPurchaseCost / totalAnimals) : 0;
+  const avgTotalCostPerHead = totalAnimals > 0 ? (totalInvestmentWithExpenses / totalAnimals) : 0;
 
   const executeSaveBatch = (batchAnimalsPayload) => {
     onSaveBatch(batchAnimalsPayload);
@@ -219,7 +230,13 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
     const batchAnimalsPayload = validRows.map(r => {
       const weight = parseFloat(r.entryWeight) || null;
-      const individualCost = calculateRowCost(r.entryWeight);
+      const individualPurchasePrice = calculateRowCost(r.entryWeight);
+
+      let animalNotes = batchInfo.notes?.trim() || '';
+      if (totalBatchExpensesNum > 0) {
+        const expenseDetail = `Gastos de lote prorrateados: ${formatCurrency(expensePerAnimal)}${expensesConcept.trim() ? ` (${expensesConcept.trim()})` : ''}`;
+        animalNotes = animalNotes ? `${animalNotes} • ${expenseDetail}` : expenseDetail;
+      }
 
       return {
         tagNumber: r.tagNumber.trim(),
@@ -238,12 +255,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         entryType: 'Compra',
         entryWeight: weight,
         currentWeight: weight,
-        entryPrice: individualCost,
-        additionalCosts: 0,
+        entryPrice: individualPurchasePrice,
+        additionalCosts: expensePerAnimal,
         femaleStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'Ceba / Levante / Engorde' : 'Vacía') : 'No aplica',
         reproductiveStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'No aplica' : 'Vacía') : 'No aplica',
         milkingStatus: 'No aplica',
-        notes: batchInfo.notes || `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`,
+        notes: animalNotes || `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`,
       };
     });
 
@@ -561,6 +578,76 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
             </div>
 
           </div>
+
+          {/* SECCIÓN DE GASTOS ADICIONALES DEL LOTE (FLETE, COMISIÓN, VACUNAS, GUÍAS) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/80 via-slate-50 to-blue-50/50 dark:from-blue-950/30 dark:via-slate-900/50 dark:to-blue-950/20 border border-blue-200 dark:border-blue-800/60 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-blue-600 text-white shadow-sm">
+                  <Truck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h5 className="text-xs sm:text-sm font-extrabold text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
+                    <span>Gastos Globales del Lote (Flete, Comisión, Vacunas, Guías)</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                      Opcional
+                    </span>
+                  </h5>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    Ingresa el valor total de gastos pagados por el lote. El sistema lo dividirá automáticamente en partes iguales entre todos los animales.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Valor Total de Gastos del Lote (COP):
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                  <input
+                    type="number"
+                    value={batchExpenses}
+                    onChange={(e) => setBatchExpenses(e.target.value)}
+                    placeholder="Ej. 1200000 (Flete + comisión)"
+                    min="0"
+                    step="10000"
+                    className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Concepto / Detalle de Gastos (Opcional):
+                </label>
+                <input
+                  type="text"
+                  value={expensesConcept}
+                  onChange={(e) => setExpensesConcept(e.target.value)}
+                  placeholder="Ej. Flete camión, comisión, vacuna aftosa"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {totalBatchExpensesNum > 0 && (
+              <div className="p-3 rounded-xl bg-blue-100/70 dark:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-xs flex flex-wrap items-center justify-between gap-2">
+                <span className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  Gasto prorrateado por cabeza:
+                  <strong className="text-emerald-700 dark:text-emerald-300 text-sm font-black">
+                    +{formatCurrency(expensePerAnimal)} / animal
+                  </strong>
+                </span>
+                <span className="text-[11px] text-blue-700 dark:text-blue-300 font-semibold">
+                  Repartido equitativamente entre {totalAnimals} animales del lote
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* PASO 3: TABLA DE ANIMALES DEL LOTE */}
@@ -824,8 +911,15 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                       </td>
 
                       {/* Costo Calculado */}
-                      <td className="p-2.5 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(rowCost)}
+                      <td className="p-2.5 text-right font-extrabold text-slate-900 dark:text-white">
+                        <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(rowCost)}
+                        </div>
+                        {totalBatchExpensesNum > 0 && (
+                          <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">
+                            +{formatCurrency(expensePerAnimal)} gastos
+                          </div>
+                        )}
                       </td>
 
                       {/* Eliminar Fila */}
@@ -863,7 +957,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           </button>
         </div>
 
-        {/* RESUMEN TOTAL DEL LOTE (4 KPIs CONSOLIDADOS) */}
+        {/* RESUMEN TOTAL DEL LOTE (4 KPIs CONSOLIDADOS CON GASTOS) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white space-y-3 shadow-lg">
           <div className="flex items-center justify-between border-b border-white/20 pb-2">
             <h4 className="text-xs font-black uppercase tracking-wider text-emerald-200 flex items-center gap-1.5">
@@ -889,16 +983,24 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
             <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
               <span className="text-emerald-200 block text-[10px] font-semibold">
-                {costMode === 'pricePerKg' ? 'Precio por Kilo:' : 'Promedio por Cabeza:'}
+                {costMode === 'pricePerKg' ? 'Compra por Kilo:' : 'Compra por Cabeza:'}
               </span>
               <p className="text-lg sm:text-xl font-black text-amber-300 mt-0.5">
                 {costMode === 'pricePerKg' ? (pricePerKg ? `${formatCurrency(pricePerKg)}/kg` : '$0/kg') : formatCurrency(fixedPricePerHead || 0)}
               </p>
+              {totalBatchExpensesNum > 0 && (
+                <span className="text-[10px] text-blue-200 font-bold mt-0.5 block">
+                  + {formatCurrency(expensePerAnimal)}/cab gastos
+                </span>
+              )}
             </div>
 
             <div className="p-3 rounded-xl bg-emerald-500/30 backdrop-blur-sm border border-emerald-400/40">
-              <span className="text-emerald-100 block text-[10px] font-semibold">Inversión Total del Lote:</span>
-              <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatCurrency(totalInvestment)}</p>
+              <span className="text-emerald-100 block text-[10px] font-semibold">Inversión Total con Gastos:</span>
+              <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatCurrency(totalInvestmentWithExpenses)}</p>
+              <span className="text-[10px] text-emerald-200 mt-0.5 block font-bold">
+                Costo Real: {formatCurrency(avgTotalCostPerHead)}/cab
+              </span>
             </div>
           </div>
         </div>
