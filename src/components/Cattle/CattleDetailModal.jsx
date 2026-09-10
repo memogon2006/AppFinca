@@ -74,6 +74,7 @@ export function CattleDetailModal({
     if (v.targetType === 'all') return true;
     if (v.targetType === 'batch' && (v.batchName === animal.entryBatch || v.batchName === animal.paddock)) return true;
     if (v.targetType === 'individual' && String(v.cattleId) === String(animal.id)) return true;
+    if (v.targetType === 'multiple' && (v.selectedCattleIds?.some(id => String(id) === String(animal.id)))) return true;
     if (v.targetType === 'young_females' && animal.sex === 'Hembra') return true;
     return false;
   }).sort((a, b) => new Date(b.date) - new Date(a.date));
