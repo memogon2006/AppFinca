@@ -24,6 +24,7 @@ const DAY_NAMES = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 export function FarmCalendarWidget({
   cattle = [],
   weighings = [],
+  vaccinations = [],
   onOpenCalendar
 }) {
   const [now, setNow] = useState(new Date());
@@ -110,6 +111,17 @@ export function FarmCalendarWidget({
       }
     });
 
+    // Vaccinations
+    vaccinations.forEach(v => {
+      if (v.date) {
+        addEvent(v.date, {
+          type: 'vaccination',
+          title: `Vacuna: ${v.vaccineType}`,
+          dotColor: 'bg-rose-500'
+        });
+      }
+    });
+
     // Notes
     notes.forEach(n => {
       if (n.date) {
@@ -122,7 +134,7 @@ export function FarmCalendarWidget({
     });
 
     return map;
-  }, [cattle, weighings, notes]);
+  }, [cattle, weighings, vaccinations, notes]);
 
   const viewYear = now.getFullYear();
   const viewMonth = now.getMonth();

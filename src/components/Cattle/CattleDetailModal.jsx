@@ -30,7 +30,8 @@ import {
   Target,
   Flame,
   CheckCircle2,
-  Zap
+  Zap,
+  Syringe
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -47,6 +48,7 @@ export function CattleDetailModal({
   onClose, 
   animal, 
   weighings = [], 
+  vaccinations = [],
   onOpenAddWeight, 
   onOpenSell,
   onOpenEdit,
@@ -58,7 +60,7 @@ export function CattleDetailModal({
 }) {
   if (!animal) return null;
 
-  const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'financials' | 'general'
+  const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'financials' | 'sanitary' | 'general'
 
   const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
@@ -66,6 +68,15 @@ export function CattleDetailModal({
   const repro = calculateReproduction(animal);
   const milkMetrics = calculateMilkMetrics(animal);
   const batchName = animal.entryBatch || animal.paddock || 'Ingreso #1';
+
+  // Vacunaciones y tratamientos sanitarios aplicados a este animal
+  const animalVaccinations = (vaccinations || []).filter(v => {
+    if (v.targetType === 'all') return true;
+    if (v.targetType === 'batch' && (v.batchName === animal.entryBatch || v.batchName === animal.paddock)) return true;
+    if (v.targetType === 'individual' && String(v.cattleId) === String(animal.id)) return true;
+    if (v.targetType === 'young_females' && animal.sex === 'Hembra') return true;
+    return false;
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const femaleStatus = animal.femaleStatus || (
     animal.reproductiveStatus === 'Preñada' ? 'Gestación' : animal.milkingStatus === 'En ordeño' ? 'Producción de leche' : 'Vacía'
@@ -321,6 +332,18 @@ export function CattleDetailModal({
           >
             <DollarSign className="w-4 h-4" />
             <span>Finanzas y Costos</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('sanitary')}
+            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition min-h-[38px] cursor-pointer ${
+              activeTab === 'sanitary'
+                ? 'bg-rose-600 text-white shadow-md'
+                : 'text-rose-700 dark:text-rose-300 hover:text-rose-900 dark:hover:text-rose-100 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+            }`}
+          >
+            <Syringe className="w-4 h-4" />
+            <span>Sanidad & Vacunas ({animalVaccinations.length})</span>
           </button>
 
           <button
@@ -782,7 +805,87 @@ export function CattleDetailModal({
           </div>
         )}
 
-        {/* 4. Ficha General */}
+        {/* 4. Historial Sanitario & Vacunas */}
+        {activeTab === 'sanitary' && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-rose-600 text-white shadow-sm">
+                  <Syringe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                    Historial Sanitario del Bovino ({animal.tagNumber})
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Vacunaciones oficiales y planes preventivos aplicados al animal, a su lote ({batchName}) o a todo el hato.
+                  </p>
+                </div>
+              </div>
+
+              <span className="px-3 py-1 rounded-xl bg-white dark:bg-slate-900 font-extrabold text-xs text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 self-start sm:self-auto">
+                {animalVaccinations.length} dosis registradas
+              </span>
+            </div>
+
+            {animalVaccinations.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-700 text-center space-y-2">
+                <Syringe className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Sin registro individual o grupal de vacunas para este bovino
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Cuando registres un ciclo oficial FEDEGAN (Aftosa/Brucelosis) o un tratamiento para todo el hato o el lote <strong className="text-slate-700 dark:text-slate-300">{batchName}</strong>, aparecerá aquí automáticamente.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {animalVaccinations.map((v) => (
+                  <div 
+                    key={v.id}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400 mt-0.5 flex-shrink-0">
+                        <Syringe className="w-4 h-4" />
+                      </div>
+                      <div className="text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-black text-slate-900 dark:text-white text-sm">
+                            {v.vaccineType}
+                          </span>
+                          {v.ruvNumber && (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-extrabold text-[10px] uppercase">
+                              RUV: {v.ruvNumber}
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-[10px]">
+                            {v.targetLabel || 'Hato'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 text-slate-500 dark:text-slate-400 mt-1 font-semibold">
+                          <span>📅 Fecha: {formatDate(v.date)}</span>
+                          {v.officialCycle && <span>• Ciclo: {v.officialCycle}</span>}
+                          {v.biologicalBatch && <span>• Lote biológico: {v.biologicalBatch}</span>}
+                          {v.vaccinator && <span>• Vacunador: {v.vaccinator}</span>}
+                        </div>
+
+                        {v.notes && (
+                          <p className="text-slate-700 dark:text-slate-300 mt-1 italic">
+                            "{v.notes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 5. Ficha General */}
         {activeTab === 'general' && (
           <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-4 text-xs font-bold shadow-sm">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

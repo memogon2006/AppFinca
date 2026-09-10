@@ -103,7 +103,7 @@ export async function cloudFindUser(email) {
 }
 
 /**
- * Sube a la nube el inventario completo de ganado y pesajes del usuario
+ * Sube a la nube el inventario completo de ganado, pesajes y vacunaciones del usuario
  */
 export async function cloudPushData(userId) {
   if (!userId) return false;
@@ -112,11 +112,13 @@ export async function cloudPushData(userId) {
   try {
     const cattle = await db.cattle.filter(c => c.userId === userId || !c.userId).toArray();
     const weighings = await db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
+    const vaccinations = db.vaccinations ? await db.vaccinations.filter(v => v.userId === userId || !v.userId).toArray() : [];
 
     const payload = {
       userId,
       cattle,
       weighings,
+      vaccinations,
       syncedAt: new Date().toISOString(),
     };
 
@@ -173,7 +175,7 @@ export async function cloudPushData(userId) {
 }
 
 /**
- * Descarga el inventario y pesajes del usuario desde la nube a este dispositivo
+ * Descarga el inventario, pesajes y vacunaciones del usuario desde la nube a este dispositivo
  */
 export async function cloudPullData(userId) {
   if (!userId) return false;
@@ -195,6 +197,11 @@ export async function cloudPullData(userId) {
           if (Array.isArray(remoteData.weighings)) {
             for (const item of remoteData.weighings) {
               await db.weighings.put({ ...item, userId });
+            }
+          }
+          if (Array.isArray(remoteData.vaccinations) && db.vaccinations) {
+            for (const item of remoteData.vaccinations) {
+              await db.vaccinations.put({ ...item, userId });
             }
           }
           localStorage.setItem(DATA_STORAGE_KEY + userId, found.id);

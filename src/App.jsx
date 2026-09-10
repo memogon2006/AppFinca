@@ -24,6 +24,8 @@ import { PartnershipSettlementModal } from './components/Finances/PartnershipSet
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
 import { WhatsAppReportModal } from './components/Common/WhatsAppReportModal';
 import { FarmCalendarModal } from './components/Calendar/FarmCalendarModal';
+import { VaccinationRecordModal } from './components/Vaccinations/VaccinationRecordModal';
+import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCensusModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
@@ -39,6 +41,8 @@ export default function App() {
 
   // Modales
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isVaccinationModalOpen, setIsVaccinationModalOpen] = useState(false);
+  const [isCensusModalOpen, setIsCensusModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingAnimal, setEditingAnimal] = useState(null);
 
@@ -123,6 +127,14 @@ export default function App() {
     () => {
       if (!userId) return [];
       return db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
+    },
+    [userId]
+  ) || [];
+
+  const vaccinations = useLiveQuery(
+    () => {
+      if (!userId) return [];
+      return db.vaccinations ? db.vaccinations.filter(v => v.userId === userId || !v.userId).toArray() : [];
     },
     [userId]
   ) || [];
@@ -562,6 +574,28 @@ export default function App() {
     showToast(`Bovino ${tag} eliminado del inventario 🗑️`, 'danger');
   };
 
+  const handleSaveVaccination = async (vaccinationData) => {
+    if (!userId) return;
+    const vacRecord = {
+      ...vaccinationData,
+      userId
+    };
+    if (db.vaccinations) {
+      await db.vaccinations.add(vacRecord);
+    }
+    cloudPushData(userId);
+    triggerFeedback('success');
+    showToast(`Registro sanitario de ${vaccinationData.vaccineType} guardado exitosamente 💉`);
+  };
+
+  const handleDeleteVaccination = async (vacId) => {
+    if (!userId || !db.vaccinations) return;
+    await db.vaccinations.delete(vacId);
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Registro de vacunación eliminado 🗑️');
+  };
+
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
@@ -711,6 +745,7 @@ export default function App() {
           <DashboardView
             cattle={cattle}
             weighings={weighings}
+            vaccinations={vaccinations}
             onNavigate={setCurrentView}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
@@ -719,6 +754,9 @@ export default function App() {
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenCalendar={() => setIsCalendarOpen(true)}
+            onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
+            onOpenCensusModal={() => setIsCensusModalOpen(true)}
+            onDeleteVaccination={handleDeleteVaccination}
           />
         )}
 
@@ -809,6 +847,7 @@ export default function App() {
         onClose={() => setIsDetailModalOpen(false)}
         animal={cattle.find(c => String(c.id) === String(selectedAnimal?.id)) || selectedAnimal}
         weighings={weighings}
+        vaccinations={vaccinations}
         onOpenEdit={handleOpenEdit}
         onOpenSell={handleOpenSell}
         onOpenAddWeight={handleOpenAddWeight}
@@ -916,6 +955,28 @@ export default function App() {
         onClose={() => setIsCalendarOpen(false)}
         cattle={cattle}
         weighings={weighings}
+        vaccinations={vaccinations}
+        onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
+        zIndex="z-[60]"
+      />
+
+      {/* 3. Modales del Plan Sanitario y Vacunación Oficial FEDEGAN-ICA */}
+      <VaccinationRecordModal
+        isOpen={isVaccinationModalOpen}
+        onClose={() => setIsVaccinationModalOpen(false)}
+        cattle={cattle}
+        onSaveVaccination={handleSaveVaccination}
+        zIndex="z-[60]"
+      />
+
+      <VaccinationCensusModal
+        isOpen={isCensusModalOpen}
+        onClose={() => setIsCensusModalOpen(false)}
+        cattle={cattle}
+        vaccinations={vaccinations}
+        farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
+        farmerName={currentUser?.name || 'Ganadero'}
+        onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
         zIndex="z-[60]"
       />
 

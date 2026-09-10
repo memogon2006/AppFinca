@@ -32,6 +32,7 @@ import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancia
 export function DashboardView({ 
   cattle = [], 
   weighings = [], 
+  vaccinations = [],
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -39,7 +40,10 @@ export function DashboardView({
   onOpenExportImport,
   onOpenWhatsAppReport,
   onOpenGlossary,
-  onOpenCalendar
+  onOpenCalendar,
+  onOpenVaccinationModal,
+  onOpenCensusModal,
+  onDeleteVaccination
 }) {
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
@@ -252,6 +256,7 @@ export function DashboardView({
       <FarmCalendarWidget
         cattle={cattle}
         weighings={weighings}
+        vaccinations={vaccinations}
         onOpenCalendar={onOpenCalendar}
       />
 
@@ -302,6 +307,7 @@ export function DashboardView({
           <AlertsList
             cattle={activeCattle}
             weighings={weighings}
+            vaccinations={vaccinations}
             onSelectAnimal={onSelectAnimal}
           />
         </div>
@@ -375,7 +381,13 @@ export function DashboardView({
       </div>
 
       {/* MÓDULO SANITARIO: CALENDARIO DE CICLOS DE VACUNACIÓN EN COLOMBIA (ICA / FEDEGÁN) */}
-      <VaccinationCalendar cattle={cattle} />
+      <VaccinationCalendar 
+        cattle={cattle} 
+        vaccinations={vaccinations}
+        onOpenVaccinationModal={onOpenVaccinationModal}
+        onOpenCensusModal={onOpenCensusModal}
+        onDeleteVaccination={onDeleteVaccination}
+      />
 
     </div>
   );

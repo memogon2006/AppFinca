@@ -26,6 +26,15 @@ db.version(3).stores({
   });
 });
 
+db.version(4).stores({
+  users: 'id, email, username, farmName, name, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  settings: 'key, userId'
+});
+
 // Solicitar al navegador almacenamiento permanente protegido
 export async function requestPersistentStorage() {
   if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
@@ -48,10 +57,13 @@ export async function initializeDatabase() {
 // Limpiar todos los inventarios del usuario activo
 export async function clearAllData(userId) {
   if (!userId) return;
-  await db.transaction('rw', db.cattle, db.weighings, db.expenses, async () => {
+  await db.transaction('rw', db.cattle, db.weighings, db.expenses, db.vaccinations, async () => {
     await db.cattle.where('userId').equals(userId).delete();
     await db.weighings.where('userId').equals(userId).delete();
     await db.expenses.where('userId').equals(userId).delete();
+    if (db.vaccinations) {
+      await db.vaccinations.where('userId').equals(userId).delete();
+    }
   });
 }
 
@@ -187,19 +199,26 @@ export async function exportBackupData(userId, userDetails = {}) {
   let cattle = [];
   let weighings = [];
   let expenses = [];
+  let vaccinations = [];
 
   if (userId) {
     cattle = await db.cattle.where('userId').equals(userId).toArray();
     weighings = await db.weighings.where('userId').equals(userId).toArray();
     expenses = await db.expenses.where('userId').equals(userId).toArray();
+    if (db.vaccinations) {
+      vaccinations = await db.vaccinations.where('userId').equals(userId).toArray();
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
     expenses = await db.expenses.toArray();
+    if (db.vaccinations) {
+      vaccinations = await db.vaccinations.toArray();
+    }
   }
 
   const backup = {
-    version: 3,
+    version: 4,
     appName: "INVENTARIO BOVINO APP",
     exportDate: new Date().toISOString(),
     farmName: userDetails.farmName || "Mi Finca Ganadera",
@@ -208,6 +227,7 @@ export async function exportBackupData(userId, userDetails = {}) {
     cattle,
     weighings,
     expenses,
+    vaccinations,
   };
 
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
@@ -228,15 +248,21 @@ export async function importBackupData(jsonData, userId) {
       throw new Error('Formato de respaldo no válido.');
     }
 
-    await db.transaction('rw', db.cattle, db.weighings, db.expenses, async () => {
+    await db.transaction('rw', db.cattle, db.weighings, db.expenses, db.vaccinations, async () => {
       if (userId) {
         await db.cattle.where('userId').equals(userId).delete();
         await db.weighings.where('userId').equals(userId).delete();
         await db.expenses.where('userId').equals(userId).delete();
+        if (db.vaccinations) {
+          await db.vaccinations.where('userId').equals(userId).delete();
+        }
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
         await db.expenses.clear();
+        if (db.vaccinations) {
+          await db.vaccinations.clear();
+        }
       }
 
       if (data.cattle?.length) {
@@ -260,6 +286,13 @@ export async function importBackupData(jsonData, userId) {
           userId: userId || e.userId || 'default',
         }));
         await db.expenses.bulkAdd(cleanedE);
+      }
+      if (data.vaccinations?.length && db.vaccinations) {
+        const cleanedV = data.vaccinations.map(v => ({
+          ...v,
+          userId: userId || v.userId || 'default',
+        }));
+        await db.vaccinations.bulkAdd(cleanedV);
       }
     });
 

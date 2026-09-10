@@ -44,6 +44,8 @@ export function FarmCalendarModal({
   onClose,
   cattle = [],
   weighings = [],
+  vaccinations = [],
+  onOpenVaccinationModal,
   zIndex = 'z-[60]'
 }) {
   if (!isOpen) return null;
@@ -197,7 +199,23 @@ export function FarmCalendarModal({
       }
     });
 
-    // 5. Notas manuales del usuario
+    // 5. Vacunaciones y Plan Sanitario Registrados
+    vaccinations.forEach(v => {
+      if (v.date) {
+        addEvent(v.date, {
+          type: 'vaccination',
+          id: v.id,
+          title: `Vacunación: ${v.vaccineType}`,
+          subtitle: `${v.targetLabel || 'Hato'} • ${v.animalCount || 'X'} cab. ${v.ruvNumber ? `(RUV: ${v.ruvNumber})` : ''}`,
+          icon: Syringe,
+          color: 'text-rose-600 dark:text-rose-400',
+          dotColor: 'bg-rose-500',
+          category: 'vacunacion'
+        });
+      }
+    });
+
+    // 6. Notas manuales del usuario
     notes.forEach(n => {
       if (n.date) {
         addEvent(n.date, {
@@ -214,7 +232,7 @@ export function FarmCalendarModal({
     });
 
     return map;
-  }, [cattle, weighings, notes]);
+  }, [cattle, weighings, vaccinations, notes]);
 
   // Generar cuadrícula del mes
   const calendarDays = useMemo(() => {
@@ -567,13 +585,26 @@ export function FarmCalendarModal({
                   </h4>
                 </div>
 
-                <button
-                  onClick={() => setShowAddNote(!showAddNote)}
-                  className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm transition cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{showAddNote ? 'Cancelar' : 'Añadir Nota'}</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {onOpenVaccinationModal && (
+                    <button
+                      onClick={() => onOpenVaccinationModal()}
+                      className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm transition cursor-pointer"
+                      title="Registrar vacunación"
+                    >
+                      <Syringe className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">+ Vacuna</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowAddNote(!showAddNote)}
+                    className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{showAddNote ? 'Cancelar' : 'Añadir Nota'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Formulario para Agregar Nota/Recordatorio */}

@@ -5,7 +5,7 @@ import { findDuplicateCattle, normalizeTagNumber, normalizeText } from '../../se
 
 const VACCINE_STORAGE_KEY = 'ganado_colombia_vaccine_status';
 
-export function AlertsList({ cattle = [], onSelectAnimal }) {
+export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onSelectAnimal }) {
   const animalAlerts = [];
   const sanitaryAlerts = [];
   const duplicateAlerts = [];
@@ -106,13 +106,30 @@ export function AlertsList({ cattle = [], onSelectAnimal }) {
   });
 
   // 3. Alerta Sanitaria de Ciclos Oficiales ICA
-  let farmVaccineState = { isVaccinated: false, ruvNumber: '' };
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  const hasAftosaRecorded = vaccinations.some(v => 
+    (v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
+    new Date(v.date).getFullYear() === currentYear
+  );
+
+  let farmVaccineState = { isVaccinated: hasAftosaRecorded, ruvNumber: '' };
   try {
     const saved = localStorage.getItem(VACCINE_STORAGE_KEY);
-    if (saved) farmVaccineState = JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      farmVaccineState.isVaccinated = farmVaccineState.isVaccinated || parsed.isVaccinated;
+      farmVaccineState.ruvNumber = parsed.ruvNumber || '';
+    }
   } catch (e) {}
 
-  const currentMonth = new Date().getMonth() + 1;
+  if (hasAftosaRecorded) {
+    const latestAftosa = vaccinations.find(v => (v.vaccineCode === 'aftosa' || v.vaccineType?.toLowerCase().includes('aftosa')));
+    if (latestAftosa?.ruvNumber) {
+      farmVaccineState.ruvNumber = latestAftosa.ruvNumber;
+    }
+  }
 
   if (currentMonth >= 5 && currentMonth <= 7) {
     if (!farmVaccineState.isVaccinated) {

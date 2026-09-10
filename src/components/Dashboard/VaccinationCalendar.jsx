@@ -11,10 +11,21 @@ import {
   AlertTriangle,
   Info,
   Check,
-  FileText
+  FileText,
+  Plus,
+  Trash2,
+  Tag,
+  ChevronRight
 } from 'lucide-react';
+import { formatDate, formatCurrency } from '../../services/calculations';
 
-export function VaccinationCalendar({ cattle = [] }) {
+export function VaccinationCalendar({ 
+  cattle = [], 
+  vaccinations = [],
+  onOpenVaccinationModal,
+  onOpenCensusModal,
+  onDeleteVaccination
+}) {
   const currentMonthIdx = new Date().getMonth(); // 0 = Ene, 11 = Dic
   const monthNumber = currentMonthIdx + 1;
 
@@ -33,6 +44,17 @@ export function VaccinationCalendar({ cattle = [] }) {
   const aftosaCount = totalActive;
   const carbonCount = totalActive;
 
+  // Comprobar si ya se registró vacunación en el ciclo actual
+  const currentYear = new Date().getFullYear();
+  const hasAftosaRecordedThisYear = vaccinations.some(v => 
+    (v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
+    new Date(v.date).getFullYear() === currentYear
+  );
+
+  const lastRecordedVaccination = vaccinations.length > 0
+    ? [...vaccinations].sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+    : null;
+
   // Estado Oficial del Ciclo en Colombia
   let cycleStatus = {
     stateTag: '⏳ SE APROXIMA EL CICLO',
@@ -46,10 +68,12 @@ export function VaccinationCalendar({ cattle = [] }) {
 
   if (monthNumber >= 5 && monthNumber <= 7) {
     cycleStatus = {
-      stateTag: '⚡ ¡ESTÁS EN EL CICLO DE VACUNACIÓN!',
-      stateBadge: 'bg-emerald-600 text-white animate-pulse',
-      title: 'Ciclo I Oficial ICA / Fedegán en Curso (Mayo – Julio)',
-      actionText: 'Debes vacunar el 100% de bovinos contra Aftosa, terneras contra Brucelosis y exigir tu certificado RUV.',
+      stateTag: hasAftosaRecordedThisYear ? '✅ CICLO I REGISTRADO' : '⚡ ¡ESTÁS EN EL CICLO DE VACUNACIÓN!',
+      stateBadge: hasAftosaRecordedThisYear ? 'bg-emerald-600 text-white' : 'bg-emerald-600 text-white animate-pulse',
+      title: hasAftosaRecordedThisYear ? `Ciclo I Registrado en el Sistema` : 'Ciclo I Oficial ICA / Fedegán en Curso (Mayo – Julio)',
+      actionText: hasAftosaRecordedThisYear
+        ? 'Tu registro sanitario y RUV están al día para movilización y venta.'
+        : 'Debes vacunar el 100% de bovinos contra Aftosa, terneras contra Brucelosis y exigir tu certificado RUV.',
       bgColor: 'bg-emerald-50/70 dark:bg-emerald-950/30',
       borderColor: 'border-emerald-300 dark:border-emerald-500/40',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
@@ -76,10 +100,12 @@ export function VaccinationCalendar({ cattle = [] }) {
     };
   } else if (monthNumber >= 10 && monthNumber <= 12) {
     cycleStatus = {
-      stateTag: '⚡ ¡ESTÁS EN EL CICLO DE VACUNACIÓN!',
-      stateBadge: 'bg-emerald-600 text-white animate-pulse',
-      title: 'Ciclo II Oficial ICA / Fedegán en Curso (Octubre – Diciembre)',
-      actionText: 'Revacunación obligatoria del 100% del hato contra Fiebre Aftosa. El vacunador debe expedir tu RUV.',
+      stateTag: hasAftosaRecordedThisYear ? '✅ CICLO II REGISTRADO' : '⚡ ¡ESTÁS EN EL CICLO DE VACUNACIÓN!',
+      stateBadge: hasAftosaRecordedThisYear ? 'bg-emerald-600 text-white' : 'bg-emerald-600 text-white animate-pulse',
+      title: hasAftosaRecordedThisYear ? 'Ciclo II Registrado en el Sistema' : 'Ciclo II Oficial ICA / Fedegán en Curso (Octubre – Diciembre)',
+      actionText: hasAftosaRecordedThisYear
+        ? 'Revacunación registrada. RUV activo en la plataforma.'
+        : 'Revacunación obligatoria del 100% del hato contra Fiebre Aftosa. El vacunador debe expedir tu RUV.',
       bgColor: 'bg-emerald-50/70 dark:bg-emerald-950/30',
       borderColor: 'border-emerald-300 dark:border-emerald-500/40',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
@@ -87,7 +113,7 @@ export function VaccinationCalendar({ cattle = [] }) {
   } else {
     // Enero y Febrero
     cycleStatus = {
-      stateTag: '🏁 FINALIZÓ EL CICLO',
+      stateTag: '🏁 CICLO OFICIAL CERRADO',
       stateBadge: 'bg-slate-700 text-white',
       title: 'Ciclo II Cerrado (RUV Activo y Vigente)',
       actionText: 'Tu certificado RUV anterior te permite expedir guías de movilización y venta. El próximo ciclo inicia en Mayo.',
@@ -136,7 +162,7 @@ export function VaccinationCalendar({ cattle = [] }) {
       focus: '🏛️ Revacunación Aftosa + Brucelosis',
       desc: 'Segundo ciclo obligatorio nacional para mantener el estatus sanitario libre de aftosa.',
       target: `100% del Hato (${aftosaCount} dosis) + Terneras nuevas`,
-      isActive: monthNumber >= 10 && monthNumber <= 12 || monthNumber <= 2,
+      isActive: (monthNumber >= 10 && monthNumber <= 12) || monthNumber <= 2,
       color: 'emerald'
     }
   ];
@@ -144,9 +170,10 @@ export function VaccinationCalendar({ cattle = [] }) {
   return (
     <div className="custom-card p-5 sm:p-6 space-y-6">
       
-      {/* 1. ENCABEZADO Y ALERTA DINÁMICA PRINCIPAL */}
-      <div className={`p-4 sm:p-5 rounded-2xl border ${cycleStatus.bgColor} ${cycleStatus.borderColor} shadow-sm space-y-3`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* 1. ENCABEZADO Y ALERTA DINÁMICA PRINCIPAL CON BOTONES DE ACCIÓN */}
+      <div className={`p-4 sm:p-5 rounded-2xl border ${cycleStatus.bgColor} ${cycleStatus.borderColor} shadow-sm space-y-4`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex-shrink-0 mt-0.5 shadow-sm">
               <Syringe className={`w-5 h-5 ${cycleStatus.iconColor}`} />
@@ -165,10 +192,97 @@ export function VaccinationCalendar({ cattle = [] }) {
               </p>
             </div>
           </div>
+
+          {/* BOTONES DE ACCIÓN RÁPIDA */}
+          <div className="flex flex-wrap items-center gap-2 flex-shrink-0 self-start md:self-center">
+            {onOpenCensusModal && (
+              <button
+                onClick={onOpenCensusModal}
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-xs flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+                title="Ver y exportar censo oficial para el vacunador"
+              >
+                <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>📄 Censo ICA / RUV</span>
+              </button>
+            )}
+
+            {onOpenVaccinationModal && (
+              <button
+                onClick={onOpenVaccinationModal}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/30 transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Registrar Vacunación</span>
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
 
-      {/* 2. LAS 3 VACUNAS CLAVE: CUÁNDO, A QUIÉNES Y CUÁNTOS ANIMALES DE TU FINCA */}
+      {/* 2. HISTORIAL DE VACUNACIONES REGISTRADAS (SI EXISTEN) */}
+      {vaccinations.length > 0 && (
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Historial de Registros Sanitarios y Vacunación ({vaccinations.length})</span>
+            </h4>
+            <span className="text-[11px] text-slate-500">Última: {formatDate(lastRecordedVaccination?.date)}</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {vaccinations.slice(0, 4).map((vac) => (
+              <div 
+                key={vac.id}
+                className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3"
+              >
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex-shrink-0 mt-0.5">
+                    <Syringe className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                        {vac.vaccineType}
+                      </span>
+                      {vac.ruvNumber && (
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-600 text-white font-extrabold text-[9px] uppercase tracking-wide">
+                          RUV: {vac.ruvNumber}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      📅 {formatDate(vac.date)} • <strong>{vac.animalCount || 'X'}</strong> cabezas ({vac.targetLabel || 'Hato'})
+                    </p>
+                    {vac.notes && (
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 italic truncate">
+                        "{vac.notes}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {onDeleteVaccination && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`¿Eliminar este registro de vacunación (${vac.vaccineType} - ${formatDate(vac.date)})?`)) {
+                        onDeleteVaccination(vac.id);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition cursor-pointer flex-shrink-0"
+                    title="Eliminar registro"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. LAS 3 VACUNAS CLAVE: CUÁNDO, A QUIÉNES Y CUÁNTOS ANIMALES DE TU FINCA */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -307,7 +421,7 @@ export function VaccinationCalendar({ cattle = [] }) {
         </div>
       </div>
 
-      {/* 3. LÍNEA DE TIEMPO DEL AÑO GANADERO (4 TEMPORADAS CLARAS) */}
+      {/* 4. LÍNEA DE TIEMPO DEL AÑO GANADERO (4 TEMPORADAS CLARAS) */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">

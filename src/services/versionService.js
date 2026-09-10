@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.88";
-export const CURRENT_BUILD_TIME = 1789278800000;
+export const CURRENT_APP_VERSION = "2.8.89";
+export const CURRENT_BUILD_TIME = 1789304000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.89",
+    date: "10/09/2026",
+    title: "Plan Sanitario Oficial FEDEGAN-ICA & Registro de Vacunación",
+    highlights: [
+      "Registro Sanitario y Ciclos de Vacunación: Módulo opcional para registrar vacunaciones oficiales (Fiebre Aftosa, Brucelosis Bovina C19/RB51, Carbón Triple/Mancha, Rabia Silvestre, Desparasitantes y Vitaminas).",
+      "Censo Sanitario Oficial FEDEGAN/ICA: Generación instantánea del reporte poblacional discriminado por categorías ICA (Vacas, Novillas, Terneras 3-9m Brucelosis, Toros, Novillos, Terneros) listo para imprimir o entregar al brigadista.",
+      "Integración en Calendario y Ficha Técnica: Marcación de fechas de vacunación en el Calendario Ganadero y pestaña de historial sanitario individual en la ficha técnica de cada bovino.",
+      "Alertas Proactivas de Ciclos Nacionales: Notificaciones automáticas previas y durante los ciclos oficiales de vacunación en Colombia con enlace rápido al RUV."
+    ]
+  },
   {
     version: "2.8.88",
     date: "09/09/2026",

@@ -1,5 +1,5 @@
 {
-  "version": "2.8.88",
-  "buildTime": 1789278800000,
-  "description": "Distribución y prorrateo automático de gastos globales en lotes de ganado por cabeza."
+  "version": "2.8.89",
+  "buildTime": 1789304000000,
+  "description": "Plan sanitario oficial FEDEGAN-ICA, registro de vacunaciones, censo sanitario poblacional y sincronización con el calendario ganadero."
 }
