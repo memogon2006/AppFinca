@@ -110,7 +110,7 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
   const currentMonth = new Date().getMonth() + 1;
 
   const hasAftosaRecorded = vaccinations.some(v => 
-    (v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
+    (v.vaccineCodes?.includes('aftosa') || v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
     new Date(v.date).getFullYear() === currentYear
   );
 
@@ -125,7 +125,7 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
   } catch (e) {}
 
   if (hasAftosaRecorded) {
-    const latestAftosa = vaccinations.find(v => (v.vaccineCode === 'aftosa' || v.vaccineType?.toLowerCase().includes('aftosa')));
+    const latestAftosa = vaccinations.find(v => (v.vaccineCodes?.includes('aftosa') || v.vaccineCode === 'aftosa' || v.vaccineType?.toLowerCase().includes('aftosa')));
     if (latestAftosa?.ruvNumber) {
       farmVaccineState.ruvNumber = latestAftosa.ruvNumber;
     }

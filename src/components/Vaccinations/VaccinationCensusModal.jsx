@@ -103,13 +103,13 @@ export function VaccinationCensusModal({
   // Últimas vacunaciones registradas
   const aftosaRecords = useMemo(() => {
     return vaccinations.filter(v => 
-      (v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa')))
+      (v.vaccineCodes?.includes('aftosa') || v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa')))
     ).sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [vaccinations]);
 
   const brucellosisRecords = useMemo(() => {
     return vaccinations.filter(v => 
-      (v.vaccineCode === 'brucelosis' || (v.vaccineType && v.vaccineType.toLowerCase().includes('brucelosis')))
+      (v.vaccineCodes?.includes('brucelosis') || v.vaccineCode === 'brucelosis' || (v.vaccineType && v.vaccineType.toLowerCase().includes('brucelosis')))
     ).sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [vaccinations]);
 

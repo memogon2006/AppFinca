@@ -47,7 +47,7 @@ export function VaccinationCalendar({
   // Comprobar si ya se registró vacunación en el ciclo actual
   const currentYear = new Date().getFullYear();
   const hasAftosaRecordedThisYear = vaccinations.some(v => 
-    (v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
+    (v.vaccineCodes?.includes('aftosa') || v.vaccineCode === 'aftosa' || (v.vaccineType && v.vaccineType.toLowerCase().includes('aftosa'))) &&
     new Date(v.date).getFullYear() === currentYear
   );
 

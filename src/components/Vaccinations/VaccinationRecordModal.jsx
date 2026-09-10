@@ -16,7 +16,8 @@ import {
   Search,
   CheckSquare,
   Square,
-  Filter
+  Filter,
+  Plus
 } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
 import { formatCurrency, formatDate } from '../../services/calculations';
@@ -25,6 +26,7 @@ const VACCINE_OPTIONS = [
   {
     id: 'aftosa',
     name: 'Fiebre Aftosa (Ciclo Oficial ICA / FEDEGAN)',
+    shortName: 'Fiebre Aftosa',
     targetDefault: 'all',
     official: true,
     badge: 'Obligatoria ICA',
@@ -34,6 +36,7 @@ const VACCINE_OPTIONS = [
   {
     id: 'brucelosis',
     name: 'Brucelosis Bovina (Cepa 19 / RB51)',
+    shortName: 'Brucelosis',
     targetDefault: 'young_females',
     official: true,
     badge: 'Hembras 3-9 meses',
@@ -43,6 +46,7 @@ const VACCINE_OPTIONS = [
   {
     id: 'carbon',
     name: 'Carbón Sintomático / Triple (Mancha / Gangrena)',
+    shortName: 'Carbón Triple',
     targetDefault: 'all',
     official: false,
     badge: 'Preventiva',
@@ -52,6 +56,7 @@ const VACCINE_OPTIONS = [
   {
     id: 'rabia',
     name: 'Rabia Silvestre Bovina',
+    shortName: 'Rabia Silvestre',
     targetDefault: 'all',
     official: false,
     badge: 'Zonas de Riesgo',
@@ -61,6 +66,7 @@ const VACCINE_OPTIONS = [
   {
     id: 'desparasitante',
     name: 'Desparasitación Interna / Externa',
+    shortName: 'Desparasitante',
     targetDefault: 'all',
     official: false,
     badge: 'Tratamiento',
@@ -70,6 +76,7 @@ const VACCINE_OPTIONS = [
   {
     id: 'vitaminas',
     name: 'Vitaminas & Modificadores Orgánicos',
+    shortName: 'Vitaminas',
     targetDefault: 'all',
     official: false,
     badge: 'Nutrición',
@@ -79,6 +86,7 @@ const VACCINE_OPTIONS = [
   {
     id: 'otro',
     name: 'Otro Biológico / Vacuna Personalizada',
+    shortName: 'Personalizada',
     targetDefault: 'all',
     official: false,
     badge: 'Personalizado',
@@ -98,15 +106,15 @@ export function VaccinationRecordModal({
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Estado del Formulario
-  const [selectedVaccineId, setSelectedVaccineId] = useState('aftosa');
+  // Estado del Formulario: Multi-Selección de Vacunas (Array)
+  const [selectedVaccineIds, setSelectedVaccineIds] = useState(['aftosa']);
   const [customVaccineName, setCustomVaccineName] = useState('');
   const [date, setDate] = useState(todayStr);
   const [targetType, setTargetType] = useState('all'); // 'all' | 'multiple' | 'batch' | 'young_females' | 'individual'
   const [selectedBatch, setSelectedBatch] = useState('');
   const [selectedCattleId, setSelectedCattleId] = useState('');
   
-  // Selección múltiple interactiva
+  // Selección múltiple interactiva de animales
   const [selectedCattleIds, setSelectedCattleIds] = useState([]);
   const [animalSearchTerm, setAnimalSearchTerm] = useState('');
   const [animalFilterSex, setAnimalFilterSex] = useState('all');
@@ -178,16 +186,36 @@ export function VaccinationRecordModal({
     }
   }, []);
 
-  // Manejar cambio de vacuna
-  const handleVaccineChange = (vId) => {
-    setSelectedVaccineId(vId);
-    const opt = VACCINE_OPTIONS.find(o => o.id === vId);
-    if (opt?.targetDefault === 'young_females') {
-      setTargetType('young_females');
-    } else if (targetType === 'young_females' && opt?.targetDefault === 'all') {
-      setTargetType('all');
-    }
+  // Alternar selección de una vacuna (Multi-Selección de Vacunas)
+  const handleToggleVaccine = (vId) => {
+    setSelectedVaccineIds(prev => {
+      const exists = prev.includes(vId);
+      let next;
+      if (exists) {
+        if (prev.length === 1) {
+          // Si es la única marcada, no deseleccionar para mantener al menos una
+          return prev;
+        }
+        next = prev.filter(id => id !== vId);
+      } else {
+        next = [...prev, vId];
+      }
+      return next;
+    });
+    triggerFeedback('click');
   };
+
+  // Nombre consolidado de las vacunas seleccionadas
+  const combinedVaccinesTitle = useMemo(() => {
+    if (selectedVaccineIds.length === 0) return 'Sin vacuna seleccionada';
+    return selectedVaccineIds.map(vId => {
+      if (vId === 'otro') {
+        return customVaccineName.trim() || 'Vacuna Personalizada';
+      }
+      const opt = VACCINE_OPTIONS.find(o => o.id === vId);
+      return opt ? (selectedVaccineIds.length > 1 ? opt.shortName : opt.name) : 'Vacuna';
+    }).join(' + ');
+  }, [selectedVaccineIds, customVaccineName]);
 
   // Toggle selección de animal individual en la lista múltiple
   const handleToggleAnimal = (animalId) => {
@@ -212,7 +240,7 @@ export function VaccinationRecordModal({
     triggerFeedback('single');
   };
 
-  // Deseleccionar todos
+  // Deseleccionar todos los animales
   const handleDeselectAll = () => {
     setSelectedCattleIds([]);
     triggerFeedback('warning');
@@ -234,15 +262,15 @@ export function VaccinationRecordModal({
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (selectedVaccineIds.length === 0) {
+      alert('Por favor selecciona al menos un tipo de vacuna o tratamiento.');
+      return;
+    }
+
     if (targetType === 'multiple' && selectedCattleIds.length === 0) {
       alert('Por favor selecciona al menos un bovino en la lista.');
       return;
     }
-
-    const selectedOption = VACCINE_OPTIONS.find(o => o.id === selectedVaccineId);
-    const finalVaccineName = selectedVaccineId === 'otro' 
-      ? (customVaccineName.trim() || 'Vacuna / Tratamiento Sanitario')
-      : (selectedOption?.name || 'Vacuna');
 
     let targetLabel = 'Todo el hato';
     let selectedTags = [];
@@ -265,8 +293,9 @@ export function VaccinationRecordModal({
     const vaccinationData = {
       id: 'vac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
       date,
-      vaccineType: finalVaccineName,
-      vaccineCode: selectedVaccineId,
+      vaccineType: combinedVaccinesTitle,
+      vaccineCode: selectedVaccineIds[0],
+      vaccineCodes: selectedVaccineIds,
       targetType,
       targetLabel,
       batchName: targetType === 'batch' ? selectedBatch : (targetType === 'individual' ? selectedCattleId : 'Todo el Hato'),
@@ -274,7 +303,7 @@ export function VaccinationRecordModal({
       selectedCattleIds: targetType === 'multiple' ? selectedCattleIds : (targetType === 'individual' ? [selectedCattleId] : null),
       selectedTags: selectedTags.length > 0 ? selectedTags : null,
       animalCount: coveredCount,
-      officialCycle: (selectedVaccineId === 'aftosa' || selectedVaccineId === 'brucelosis') ? officialCycle : 'Plan Sanitario Interno',
+      officialCycle: (selectedVaccineIds.includes('aftosa') || selectedVaccineIds.includes('brucelosis')) ? officialCycle : 'Plan Sanitario Interno',
       ruvNumber: ruvNumber.trim(),
       biologicalBatch: biologicalBatch.trim(),
       vaccinator: vaccinator.trim(),
@@ -287,8 +316,8 @@ export function VaccinationRecordModal({
       onSaveVaccination(vaccinationData);
     }
 
-    // Actualizar estado de vacunación ICA en localStorage si es Aftosa
-    if (selectedVaccineId === 'aftosa') {
+    // Actualizar estado de vacunación ICA en localStorage si incluye Aftosa
+    if (selectedVaccineIds.includes('aftosa')) {
       try {
         localStorage.setItem('ganado_colombia_vaccine_status', JSON.stringify({
           isVaccinated: true,
@@ -319,7 +348,7 @@ export function VaccinationRecordModal({
                 <span>Registrar Vacunación / Plan Sanitario</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Registro oficial FEDEGAN-ICA o plan sanitario preventivo de la finca
+                Puedes seleccionar 1 o varios tipos de vacunas aplicadas en la misma jornada
               </p>
             </div>
           </div>
@@ -334,22 +363,30 @@ export function VaccinationRecordModal({
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
 
-          {/* 1. SELECCIÓN DE VACUNA / BIOLÓGICO */}
+          {/* 1. SELECCIÓN MÚLTIPLE DE VACUNAS / BIOLÓGICOS */}
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <span>1. Tipo de Vacuna o Tratamiento</span>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">Paso 1 de 3</span>
-            </label>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <span>1. Tipo de Vacuna o Tratamiento</span>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold lowercase">
+                  (puedes marcar 2 o más)
+                </span>
+              </label>
+
+              <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-lg border border-emerald-300 dark:border-emerald-800 truncate max-w-full sm:max-w-[320px]">
+                💉 {combinedVaccinesTitle}
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {VACCINE_OPTIONS.map(opt => {
-                const isSelected = selectedVaccineId === opt.id;
+                const isSelected = selectedVaccineIds.includes(opt.id);
                 return (
                   <button
                     type="button"
                     key={opt.id}
-                    onClick={() => handleVaccineChange(opt.id)}
-                    className={`p-3 rounded-2xl border text-left transition relative flex flex-col justify-between cursor-pointer ${
+                    onClick={() => handleToggleVaccine(opt.id)}
+                    className={`p-3 rounded-2xl border text-left transition relative flex flex-col justify-between cursor-pointer select-none ${
                       isSelected
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/30 shadow-sm'
                         : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300'
@@ -363,10 +400,16 @@ export function VaccinationRecordModal({
                       }`}>
                         {opt.badge}
                       </span>
-                      {isSelected && (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      )}
+                      
+                      <div className="flex items-center gap-1">
+                        {isSelected ? (
+                          <CheckSquare className="w-5 h-5 fill-emerald-600 text-white" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
                     </div>
+
                     <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white leading-tight">
                       {opt.name}
                     </span>
@@ -378,14 +421,14 @@ export function VaccinationRecordModal({
               })}
             </div>
 
-            {selectedVaccineId === 'otro' && (
+            {selectedVaccineIds.includes('otro') && (
               <div className="mt-2">
                 <input
                   type="text"
-                  placeholder="Nombre de la vacuna o biológico (ej. Vacuna Reproductiva IBR/DVB)..."
+                  placeholder="Nombre de la vacuna o biológico personalizado (ej. Complejo Reproductivo IBR/DVB)..."
                   value={customVaccineName}
                   onChange={(e) => setCustomVaccineName(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
                   required
                 />
               </div>
@@ -785,7 +828,7 @@ export function VaccinationRecordModal({
               className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Guardar Registro ({coveredCount} Bovinos)</span>
+              <span>Guardar Registro ({selectedVaccineIds.length} vacuna{selectedVaccineIds.length > 1 ? 's' : ''} • {coveredCount} bovinos)</span>
             </button>
           </div>
 

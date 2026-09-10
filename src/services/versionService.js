@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.90";
-export const CURRENT_BUILD_TIME = 1789308000000;
+export const CURRENT_APP_VERSION = "2.8.91";
+export const CURRENT_BUILD_TIME = 1789312000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.91",
+    date: "10/09/2026",
+    title: "Selección Múltiple de Tipos de Vacunas y Tratamientos Sanitarios",
+    highlights: [
+      "Aplicación Simultánea de Vacunas: Ahora puedes marcar 2 o más vacunas o biológicos en un solo registro (ej. Fiebre Aftosa + Brucelosis Bovina, o Carbón + Desparasitante + Vitaminas).",
+      "Tarjetas de Selección Interactiva: Checkboxes claros para cada biológico oficial, preventivo o personalizado con consolidación visual inmediata del título sanitario.",
+      "Registro Sanitario Unificado: Guarda un único evento sanitario con todos los biológicos aplicados, su costo total y trazabilidad completa en el censo oficial y ficha técnica.",
+      "Compatibilidad Total: Se vincula automáticamente con las alertas ICA y el censo oficial FEDEGAN."
+    ]
+  },
   {
     version: "2.8.90",
     date: "10/09/2026",
