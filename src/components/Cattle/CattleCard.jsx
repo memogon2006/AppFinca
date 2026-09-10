@@ -159,7 +159,7 @@ export function CattleCard({
             <FemaleStatusBadge status={femaleStatus} liters={animal.dailyMilkLiters} />
           )}
 
-          {animal.breed && <Badge variant="default">{animal.breed}</Badge>}
+          {(animal.color || animal.breed) && <Badge variant="default">{animal.color || animal.breed}</Badge>}
           {animal.isBreedingOnly && <Badge variant="purple">⭐ Solo Cría</Badge>}
         </div>
 

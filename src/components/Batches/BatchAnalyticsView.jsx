@@ -413,7 +413,8 @@ export function BatchAnalyticsView({
         const brand = (c.ironBrand || '').toLowerCase();
         const owner = (c.owner || '').toLowerCase();
         const breed = (c.breed || '').toLowerCase();
-        return tag.includes(q) || name.includes(q) || brand.includes(q) || owner.includes(q) || breed.includes(q);
+        const color = (c.color || '').toLowerCase();
+        return tag.includes(q) || name.includes(q) || brand.includes(q) || owner.includes(q) || breed.includes(q) || color.includes(q);
       });
     }
 

@@ -418,7 +418,7 @@ export function CattleListView({
                   <th className="p-3.5">Estado</th>
                   <th className="p-3.5">Ingreso #</th>
                   <th className="p-3.5">Hierro & Dueño</th>
-                  <th className="p-3.5">Raza & Categoría</th>
+                  <th className="p-3.5">Color & Categoría</th>
                   <th className="p-3.5">Compra / Inicial</th>
                   <th className="p-3.5">Peso Actual</th>
                   <th className="p-3.5">Ganancia Total</th>
@@ -505,9 +505,9 @@ export function CattleListView({
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[110px]">{animal.owner}</div>
                       </td>
 
-                      {/* Raza & Sexo */}
+                      {/* Color & Sexo */}
                       <td className="p-3.5">
-                        <div className="text-slate-800 dark:text-slate-200">{animal.breed || 'Sin especificar'}</div>
+                        <div className="text-slate-800 dark:text-slate-200">{animal.color || animal.breed || 'Sin especificar'}</div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400">
                           {animal.sex === 'Macho' ? '🐂 Macho' : '🐄 Hembra'} • {animal.category}
                         </div>

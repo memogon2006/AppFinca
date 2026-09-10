@@ -242,7 +242,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         <span className="text-base font-extrabold text-slate-900 dark:text-white">{cow.tagNumber}</span>
                         {cow.name && <span className="text-xs text-slate-500 dark:text-slate-300">({cow.name})</span>}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.breed || 'Sin raza'} • {cow.category}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.color || cow.breed || 'Sin color'} • {cow.category}</p>
                     </div>
                     {isReady ? (
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] font-black animate-pulse">
@@ -333,7 +333,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         <span className="text-base font-extrabold text-slate-900 dark:text-white">{cow.tagNumber}</span>
                         {cow.name && <span className="text-xs text-slate-500 dark:text-slate-300">({cow.name})</span>}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.breed} • {cow.category}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.color || cow.breed || 'Sin color'} • {cow.category}</p>
                     </div>
                     <Badge variant="blue">🥛 En Leche</Badge>
                   </div>
@@ -403,7 +403,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         <span className="text-base font-extrabold text-slate-900 dark:text-white">{cow.tagNumber}</span>
                         {cow.name && <span className="text-xs text-slate-500 dark:text-slate-300">({cow.name})</span>}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.breed} • {cow.owner}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.color || cow.breed || 'Sin color'} • {cow.owner}</p>
                     </div>
                     {isUrgent ? (
                       <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 text-[10px] font-bold animate-pulse">
@@ -466,7 +466,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         <span className="text-base font-extrabold text-slate-900 dark:text-white">{cow.tagNumber}</span>
                         {cow.name && <span className="text-xs text-slate-500 dark:text-slate-300">({cow.name})</span>}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.breed} • {cow.owner}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.color || cow.breed || 'Sin color'} • {cow.owner}</p>
                     </div>
                     <Badge variant="purple">👶 Levante de Cría</Badge>
                   </div>
@@ -521,7 +521,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         <span className="text-base font-extrabold text-slate-900 dark:text-white">{cow.tagNumber}</span>
                         {cow.name && <span className="text-xs text-slate-500 dark:text-slate-300">({cow.name})</span>}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.breed} • {cow.owner}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{cow.color || cow.breed || 'Sin color'} • {cow.owner}</p>
                     </div>
                     <Badge variant="gray">⭕ Vacía / Abierta</Badge>
                   </div>
@@ -566,7 +566,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                   <th className="p-3">Arete / Nombre</th>
                   <th className="p-3">Ingreso #</th>
                   <th className="p-3">Estado de la Hembra</th>
-                  <th className="p-3">Raza & Categoría</th>
+                  <th className="p-3">Color & Categoría</th>
                   <th className="p-3">Lechería (L/día)</th>
                   <th className="p-3">Ciclo Productivo</th>
                   <th className="p-3">Peso Actual</th>
@@ -597,7 +597,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         <FemaleStatusBadge status={femaleStatus} liters={cow.dailyMilkLiters} />
                       </td>
                       <td className="p-3">
-                        <div className="font-semibold">{cow.breed}</div>
+                        <div className="font-semibold">{cow.color || cow.breed || 'Sin color'}</div>
                         <div className="text-[10px] text-slate-500">{cow.category}</div>
                       </td>
                       <td className="p-3 font-extrabold text-blue-600 dark:text-blue-400">

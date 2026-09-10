@@ -347,10 +347,6 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       newErrors.tagNumber = 'El número de arete o chapa es obligatorio';
     }
 
-    if (!formData.color || !formData.color.trim()) {
-      newErrors.color = 'El color de pelaje o señas particulares es obligatorio';
-    }
-
     if (isWeightRequired) {
       if (formData.entryWeight === '' || formData.entryWeight === null || Number(formData.entryWeight) <= 0) {
         newErrors.entryWeight = 'El peso inicial es obligatorio para animales destinados a ceba / engorde.';
@@ -774,7 +770,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Color de Pelaje / Señas Particulares <span className="text-rose-500">*</span>
+                Color de Pelaje / Señas Particulares
               </label>
               <input
                 type="text"
@@ -782,11 +778,8 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 value={formData.color}
                 onChange={handleChange}
                 placeholder="Ej. Blanco aperlado, mocho, calzado"
-                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
-                  errors.color ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 dark:border-slate-700'
-                } text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
               />
-              {errors.color && <p className="text-[11px] text-rose-500 mt-1">{errors.color}</p>}
             </div>
           </div>
         </div>

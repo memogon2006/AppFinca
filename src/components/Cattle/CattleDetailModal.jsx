@@ -150,7 +150,7 @@ export function CattleDetailModal({
             {animal.sex === 'Hembra' && (
               <FemaleStatusBadge status={femaleStatus} liters={animal.dailyMilkLiters} />
             )}
-            <Badge variant="default" className="font-bold">{animal.breed}</Badge>
+            <Badge variant="default" className="font-bold">{animal.color || animal.breed || 'Sin color'}</Badge>
             <Badge variant="default" className="font-bold">{animal.category}</Badge>
             {animal.sex === 'Hembra' && animal.isBreedingOnly && <Badge variant="purple" className="font-bold">⭐ Solo de Cría</Badge>}
             

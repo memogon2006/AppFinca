@@ -207,13 +207,6 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       return;
     }
 
-    // Validar color obligatorio para cada animal
-    const missingColorRows = validRows.filter(r => !r.color || !r.color.trim());
-    if (missingColorRows.length > 0) {
-      setErrors(`El color de pelaje es obligatorio para todos los animales del lote (Faltan ${missingColorRows.length} animales sin color asignado).`);
-      return;
-    }
-
     // Validar pesos si es ceba o por kilo
     if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
       setErrors('Por favor ingresa un precio pactado por kilo ($/kg) válido.');
@@ -739,7 +732,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 <tr>
                   <th className="p-3 w-12 text-center">#</th>
                   <th className="p-3">N° Arete / Chapa <span className="text-rose-500">*</span></th>
-                  <th className="p-3">Color / Pelaje <span className="text-rose-500">*</span></th>
+                  <th className="p-3">Color / Pelaje</th>
                   <th className="p-3">Peso Entrada (kg)</th>
                   <th className="p-3 text-right">Costo Calculado (COP)</th>
                   <th className="p-3 w-10 text-center"></th>

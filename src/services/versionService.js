@@ -1,5 +1,5 @@
 export const CURRENT_APP_VERSION = "2.8.85";
-export const CURRENT_BUILD_TIME = 1789278000000;
+export const CURRENT_BUILD_TIME = 1789276500000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
@@ -8,11 +8,11 @@ export const APP_CHANGELOG = [
   {
     version: "2.8.85",
     date: "09/09/2026",
-    title: "Campo de Color / Pelaje Obligatorio en Registro de Bovinos",
+    title: "Visualización de Color de Bovino en Tarjetas e Inventario",
     highlights: [
-      "Validación de Color Obligatorio: Al registrar un nuevo animal (o editar), el campo de 'Color de Pelaje / Señas Particulares' ahora es de ingreso estrictamente obligatorio para asegurar la correcta identificación del ejemplar.",
-      "Indicador Visual en Formulario: Se añadió el distintivo asterisco rojo (*) y alertas con resaltado de borde en caso de estar vacío.",
-      "Control en Registro por Lotes: El ingreso masivo de lotes también valida que cada animal cuente con su respectivo color asignado antes de guardar."
+      "Color en Tarjetas de Bovinos: Las tarjetas del inventario general ahora destacan visualmente el color / pelaje del animal en la etiqueta principal en lugar de la raza.",
+      "Detalle y Módulos Actualizados: En la ventana de detalle del bovino, tablas de inventario, pesaje y módulo de hembras se muestra el color de manera prioritaria.",
+      "Búsqueda Integrada: Búsqueda rápida por color o señas en el módulo de lotes y análisis."
     ]
   },
   {

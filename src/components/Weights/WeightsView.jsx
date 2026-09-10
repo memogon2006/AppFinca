@@ -253,7 +253,7 @@ export function WeightsView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                           <span className="text-emerald-600 dark:text-emerald-400 font-black">{animal.tagNumber}</span>
                           {animal.name && <span className="text-slate-600 dark:text-slate-400 font-semibold">({animal.name})</span>}
                         </div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{animal.breed} • {animal.category}</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{animal.color || animal.breed || 'Sin color'} • {animal.category}</div>
                       </td>
 
                       {/* Ingreso # */}
