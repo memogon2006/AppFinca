@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.86";
-export const CURRENT_BUILD_TIME = 1789277200000;
+export const CURRENT_APP_VERSION = "2.8.87";
+export const CURRENT_BUILD_TIME = 1789278000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.87",
+    date: "09/09/2026",
+    title: "Sugerencias Dinámicas y Aprendizaje de Colores Registrados",
+    highlights: [
+      "Historial Inteligente de Colores: El panel de selección rápida de colores ahora aprende de los animales registrados en tu finca, priorizando los colores que ya utilizas.",
+      "Inclusión Automática de Nuevos Colores: Al registrar cualquier color nuevo, el sistema lo incorpora automáticamente a los botones de acceso rápido y al autocompletado para futuros registros.",
+      "Sincronización en Formularios: Disponible tanto en el registro individual como en el generador de lotes masivos."
+    ]
+  },
   {
     version: "2.8.86",
     date: "09/09/2026",

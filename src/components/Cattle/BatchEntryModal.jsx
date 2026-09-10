@@ -4,7 +4,8 @@ import {
   SEX_OPTIONS, 
   PRODUCTION_TYPES, 
   CATEGORIES, 
-  COMMON_BREEDS 
+  COMMON_BREEDS,
+  getDynamicFarmColors 
 } from '../../types/cattle';
 import { formatCurrency, formatNumber } from '../../services/calculations';
 import { 
@@ -30,20 +31,6 @@ import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
 import { analyzeFarmConsecutives, extractConsecutiveNumber } from '../../services/consecutiveService';
-
-const COMMON_COLORS = [
-  'Castaño',
-  'Hosco',
-  'Blanco',
-  'Negro',
-  'Barcino',
-  'Bayo',
-  'Roano',
-  'Colorado',
-  'Gris / Cenizo',
-  'Careto',
-  'Pintado / Overo'
-];
 
 export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]', cattleList = [] }) {
   const { currentUser } = useAuth();
@@ -104,6 +91,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   }, [farmConsecutiveStats?.nextSuggestedConsecutive, isOpen]);
 
   const [errors, setErrors] = useState(null);
+
+  // Lista dinámica de colores (historial registrado en finca + base estándar)
+  const availableColors = useMemo(() => {
+    return getDynamicFarmColors(cattleList, seriesConfig.defaultColor);
+  }, [cattleList, seriesConfig.defaultColor]);
 
   // Agregar fila individual
   const handleAddRow = () => {
@@ -717,8 +709,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                     placeholder="Ej. Castaño"
                     className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {['Blanco', 'Negro', 'Hosco', 'Castaño', 'Sardo', 'Colorado', 'Bayo'].map(c => (
+                  <div className="mt-1 flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                    {availableColors.map(c => (
                       <button
                         key={c}
                         type="button"
@@ -856,7 +848,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           </div>
 
           <datalist id="colors-list-quick">
-            {COMMON_COLORS.map(c => (
+            {availableColors.map(c => (
               <option key={c} value={c} />
             ))}
           </datalist>

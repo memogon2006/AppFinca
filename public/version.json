@@ -1,5 +1,5 @@
 {
-  "version": "2.8.86",
-  "buildTime": 1789277200000,
-  "description": "Campo de color obligatorio con botones de selección rápida al registrar bovinos."
+  "version": "2.8.87",
+  "buildTime": 1789278000000,
+  "description": "Historial dinámico de colores registrados en finca e inclusión automática de nuevos colores."
 }

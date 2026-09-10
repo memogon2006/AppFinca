@@ -6,7 +6,8 @@ import {
   CATEGORIES, 
   FEMALE_STATUSES,
   ENTRY_TYPES, 
-  COMMON_BREEDS 
+  COMMON_BREEDS,
+  getDynamicFarmColors 
 } from '../../types/cattle';
 import { BOVINE_GESTATION_DAYS } from '../../services/calculations';
 import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info } from 'lucide-react';
@@ -153,6 +154,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const consecutiveEvaluation = useMemo(() => {
     return evaluateCandidateConsecutive(formData.tagNumber, farmConsecutiveStats);
   }, [formData.tagNumber, farmConsecutiveStats]);
+
+  // Lista dinámica de colores (historial registrado en finca + base estándar)
+  const availableColors = useMemo(() => {
+    return getDynamicFarmColors(cattleList, formData.color);
+  }, [cattleList, formData.color]);
 
   // Validación en tiempo real con Debounce para detectar identificaciones duplicadas
   useEffect(() => {
@@ -796,7 +802,8 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 name="color"
                 value={formData.color}
                 onChange={handleChange}
-                placeholder="Ej. Blanco aperlado, Castaño, Hosco, Negro, Sardo"
+                list="cattle-form-colors-list"
+                placeholder="Ej. Blanco, Castaño, Hosco, Negro, Sardo"
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
                   errors.color ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 dark:border-slate-700'
                 } text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
@@ -804,33 +811,50 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               />
               {errors.color && <p className="text-[11px] text-rose-500 font-bold mt-1">{errors.color}</p>}
               
-              {/* Sugerencias Rápidas de Color */}
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] text-slate-400 font-semibold mr-1">Comunes:</span>
-                {['Blanco', 'Negro', 'Hosco', 'Castaño', 'Sardo', 'Colorado', 'Bayo', 'Gris', 'Barcino', 'Careto', 'Pardo'].map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, color: c }));
-                      if (errors.color) {
-                        setErrors(prev => {
-                          const n = { ...prev };
-                          delete n.color;
-                          return n;
-                        });
-                      }
-                    }}
-                    className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
-                      formData.color?.toLowerCase() === c.toLowerCase()
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
+              {/* Sugerencias Rápidas de Color Dinámicas (Historial de finca + nuevos + comunes) */}
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" /> Colores registrados y frecuentes:
+                  </span>
+                  <span className="text-[9px] text-slate-400">Toca para seleccionar</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto p-1.5 rounded-xl bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                  {availableColors.map((c) => {
+                    const isSelected = formData.color?.trim().toLowerCase() === c.toLowerCase();
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, color: c }));
+                          if (errors.color) {
+                            setErrors(prev => {
+                              const n = { ...prev };
+                              delete n.color;
+                              return n;
+                            });
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-1 ring-emerald-400'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Datalist para autocompletar en el input */}
+              <datalist id="cattle-form-colors-list">
+                {availableColors.map(c => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </div>
           </div>
         </div>

@@ -71,3 +71,60 @@ export const COMMON_BREEDS = [
   'Criollo / BON',
   'Mestizo / Cruce',
 ];
+
+export const BASE_COMMON_COLORS = [
+  'Blanco',
+  'Negro',
+  'Hosco',
+  'Castaño',
+  'Sardo',
+  'Colorado',
+  'Bayo',
+  'Gris',
+  'Barcino',
+  'Careto',
+  'Pardo',
+  'Roano'
+];
+
+/**
+ * Obtiene la lista dinámica de colores basada en el historial del inventario de la finca
+ * y colores base estándar, ordenada por frecuencia y orden alfabético.
+ */
+export function getDynamicFarmColors(cattleList = [], extraColor = '') {
+  const colorCounts = {};
+
+  // 1. Contabilizar colores ya registrados en los animales de la finca
+  (cattleList || []).forEach(c => {
+    const col = (c.color || '').trim();
+    if (col) {
+      const formatted = col.charAt(0).toUpperCase() + col.slice(1);
+      colorCounts[formatted] = (colorCounts[formatted] || 0) + 1;
+    }
+  });
+
+  // 2. Si hay un color extra en edición/escritura, incluirlo
+  if (extraColor && extraColor.trim()) {
+    const curCol = extraColor.trim();
+    const formattedCur = curCol.charAt(0).toUpperCase() + curCol.slice(1);
+    if (!colorCounts[formattedCur]) {
+      colorCounts[formattedCur] = 0.5;
+    }
+  }
+
+  // 3. Asegurar presencia de colores base ganaderos
+  BASE_COMMON_COLORS.forEach(b => {
+    if (colorCounts[b] === undefined) {
+      colorCounts[b] = 0;
+    }
+  });
+
+  // 4. Ordenar: los más frecuentes primero, luego alfabéticamente
+  return Object.keys(colorCounts).sort((a, b) => {
+    const countA = colorCounts[a] || 0;
+    const countB = colorCounts[b] || 0;
+    if (countB !== countA) return countB - countA;
+    return a.localeCompare(b, 'es', { sensitivity: 'base' });
+  });
+}
+
