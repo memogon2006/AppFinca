@@ -1237,7 +1237,7 @@ export function InventoryChecklistModal({
                   className="px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-md transition cursor-pointer"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>📲 Enviar a WhatsApp</span>
+                  <span>Enviar a WhatsApp</span>
                 </button>
 
                 <button
@@ -1246,7 +1246,7 @@ export function InventoryChecklistModal({
                   className="px-5 py-2.5 rounded-2xl bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-md transition cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
-                  <span>💾 Guardar en Finca</span>
+                  <span>Guardar en Finca</span>
                 </button>
               </div>
             </>
