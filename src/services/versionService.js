@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.99";
-export const CURRENT_BUILD_TIME = 1789410000000;
+export const CURRENT_APP_VERSION = "2.8.100";
+export const CURRENT_BUILD_TIME = 1789412000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.100",
+    date: "18/09/2026",
+    title: "+1 Animal Extra / No Registrado & Alertas de Procedencia",
+    highlights: [
+      "Botón '+1 Extra' en Checklist: Permite ingresar en el conteo de manga un animal presente que no figura en el inventario oficial, registrando su arete provisional, color, sexo, peso y notas de procedencia.",
+      "Insignias y Pestaña de Filtro '⚠️ Extras': Visualización destacada en el conteo con opción de filtrar solo animales extra y botón de eliminación rápida si fue un error.",
+      "Resumen y Auditoría de Extras: El balance del arqueo detalla los animales no registrados detectados y los vincula al registro histórico.",
+      "Panel de Alertas de Procedencia en el Tablero: Muestra los animales extra detectados con 3 acciones directas: '➕ Crear Bovino Oficial' (formulario prellenado), '✓ Marcar Resuelto / Aclarado' (ej. devuelto a vecino) y '🗑️ Descartar'."
+    ]
+  },
   {
     version: "2.8.99",
     date: "18/09/2026",

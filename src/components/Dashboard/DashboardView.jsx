@@ -322,6 +322,7 @@ export function DashboardView({
         cattle={cattle}
         onOpenChecklist={onOpenChecklist}
         onSelectAnimal={onSelectAnimal}
+        onOpenNewAnimal={onOpenNewAnimal}
       />
 
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}

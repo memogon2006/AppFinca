@@ -67,13 +67,22 @@ export function InventoryChecklistModal({
   // Modo Báscula Rápida integrado en el Checklist
   const [enableQuickWeigh, setEnableQuickWeigh] = useState(false);
 
-  // Estado del conteo activo: Map<animalId, { verified: boolean, verifiedAt: string, note: string, quickTags: string[], weight?: string, isInfiltrated?: boolean }>
+  // Estado del conteo activo: Map<animalId, { verified: boolean, verifiedAt: string, note: string, quickTags: string[], weight?: string, isInfiltrated?: boolean, isExtra?: boolean }>
   const [checkMap, setCheckMap] = useState({});
   const [infiltratedAnimals, setInfiltratedAnimals] = useState([]);
+
+  // Animales Extra / No Registrados en Inventario (+1)
+  const [extraAnimals, setExtraAnimals] = useState([]);
+  const [showAddExtraModal, setShowAddExtraModal] = useState(false);
+  const [extraTag, setExtraTag] = useState('');
+  const [extraColor, setExtraColor] = useState('');
+  const [extraSex, setExtraSex] = useState('Macho');
+  const [extraWeight, setExtraWeight] = useState('');
+  const [extraNote, setExtraNote] = useState('');
   
   // Búsqueda y filtros dentro del conteo
   const [searchQuery, setSearchQuery] = useState('');
-  const [tabFilter, setTabFilter] = useState('all'); // 'all', 'pending', 'verified', 'issues'
+  const [tabFilter, setTabFilter] = useState('all'); // 'all', 'pending', 'verified', 'issues', 'extras'
   
   // Modal de Novedad Rápida
   const [activeNoteAnimal, setActiveNoteAnimal] = useState(null);
@@ -98,6 +107,8 @@ export function InventoryChecklistModal({
           setActiveNoteAnimal(null);
         } else if (showAddInfiltratedModal) {
           setShowAddInfiltratedModal(false);
+        } else if (showAddExtraModal) {
+          setShowAddExtraModal(false);
         } else {
           onClose();
         }
@@ -113,6 +124,13 @@ export function InventoryChecklistModal({
       setViewStep('setup');
       setCheckMap({});
       setInfiltratedAnimals([]);
+      setExtraAnimals([]);
+      setShowAddExtraModal(false);
+      setExtraTag('');
+      setExtraColor('');
+      setExtraSex('Macho');
+      setExtraWeight('');
+      setExtraNote('');
       setSearchQuery('');
       setTabFilter('all');
       setActiveNoteAnimal(null);
@@ -123,7 +141,7 @@ export function InventoryChecklistModal({
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose, currentUser]);
+  }, [isOpen, onClose, currentUser, activeNoteAnimal, showAddInfiltratedModal, showAddExtraModal]);
 
   // Solo animales activos en finca
   const activeCattle = useMemo(() => {
@@ -168,7 +186,7 @@ export function InventoryChecklistModal({
     });
   }, [activeCattle, scopeType, selectedBatch, selectedOwner, selectedSex]);
 
-  // Animales combinados en el conteo (Objetivo + Infiltrados agregados)
+  // Animales combinados en el conteo (Objetivo + Infiltrados + Extras no registrados)
   const allCountingList = useMemo(() => {
     const combined = [...targetCattle];
     infiltratedAnimals.forEach(inf => {
@@ -176,8 +194,13 @@ export function InventoryChecklistModal({
         combined.push(inf);
       }
     });
+    extraAnimals.forEach(ext => {
+      if (!combined.some(c => String(c.id) === String(ext.id))) {
+        combined.push(ext);
+      }
+    });
     return combined;
-  }, [targetCattle, infiltratedAnimals]);
+  }, [targetCattle, infiltratedAnimals, extraAnimals]);
 
   // Iniciar conteo activo
   const handleStartCounting = () => {
@@ -335,12 +358,71 @@ export function InventoryChecklistModal({
     setShowAddInfiltratedModal(false);
   };
 
+  // Agregar animal extra / no registrado en inventario (+1)
+  const handleAddExtraAnimal = () => {
+    const nextNum = extraAnimals.length + 1;
+    const tag = extraTag.trim() || `EXTRA-${nextNum}`;
+    const tempId = `extra_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    
+    const newExtra = {
+      id: tempId,
+      tagNumber: tag,
+      name: `Extra #${nextNum}`,
+      color: extraColor.trim() || 'Sin color especificado',
+      sex: extraSex || 'Macho',
+      category: extraSex === 'Hembra' ? 'Vaca / Novilla' : 'Novillo',
+      owner: 'Procedencia por Determinar',
+      ironBrand: 'Sin marca',
+      entryBatch: selectedBatch || 'Sin lote',
+      currentWeight: parseFloat(extraWeight) || 0,
+      isExtra: true,
+      note: extraNote.trim() || 'Animal extra no registrado en inventario',
+      createdAt: new Date().toISOString()
+    };
+
+    setExtraAnimals(prev => [...prev, newExtra]);
+    setCheckMap(prev => ({
+      ...prev,
+      [tempId]: {
+        verified: true,
+        verifiedAt: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+        note: extraNote.trim() || 'Animal extra no registrado en inventario',
+        quickTags: [],
+        weight: extraWeight ? String(extraWeight) : '',
+        isExtra: true
+      }
+    }));
+
+    setExtraTag('');
+    setExtraColor('');
+    setExtraSex('Macho');
+    setExtraWeight('');
+    setExtraNote('');
+    setShowAddExtraModal(false);
+    triggerFeedback('weighin');
+  };
+
+  // Eliminar animal extra
+  const handleRemoveExtraAnimal = (animalId, e) => {
+    e?.stopPropagation();
+    if (window.confirm('¿Deseas eliminar este animal extra del conteo?')) {
+      setExtraAnimals(prev => prev.filter(a => a.id !== animalId));
+      setCheckMap(prev => {
+        const next = { ...prev };
+        delete next[animalId];
+        return next;
+      });
+      triggerFeedback('warning');
+    }
+  };
+
   // Métricas calculadas en tiempo real
   const metrics = useMemo(() => {
     let verifiedCount = 0;
     let pendingCount = 0;
     let issueCount = 0;
     let infiltratedCount = infiltratedAnimals.length;
+    let extraCount = extraAnimals.length;
     let weighedCount = 0;
     let totalBiomass = 0;
 
@@ -349,7 +431,9 @@ export function InventoryChecklistModal({
       if (state?.verified) {
         verifiedCount++;
       } else {
-        pendingCount++;
+        if (!a.isExtra) {
+          pendingCount++;
+        }
       }
       if (state?.note || (state?.quickTags && state.quickTags.length > 0)) {
         issueCount++;
@@ -362,7 +446,7 @@ export function InventoryChecklistModal({
     });
 
     const expectedTotal = targetCattle.length;
-    const progressPercent = expectedTotal > 0 ? Math.round((verifiedCount / expectedTotal) * 100) : 0;
+    const progressPercent = expectedTotal > 0 ? Math.round(((verifiedCount - extraCount) / expectedTotal) * 100) : 0;
 
     return {
       expectedTotal,
@@ -370,11 +454,12 @@ export function InventoryChecklistModal({
       pendingCount,
       issueCount,
       infiltratedCount,
+      extraCount,
       progressPercent,
       weighedCount,
       totalBiomass
     };
-  }, [allCountingList, targetCattle, checkMap, infiltratedAnimals]);
+  }, [allCountingList, targetCattle, checkMap, infiltratedAnimals, extraAnimals]);
 
   // Lista de animales mostrada según búsqueda y pestaña de filtro
   const displayedList = useMemo(() => {
@@ -382,7 +467,7 @@ export function InventoryChecklistModal({
 
     // Filtro por pestaña
     if (tabFilter === 'pending') {
-      list = list.filter(a => !checkMap[a.id]?.verified);
+      list = list.filter(a => !checkMap[a.id]?.verified && !a.isExtra);
     } else if (tabFilter === 'verified') {
       list = list.filter(a => checkMap[a.id]?.verified);
     } else if (tabFilter === 'issues') {
@@ -390,6 +475,8 @@ export function InventoryChecklistModal({
         const st = checkMap[a.id];
         return st?.note || (st?.quickTags && st.quickTags.length > 0);
       });
+    } else if (tabFilter === 'extras') {
+      list = list.filter(a => a.isExtra);
     }
 
     // Filtro por buscador (arete, color, dueño, lote, nombre)
@@ -544,6 +631,21 @@ export function InventoryChecklistModal({
         };
       });
 
+      const extraList = extraAnimals.map(a => {
+        const st = checkMap[a.id];
+        return {
+          id: a.id,
+          tagNumber: a.tagNumber || 'EXTRA',
+          name: a.name || '',
+          color: a.color || '',
+          sex: a.sex || 'Macho',
+          weight: st?.weight ? parseFloat(st.weight) : (a.currentWeight || 0),
+          note: st?.note || a.note || '',
+          detectedAt: auditDate,
+          status: 'pending' // 'pending' | 'resolved' | 'created'
+        };
+      });
+
       const auditRecord = {
         date: auditDate,
         time: auditTime || new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
@@ -556,10 +658,12 @@ export function InventoryChecklistModal({
         totalVerified: metrics.verifiedCount,
         totalMissing: metrics.pendingCount,
         totalInfiltrated: metrics.infiltratedCount,
+        totalExtra: metrics.extraCount,
         totalWeighed: totalWeighedCount,
         totalBiomass: totalWeighedKg,
         missingList,
         observedList,
+        extraAnimals: extraList,
         userId: currentUser?.id,
         createdAt: new Date().toISOString()
       };
@@ -569,12 +673,27 @@ export function InventoryChecklistModal({
       }
       if (currentUser?.id) {
         localStorage.setItem(`ganado_latest_audit_${currentUser.id}`, JSON.stringify(auditRecord));
+        
+        // Persistir / concatenar alertas de animales extra no resueltas
+        if (extraList.length > 0) {
+          const alertKey = `ganado_unresolved_extra_alerts_${currentUser.id}`;
+          let existingAlerts = [];
+          try {
+            const raw = localStorage.getItem(alertKey);
+            if (raw) existingAlerts = JSON.parse(raw);
+          } catch (e) {
+            existingAlerts = [];
+          }
+          const mergedAlerts = [...extraList, ...existingAlerts.filter(ex => !extraList.some(n => n.id === ex.id))];
+          localStorage.setItem(alertKey, JSON.stringify(mergedAlerts));
+        }
       }
 
       await Promise.all(updates);
       triggerFeedback('success');
       const weighMsg = totalWeighedCount > 0 ? ` y se registraron ${totalWeighedCount} pesajes en báscula` : '';
-      alert(`✅ ¡Arqueo de inventario guardado con éxito! Se actualizó el tablero${weighMsg}.`);
+      const extraMsg = metrics.extraCount > 0 ? ` (${metrics.extraCount} animal(es) extra generaron alerta en el tablero)` : '';
+      alert(`✅ ¡Arqueo de inventario guardado con éxito! Se actualizó el tablero${weighMsg}${extraMsg}.`);
       
       if (onDataChanged) {
         onDataChanged();
@@ -946,11 +1065,29 @@ export function InventoryChecklistModal({
                   <button
                     type="button"
                     onClick={() => setShowAddInfiltratedModal(true)}
-                    className="px-3 py-2 rounded-2xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700 text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
+                    className="px-2.5 sm:px-3 py-2 rounded-2xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700 text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
                     title="Registrar animal de otro lote que apareció en este potrero"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">+ Infiltrado</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextNum = extraAnimals.length + 1;
+                      setExtraTag(`EXTRA-${nextNum}`);
+                      setExtraColor('');
+                      setExtraSex('Macho');
+                      setExtraWeight('');
+                      setExtraNote('');
+                      setShowAddExtraModal(true);
+                    }}
+                    className="px-2.5 sm:px-3 py-2 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1 shrink-0 cursor-pointer shadow-md shadow-amber-500/20"
+                    title="Añadir animal no registrado en inventario (+1) para seguimiento y alerta de procedencia"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+1 Extra</span>
                   </button>
                 </div>
 
@@ -1003,6 +1140,20 @@ export function InventoryChecklistModal({
                   >
                     🩹 Con Novedades ({metrics.issueCount})
                   </button>
+
+                  {metrics.extraCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setTabFilter('extras')}
+                      className={`px-3 py-1.5 rounded-xl transition cursor-pointer whitespace-nowrap ${
+                        tabFilter === 'extras'
+                          ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100'
+                      }`}
+                    >
+                      ⚠️ Extras (+{metrics.extraCount})
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1087,6 +1238,11 @@ export function InventoryChecklistModal({
                                 Infiltrado
                               </span>
                             )}
+                            {animal.isExtra && (
+                              <span className="px-1.5 py-0.2 rounded-md bg-amber-400 text-slate-950 text-[10px] font-black uppercase flex items-center gap-0.5">
+                                ⚠️ Extra
+                              </span>
+                            )}
                           </div>
                           
                           <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1 mt-0.5">
@@ -1094,17 +1250,31 @@ export function InventoryChecklistModal({
                               {animal.color || 'Sin color'}
                             </span>
                             <span>•</span>
-                            <span className="truncate max-w-[90px]">{animal.owner || 'Hacienda'}</span>
+                            <span className="truncate max-w-[90px]">{animal.owner || (animal.isExtra ? 'Por verificar' : 'Hacienda')}</span>
                           </div>
                         </div>
 
-                        {/* Botón de Check Gigante */}
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                          isChecked 
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-105' 
-                            : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-slate-200'
-                        }`}>
-                          {isChecked ? <Check className="w-5 h-5 font-black" /> : <span className="text-xs font-bold text-slate-400">○</span>}
+                        <div className="flex items-center gap-1.5">
+                          {/* Botón Eliminar si es Animal Extra */}
+                          {animal.isExtra && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveExtraAnimal(animal.id, e)}
+                              className="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 transition cursor-pointer"
+                              title="Eliminar animal extra del conteo"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {/* Botón de Check Gigante */}
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                            isChecked 
+                              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-105' 
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-slate-200'
+                          }`}>
+                            {isChecked ? <Check className="w-5 h-5 font-black" /> : <span className="text-xs font-bold text-slate-400">○</span>}
+                          </div>
                         </div>
                       </div>
 
@@ -1322,6 +1492,47 @@ export function InventoryChecklistModal({
                               <span className="text-slate-500 text-[11px] block mt-0.5">Nota: {st.note}</span>
                             )}
                           </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Detalle de Animales Extra / No Registrados Detectados */}
+              {extraAnimals.length > 0 && (
+                <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-black text-amber-950 dark:text-amber-200 uppercase">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span>Animales Extra / No Registrados Detectados ({extraAnimals.length}):</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black tracking-wide lowercase">
+                      Generará alerta en tablero
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                    {extraAnimals.map(a => {
+                      const st = checkMap[a.id];
+                      return (
+                        <div key={a.id} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-800 text-xs flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono font-black text-slate-900 dark:text-white">
+                                No. {a.tagNumber}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 text-[10px] font-bold">
+                                {a.sex}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              {a.color || 'Sin color'} {st?.weight ? `• ${st.weight} kg` : ''} {st?.note ? `• ${st.note}` : ''}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                            Por investigar
+                          </span>
                         </div>
                       );
                     })}
@@ -1691,6 +1902,133 @@ export function InventoryChecklistModal({
                   className="px-4 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold"
                 >
                   Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* MODAL PARA AGREGAR ANIMAL EXTRA NO REGISTRADO (+1) ⚠️ */}
+        {/* ========================================================================= */}
+        {showAddExtraModal && (
+          <div className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                      +1 Animal Extra / No Registrado
+                    </h4>
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+                      Identificación de campo y alerta de procedencia
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddExtraModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Registra un animal presente físicamente en manga que <strong>no aparece en tu inventario oficial</strong>. Se sumará al conteo y creará una alerta en el tablero para verificar su procedencia o crearlo como bovino formal.
+              </p>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      Arete / Chapa Provisional:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. EXTRA-1 o 9982"
+                      value={extraTag}
+                      onChange={(e) => setExtraTag(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-mono font-bold focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      Sexo:
+                    </label>
+                    <select
+                      value={extraSex}
+                      onChange={(e) => setExtraSex(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold focus:outline-none"
+                    >
+                      <option value="Macho">🐂 Macho</option>
+                      <option value="Hembra">🐄 Hembra</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      Color / Pelaje:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Hosco, Negro, Barcino..."
+                      value={extraColor}
+                      onChange={(e) => setExtraColor(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      Peso en Manga (kg, opcional):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      placeholder="Ej. 345.5"
+                      value={extraWeight}
+                      onChange={(e) => setExtraWeight(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    Procedencia / Observación de campo:
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Ej. Sin marca visible, posible ternero del vecino D. Pedro o saltó el cercado..."
+                    value={extraNote}
+                    onChange={(e) => setExtraNote(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-medium focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddExtraModal(false)}
+                  className="px-3.5 py-2 rounded-xl text-slate-600 dark:text-slate-400 text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddExtraAnimal}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Añadir al Conteo</span>
                 </button>
               </div>
             </div>

@@ -614,8 +614,15 @@ export default function App() {
     showToast(`¡Sincronización con la nube completada! ☁️`, 'success');
   };
 
-  const handleOpenNew = () => {
-    setEditingAnimal(null);
+  const handleOpenNew = (initialData = null) => {
+    if (initialData && typeof initialData === 'object' && !initialData.nativeEvent) {
+      setEditingAnimal({
+        ...initialData,
+        id: undefined
+      });
+    } else {
+      setEditingAnimal(null);
+    }
     setIsFormModalOpen(true);
   };
 

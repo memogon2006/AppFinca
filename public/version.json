@@ -1,5 +1,5 @@
 {
-  "version": "2.8.99",
-  "buildTime": 1789410000000,
-  "description": "Corrección y estabilización de variables en Báscula Rápida con Checklist integrado."
+  "version": "2.8.100",
+  "buildTime": 1789412000000,
+  "description": "Opción de añadir +1 Animal Extra / No Registrado en Checklist de Inventario con Alertas de Procedencia interactivas en el Tablero."
 }
