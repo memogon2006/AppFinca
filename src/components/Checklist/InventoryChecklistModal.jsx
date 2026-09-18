@@ -48,6 +48,7 @@ export function InventoryChecklistModal({
   isOpen,
   onClose,
   cattle = [],
+  weighings = [],
   currentUser,
   onDataChanged,
   zIndex = 'z-[60]'
@@ -63,7 +64,10 @@ export function InventoryChecklistModal({
   const [locationName, setLocationName] = useState('');
   const [inspectorName, setInspectorName] = useState(currentUser?.name || 'Administrador');
 
-  // Estado del conteo activo: Map<animalId, { verified: boolean, verifiedAt: string, note: string, quickTags: string[], isInfiltrated?: boolean }>
+  // Modo Báscula Rápida integrado en el Checklist
+  const [enableQuickWeigh, setEnableQuickWeigh] = useState(false);
+
+  // Estado del conteo activo: Map<animalId, { verified: boolean, verifiedAt: string, note: string, quickTags: string[], weight?: string, isInfiltrated?: boolean }>
   const [checkMap, setCheckMap] = useState({});
   const [infiltratedAnimals, setInfiltratedAnimals] = useState([]);
   
@@ -187,6 +191,7 @@ export function InventoryChecklistModal({
       initialMap[c.id] = {
         verified: false,
         verifiedAt: null,
+        weight: '',
         note: '',
         quickTags: [],
         isInfiltrated: false
@@ -200,6 +205,26 @@ export function InventoryChecklistModal({
     setTimeout(() => {
       searchInputRef.current?.focus();
     }, 150);
+  };
+
+  // Actualizar peso en vivo (si Báscula Rápida está activa)
+  const handleWeightChange = (animalId, weightVal) => {
+    setCheckMap(prev => {
+      const current = prev[animalId] || { verified: false, verifiedAt: null, note: '', quickTags: [], weight: '' };
+      const hasWeight = parseFloat(weightVal) > 0;
+      return {
+        ...prev,
+        [animalId]: {
+          ...current,
+          weight: weightVal,
+          // Al digitar peso se verifica automáticamente
+          verified: hasWeight ? true : current.verified,
+          verifiedAt: (hasWeight && !current.verifiedAt) 
+            ? new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) 
+            : current.verifiedAt
+        }
+      };
+    });
   };
 
   // Marcar / Desmarcar animal individual
@@ -316,6 +341,8 @@ export function InventoryChecklistModal({
     let pendingCount = 0;
     let issueCount = 0;
     let infiltratedCount = infiltratedAnimals.length;
+    let weighedCount = 0;
+    let totalBiomass = 0;
 
     allCountingList.forEach(a => {
       const state = checkMap[a.id];
@@ -326,6 +353,11 @@ export function InventoryChecklistModal({
       }
       if (state?.note || (state?.quickTags && state.quickTags.length > 0)) {
         issueCount++;
+      }
+      const wVal = parseFloat(state?.weight);
+      if (wVal > 0) {
+        weighedCount++;
+        totalBiomass += wVal;
       }
     });
 
@@ -338,7 +370,9 @@ export function InventoryChecklistModal({
       pendingCount,
       issueCount,
       infiltratedCount,
-      progressPercent
+      progressPercent,
+      weighedCount,
+      totalBiomass
     };
   }, [allCountingList, targetCattle, checkMap, infiltratedAnimals]);
 
@@ -443,19 +477,44 @@ export function InventoryChecklistModal({
   // Guardar y asentar en base de datos local
   const handleSaveAuditToDatabase = async () => {
     try {
-      // 1. Actualizar fecha de verificación y notas en cada animal visto
+      // 1. Actualizar fecha de verificación, notas y pesajes si aplica
       const updates = [];
+      const weighingInserts = [];
+      let totalWeighedCount = 0;
+      let totalWeighedKg = 0;
+
       for (const animal of allCountingList) {
         const state = checkMap[animal.id];
         if (state?.verified) {
           const noteText = state.note || (state.quickTags?.length > 0 ? state.quickTags.join(', ') : '');
-          updates.push(
-            db.cattle.update(animal.id, {
-              lastVerifiedDate: auditDate,
-              notes: noteText ? `${animal.notes ? animal.notes + ' | ' : ''}[Arqueo ${auditDate}]: ${noteText}` : animal.notes
-            })
-          );
+          const wVal = parseFloat(state.weight);
+
+          const cattleUpdateObj = {
+            lastVerifiedDate: auditDate,
+            notes: noteText ? `${animal.notes ? animal.notes + ' | ' : ''}[Arqueo ${auditDate}]: ${noteText}` : animal.notes
+          };
+
+          if (wVal && wVal > 0) {
+            cattleUpdateObj.currentWeight = wVal;
+            totalWeighedCount++;
+            totalWeighedKg += wVal;
+
+            weighingInserts.push({
+              cattleId: String(animal.id),
+              date: auditDate,
+              weight: wVal,
+              conditionScore: 3.5,
+              notes: `Pesaje rápido en Arqueo (${inspectorName || 'Manga'})`,
+              userId: currentUser?.id
+            });
+          }
+
+          updates.push(db.cattle.update(animal.id, cattleUpdateObj));
         }
+      }
+
+      if (weighingInserts.length > 0 && db.weighings) {
+        await db.weighings.bulkAdd(weighingInserts);
       }
 
       // 2. Guardar registro estructurado de arqueo histórico
@@ -497,6 +556,8 @@ export function InventoryChecklistModal({
         totalVerified: metrics.verifiedCount,
         totalMissing: metrics.pendingCount,
         totalInfiltrated: metrics.infiltratedCount,
+        totalWeighed: totalWeighedCount,
+        totalBiomass: totalWeighedKg,
         missingList,
         observedList,
         userId: currentUser?.id,
@@ -512,7 +573,8 @@ export function InventoryChecklistModal({
 
       await Promise.all(updates);
       triggerFeedback('success');
-      alert('✅ ¡Arqueo de inventario guardado con éxito! Se actualizó el tablero y las fichas de ganado.');
+      const weighMsg = totalWeighedCount > 0 ? ` y se registraron ${totalWeighedCount} pesajes en báscula` : '';
+      alert(`✅ ¡Arqueo de inventario guardado con éxito! Se actualizó el tablero${weighMsg}.`);
       
       if (onDataChanged) {
         onDataChanged();
@@ -737,6 +799,48 @@ export function InventoryChecklistModal({
                 </div>
               </div>
 
+              {/* Conectar con Báscula Rápida */}
+              <div 
+                onClick={() => {
+                  setEnableQuickWeigh(prev => !prev);
+                  triggerFeedback('click');
+                }}
+                className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between select-none ${
+                  enableQuickWeigh
+                    ? 'bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-emerald-500/20 border-emerald-500 dark:border-emerald-400 shadow-md'
+                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                    enableQuickWeigh ? 'bg-emerald-500 text-slate-950 font-black shadow-sm' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                  }`}>
+                    ⚖️
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                        Conectar con Báscula Rápida (Pesaje en Manga)
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        enableQuickWeigh ? 'bg-emerald-500 text-slate-950 shadow-xs' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {enableQuickWeigh ? '⚡ Báscula Activa' : 'Opcional'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Digita el peso de cada animal en el chute/manga para verificarlo en vivo y guardar sus pesajes en el historial.
+                    </p>
+                  </div>
+                </div>
+
+                <div className={`w-12 h-6 rounded-full p-0.5 transition-colors duration-200 flex items-center shrink-0 ${
+                  enableQuickWeigh ? 'bg-emerald-500 justify-end' : 'bg-slate-300 dark:bg-slate-600 justify-start'
+                }`}>
+                  <div className="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform" />
+                </div>
+              </div>
+
               {/* Tarjeta de Resumen Previo */}
               <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -748,7 +852,7 @@ export function InventoryChecklistModal({
                       Cabezas Esperadas a Verificar
                     </span>
                     <span className="text-[11px] text-amber-800 dark:text-amber-300">
-                      Fecha: {auditDate} - {auditTime}
+                      Fecha: {auditDate} - {auditTime} {enableQuickWeigh ? '• Con Báscula Rápida ⚖️' : ''}
                     </span>
                   </div>
                 </div>
@@ -924,13 +1028,42 @@ export function InventoryChecklistModal({
                 </div>
               </div>
 
+              {/* Banner Informativo si Báscula Rápida está Activa */}
+              {enableQuickWeigh && (
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-teal-950/60 to-slate-900 border-2 border-emerald-500/50 text-white flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-emerald-500 text-slate-950 font-black">
+                      <Scale className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-emerald-300 block">
+                        ⚡ Modo Báscula Rápida Activo en Manga
+                      </span>
+                      <span className="text-[11px] text-slate-300">
+                        Digita el peso en cada tarjeta: el animal se marcará como verificado automáticamente.
+                      </span>
+                    </div>
+                  </div>
+                  {metrics.weighedCount > 0 && (
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 text-xs font-black shrink-0">
+                      ⚖️ {metrics.weighedCount} pesados ({formatNumber(metrics.totalBiomass)} kg)
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Grid Táctil de Animales */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[420px] overflow-y-auto pr-1">
                 {displayedList.map(animal => {
-                  const state = checkMap[animal.id] || { verified: false, verifiedAt: null, note: '', quickTags: [] };
+                  const state = checkMap[animal.id] || { verified: false, verifiedAt: null, note: '', quickTags: [], weight: '' };
                   const isChecked = state.verified;
                   const hasNote = Boolean(state.note || (state.quickTags && state.quickTags.length > 0));
                   const isInfiltrated = state.isInfiltrated;
+                  const currentTypedWeight = state.weight !== undefined ? state.weight : '';
+                  const typedWeightNum = parseFloat(currentTypedWeight);
+                  const hasWeight = typedWeightNum > 0;
+                  const prevWeight = parseFloat(animal.currentWeight) || parseFloat(animal.entryWeight) || 0;
+                  const weightDiff = hasWeight && prevWeight > 0 ? (typedWeightNum - prevWeight) : null;
 
                   return (
                     <div
@@ -975,6 +1108,56 @@ export function InventoryChecklistModal({
                         </div>
                       </div>
 
+                      {/* Báscula Rápida Integrada en la Tarjeta */}
+                      {enableQuickWeigh && (
+                        <div 
+                          className="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-700/80 space-y-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <div className="relative flex-1">
+                              <Scale className="w-3.5 h-3.5 text-amber-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              <input
+                                type="number"
+                                step="0.5"
+                                placeholder={prevWeight > 0 ? `Ant: ${prevWeight} kg` : "Digita peso"}
+                                value={currentTypedWeight}
+                                onChange={(e) => handleWeightChange(animal.id, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    triggerFeedback('weighin');
+                                  }
+                                }}
+                                className={`w-full pl-8 pr-7 py-1.5 rounded-xl text-xs font-extrabold border transition-all ${
+                                  hasWeight 
+                                    ? 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-500 text-emerald-950 dark:text-emerald-100'
+                                    : 'bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
+                                } focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">
+                                kg
+                              </span>
+                            </div>
+
+                            {hasWeight && (
+                              <span className="px-2 py-1 rounded-lg bg-emerald-500 text-slate-950 text-[10px] font-black shrink-0">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+
+                          {weightDiff !== null && (
+                            <div className="flex items-center justify-between text-[10px] px-0.5 font-bold">
+                              <span className="text-slate-500">Ant: {prevWeight} kg</span>
+                              <span className={weightDiff >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                                {weightDiff >= 0 ? `+${weightDiff.toFixed(1)} kg` : `${weightDiff.toFixed(1)} kg`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Pie de la Tarjeta: Peso, Estado y Botón de Novedad */}
                       <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
                         <div className="text-slate-500 dark:text-slate-400">
@@ -984,7 +1167,7 @@ export function InventoryChecklistModal({
                               <span>{state.verifiedAt || 'Visto'}</span>
                             </span>
                           ) : (
-                            <span>{animal.currentWeight > 0 ? `${animal.currentWeight} kg` : animal.category || 'Novillo'}</span>
+                            <span>{!enableQuickWeigh && animal.currentWeight > 0 ? `${animal.currentWeight} kg` : animal.category || 'Novillo'}</span>
                           )}
                         </div>
 
@@ -1068,6 +1251,28 @@ export function InventoryChecklistModal({
                   <span className="text-[11px] font-bold text-slate-500">Con Novedades</span>
                 </div>
               </div>
+
+              {/* Banner de Pesajes Registrados en Báscula si aplica */}
+              {metrics.weighedCount > 0 && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-400 dark:border-emerald-700 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-emerald-600 text-white font-black">
+                      <Scale className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-emerald-950 dark:text-emerald-200 block">
+                        Pesajes Registrados en Manga: {metrics.weighedCount} animales
+                      </span>
+                      <span className="text-[11px] text-emerald-800 dark:text-emerald-300">
+                        Biomasa pesada: <strong>{formatNumber(metrics.totalBiomass)} kg</strong> • Promedio: <strong>{metrics.weighedCount > 0 ? (metrics.totalBiomass / metrics.weighedCount).toFixed(1) : 0} kg/cab</strong>
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white text-xs font-black shadow-xs">
+                    ⚡ Se guardarán en Báscula
+                  </span>
+                </div>
+              )}
 
               {/* Detalle de Animales Faltantes */}
               {missingAnimals.length > 0 && (

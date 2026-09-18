@@ -831,6 +831,8 @@ export default function App() {
             onSaveBatch={handleSaveBatchWeighings}
             onSelectAnimal={handleSelectAnimal}
             onNavigate={setCurrentView}
+            currentUser={currentUser}
+            onOpenChecklist={() => setIsChecklistOpen(true)}
           />
         )}
 
@@ -1001,6 +1003,7 @@ export default function App() {
         isOpen={isChecklistOpen}
         onClose={() => setIsChecklistOpen(false)}
         cattle={cattle}
+        weighings={weighings}
         currentUser={currentUser}
         onDataChanged={() => {
           cloudPushData(userId);

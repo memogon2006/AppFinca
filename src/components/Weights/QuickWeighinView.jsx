@@ -11,10 +11,15 @@ import {
   AlertCircle, 
   Calendar, 
   Trash2, 
-  Sparkles
+  Sparkles,
+  ClipboardCheck,
+  MessageCircle,
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 import { calculateWeightMetrics, formatDate } from '../../services/calculations';
 import { triggerWeighingFeedback } from '../../services/soundService';
+import { db } from '../../services/db';
 
 const DRAFT_WEIGHTS_KEY = 'bovina_quick_weights_draft';
 
@@ -24,11 +29,16 @@ export function QuickWeighinView({
   onSaveBatchWeighings, 
   onSaveBatch,
   onSelectAnimal,
-  onNavigate 
+  onNavigate,
+  currentUser,
+  onOpenChecklist
 }) {
   const saveBatchFn = onSaveBatchWeighings || onSaveBatch;
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const dateInputRef = useRef(null);
+
+  // Modo Checklist & Arqueo conectado a la Báscula
+  const [enableChecklistMode, setEnableChecklistMode] = useState(false);
 
   // La fecha SIEMPRE inicia vacía por solicitud explícita del usuario
   const [weighDate, setWeighDate] = useState('');
@@ -247,10 +257,160 @@ export function QuickWeighinView({
     }
   };
 
-  const filledCount = Object.values(weightsMap).filter(v => parseFloat(v) > 0).length;
-  const savedCount = Object.keys(savedSuccessMap).length;
-  const isDateMissing = !weighDate || weighDate.trim() === '';
-  const isReadyToSaveAll = filledCount > 0 && !isDateMissing;
+  // Animales objetivo para el Checklist / Arqueo según filtro activo
+  const targetCattleForAudit = useMemo(() => {
+    if (selectedBatch) {
+      return activeCattle.filter(c => (c.entryBatch || c.paddock) === selectedBatch);
+    }
+    return activeCattle;
+  }, [activeCattle, selectedBatch]);
+
+  // Balance de Arqueo en vivo en la Báscula
+  const auditMetrics = useMemo(() => {
+    const totalExpected = targetCattleForAudit.length;
+    
+    const verifiedList = [];
+    const missingList = [];
+
+    targetCattleForAudit.forEach(animal => {
+      const hasSavedInSession = savedSuccessMap[animal.id];
+      const hasTyped = parseFloat(weightsMap[animal.id]) > 0;
+      const animalWeighs = (weighings || []).filter(w => String(w.cattleId) === String(animal.id));
+      const hasDateWeigh = weighDate && animalWeighs.some(w => w.date === weighDate);
+
+      if (hasSavedInSession || hasTyped || hasDateWeigh) {
+        verifiedList.push(animal);
+      } else {
+        missingList.push(animal);
+      }
+    });
+
+    const totalVerified = verifiedList.length;
+    const totalMissing = missingList.length;
+    const progressPercent = totalExpected > 0 ? Math.round((totalVerified / totalExpected) * 100) : 0;
+
+    return {
+      totalExpected,
+      totalVerified,
+      totalMissing,
+      verifiedList,
+      missingList,
+      progressPercent
+    };
+  }, [targetCattleForAudit, savedSuccessMap, weightsMap, weighings, weighDate]);
+
+  // Finalizar sesión de pesaje como un Arqueo de Inventario certificado
+  const handleFinishAuditSession = async () => {
+    if (!weighDate || weighDate.trim() === '') {
+      triggerWeighingFeedback('warning');
+      alert('⚠️ Se tiene que añadir la Fecha del Pesaje para asentar el Arqueo de Campo.');
+      if (dateInputRef.current) {
+        dateInputRef.current.focus();
+      }
+      return;
+    }
+
+    // 1. Guardar cualquier peso pendiente escrito en pantalla
+    if (filledCount > 0) {
+      await handleSaveAllFilled();
+    }
+
+    try {
+      setSaving(true);
+
+      const missingListMapped = auditMetrics.missingList.map(a => ({
+        id: a.id,
+        tagNumber: a.tagNumber || 'S/N',
+        name: a.name || '',
+        owner: a.owner || 'Hacienda',
+        ironBrand: a.ironBrand || '',
+        color: a.color || 'No especificado',
+        sex: a.sex || '',
+        entryBatch: a.entryBatch || a.paddock || '',
+        entryWeight: a.entryWeight || '',
+        currentWeight: a.currentWeight || a.entryWeight || ''
+      }));
+
+      const auditRecord = {
+        date: weighDate,
+        time: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+        inspectorName: currentUser?.name || 'Administrador / Báscula',
+        farmName: currentUser?.farmName || 'Mi Finca Ganadera',
+        scopeType: selectedBatch ? 'batch' : 'all',
+        scopeValue: selectedBatch ? selectedBatch : 'Hato General (Báscula Rápida)',
+        locationName: 'Manga / Báscula de Pesaje',
+        totalExpected: auditMetrics.totalExpected,
+        totalVerified: auditMetrics.totalVerified,
+        totalMissing: auditMetrics.totalMissing,
+        totalInfiltrated: 0,
+        totalWeighed: auditMetrics.totalVerified,
+        totalBiomass: Object.values(savedSuccessMap).reduce((acc, v) => acc + (parseFloat(v) || 0), 0),
+        missingList: missingListMapped,
+        observedList: [],
+        userId: currentUser?.id,
+        createdAt: new Date().toISOString()
+      };
+
+      if (db.audits) {
+        await db.audits.add(auditRecord);
+      }
+      if (currentUser?.id) {
+        localStorage.setItem(`ganado_latest_audit_${currentUser.id}`, JSON.stringify(auditRecord));
+      }
+
+      // Actualizar fecha de última verificación en el ganado verificado
+      const verifiedUpdates = auditMetrics.verifiedList.map(a => 
+        db.cattle.update(a.id, { lastVerifiedDate: weighDate })
+      );
+      await Promise.all(verifiedUpdates);
+
+      triggerWeighingFeedback('batch');
+
+      // WhatsApp Share Message
+      const farm = currentUser?.farmName || 'Finca Ganadera';
+      let msg = `📋 *ARQUEO & PESAJE DE BÁSCULA - ${farm.toUpperCase()}*\n`;
+      msg += `📅 *Fecha:* ${weighDate}\n`;
+      msg += `📍 *Lote / Ámbito:* ${selectedBatch ? `Lote ${selectedBatch}` : 'Hato General'}\n`;
+      msg += `👤 *Responsable:* ${currentUser?.name || 'Báscula'}\n\n`;
+      msg += `📊 *BALANCE DE CAMPO:*\n`;
+      msg += `• Total Esperados: *${auditMetrics.totalExpected} cabezas*\n`;
+      msg += `• ✅ Verificados / Pesados: *${auditMetrics.totalVerified}* (${auditMetrics.progressPercent}%)\n`;
+      msg += `• ❌ Faltantes por Manga: *${auditMetrics.totalMissing}*\n\n`;
+
+      if (auditMetrics.missingList.length > 0) {
+        msg += `🚨 *ANIMALES FALTANTES (${auditMetrics.missingList.length}):*\n`;
+        auditMetrics.missingList.slice(0, 15).forEach(a => {
+          msg += `• No. *${a.tagNumber || 'S/N'}* | ${a.color || 'Sin color'} | ${a.owner || 'Hacienda'}\n`;
+        });
+        if (auditMetrics.missingList.length > 15) {
+          msg += `• ... y ${auditMetrics.missingList.length - 15} animales más.\n`;
+        }
+        msg += `\n`;
+      } else {
+        msg += `🎉 *¡100% de animales pesados y verificados! Cero faltantes.*\n\n`;
+      }
+
+      msg += `_Generado desde Báscula Rápida en App Ganadera._`;
+
+      const shareConfirm = window.confirm(
+        `✅ ¡Arqueo de campo guardado exitosamente en el Tablero!\n\n` +
+        `• Esperados: ${auditMetrics.totalExpected}\n` +
+        `• Verificados/Pesados: ${auditMetrics.totalVerified}\n` +
+        `• Faltantes: ${auditMetrics.totalMissing}\n\n` +
+        `¿Deseas compartir este reporte de arqueo por WhatsApp ahora?`
+      );
+
+      if (shareConfirm) {
+        const encoded = encodeURIComponent(msg);
+        window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+      }
+
+    } catch (err) {
+      alert('Error guardando arqueo desde báscula: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -276,6 +436,21 @@ export function QuickWeighinView({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          {/* Botón Switch Modo Checklist / Arqueo */}
+          <button
+            type="button"
+            onClick={() => setEnableChecklistMode(prev => !prev)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer min-h-[42px] border ${
+              enableChecklistMode
+                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30'
+                : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+            }`}
+            title="Activar control de checklist y conteo de faltantes en vivo durante el pesaje"
+          >
+            <ClipboardCheck className="w-4 h-4" />
+            <span>{enableChecklistMode ? '📋 Checklist Activo' : '📋 + Conectar Checklist'}</span>
+          </button>
+
           <div className="flex-1 sm:flex-initial">
             <label className="block text-[11px] font-black text-amber-300 mb-1 flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-amber-300" />
@@ -332,6 +507,80 @@ export function QuickWeighinView({
           )}
         </div>
       </div>
+
+      {/* BARRA FLOTANTE DE AUDITORÍA / CHECKLIST SI ESTÁ ACTIVO */}
+      {enableChecklistMode && (
+        <div className="p-4 rounded-3xl bg-slate-900 border-2 border-amber-500/60 text-white shadow-2xl space-y-3 animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black">
+                <ClipboardCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-black text-white">
+                    Modo Arqueo de Campo en Manga Activo
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">
+                    {selectedBatch ? `Lote ${selectedBatch}` : 'Hato General'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-200/80">
+                  Cada pesaje registrado verifica el animal. Al terminar puedes cerrar el arqueo para actualizar el tablero y enviar a WhatsApp.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {onOpenChecklist && (
+                <button
+                  type="button"
+                  onClick={onOpenChecklist}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Planilla / Faltantes</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleFinishAuditSession}
+                disabled={saving || auditMetrics.totalVerified === 0}
+                className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Finalizar como Arqueo ({auditMetrics.totalVerified}/{auditMetrics.totalExpected})</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Barra de Progreso y Mini KPIs */}
+          <div className="space-y-2">
+            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
+              <div 
+                className="h-full bg-gradient-to-r from-amber-500 via-emerald-400 to-teal-400 transition-all duration-300"
+                style={{ width: `${Math.min(100, auditMetrics.progressPercent)}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-slate-300 font-bold block text-sm sm:text-base font-mono">{auditMetrics.totalExpected}</span>
+                <span className="text-[10px] text-slate-400">Total Esperados</span>
+              </div>
+              <div className="p-2 rounded-xl bg-emerald-950/60 border border-emerald-500/30">
+                <span className="text-emerald-300 font-bold block text-sm sm:text-base font-mono">{auditMetrics.totalVerified}</span>
+                <span className="text-[10px] text-emerald-400 font-semibold">Pesados / Verificados</span>
+              </div>
+              <div className="p-2 rounded-xl bg-rose-950/60 border border-rose-500/30">
+                <span className="text-rose-300 font-bold block text-sm sm:text-base font-mono">{auditMetrics.totalMissing}</span>
+                <span className="text-[10px] text-rose-400 font-semibold">Faltan por Manga</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeCattle.length === 0 ? (
         <div className="custom-card p-8 sm:p-10 text-center text-slate-500 dark:text-slate-400 text-sm">

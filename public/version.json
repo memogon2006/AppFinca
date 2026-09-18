@@ -1,5 +1,5 @@
 {
-  "version": "2.8.97",
-  "buildTime": 1789408000000,
-  "description": "Espacio en Tablero Principal de Último Arqueo & Checklist: Fecha, Responsable, Totales, Faltantes con Dueño, Marca y Color, y Alerta WhatsApp."
+  "version": "2.8.98",
+  "buildTime": 1789409000000,
+  "description": "Conexión bidireccional entre Checklist / Arqueo y Báscula Rápida: Pesaje simultáneo en manga con verificación automática y finalización de pesaje como arqueo de campo."
 }

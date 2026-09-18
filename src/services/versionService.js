@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.8.97";
-export const CURRENT_BUILD_TIME = 1789408000000;
+export const CURRENT_APP_VERSION = "2.8.98";
+export const CURRENT_BUILD_TIME = 1789409000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.98",
+    date: "18/09/2026",
+    title: "Conexión Bidireccional: Checklist de Inventario ⇄ Báscula Rápida",
+    highlights: [
+      "De Checklist a Báscula Rápida: Opción de activar modo báscula en la configuración del arqueo para digitar pesos en vivo, ver ganancias y registrar pesajes automáticamente al verificar cada animal.",
+      "De Báscula Rápida a Checklist: Botón '📋 + Conectar Checklist' en la vista de Báscula Rápida con barra de avance en tiempo real (Esperados, Pesados y Faltantes) y botón 'Finalizar como Arqueo de Campo'.",
+      "Sincronización Total con Tablero: Los arqueos generados desde Báscula o Checklist actualizan instantáneamente el espacio de auditoría del tablero principal y permiten compartir por WhatsApp con 1 clic."
+    ]
+  },
   {
     version: "2.8.97",
     date: "18/09/2026",
