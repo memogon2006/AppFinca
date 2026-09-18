@@ -698,7 +698,6 @@ export default function App() {
         onOpenNewAnimal={handleOpenNew}
         onOpenExportImport={() => setIsExportModalOpen(true)}
         onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
-        onOpenChecklist={() => setIsChecklistOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}

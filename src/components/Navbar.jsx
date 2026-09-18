@@ -16,8 +16,7 @@ import {
   RefreshCw,
   Settings,
   Boxes,
-  MessageCircle,
-  ClipboardCheck
+  MessageCircle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -28,7 +27,6 @@ export function Navbar({
   onOpenNewAnimal, 
   onOpenExportImport, 
   onOpenWhatsAppReport,
-  onOpenChecklist,
   onOpenProfile, 
   onManualSync,
   isSyncing = false,
@@ -160,18 +158,6 @@ export function Navbar({
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>WhatsApp</span>
               </button>
-
-              {/* Botón Arqueo / Checklist */}
-              {onOpenChecklist && (
-                <button
-                  onClick={onOpenChecklist}
-                  title="Arqueo & Checklist de Inventario en Campo"
-                  className="flex items-center gap-1 px-2 2xl:px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-bold min-h-[36px] cursor-pointer transition whitespace-nowrap shadow-sm"
-                >
-                  <ClipboardCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>Arqueo</span>
-                </button>
-              )}
 
               {/* Botón Sincronización Nube */}
               <button
