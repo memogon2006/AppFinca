@@ -257,6 +257,11 @@ export function QuickWeighinView({
     }
   };
 
+  const filledCount = Object.values(weightsMap).filter(v => parseFloat(v) > 0).length;
+  const savedCount = Object.keys(savedSuccessMap).length;
+  const isDateMissing = !weighDate || weighDate.trim() === '';
+  const isReadyToSaveAll = filledCount > 0 && !isDateMissing;
+
   // Animales objetivo para el Checklist / Arqueo según filtro activo
   const targetCattleForAudit = useMemo(() => {
     if (selectedBatch) {

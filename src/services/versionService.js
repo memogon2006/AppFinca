@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.8.98";
-export const CURRENT_BUILD_TIME = 1789409000000;
+export const CURRENT_APP_VERSION = "2.8.99";
+export const CURRENT_BUILD_TIME = 1789410000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.99",
+    date: "18/09/2026",
+    title: "Corrección y Estabilización: Vista de Báscula Rápida",
+    highlights: [
+      "Solución al parpadeo/pantalla en blanco al entrar a la vista de Báscula Rápida.",
+      "Conexión bidireccional perfecta y fluida entre Checklist / Arqueo y Báscula Rápida."
+    ]
+  },
   {
     version: "2.8.98",
     date: "18/09/2026",

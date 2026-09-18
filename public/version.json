@@ -1,5 +1,5 @@
 {
-  "version": "2.8.98",
-  "buildTime": 1789409000000,
-  "description": "Conexión bidireccional entre Checklist / Arqueo y Báscula Rápida: Pesaje simultáneo en manga con verificación automática y finalización de pesaje como arqueo de campo."
+  "version": "2.8.99",
+  "buildTime": 1789410000000,
+  "description": "Corrección y estabilización de variables en Báscula Rápida con Checklist integrado."
 }
