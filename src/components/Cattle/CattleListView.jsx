@@ -29,7 +29,8 @@ import {
   PackagePlus,
   MessageCircle,
   FileText,
-  Syringe
+  Syringe,
+  ClipboardCheck
 } from 'lucide-react';
 
 export function CattleListView({ 
@@ -51,6 +52,7 @@ export function CattleListView({
   onOpenGlossary,
   onOpenPartnershipModal,
   onOpenWhatsAppReport,
+  onOpenChecklist,
   onOpenCensusModal,
   onOpenVaccinationModal
 }) {
@@ -351,6 +353,18 @@ export function CattleListView({
             >
               <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>📲 WhatsApp</span>
+            </button>
+          )}
+
+          {/* Botón Arqueo / Checklist de Campo */}
+          {onOpenChecklist && (
+            <button
+              onClick={onOpenChecklist}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-amber-300 dark:border-amber-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
+              title="Arqueo y Censo Físico de Campo (Checklist en Manga / Corral)"
+            >
+              <ClipboardCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>📋 Arqueo</span>
             </button>
           )}
 

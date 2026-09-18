@@ -1,5 +1,5 @@
 {
-  "version": "2.8.95",
-  "buildTime": 1789326000000,
-  "description": "Corrección y estabilización del Calendario Ganadero y widget de inicio con ciclos sanitarios ICA."
+  "version": "2.8.96",
+  "buildTime": 1789407000000,
+  "description": "Módulo de Arqueo y Checklist de Inventario Físico en Campo, Conteo Táctil en Manga, Detección de Faltantes e Infiltrados, y Planilla de Campo PDF."
 }

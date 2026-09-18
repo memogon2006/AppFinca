@@ -21,7 +21,8 @@ import {
   PackagePlus,
   MessageCircle,
   FileText,
-  Syringe
+  Syringe,
+  ClipboardCheck
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
@@ -41,6 +42,7 @@ export function DashboardView({
   onOpenBatchEntry,
   onOpenExportImport,
   onOpenWhatsAppReport,
+  onOpenChecklist,
   onOpenGlossary,
   onOpenCalendar,
   onOpenVaccinationModal,
@@ -144,6 +146,17 @@ export function DashboardView({
               >
                 <BookOpen className="w-4 h-4 text-emerald-300" />
                 <span>💡 Guía de Métricas</span>
+              </button>
+            )}
+
+            {onOpenChecklist && (
+              <button
+                onClick={onOpenChecklist}
+                className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer"
+                title="Arqueo y Censo Físico de Campo (Checklist en Manga / Corral)"
+              >
+                <ClipboardCheck className="w-4 h-4 text-slate-950" />
+                <span>📋 Arqueo / Checklist</span>
               </button>
             )}
 

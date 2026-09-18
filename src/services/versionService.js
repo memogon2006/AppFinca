@@ -1,10 +1,23 @@
-export const CURRENT_APP_VERSION = "2.8.95";
-export const CURRENT_BUILD_TIME = 1789326000000;
+export const CURRENT_APP_VERSION = "2.8.96";
+export const CURRENT_BUILD_TIME = 1789407000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.96",
+    date: "18/09/2026",
+    title: "Módulo de Arqueo y Checklist de Inventario en Campo (Censo Físico de Corral)",
+    highlights: [
+      "Checklist Táctil de Conteo en Manga: Interfaz optimizada para dedos en campo con tarjetas grandes, confirmación de audio y buscador instantáneo por arete o color.",
+      "Filtro por Ámbito: Conteo del hato completo, por lote/ingreso, potrero, dueño/marca o categoría/sexo.",
+      "Novedades Clínicas Rápidas: Botones para marcar bicheras, cojeras, pérdida de arete, crías al pie, ojo malo o bajas.",
+      "Detección de Infiltrados: Identificación e incorporación inmediata de animales pertenecientes a otros lotes que entraron a la manga.",
+      "Balance y Reporte WhatsApp: Desglose inmediato de esperados vs. verificados, lista de faltantes/extraviados y envío con 1 clic por WhatsApp.",
+      "Planilla Física Imprimible: Generación de formato de campo en PDF / papel con casillas de verificación y espacio para firmas de vaqueros y administradores."
+    ]
+  },
   {
     version: "2.8.95",
     date: "10/09/2026",

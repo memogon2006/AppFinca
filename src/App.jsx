@@ -26,6 +26,7 @@ import { WhatsAppReportModal } from './components/Common/WhatsAppReportModal';
 import { FarmCalendarModal } from './components/Calendar/FarmCalendarModal';
 import { VaccinationRecordModal } from './components/Vaccinations/VaccinationRecordModal';
 import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCensusModal';
+import { InventoryChecklistModal } from './components/Checklist/InventoryChecklistModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
@@ -40,6 +41,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Modales
+  const [isChecklistOpen, setIsChecklistOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isVaccinationModalOpen, setIsVaccinationModalOpen] = useState(false);
   const [isCensusModalOpen, setIsCensusModalOpen] = useState(false);
@@ -696,6 +698,7 @@ export default function App() {
         onOpenNewAnimal={handleOpenNew}
         onOpenExportImport={() => setIsExportModalOpen(true)}
         onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
+        onOpenChecklist={() => setIsChecklistOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
@@ -752,6 +755,7 @@ export default function App() {
             onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
+            onOpenChecklist={() => setIsChecklistOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenCalendar={() => setIsCalendarOpen(true)}
             onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
@@ -779,6 +783,7 @@ export default function App() {
             onOpenAddWeight={handleOpenAddWeight}
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
+            onOpenChecklist={() => setIsChecklistOpen(true)}
             onOpenGlossary={() => setIsGlossaryOpen(true)}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
             onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
@@ -980,6 +985,18 @@ export default function App() {
         farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
         farmerName={currentUser?.name || 'Ganadero'}
         onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
+        zIndex="z-[60]"
+      />
+
+      {/* 4. Modal de Arqueo y Checklist de Inventario en Campo */}
+      <InventoryChecklistModal
+        isOpen={isChecklistOpen}
+        onClose={() => setIsChecklistOpen(false)}
+        cattle={cattle}
+        currentUser={currentUser}
+        onDataChanged={() => {
+          cloudPushData(userId);
+        }}
         zIndex="z-[60]"
       />
 
