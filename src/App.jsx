@@ -141,6 +141,14 @@ export default function App() {
     [userId]
   ) || [];
 
+  const audits = useLiveQuery(
+    () => {
+      if (!userId) return [];
+      return db.audits ? db.audits.filter(a => a.userId === userId || !a.userId).toArray() : [];
+    },
+    [userId]
+  ) || [];
+
   // Auto-reparación y optimización de datos de pesajes al cargar
   useEffect(() => {
     if (!userId || cattle.length === 0 || weighings.length === 0) return;
@@ -748,6 +756,7 @@ export default function App() {
             cattle={cattle}
             weighings={weighings}
             vaccinations={vaccinations}
+            audits={audits}
             onNavigate={setCurrentView}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}

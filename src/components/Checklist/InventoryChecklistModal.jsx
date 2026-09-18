@@ -458,9 +458,61 @@ export function InventoryChecklistModal({
         }
       }
 
+      // 2. Guardar registro estructurado de arqueo histórico
+      const missingList = missingAnimals.map(a => ({
+        id: a.id,
+        tagNumber: a.tagNumber || 'S/N',
+        name: a.name || '',
+        owner: a.owner || 'Hacienda',
+        ironBrand: a.ironBrand || '',
+        color: a.color || 'No especificado',
+        sex: a.sex || '',
+        entryBatch: a.entryBatch || a.paddock || '',
+        entryWeight: a.entryWeight || '',
+        currentWeight: a.currentWeight || a.entryWeight || ''
+      }));
+
+      const observedList = observedAnimals.map(a => {
+        const st = checkMap[a.id];
+        return {
+          id: a.id,
+          tagNumber: a.tagNumber || 'S/N',
+          owner: a.owner || '',
+          ironBrand: a.ironBrand || '',
+          color: a.color || '',
+          note: st?.note || '',
+          quickTags: st?.quickTags || []
+        };
+      });
+
+      const auditRecord = {
+        date: auditDate,
+        time: auditTime || new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+        inspectorName: inspectorName || currentUser?.name || 'Administrador',
+        farmName: currentUser?.farmName || 'Mi Finca Ganadera',
+        scopeType: scopeType || 'all',
+        scopeValue: scopeType === 'batch' ? selectedBatch : (scopeType === 'owner' ? selectedOwner : (scopeType === 'sex' ? selectedSex : 'Hato General')),
+        locationName: locationName || '',
+        totalExpected: metrics.expectedTotal,
+        totalVerified: metrics.verifiedCount,
+        totalMissing: metrics.pendingCount,
+        totalInfiltrated: metrics.infiltratedCount,
+        missingList,
+        observedList,
+        userId: currentUser?.id,
+        createdAt: new Date().toISOString()
+      };
+
+      if (db.audits) {
+        await db.audits.add(auditRecord);
+      }
+      if (currentUser?.id) {
+        localStorage.setItem(`ganado_latest_audit_${currentUser.id}`, JSON.stringify(auditRecord));
+      }
+
       await Promise.all(updates);
       triggerFeedback('success');
-      alert('✅ ¡Arqueo de inventario guardado con éxito! Se actualizó la fecha de avistamiento en las fichas del ganado.');
+      alert('✅ ¡Arqueo de inventario guardado con éxito! Se actualizó el tablero y las fichas de ganado.');
       
       if (onDataChanged) {
         onDataChanged();

@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.96";
-export const CURRENT_BUILD_TIME = 1789407000000;
+export const CURRENT_APP_VERSION = "2.8.97";
+export const CURRENT_BUILD_TIME = 1789408000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.8.97",
+    date: "18/09/2026",
+    title: "Espacio de Último Arqueo & Faltantes en el Tablero Principal",
+    highlights: [
+      "Widget en Tablero Principal: Visualización instantánea del último arqueo/checklist realizado con fecha, hora, responsable y ámbito.",
+      "Métricas Clave en Vivo: Total de animales esperados, verificados, faltantes e infiltrados/observaciones.",
+      "Desglose Detallado de Animales Faltantes: Lista completa de animales por buscar con Número de Arete, Dueño/Sociedad, Marca de Hierro, Color de Pelaje y Potrero.",
+      "Acciones Rápidas: Botón '+ Nuevo Arqueo' y botón 'WhatsApp Faltantes' para enviar la alerta de búsqueda directamente a los vaqueros."
+    ]
+  },
   {
     version: "2.8.96",
     date: "18/09/2026",

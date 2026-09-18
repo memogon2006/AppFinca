@@ -1,5 +1,5 @@
 {
-  "version": "2.8.96",
-  "buildTime": 1789407000000,
-  "description": "Módulo de Arqueo y Checklist de Inventario Físico en Campo, Conteo Táctil en Manga, Detección de Faltantes e Infiltrados, y Planilla de Campo PDF."
+  "version": "2.8.97",
+  "buildTime": 1789408000000,
+  "description": "Espacio en Tablero Principal de Último Arqueo & Checklist: Fecha, Responsable, Totales, Faltantes con Dueño, Marca y Color, y Alerta WhatsApp."
 }

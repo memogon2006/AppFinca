@@ -28,6 +28,7 @@ import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
 import { VaccinationCalendar } from './VaccinationCalendar';
 import { FarmCalendarWidget } from '../Calendar/FarmCalendarWidget';
+import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials } from '../../services/calculations';
@@ -36,6 +37,7 @@ export function DashboardView({
   cattle = [], 
   weighings = [], 
   vaccinations = [],
+  audits = [],
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -95,6 +97,23 @@ export function DashboardView({
     }
   });
   const avgGdp = gdpValidAnimals > 0 ? (totalGdpSum / gdpValidAnimals) : 0;
+
+  // Obtener el arqueo / checklist más reciente
+  const latestAudit = React.useMemo(() => {
+    if (audits && audits.length > 0) {
+      const sorted = [...audits].sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+      return sorted[0];
+    }
+    // Fallback de localStorage
+    try {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('ganado_latest_audit_'));
+      if (keys.length > 0) {
+        const raw = localStorage.getItem(keys[0]);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch (e) {}
+    return null;
+  }, [audits]);
 
   return (
     <div className="space-y-6">
@@ -295,6 +314,14 @@ export function DashboardView({
         weighings={weighings}
         vaccinations={vaccinations}
         onOpenCalendar={onOpenCalendar}
+      />
+
+      {/* Widget de Último Arqueo & Checklist de Inventario Físico */}
+      <ChecklistAuditWidget
+        latestAudit={latestAudit}
+        cattle={cattle}
+        onOpenChecklist={onOpenChecklist}
+        onSelectAnimal={onSelectAnimal}
       />
 
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}
