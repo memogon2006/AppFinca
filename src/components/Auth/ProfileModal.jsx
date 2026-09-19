@@ -735,13 +735,18 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
           <div className="space-y-4">
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Versión Instalada:</span>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xl font-black text-slate-900 dark:text-white">v{CURRENT_APP_VERSION}</p>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-500/30">
-                      🟢 En línea
-                    </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-emerald-500/30 p-0.5 shadow-md flex items-center justify-center shrink-0 overflow-hidden">
+                    <img src="/icon-192.png" alt="Logo" className="w-full h-full object-cover rounded-xl" />
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Versión Instalada:</span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xl font-black text-slate-900 dark:text-white">v{CURRENT_APP_VERSION}</p>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-500/30">
+                        🟢 En línea
+                      </span>
+                    </div>
                   </div>
                 </div>
 

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.9.3";
-export const CURRENT_BUILD_TIME = 1789450000000;
+export const CURRENT_APP_VERSION = "2.9.4";
+export const CURRENT_BUILD_TIME = 1789460000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.4",
+    date: "18/09/2026",
+    title: "Logo Oficial HD Unificado en Todo el Sistema",
+    highlights: [
+      "Unificación de Identidad Visual: Integración del nuevo emblema de toro en alta definición en la pantalla de inicio de sesión (Login/Registro), pantalla de carga inicial, pestañas del navegador (Favicon .ico/.png) y ventana de Perfil.",
+      "Cero Emojis en Logotipos: Sustitución de todos los cuadros de emojis genéricos por el logo oficial de la marca.",
+      "Soporte Total de Favicon: Inclusión de favicon.ico de alta definición para barras de título de aplicaciones de escritorio y navegadores."
+    ]
+  },
   {
     version: "2.9.3",
     date: "18/09/2026",

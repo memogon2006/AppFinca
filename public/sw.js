@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ganado-app-cache-v2.9.2';
+const CACHE_NAME = 'ganado-app-cache-v2.9.4';
 
 // Recursos estáticos críticos base precacheados en instalación
 const STATIC_ASSETS = [
@@ -10,7 +10,8 @@ const STATIC_ASSETS = [
   '/icon-384.png',
   '/icon-192.png',
   '/apple-touch-icon.png',
-  '/favicon.png'
+  '/favicon.png',
+  '/favicon.ico'
 ];
 
 // Instalación del Service Worker

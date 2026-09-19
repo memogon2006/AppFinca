@@ -170,9 +170,9 @@ export function AuthView() {
       <div className="max-w-md w-full space-y-4">
         
         {/* Logo & Encabezado */}
-        <div className="text-center space-y-1.5">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-xl shadow-emerald-500/20 mb-1">
-            <span className="text-3xl">🐂</span>
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-slate-900 border border-emerald-500/30 shadow-2xl shadow-emerald-500/20 mb-1 overflow-hidden p-0.5">
+            <img src="/icon-512.png" alt="Logo Inventario Bovino" className="w-full h-full object-cover rounded-2xl" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
             INVENTARIO BOVINO APP
