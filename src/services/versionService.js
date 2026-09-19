@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.9.5";
-export const CURRENT_BUILD_TIME = 1789470000000;
+export const CURRENT_APP_VERSION = "2.9.6";
+export const CURRENT_BUILD_TIME = 1789480000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.6",
+    date: "18/09/2026",
+    title: "Ejemplos Ficticios en Guías & Etiqueta de Nombre del Predio",
+    highlights: [
+      "Privacidad y Ejemplos Ficticios: Sustitución de nombres específicos por ejemplos genéricos ('Ej. Carlos Mendoza', 'Ej. Hacienda La Esperanza', 'ejemplo@miganaderia.com') en todos los formularios.",
+      "Ampliación de Identificación de Finca: Actualización del campo de registro a 'Nombre del Predio / Finca / Hacienda' tanto en Login como en Configuración de Perfil."
+    ]
+  },
   {
     version: "2.9.5",
     date: "18/09/2026",

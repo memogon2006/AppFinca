@@ -392,6 +392,7 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
+                  placeholder="Ej. Carlos Mendoza"
                   value={profileData.name}
                   onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:border-emerald-500 min-h-[44px]"
@@ -400,15 +401,16 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
               </div>
             </div>
 
-            {/* Nombre de la Finca */}
+            {/* Nombre del Predio / Finca / Hacienda */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Nombre de la Finca / Ganadería <span className="text-rose-500">*</span>
+                Nombre del Predio / Finca / Hacienda <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <MapPin className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
+                  placeholder="Ej. Hacienda La Esperanza"
                   value={profileData.farmName}
                   onChange={(e) => setProfileData(prev => ({ ...prev, farmName: e.target.value }))}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:outline-none focus:border-emerald-500 min-h-[44px]"
@@ -429,6 +431,7 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
+                  placeholder="ejemplo@miganaderia.com"
                   value={profileData.email}
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                   autoCapitalize="none"

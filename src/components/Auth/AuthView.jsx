@@ -265,7 +265,7 @@ export function AuthView() {
                     <input
                       type="text"
                       name="name"
-                      placeholder="Ej. Luis González"
+                      placeholder="Ej. Carlos Mendoza"
                       value={formData.name}
                       onChange={handleChange}
                       autoCapitalize="words"
@@ -276,17 +276,17 @@ export function AuthView() {
                   </div>
                 </div>
 
-                {/* Nombre de la Finca */}
+                {/* Nombre del Predio / Finca / Hacienda */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Nombre de tu Finca / Hacienda <span className="text-rose-500">*</span>
+                    Nombre del Predio / Finca / Hacienda <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <MapPin className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       name="farmName"
-                      placeholder="Ej. Criadero Santa Teresa"
+                      placeholder="Ej. Hacienda La Esperanza"
                       value={formData.farmName}
                       onChange={handleChange}
                       autoCapitalize="words"
@@ -309,7 +309,7 @@ export function AuthView() {
                 <input
                   type="text"
                   name="email"
-                  placeholder="usuario@ganaderia.com"
+                  placeholder="ejemplo@miganaderia.com"
                   value={formData.email}
                   onChange={handleChange}
                   autoCapitalize="none"
