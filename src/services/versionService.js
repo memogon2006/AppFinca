@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.8.100";
-export const CURRENT_BUILD_TIME = 1789412000000;
+export const CURRENT_APP_VERSION = "2.9.0";
+export const CURRENT_BUILD_TIME = 1789420000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.0",
+    date: "18/09/2026",
+    title: "PWA 100% Offline-First, Indicador de Señal & Auto-Sync",
+    highlights: [
+      "Instalación Nativa PWA: Configuración de Web App Manifest y Service Worker inteligente para instalar la app como aplicación nativa en iPhone, Android, Mac y Windows.",
+      "Caché Total de Campo: La aplicación abre y funciona al 100% incluso en Modo Avión o en potreros profundos sin cobertura celular ni Wi-Fi.",
+      "Indicador de Conexión en Tiempo Real: Monitoreo en vivo en la barra de navegación mostrando estado '🟢 En Línea' o '📡 Modo Campo Offline (Guardado en celular)'.",
+      "Auto-Sincronización al Recuperar Señal: Apenas el celular o tablet detecta conexión a internet o Wi-Fi, la plataforma sincroniza automáticamente los pesajes y arqueos con la nube sin necesidad de intervención manual."
+    ]
+  },
   {
     version: "2.8.100",
     date: "18/09/2026",

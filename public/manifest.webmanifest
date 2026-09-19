@@ -1,0 +1,22 @@
+{
+  "name": "INVENTARIO BOVINO APP - Gestión Ganadera",
+  "short_name": "Inventario Bovino",
+  "description": "Plataforma integral para la gestión ganadera, pesajes, reproducción y control de inventario en campo 100% offline.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "lang": "es",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

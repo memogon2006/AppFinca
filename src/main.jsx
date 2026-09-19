@@ -14,3 +14,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ThemeProvider>
   </React.StrictMode>,
 )
+
+// Registro del Service Worker para funcionamiento 100% Offline PWA
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        console.log('✅ Service Worker PWA activo en finca:', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('⚠️ Error registrando Service Worker PWA:', err);
+      });
+  });
+}
+

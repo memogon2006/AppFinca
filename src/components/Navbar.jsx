@@ -16,7 +16,9 @@ import {
   RefreshCw,
   Settings,
   Boxes,
-  MessageCircle
+  MessageCircle,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +32,7 @@ export function Navbar({
   onOpenProfile, 
   onManualSync,
   isSyncing = false,
+  isOnline = true,
   activeCattleCount = 0 
 }) {
   const { isDark, toggleTheme } = useTheme();
@@ -94,10 +97,23 @@ export function Navbar({
                   {currentUser?.farmName || 'INVENTARIO BOVINO APP'}
                 </h1>
 
-                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium mt-0.5">
+                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium mt-0.5">
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/20 text-[10px]">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     {activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}
+                  </span>
+
+                  {/* Indicador de Conexión en Tiempo Real */}
+                  <span 
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md font-bold text-[10px] border transition-colors ${
+                      isOnline
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                        : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
+                    }`}
+                    title={isOnline ? '🟢 Conectado a la nube. Sincronización activa.' : '📡 Modo Campo Offline: Todo lo que registres se guardará con 100% de seguridad en la memoria del dispositivo.'}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                    <span>{isOnline ? 'En línea' : 'Modo Campo'}</span>
                   </span>
                 </div>
               </div>
@@ -229,13 +245,23 @@ export function Navbar({
                   <span className="text-base select-none">🐂</span>
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-xs font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[125px] leading-tight">
-                    {currentUser?.farmName || 'INVENTARIO BOVINO'}
-                  </h1>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    {activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      {activeCattleCount} {activeCattleCount === 1 ? 'cab' : 'cabezas'}
+                    </span>
+                    <span className="text-slate-300 dark:text-slate-700">•</span>
+                    <span 
+                      className={`inline-flex items-center gap-1 text-[9px] font-bold px-1 py-0.2 rounded border ${
+                        isOnline
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
+                      }`}
+                    >
+                      <span className={`w-1 h-1 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                      <span>{isOnline ? 'Online' : 'Offline'}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 

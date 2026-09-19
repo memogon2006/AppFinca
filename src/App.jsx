@@ -30,6 +30,7 @@ import { InventoryChecklistModal } from './components/Checklist/InventoryCheckli
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -39,6 +40,22 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimeoutRef = useRef(null);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Monitor de conexión en tiempo real & Auto-Sync al recuperar señal
+  const { isOnline } = useOnlineStatus(() => {
+    if (currentUser?.id) {
+      setIsSyncing(true);
+      syncCloudAndLocal(currentUser.id)
+        .then(() => {
+          setIsSyncing(false);
+          showToast('📡 ¡Señal recuperada! Datos sincronizados con la nube ☁️', 'success');
+          triggerFeedback('success');
+        })
+        .catch(() => {
+          setIsSyncing(false);
+        });
+    }
+  });
 
   // Modales
   const [isChecklistOpen, setIsChecklistOpen] = useState(false);
@@ -716,6 +733,7 @@ export default function App() {
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
+        isOnline={isOnline}
         activeCattleCount={activeCattleCount}
       />
 

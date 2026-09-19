@@ -1,5 +1,5 @@
 {
-  "version": "2.8.100",
-  "buildTime": 1789412000000,
-  "description": "Opción de añadir +1 Animal Extra / No Registrado en Checklist de Inventario con Alertas de Procedencia interactivas en el Tablero."
+  "version": "2.9.0",
+  "buildTime": 1789420000000,
+  "description": "PWA 100% Offline-First (Service Worker + Manifest), Indicador de Conexión en Tiempo Real y Auto-Sincronización con la Nube."
 }
