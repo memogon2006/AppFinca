@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.9.4";
-export const CURRENT_BUILD_TIME = 1789460000000;
+export const CURRENT_APP_VERSION = "2.9.5";
+export const CURRENT_BUILD_TIME = 1789470000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.5",
+    date: "18/09/2026",
+    title: "Dirección URL 100% Limpia (Sin Parámetros Numéricos)",
+    highlights: [
+      "URL Limpia y Elegante: Eliminación automática de parámetros temporales de actualización (?_v=...) en la barra de direcciones.",
+      "Recarga Transparente: Actualización en segundo plano preservando la URL original https://finca-ganadera-gamma.vercel.app sin números extras."
+    ]
+  },
   {
     version: "2.9.4",
     date: "18/09/2026",
@@ -867,9 +876,8 @@ export async function applyAppUpdate() {
       await Promise.all(cacheNames.map(name => caches.delete(name)));
     }
 
-    // 3. Redireccionar con parámetro anti-caché
-    const cleanUrl = window.location.origin + window.location.pathname + `?_v=${Date.now()}`;
-    window.location.replace(cleanUrl);
+    // 3. Recargar limpiamente
+    window.location.reload();
   } catch (e) {
     console.warn('Error limpiando caché:', e);
     window.location.reload();

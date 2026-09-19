@@ -94,6 +94,19 @@ export default function App() {
     }, 4000);
   };
 
+  // Limpieza automática de parámetros técnicos de la barra de direcciones (?_v=...) para una URL 100% limpia
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('_v')) {
+        params.delete('_v');
+        const newSearch = params.toString() ? `?${params.toString()}` : '';
+        const cleanUrl = window.location.pathname + newSearch + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+  }, []);
+
   // Inicializar base de datos y auto-sincronizar cuentas existentes
   useEffect(() => {
     async function init() {
