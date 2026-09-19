@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.9.1";
-export const CURRENT_BUILD_TIME = 1789430000000;
+export const CURRENT_APP_VERSION = "2.9.2";
+export const CURRENT_BUILD_TIME = 1789440000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.2",
+    date: "18/09/2026",
+    title: "Icono PWA Ultra HD & Alta Definición para Dock y Móviles",
+    highlights: [
+      "Icono Oficial de Alta Definición: Rediseño del emblema ganadero con renderizado nítido en 512px, 384px, 192px y 64px para pantallas Retina, Dock de macOS, Windows, iPhone y Android.",
+      "Cero Pixelado: Eliminación de fuentes emoji de baja resolución para garantizar un acabado limpio, metálico y profesional en cualquier lanzador o pantalla de inicio.",
+      "Compatibilidad Total de Manifiesto: Configuración de paquetes de iconos multi-resolución para instalación PWA instantánea."
+    ]
+  },
   {
     version: "2.9.1",
     date: "18/09/2026",

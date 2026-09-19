@@ -8,16 +8,34 @@
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
-  "background_color": "#0f172a",
+  "background_color": "#0c1322",
   "theme_color": "#10b981",
   "lang": "es",
   "categories": ["business", "productivity", "utilities"],
   "icons": [
     {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -26,21 +44,21 @@
       "short_name": "Báscula",
       "description": "Pesaje rápido táctil con confirmación sonora",
       "url": "/?view=quickWeigh",
-      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "📋 Checklist de Arqueo",
       "short_name": "Checklist",
       "description": "Arqueo y conteo físico en manga",
       "url": "/?view=checklist",
-      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "📦 Lotes & Ingresos",
       "short_name": "Lotes",
       "description": "Control y análisis por lotes de ganado",
       "url": "/?view=batches",
-      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
