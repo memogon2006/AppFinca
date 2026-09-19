@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.9.0";
-export const CURRENT_BUILD_TIME = 1789420000000;
+export const CURRENT_APP_VERSION = "2.9.1";
+export const CURRENT_BUILD_TIME = 1789430000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.1",
+    date: "18/09/2026",
+    title: "Garantía Total de Modo Avión PWA & Caché Offline",
+    highlights: [
+      "Activación Universal del Service Worker: Corrección del registro en clientes web y móviles para garantizar la instalación del caché en Safari (iOS) y Chrome (Android).",
+      "Carga Instantánea en Modo Avión: Toda la interfaz, código, iconos y fuentes quedan guardados en el almacenamiento del dispositivo al primer ingreso, permitiendo abrir la app sin internet ni datos.",
+      "Respaldo Dinámico de Pantallas: Respaldo automático de la estructura de la app (App Shell) para navegación fluida en potreros y mangas sin señal."
+    ]
+  },
   {
     version: "2.9.0",
     date: "18/09/2026",

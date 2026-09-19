@@ -15,8 +15,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 )
 
-// Registro del Service Worker para funcionamiento 100% Offline PWA
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Registro del Service Worker para funcionamiento 100% Offline PWA (Modo Avión y Campo)
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => {

@@ -1,5 +1,5 @@
 {
-  "version": "2.9.0",
-  "buildTime": 1789420000000,
-  "description": "PWA 100% Offline-First (Service Worker + Manifest), Indicador de Conexión en Tiempo Real y Auto-Sincronización con la Nube."
+  "version": "2.9.1",
+  "buildTime": 1789430000000,
+  "description": "Garantía Total Offline PWA en Modo Avión & Caché Dinámico de Recursos."
 }

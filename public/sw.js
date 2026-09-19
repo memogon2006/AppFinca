@@ -1,6 +1,6 @@
-const CACHE_NAME = 'ganado-app-cache-v2.9.0';
+const CACHE_NAME = 'ganado-app-cache-v2.9.1';
 
-// Recursos críticos base para funcionamiento fuera de línea
+// Recursos estáticos críticos base precacheados en instalación
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -24,6 +24,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('🧹 Eliminando caché obsoleta:', key);
             return caches.delete(key);
           }
         })
@@ -37,12 +38,12 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // 1. Ignorar métodos no GET
+  // 1. Ignorar métodos que no sean GET
   if (request.method !== 'GET') {
     return;
   }
 
-  // 2. Ignorar APIs externas o comprobación explícita de actualización
+  // 2. Ignorar APIs externas en vivo y comprobación explícita de actualización
   if (
     url.hostname.includes('api.restful-api.dev') ||
     url.hostname.includes('api.whatsapp.com') ||
@@ -52,32 +53,37 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Manejo de navegaciones (HTML principal)
-  if (request.mode === 'navigate') {
+  // 3. Manejo de navegaciones (HTML principal / PWA app shell)
+  if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       fetch(request)
         .then((response) => {
           if (response && response.status === 200) {
             const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+              cache.put('/index.html', response.clone());
+            });
           }
           return response;
         })
         .catch(async () => {
           const cachedResponse = await caches.match(request);
           if (cachedResponse) return cachedResponse;
-          return caches.match('/index.html') || caches.match('/');
+          const indexFallback = await caches.match('/index.html');
+          if (indexFallback) return indexFallback;
+          return caches.match('/');
         })
     );
     return;
   }
 
-  // 4. Estrategia Stale-While-Revalidate para CSS, JS, Fuentes e Iconos
+  // 4. Estrategia Stale-While-Revalidate para JS, CSS, Fuentes, Iconos e Imágenes
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request)
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
+          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
             const responseClone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
           }
@@ -89,3 +95,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
