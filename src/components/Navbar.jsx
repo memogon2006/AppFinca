@@ -71,46 +71,46 @@ export function Navbar({
     <>
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
-        <div className="max-w-[1600px] w-full mx-auto px-2 sm:px-4 lg:px-6">
+        <div className="w-full mx-auto px-2 sm:px-3 lg:px-4 max-w-[1700px]">
           
-          {/* VISTA ESCRITORIO / TABLET (sm: y superior) -> Todo en una fila elegante */}
-          <div className="hidden sm:flex items-center justify-between h-16 sm:h-18 gap-1.5 sm:gap-2 2xl:gap-3">
+          {/* VISTA ESCRITORIO / TABLET (sm: y superior) -> Todo en una fila balanceada sin desbordes */}
+          <div className="hidden sm:flex items-center justify-between h-15 sm:h-16 gap-1 lg:gap-1.5 2xl:gap-3">
             
             {/* LADO IZQUIERDO: Logo & Identidad de la Finca */}
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
               <div 
                 onClick={() => handleNavigate('dashboard')}
                 title="Ir al Tablero / Panel Principal"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 border border-emerald-500/30 p-0.5 shadow-md flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition overflow-hidden"
               >
-                <span className="text-lg sm:text-xl select-none">🐂</span>
+                <img src="/icon-192.png" alt="Logo" className="w-full h-full object-cover rounded-lg" />
               </div>
 
               <div 
                 onClick={() => handleNavigate('dashboard')}
-                className="flex flex-col justify-center cursor-pointer group"
+                className="flex flex-col justify-center cursor-pointer group min-w-0"
                 title="Ir al Tablero / Panel Principal"
               >
                 <h1 
-                  className="text-xs sm:text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[110px] sm:max-w-[140px] 2xl:max-w-[200px] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition leading-tight"
+                  className="text-xs sm:text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[95px] sm:max-w-[125px] 2xl:max-w-[180px] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition leading-tight"
                 >
-                  {currentUser?.farmName || 'INVENTARIO BOVINO APP'}
+                  {currentUser?.farmName || 'INVENTARIO BOVINO'}
                 </h1>
 
-                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium mt-0.5">
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/20 text-[10px]">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium mt-0.5">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/20 text-[10px] whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    {activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}
+                    <span>{activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}</span>
                   </span>
 
                   {/* Indicador de Conexión en Tiempo Real */}
                   <span 
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md font-bold text-[10px] border transition-colors ${
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md font-bold text-[10px] border transition-colors whitespace-nowrap ${
                       isOnline
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                         : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
                     }`}
-                    title={isOnline ? '🟢 Conectado a la nube. Sincronización activa.' : '📡 Modo Campo Offline: Todo lo que registres se guardará con 100% de seguridad en la memoria del dispositivo.'}
+                    title={isOnline ? '🟢 Conectado a la nube. Sincronización activa.' : '📡 Modo Campo Offline: Guardado en dispositivo.'}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
                     <span>{isOnline ? 'En línea' : 'Modo Campo'}</span>
@@ -119,7 +119,7 @@ export function Navbar({
               </div>
             </div>
 
-            {/* CENTRO: Navegación Principal (Pantallas Grandes >= lg) */}
+            {/* CENTRO: Navegación Principal (Pantallas Grandes >= xl) */}
             <nav className="hidden xl:flex items-center gap-0.5 2xl:gap-1 bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner shrink-0">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -128,7 +128,7 @@ export function Navbar({
                   <button
                     key={item.id}
                     onClick={() => handleNavigate(item.id)}
-                    className={`flex items-center gap-1.5 px-2 2xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 min-h-[36px] cursor-pointer whitespace-nowrap ${
+                    className={`flex items-center gap-1 px-1.5 2xl:px-2.5 py-1 rounded-xl text-xs font-bold transition-all duration-150 min-h-[32px] cursor-pointer whitespace-nowrap ${
                       isActive
                         ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/20'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/60'
@@ -143,25 +143,26 @@ export function Navbar({
             </nav>
 
             {/* LADO DERECHO: Acciones, Sincronización, Perfil y Salir */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 2xl:gap-1.5 shrink-0">
               
               {/* Botón Principal: + Registrar Bovino */}
               <button
                 onClick={onOpenNewAnimal}
-                className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1.5 shadow-sm min-h-[36px] cursor-pointer whitespace-nowrap"
+                className="py-1.5 px-2 2xl:px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1 shadow-sm min-h-[32px] cursor-pointer whitespace-nowrap"
                 title="Registrar un nuevo animal al inventario"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Registrar Bovino</span>
+                <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden 2xl:inline">Registrar Bovino</span>
+                <span className="2xl:hidden">+ Bovino</span>
               </button>
 
               {/* Botón Excel / Copia */}
               <button
                 onClick={onOpenExportImport}
                 title="Exportar a Excel / Respaldo"
-                className="flex items-center gap-1 px-2 2xl:px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold min-h-[36px] cursor-pointer transition whitespace-nowrap"
+                className="flex items-center gap-1 px-1.5 2xl:px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold min-h-[32px] cursor-pointer transition whitespace-nowrap"
               >
-                <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>Excel</span>
               </button>
 
@@ -169,9 +170,9 @@ export function Navbar({
               <button
                 onClick={onOpenWhatsAppReport}
                 title="Generar y Enviar Reporte por WhatsApp"
-                className="flex items-center gap-1 px-2 2xl:px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold min-h-[36px] cursor-pointer transition whitespace-nowrap shadow-sm"
+                className="flex items-center gap-1 px-1.5 2xl:px-2 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold min-h-[32px] cursor-pointer transition whitespace-nowrap shadow-sm"
               >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>WhatsApp</span>
               </button>
 
@@ -180,7 +181,7 @@ export function Navbar({
                 onClick={onManualSync}
                 disabled={isSyncing}
                 title={isSyncing ? 'Sincronizando con la nube...' : 'Sincronizar datos con la nube'}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[36px] min-w-[36px] cursor-pointer transition"
+                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[32px] min-w-[32px] cursor-pointer transition shrink-0"
               >
                 {isSyncing ? (
                   <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
@@ -193,7 +194,7 @@ export function Navbar({
               <button
                 onClick={toggleTheme}
                 title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[36px] min-w-[36px] cursor-pointer transition"
+                className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center min-h-[32px] min-w-[32px] cursor-pointer transition shrink-0"
               >
                 {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
               </button>
@@ -202,17 +203,17 @@ export function Navbar({
               <div 
                 onClick={onOpenProfile}
                 title="Mi Perfil, Nombre de Finca y Seguridad"
-                className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer transition group min-h-[36px] whitespace-nowrap"
+                className="flex items-center gap-1 px-1.5 2xl:px-2 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer transition group min-h-[32px] whitespace-nowrap shrink-0"
               >
-                <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-black text-[11px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition">
+                <div className="w-5 h-5 rounded-lg bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition">
                   {getInitials(currentUser?.name)}
                 </div>
-                <div className="hidden 2xl:flex flex-col text-left leading-tight pr-0.5">
-                  <span className="text-xs font-black truncate max-w-[80px] text-slate-800 dark:text-slate-100">
+                <div className="flex flex-col text-left leading-tight pr-0.5">
+                  <span className="text-[11px] font-black truncate max-w-[55px] 2xl:max-w-[75px] text-slate-800 dark:text-slate-100">
                     {currentUser?.name ? currentUser.name.split(' ')[0] : 'Perfil'}
                   </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
-                    <Settings className="w-2.5 h-2.5" /> Ajustes
+                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                    <Settings className="w-2 h-2" /> Ajustes
                   </span>
                 </div>
               </div>
@@ -221,10 +222,10 @@ export function Navbar({
               <button
                 onClick={handleLogout}
                 title="Cerrar Sesión"
-                className="px-2 2xl:px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1 min-h-[36px] cursor-pointer transition whitespace-nowrap"
+                className="px-2 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1 min-h-[32px] cursor-pointer transition whitespace-nowrap shrink-0"
               >
-                <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                <span className="hidden 2xl:inline">Salir</span>
+                <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                <span>Salir</span>
               </button>
 
             </div>
@@ -241,8 +242,8 @@ export function Navbar({
                 onClick={() => handleNavigate('dashboard')}
                 title="Ir al Tablero / Panel Principal"
               >
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 p-0.5 shadow-md shadow-emerald-600/25 flex items-center justify-center text-white shrink-0">
-                  <span className="text-base select-none">🐂</span>
+                <div className="w-8 h-8 rounded-xl bg-slate-900 border border-emerald-500/30 p-0.5 shadow-md flex items-center justify-center shrink-0 overflow-hidden">
+                  <img src="/icon-192.png" alt="Logo" className="w-full h-full object-cover rounded-lg" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">

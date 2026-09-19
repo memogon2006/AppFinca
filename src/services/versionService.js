@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.9.2";
-export const CURRENT_BUILD_TIME = 1789440000000;
+export const CURRENT_APP_VERSION = "2.9.3";
+export const CURRENT_BUILD_TIME = 1789450000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.3",
+    date: "18/09/2026",
+    title: "Ajuste y Balance Perfecto de la Barra Superior en Laptops",
+    highlights: [
+      "Cero Desbordes en Laptops: Reajuste de espaciados, paddings y anchos responsivos para que todos los botones (Registrar Bovino, Excel, WhatsApp, Nube, Tema, Perfil y Salir) queden 100% visibles sin cortarse en pantallas de 13\" a 16\".",
+      "Integración del Logo Oficial HD: El avatar de la finca ahora muestra el nuevo logo de alta definición en lugar del emoji anterior.",
+      "Adaptabilidad Fluida: Optimización de la cuadrícula superior con soporte para resoluciones estándar y ultra-anchas."
+    ]
+  },
   {
     version: "2.9.2",
     date: "18/09/2026",
