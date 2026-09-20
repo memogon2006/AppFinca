@@ -1,5 +1,5 @@
 {
-  "version": "2.9.7",
-  "buildTime": 1789490000000,
-  "description": "Botón de venta y liquidación de ganado (lote o individual) en el banner superior del Dashboard."
+  "version": "2.9.8",
+  "buildTime": 1789500000000,
+  "description": "Armonización de colores semánticos y limpieza visual de botones en banner del Dashboard."
 }

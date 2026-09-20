@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.9.7";
-export const CURRENT_BUILD_TIME = 1789490000000;
+export const CURRENT_APP_VERSION = "2.9.8";
+export const CURRENT_BUILD_TIME = 1789500000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.8",
+    date: "19/09/2026",
+    title: "Armonización de Colores & Limpieza Visual en Banner Superior",
+    highlights: [
+      "Código Semántico de Colores: Distinción de botones por propósito (Verde Esmeralda/Teal para Ingresos, Ámbar Dorado para Venta, Azul Cielo para Báscula, Índigo/Púrpura para Manga y Sanidad, y Vidrio Translúcido para Informes y Censo ICA).",
+      "Limpieza de Iconos: Eliminación de duplicidad de emojis en los textos de botones para un acabado nítido y profesional con iconos vectoriales HD."
+    ]
+  },
   {
     version: "2.9.7",
     date: "19/09/2026",

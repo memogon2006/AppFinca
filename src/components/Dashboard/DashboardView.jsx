@@ -135,95 +135,102 @@ export function DashboardView({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            {/* 1. Reportes y Documentos Oficiales (Translúcidos / Vidrio) */}
             {onOpenCensusModal && (
               <button
                 onClick={onOpenCensusModal}
-                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-emerald-400/30 transition backdrop-blur-sm cursor-pointer shadow-sm"
+                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-white/20 transition backdrop-blur-sm cursor-pointer shadow-sm"
                 title="Ver y exportar censo poblacional oficial ICA / FEDEGAN"
               >
                 <FileText className="w-4 h-4 text-emerald-300" />
-                <span>📄 Censo ICA / RUV</span>
-              </button>
-            )}
-
-            {onOpenVaccinationModal && (
-              <button
-                onClick={onOpenVaccinationModal}
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 border border-emerald-400/40 transition cursor-pointer"
-                title="Registrar vacunación o plan sanitario oficial"
-              >
-                <Syringe className="w-4 h-4 text-emerald-200" />
-                <span>+ Registrar Vacunación</span>
-              </button>
-            )}
-
-            {onOpenPartnershipModal && (
-              <button
-                onClick={onOpenPartnershipModal}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer active:scale-95"
-                title="Venta o liquidación de ganado: por lote completo o animal individual (venta directa o en compañía)"
-              >
-                <DollarSign className="w-4 h-4 text-slate-950" />
-                <span>💰 Venta / Liquidar Lote</span>
-              </button>
-            )}
-
-            {onOpenGlossary && (
-              <button
-                onClick={onOpenGlossary}
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-200 font-bold text-xs sm:text-sm flex items-center gap-2 border border-emerald-400/30 transition backdrop-blur-sm cursor-pointer"
-                title="Ver significado de GDP, ROI, Biomasa y Fórmulas"
-              >
-                <BookOpen className="w-4 h-4 text-emerald-300" />
-                <span>💡 Guía de Métricas</span>
-              </button>
-            )}
-
-            {onOpenChecklist && (
-              <button
-                onClick={onOpenChecklist}
-                className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer"
-                title="Arqueo y Censo Físico de Campo (Checklist en Manga / Corral)"
-              >
-                <ClipboardCheck className="w-4 h-4 text-slate-950" />
-                <span>📋 Arqueo / Checklist</span>
+                <span>Censo ICA / RUV</span>
               </button>
             )}
 
             {onOpenWhatsAppReport && (
               <button
                 onClick={onOpenWhatsAppReport}
-                className="px-3.5 py-2.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-400/40 transition backdrop-blur-sm cursor-pointer shadow-sm"
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-800/60 hover:bg-emerald-700/80 text-emerald-100 font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-500/40 transition backdrop-blur-sm cursor-pointer shadow-sm"
                 title="Generar y Enviar Reporte por WhatsApp con filtro por Dueño/Marca"
               >
                 <MessageCircle className="w-4 h-4 text-emerald-300" />
-                <span>📲 Reporte WhatsApp</span>
+                <span>Reporte WhatsApp</span>
               </button>
             )}
-            
+
+            {onOpenGlossary && (
+              <button
+                onClick={onOpenGlossary}
+                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-200 font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-white/15 transition backdrop-blur-sm cursor-pointer"
+                title="Ver significado de GDP, ROI, Biomasa y Fórmulas"
+              >
+                <BookOpen className="w-4 h-4 text-emerald-300" />
+                <span>Guía de Métricas</span>
+              </button>
+            )}
+
+            {/* 2. Control de Campo & Sanidad (Púrpura / Índigo / Esmeralda) */}
+            {onOpenVaccinationModal && (
+              <button
+                onClick={onOpenVaccinationModal}
+                className="px-4 py-2.5 rounded-xl bg-purple-600/85 hover:bg-purple-600 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-950/40 border border-purple-400/40 transition cursor-pointer"
+                title="Registrar vacunación o plan sanitario oficial"
+              >
+                <Syringe className="w-4 h-4 text-purple-200" />
+                <span>+ Registrar Vacunación</span>
+              </button>
+            )}
+
+            {onOpenChecklist && (
+              <button
+                onClick={onOpenChecklist}
+                className="px-3.5 py-2.5 rounded-xl bg-indigo-600/85 hover:bg-indigo-600 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-indigo-950/40 border border-indigo-400/40 transition cursor-pointer"
+                title="Arqueo y Censo Físico de Campo (Checklist en Manga / Corral)"
+              >
+                <ClipboardCheck className="w-4 h-4 text-indigo-200" />
+                <span>Arqueo / Checklist</span>
+              </button>
+            )}
+
+            {/* 3. Báscula & Pesaje (Azul Cielo Enérgico) */}
             <button
               onClick={() => onNavigate('quickWeigh')}
-              className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition backdrop-blur-sm cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-sky-950/30 border border-sky-300/50 transition cursor-pointer active:scale-95"
             >
-              <Zap className="w-4 h-4 text-amber-300" />
+              <Zap className="w-4 h-4 text-slate-950" />
               <span>Báscula Rápida</span>
             </button>
+
+            {/* 4. Venta y Liquidación (Oro Ámbar Destacado) */}
+            {onOpenPartnershipModal && (
+              <button
+                onClick={onOpenPartnershipModal}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-amber-950/40 border border-amber-300/60 transition cursor-pointer active:scale-95"
+                title="Venta o liquidación de ganado: por lote completo o animal individual (venta directa o en compañía)"
+              >
+                <DollarSign className="w-4 h-4 text-slate-950" />
+                <span>Venta / Liquidar Lote</span>
+              </button>
+            )}
+
+            {/* 5. Ingresos y Altas (Verdes Vivos Principales) */}
             {onOpenBatchEntry && (
               <button
                 onClick={onOpenBatchEntry}
-                className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-teal-950/30 border border-teal-300/50 transition cursor-pointer active:scale-95"
                 title="Registrar un lote completo con cálculo por kilo o precio fijo"
               >
-                <PackagePlus className="w-4 h-4" />
+                <PackagePlus className="w-4 h-4 text-slate-950" />
                 <span>Ingresar Lote</span>
               </button>
             )}
+
             <button
               onClick={onOpenNewAnimal}
-              className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 border border-emerald-300/50 transition cursor-pointer active:scale-95"
             >
-              <PlusCircle className="w-4 h-4" />
+              <PlusCircle className="w-4 h-4 text-slate-950" />
               <span>+ Individual</span>
             </button>
           </div>
