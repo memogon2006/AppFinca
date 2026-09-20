@@ -22,7 +22,8 @@ import {
   MessageCircle,
   FileText,
   Syringe,
-  ClipboardCheck
+  ClipboardCheck,
+  Stethoscope
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
@@ -203,11 +204,20 @@ export function DashboardView({
             )}
             
             <button
+              onClick={() => onNavigate('palpation')}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-950/40 border border-purple-400/40 transition cursor-pointer"
+              title="Iniciar jornada de palpación y diagnóstico reproductivo de hembras en corral"
+            >
+              <Stethoscope className="w-4 h-4 text-purple-200" />
+              <span>🩺 Palpación Rápida</span>
+            </button>
+
+            <button
               onClick={() => onNavigate('quickWeigh')}
               className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition backdrop-blur-sm cursor-pointer"
             >
               <Zap className="w-4 h-4 text-amber-300" />
-              <span>Báscula Rápida</span>
+              <span>⚡ Báscula Rápida</span>
             </button>
             {onOpenBatchEntry && (
               <button

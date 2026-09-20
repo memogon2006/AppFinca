@@ -42,11 +42,11 @@ export function Navbar({
   const navItems = [
     { id: 'dashboard', label: 'Tablero', shortLabel: 'Tablero', icon: LayoutDashboard },
     { id: 'cattle', label: 'Inventario', shortLabel: 'Ganado', icon: Layers },
-    { id: 'batches', label: 'Lotes & Ingresos', shortLabel: 'Lotes', icon: Boxes },
-    { id: 'palpation', label: 'Palpación Rápida', shortLabel: 'Palpación', icon: Stethoscope },
-    { id: 'weights', label: 'Control Pesos', shortLabel: 'Pesos', icon: Scale },
-    { id: 'quickWeigh', label: 'Báscula Rápida', shortLabel: 'Báscula', icon: Zap },
-    { id: 'finances', label: 'Ventas & Utilidades', shortLabel: 'Ventas', icon: DollarSign },
+    { id: 'batches', label: 'Lotes', shortLabel: 'Lotes', icon: Boxes },
+    { id: 'palpation', label: 'Palpación', shortLabel: 'Palpación', icon: Stethoscope },
+    { id: 'weights', label: 'Pesos', shortLabel: 'Pesos', icon: Scale },
+    { id: 'quickWeigh', label: 'Báscula', shortLabel: 'Báscula', icon: Zap },
+    { id: 'finances', label: 'Ventas', shortLabel: 'Ventas', icon: DollarSign },
   ];
 
   const handleLogout = () => {

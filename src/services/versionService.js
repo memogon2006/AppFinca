@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.12.0";
-export const CURRENT_BUILD_TIME = 1789874000000;
+export const CURRENT_APP_VERSION = "2.12.1";
+export const CURRENT_BUILD_TIME = 1789876000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.1",
+    date: "19/09/2026",
+    title: "Ajuste Visual de Barra Superior & Botón de Palpación en Tablero",
+    highlights: [
+      "Barra Superior Equilibrada: Etiquetas de navegación limpias y compactas que evitan el apiñamiento y mantienen la armonía con la identidad de la finca.",
+      "Acceso Rápido en Tablero: Incorporación del botón destacado '🩺 Palpación Rápida' en el banner del panel principal junto a Báscula, Vacunación y Arqueo."
+    ]
+  },
   {
     version: "2.12.0",
     date: "19/09/2026",

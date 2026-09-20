@@ -1,5 +1,5 @@
 {
-  "version": "2.12.0",
-  "buildTime": 1789874000000,
-  "description": "Módulo de Palpación Rápida y Diagnóstico Reproductivo de Hembras (estilo Báscula y Checklist)."
+  "version": "2.12.1",
+  "buildTime": 1789876000000,
+  "description": "Ajuste de barra superior de navegación y botón de Palpación Rápida en banner del Tablero."
 }
