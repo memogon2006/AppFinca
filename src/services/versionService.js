@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.2";
-export const CURRENT_BUILD_TIME = 1789877000000;
+export const CURRENT_APP_VERSION = "2.12.3";
+export const CURRENT_BUILD_TIME = 1789878000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.3",
+    date: "19/09/2026",
+    title: "Historial de Chequeo Anterior, Días de Preñez & Días Transcurridos en Palpación",
+    highlights: [
+      "Chequeo Anterior en Cada Hembra: Muestra en tiempo real la fecha del último examen ginecológico, el diagnóstico previo, los días de preñez que tenía, condición corporal, evaluador y hallazgos.",
+      "Días Transcurridos Entre Chequeos: Cálculo dinámico de la cantidad de días transcurridos entre la fecha del último chequeo y la fecha de la jornada actual.",
+      "Proyección Inteligente en 1 Clic: Botón inteligente 'Proyectar a ~X días' que suma automáticamente los días transcurridos a los días de preñez previos.",
+      "Indicador de Primer Chequeo: Mensaje claro y limpio si la hembra está siendo evaluada por primera vez."
+    ]
+  },
   {
     version: "2.12.2",
     date: "19/09/2026",

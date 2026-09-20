@@ -1,5 +1,5 @@
 {
-  "version": "2.12.2",
-  "buildTime": 1789877000000,
-  "description": "Botón de reinicio y limpieza de jornada de palpación ampliado y accesible en barra inferior."
+  "version": "2.12.3",
+  "buildTime": 1789878000000,
+  "description": "Historial de chequeo anterior, días de preñez y días transcurridos entre chequeos en palpación."
 }
