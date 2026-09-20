@@ -601,7 +601,7 @@ export function InventoryChecklistModal({
       }
 
       if (weighingInserts.length > 0 && db.weighings) {
-        await db.weighings.bulkAdd(weighingInserts);
+        await db.weighings.bulkPut(weighingInserts);
       }
 
       // 2. Guardar registro estructurado de arqueo histórico

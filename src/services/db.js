@@ -151,9 +151,9 @@ export async function loadSampleData(userId) {
       isDemo: true,
     }));
 
-    await db.cattle.bulkAdd(adaptedCattle);
-    await db.weighings.bulkAdd(adaptedWeighings);
-    await db.expenses.bulkAdd(adaptedExpenses);
+    await db.cattle.bulkPut(adaptedCattle);
+    await db.weighings.bulkPut(adaptedWeighings);
+    await db.expenses.bulkPut(adaptedExpenses);
   });
 }
 
@@ -302,28 +302,28 @@ export async function importBackupData(jsonData, userId) {
           userId: userId || c.userId || 'default',
           entryBatch: c.entryBatch || c.paddock || 'Ingreso #1'
         }));
-        await db.cattle.bulkAdd(cleaned);
+        await db.cattle.bulkPut(cleaned);
       }
       if (data.weighings?.length) {
         const cleanedW = data.weighings.map(w => ({
           ...w,
           userId: userId || w.userId || 'default',
         }));
-        await db.weighings.bulkAdd(cleanedW);
+        await db.weighings.bulkPut(cleanedW);
       }
       if (data.expenses?.length) {
         const cleanedE = data.expenses.map(e => ({
           ...e,
           userId: userId || e.userId || 'default',
         }));
-        await db.expenses.bulkAdd(cleanedE);
+        await db.expenses.bulkPut(cleanedE);
       }
       if (data.vaccinations?.length && db.vaccinations) {
         const cleanedV = data.vaccinations.map(v => ({
           ...v,
           userId: userId || v.userId || 'default',
         }));
-        await db.vaccinations.bulkAdd(cleanedV);
+        await db.vaccinations.bulkPut(cleanedV);
       }
     });
 

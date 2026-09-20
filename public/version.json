@@ -1,5 +1,5 @@
 {
-  "version": "2.12.7",
-  "buildTime": 1789882000000,
-  "description": "Actualización integral de la Guía de Métricas & Glosario con reproducción, sanidad ICA, arqueo y finanzas."
+  "version": "2.12.8",
+  "buildTime": 1789883000000,
+  "description": "Blindaje de base de datos con operaciones idempotentes (bulkPut) contra ConstraintError."
 }

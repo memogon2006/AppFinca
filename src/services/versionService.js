@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.12.7";
-export const CURRENT_BUILD_TIME = 1789882000000;
+export const CURRENT_APP_VERSION = "2.12.8";
+export const CURRENT_BUILD_TIME = 1789883000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.8",
+    date: "19/09/2026",
+    title: "Corrección y Blindaje de Base de Datos: Operaciones Idempotentes (bulkPut)",
+    highlights: [
+      "Solución de ConstraintError: Migración de todas las inserciones masivas e individuales (`bulkAdd`/`add`) a operaciones seguras idempotentes (`bulkPut`/`put`).",
+      "Cero Conflictos de Llaves: Previene bloqueos por colisión de identificadores o registros preexistentes al importar respaldos, cargar datos de demostración o registrar lotes."
+    ]
+  },
   {
     version: "2.12.7",
     date: "19/09/2026",

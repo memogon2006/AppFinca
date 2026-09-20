@@ -299,11 +299,11 @@ export default function App() {
         userId,
         createdAt: new Date().toISOString(),
       };
-      await db.cattle.add(created);
+      await db.cattle.put(created);
 
       if (created.entryWeight && parseFloat(created.entryWeight) > 0) {
         const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        await db.weighings.add({
+        await db.weighings.put({
           id: weighId,
           cattleId: String(newId),
           userId,
@@ -335,11 +335,11 @@ export default function App() {
         userId,
         createdAt: new Date().toISOString(),
       };
-      await db.cattle.add(created);
+      await db.cattle.put(created);
 
       if (created.entryWeight && parseFloat(created.entryWeight) > 0) {
         const weighId = 'w_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
-        await db.weighings.add({
+        await db.weighings.put({
           id: weighId,
           cattleId: String(newId),
           userId,
@@ -364,7 +364,7 @@ export default function App() {
     const animal = await db.cattle.get(cattleId) || await db.cattle.get(Number(cattleId));
     const targetId = animal ? animal.id : cattleId;
 
-    await db.weighings.add({
+    await db.weighings.put({
       id: weighId,
       cattleId: String(targetId),
       userId,
@@ -584,7 +584,7 @@ export default function App() {
       const animal = await db.cattle.get(item.cattleId) || await db.cattle.get(Number(item.cattleId));
       const targetId = animal ? animal.id : item.cattleId;
 
-      await db.weighings.add({
+      await db.weighings.put({
         id: weighId,
         cattleId: String(targetId),
         userId,
@@ -630,7 +630,7 @@ export default function App() {
       userId
     };
     if (db.vaccinations) {
-      await db.vaccinations.add(vacRecord);
+      await db.vaccinations.put(vacRecord);
     }
     cloudPushData(userId);
     triggerFeedback('success');
@@ -684,7 +684,7 @@ export default function App() {
 
     if (db.palpations) {
       const palpId = 'palp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-      await db.palpations.add({
+      await db.palpations.put({
         id: palpId,
         cattleId: String(animal.id),
         tagNumber: tagNumber || animal.tagNumber,
@@ -748,7 +748,7 @@ export default function App() {
 
       if (db.palpations) {
         const palpId = 'palp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        await db.palpations.add({
+        await db.palpations.put({
           id: palpId,
           cattleId: String(animal.id),
           tagNumber: tagNumber || animal.tagNumber,
