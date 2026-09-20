@@ -251,6 +251,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     }
 
     const isBorn = batchInfo.entryType === 'Nacimiento';
+    const isBatchRequired = !isBorn && (batchInfo.productionType === 'Ceba' || batchInfo.entryType === 'Compañía');
+
+    if (isBatchRequired && (!batchInfo.entryBatch || !batchInfo.entryBatch.trim())) {
+      setErrors('Por favor ingresa el número o nombre de Ingreso # (Lote) para este lote de ceba/engorde.');
+      return;
+    }
 
     // Validar costos si no es costo cero por nacimiento
     if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
@@ -284,8 +290,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         category: batchInfo.category,
         breed: batchInfo.breed.trim() || '',
         status: 'Activo',
-        entryBatch: batchInfo.entryBatch.trim() || 'Ingreso #1',
-        paddock: batchInfo.entryBatch.trim() || 'Ingreso #1',
+        entryBatch: batchInfo.entryBatch?.trim() || '',
+        paddock: batchInfo.entryBatch?.trim() || '',
         entryDate: batchInfo.entryDate || new Date().toISOString().split('T')[0],
         entryType: batchInfo.entryType || 'Compra',
         origin: isBorn ? 'Nacido en finca' : 'Comprado / Externo',
@@ -355,6 +361,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   };
 
   const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === batchInfo.sex);
+  const isBornInBatch = batchInfo.entryType === 'Nacimiento';
+  const isBatchRequired = !isBornInBatch && (batchInfo.productionType === 'Ceba' || batchInfo.entryType === 'Compañía');
 
   return (
     <>
@@ -402,6 +410,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                         ...prev,
                         entryType: item.value,
                         category: item.value === 'Nacimiento' && prev.category === 'Novillo' ? 'Ternero' : prev.category,
+                        entryBatch: item.value === 'Nacimiento' && prev.entryBatch === 'Ingreso #1' ? '' : prev.entryBatch,
                       }));
                       if (item.value === 'Nacimiento') {
                         setCostMode('zeroCost');
@@ -536,16 +545,20 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Ingreso # */}
             <div>
-              <label className="block text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-1">
-                Ingreso # (Lote) <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  Ingreso # (Lote) {!isBornInBatch && (batchInfo.productionType === 'Ceba' || batchInfo.entryType === 'Compañía') ? <span className="text-rose-500 font-bold">*</span> : <span className="text-slate-400 font-normal text-[11px]">(Opcional)</span>}
+                </label>
+                {isBornInBatch && (
+                  <span className="text-[10px] text-slate-400 font-medium">Opcional</span>
+                )}
+              </div>
               <input
                 type="text"
                 value={batchInfo.entryBatch}
                 onChange={(e) => setBatchInfo(prev => ({ ...prev, entryBatch: e.target.value }))}
-                placeholder="Ej. Ingreso #3, Lote Mayo"
+                placeholder={isBornInBatch ? "Ej. Nacimientos 2026, Lote A (Opcional)" : (!isBornInBatch && (batchInfo.productionType === 'Ceba' || batchInfo.entryType === 'Compañía')) ? "Ej. Ingreso #3, Lote Mayo" : "Ej. Lote Cría (Opcional)"}
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600/60 text-slate-900 dark:text-white font-bold text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[40px]"
-                required
               />
             </div>
 

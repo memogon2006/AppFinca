@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.11.1";
-export const CURRENT_BUILD_TIME = 1789535000000;
+export const CURRENT_APP_VERSION = "2.11.2";
+export const CURRENT_BUILD_TIME = 1789540000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.11.2",
+    date: "19/09/2026",
+    title: "Flexibilidad en Ingreso # / Lote: Opcional para Nacimientos y Ganado no Comercial",
+    highlights: [
+      "Ingreso # Opcional: El campo 'Ingreso # (Lote / Consecutivo)' deja de ser obligatorio para animales nacidos en la finca y para ganado no destinado a ceba/engorde (cría, vientre, lechería, doble propósito).",
+      "Validación Inteligente: Mantiene la obligatoriedad únicamente para animales comprados destinados a ceba/engorde o en compañía para garantizar la trazabilidad de lotes comerciales.",
+      "Adaptación en Registro Individual y por Lote: Permite guardar sin lote forzado, eliminando valores por defecto no deseados."
+    ]
+  },
   {
     version: "2.11.1",
     date: "19/09/2026",

@@ -434,7 +434,7 @@ export function CattleListView({
                   const aWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
                   const wm = calculateWeightMetrics(animal, aWeighs);
                   const fin = calculateFinancials(animal);
-                  const batch = animal.entryBatch || animal.paddock || 'Ingreso #1';
+                  const batch = animal.entryBatch || animal.paddock || '';
                   const isSold = animal.status === 'Vendido';
                   const isDead = animal.status === 'Muerto';
 
@@ -540,9 +540,13 @@ export function CattleListView({
 
                       {/* Ingreso # */}
                       <td className="p-3.5 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-500/30 text-[11px]">
-                          <Tag className="w-3 h-3" /> {batch}
-                        </span>
+                        {batch ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-500/30 text-[11px]">
+                            <Tag className="w-3 h-3" /> {batch}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 text-xs">-</span>
+                        )}
                       </td>
 
                       {/* Hierro & Dueño */}

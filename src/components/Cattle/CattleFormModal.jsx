@@ -356,15 +356,24 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const isFatteningFemale = isFemale && formData.productionType === 'Ceba';
   const isWeightRequired = formData.sex === 'Macho' || isFatteningFemale;
 
+  // Regla de Negocio: Ingreso # (Lote / Consecutivo)
+  // Obligatorio únicamente para animales comprados destinados a Ceba / Engorde o en Compañía.
+  // NO es obligatorio para animales nacidos en la finca, ni para animales de cría, vientre, lechería o doble propósito.
+  const isBornInFarm = formData.entryType === 'Nacimiento' || formData.origin === 'Nacido en finca';
+  const isCompany = formData.entryType === 'Compañía' || (formData.owner && formData.owner.toLowerCase().includes('compañía'));
+  const isFattening = formData.productionType === 'Ceba' || formData.femaleStatus === 'Ceba / Levante / Engorde';
+  const isEntryBatchRequired = !isBornInFarm && (isFattening || isCompany);
+
   const executeSave = (dataToSave) => {
     const parsedEntryWeight = dataToSave.entryWeight && parseFloat(dataToSave.entryWeight) > 0 ? parseFloat(dataToSave.entryWeight) : null;
     const parsedCurrentWeight = dataToSave.currentWeight && parseFloat(dataToSave.currentWeight) > 0 ? parseFloat(dataToSave.currentWeight) : parsedEntryWeight;
     const isBorn = dataToSave.entryType === 'Nacimiento';
+    const batchValue = dataToSave.entryBatch?.trim() || '';
 
     onSave({
       ...dataToSave,
-      entryBatch: dataToSave.entryBatch || 'Ingreso #1',
-      paddock: dataToSave.entryBatch || 'Ingreso #1',
+      entryBatch: batchValue,
+      paddock: batchValue,
       entryType: dataToSave.entryType || 'Compra',
       origin: isBorn ? 'Nacido en finca' : (dataToSave.origin || 'Comprado / Externo'),
       motherId: dataToSave.motherId || '',
@@ -402,6 +411,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
     if (!formData.color || !formData.color.trim()) {
       newErrors.color = 'El color de pelaje o señas particulares es obligatorio.';
+    }
+
+    if (isEntryBatchRequired && (!formData.entryBatch || !formData.entryBatch.trim())) {
+      newErrors.entryBatch = 'El Ingreso # (Lote) es obligatorio para ganado de ceba / engorde o en compañía.';
     }
 
     if (isWeightRequired) {
@@ -766,17 +779,29 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             
             {/* INGRESO # */}
             <div>
-              <label className="block text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">
-                Ingreso # (Lote / Consecutivo) <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  Ingreso # (Lote / Consecutivo) {isEntryBatchRequired ? <span className="text-rose-500 font-bold">*</span> : <span className="text-slate-400 font-normal text-[11px]">(Opcional)</span>}
+                </label>
+                {!isEntryBatchRequired && (
+                  <span className="text-[10px] text-slate-400 font-medium">Opcional</span>
+                )}
+              </div>
               <input
                 type="text"
                 name="entryBatch"
                 value={formData.entryBatch}
                 onChange={handleChange}
-                placeholder="Ej. Ingreso #1, Ingreso #2, Lote A"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-emerald-400 dark:border-emerald-600/60 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                placeholder={isBornInFarm ? "Ej. Nacimientos 2026, Lote A (Opcional)" : isEntryBatchRequired ? "Ej. Ingreso #1, Ingreso #2, Lote A" : "Ej. Lote Cría, Vientres (Opcional)"}
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
+                  errors.entryBatch 
+                    ? 'border-rose-500 ring-2 ring-rose-500/20' 
+                    : isEntryBatchRequired 
+                      ? 'border-emerald-400 dark:border-emerald-600/60' 
+                      : 'border-slate-300 dark:border-slate-700'
+                } text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
               />
+              {errors.entryBatch && <p className="text-[11px] text-rose-500 font-bold mt-1">{errors.entryBatch}</p>}
             </div>
 
             <div>
@@ -1103,7 +1128,8 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                       ...prev,
                       entryType: item.value,
                       category: item.value === 'Nacimiento' && prev.category === 'Novillo' ? 'Ternero' : prev.category,
-                      entryPrice: item.value === 'Nacimiento' && (!prev.entryPrice || prev.entryPrice === '0') ? '0' : prev.entryPrice
+                      entryPrice: item.value === 'Nacimiento' && (!prev.entryPrice || prev.entryPrice === '0') ? '0' : prev.entryPrice,
+                      entryBatch: item.value === 'Nacimiento' && prev.entryBatch === 'Ingreso #1' ? '' : prev.entryBatch
                     }));
                   }}
                   className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer min-h-[58px] ${

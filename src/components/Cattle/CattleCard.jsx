@@ -48,7 +48,7 @@ export function CattleCard({
     }
   };
 
-  const batchName = animal.entryBatch || animal.paddock || 'Ingreso #1';
+  const batchName = animal.entryBatch || animal.paddock || '';
   const isReadyForSale = animal.status === 'Activo' && weightMetrics.currentWeight >= 480;
   const isCompanySale = animal.status === 'Vendido' && (animal.exitType === 'En Compañía' || !!animal.partnershipDetails);
 
@@ -153,9 +153,11 @@ export function CattleCard({
             </span>
           )}
 
-          <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-1">
-            <Tag className="w-3 h-3" /> {batchName}
-          </span>
+          {batchName && (
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-1">
+              <Tag className="w-3 h-3" /> {batchName}
+            </span>
+          )}
 
           {/* Genealogía Rápida si existe Madre o Padre */}
           {animal.motherTag && (
