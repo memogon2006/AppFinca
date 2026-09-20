@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.12.4";
-export const CURRENT_BUILD_TIME = 1789879000000;
+export const CURRENT_APP_VERSION = "2.12.5";
+export const CURRENT_BUILD_TIME = 1789880000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.5",
+    date: "19/09/2026",
+    title: "Estabilización de Actualizaciones, ErrorBoundary & PWA Network-First",
+    highlights: [
+      "Protección Total contra Pantalla Negra: Integración de ErrorBoundary y cargador visual de arranque que previene cualquier bloqueo de interfaz al actualizar.",
+      "PWA Network-First: El Service Worker prioriza la descarga fresca de código al estar en línea y activa el respaldo seguro en caché al estar fuera de cobertura.",
+      "Recarga Inteligente y Limpieza de Memoria: El proceso de actualización limpia registros residuales y refresca la aplicación de forma transparente e instantánea."
+    ]
+  },
   {
     version: "2.12.4",
     date: "19/09/2026",
@@ -1034,10 +1044,16 @@ export async function applyAppUpdate() {
       await Promise.all(cacheNames.map(name => caches.delete(name)));
     }
 
-    // 3. Recargar limpiamente
-    window.location.reload();
+    // 3. Limpiar almacenamiento de sesión temporal
+    try {
+      sessionStorage.clear();
+    } catch (e) {}
+
+    // 4. Recargar limpiamente forzando petición fresca
+    const cleanUrl = window.location.origin + window.location.pathname + '?_v=' + Date.now();
+    window.location.replace(cleanUrl);
   } catch (e) {
     console.warn('Error limpiando caché:', e);
-    window.location.reload();
+    window.location.replace(window.location.origin + window.location.pathname + '?_v=' + Date.now());
   }
 }

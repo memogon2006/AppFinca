@@ -14,12 +14,19 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-charts': ['recharts'],
-          'vendor-db': ['dexie', 'dexie-react-hooks'],
-          'vendor-export': ['xlsx-js-style'],
-          'vendor-icons': ['lucide-react']
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts')) {
+            return 'vendor-charts';
+          }
+          if (id.includes('node_modules/dexie')) {
+            return 'vendor-db';
+          }
+          if (id.includes('node_modules/xlsx-js-style')) {
+            return 'vendor-export';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
         }
       }
     }

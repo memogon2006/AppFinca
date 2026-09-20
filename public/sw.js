@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ganado-app-cache-v2.9.4';
+const CACHE_NAME = 'ganado-app-cache-v2.12.5';
 
 // Recursos estáticos críticos base precacheados en instalación
 const STATIC_ASSETS = [
@@ -16,14 +16,15 @@ const STATIC_ASSETS = [
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// Activación y limpieza de cachés anteriores
+// Activación y limpieza inmediata de cachés anteriores
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -42,24 +43,22 @@ self.addEventListener('activate', (event) => {
 // Estrategia de respuesta a peticiones
 self.addEventListener('fetch', (event) => {
   const request = event.request;
+  if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
 
-  // 1. Ignorar métodos que no sean GET
-  if (request.method !== 'GET') {
-    return;
-  }
-
-  // 2. Ignorar APIs externas en vivo y comprobación explícita de actualización
+  // 1. Ignorar APIs externas y comprobación explícita de actualización
   if (
     url.hostname.includes('api.restful-api.dev') ||
     url.hostname.includes('api.whatsapp.com') ||
     url.searchParams.has('_nocache') ||
+    url.searchParams.has('_v') ||
     url.pathname.includes('/version.json')
   ) {
     return;
   }
 
-  // 3. Manejo de navegaciones (HTML principal / PWA app shell)
+  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Fallback Offline
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       fetch(request)
@@ -84,10 +83,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Estrategia Stale-While-Revalidate para JS, CSS, Fuentes, Iconos e Imágenes
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
+  // 3. Manejo de scripts y estilos (/assets/ o .js o .css) - Network First con Fallback Offline
+  if (url.pathname.includes('/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(
+      fetch(request)
         .then((networkResponse) => {
           if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
             const responseClone = networkResponse.clone();
@@ -95,9 +94,36 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => cachedResponse);
+        .catch(async () => {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          return new Response('Offline resource unavailable', { status: 503 });
+        })
+    );
+    return;
+  }
 
-      return cachedResponse || fetchPromise;
+  // 4. Recursos estáticos generales (Imágenes, Fuentes, Iconos) - Cache First con Network Fallback
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      if (cachedResponse) {
+        // En segundo plano revalidar
+        fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+        }).catch(() => null);
+        return cachedResponse;
+      }
+
+      return fetch(request).then((networkResponse) => {
+        if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+        }
+        return networkResponse;
+      });
     })
   );
 });
