@@ -502,34 +502,56 @@ export function calculateReproduction(animal) {
     };
   }
 
-  if (!animal.serviceDate) {
-    return {
-      isPregnant: true,
-      daysPregnant: 0,
-      expectedCalvingDate: null,
-      daysUntilCalving: null,
-      statusLabel: 'Gestante (Sin fecha de servicio registrada)',
-    };
-  }
-
-  const sDate = parseDateOnly(animal.serviceDate);
-  if (!sDate) {
-    return {
-      isPregnant: true,
-      daysPregnant: 0,
-      expectedCalvingDate: null,
-      daysUntilCalving: null,
-      statusLabel: 'Gestante (Sin fecha de servicio registrada)',
-    };
-  }
   const today = parseDateOnly(new Date()) || new Date();
-  
-  // Gestación bovina: servicio + 283 días
-  const dueDate = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate() + BOVINE_GESTATION_DAYS);
+  let dueDate = null;
+  let sDate = null;
+  let serviceDateStr = animal.serviceDate || '';
+  let expectedCalvingDateStr = animal.expectedCalvingDate || '';
 
-  const daysPregnant = getDaysDifference(animal.serviceDate, new Date());
+  if (serviceDateStr) {
+    sDate = parseDateOnly(serviceDateStr);
+    if (sDate) {
+      dueDate = new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate() + BOVINE_GESTATION_DAYS);
+    }
+  }
+
+  if (!dueDate && expectedCalvingDateStr) {
+    dueDate = parseDateOnly(expectedCalvingDateStr);
+    if (dueDate) {
+      sDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate() - BOVINE_GESTATION_DAYS);
+      const sy = sDate.getFullYear();
+      const sm = String(sDate.getMonth() + 1).padStart(2, '0');
+      const sd = String(sDate.getDate()).padStart(2, '0');
+      serviceDateStr = `${sy}-${sm}-${sd}`;
+    }
+  }
+
+  if (!dueDate && animal.pregnancyDays && parseInt(animal.pregnancyDays) > 0) {
+    const pDays = parseInt(animal.pregnancyDays);
+    sDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - pDays);
+    dueDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (BOVINE_GESTATION_DAYS - pDays));
+    const sy = sDate.getFullYear();
+    const sm = String(sDate.getMonth() + 1).padStart(2, '0');
+    const sd = String(sDate.getDate()).padStart(2, '0');
+    serviceDateStr = `${sy}-${sm}-${sd}`;
+  }
+
+  if (!dueDate) {
+    const daysPreg = parseInt(animal.pregnancyDays) || 0;
+    return {
+      isPregnant: true,
+      daysPregnant: daysPreg,
+      expectedCalvingDate: null,
+      daysUntilCalving: null,
+      statusLabel: daysPreg > 0 ? `Gestante (~${daysPreg} días de preñez)` : 'Gestante (Sin fecha de servicio registrada)',
+    };
+  }
+
   const diffDueTime = dueDate.getTime() - today.getTime();
   const daysUntilCalving = Math.ceil(diffDueTime / (1000 * 60 * 60 * 24));
+  const daysPregnant = sDate 
+    ? getDaysDifference(serviceDateStr, today)
+    : Math.max(0, Math.min(BOVINE_GESTATION_DAYS, BOVINE_GESTATION_DAYS - daysUntilCalving));
 
   const y = dueDate.getFullYear();
   const m = String(dueDate.getMonth() + 1).padStart(2, '0');
@@ -538,12 +560,12 @@ export function calculateReproduction(animal) {
 
   return {
     isPregnant: true,
-    serviceDate: animal.serviceDate,
+    serviceDate: serviceDateStr,
     daysPregnant,
     expectedCalvingDate: dueDateFormatted,
     daysUntilCalving,
     statusLabel: daysUntilCalving <= 0 
-      ? '¡Fecha de parto cumplida!' 
+      ? '¡Fecha de parto cumplida o inminente!' 
       : `Parto en aprox. ${daysUntilCalving} días (${daysPregnant} días de preñez)`,
     isNearCalving: daysUntilCalving <= 20 && daysUntilCalving >= -15,
   };

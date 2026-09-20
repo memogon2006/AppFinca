@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.11.3";
-export const CURRENT_BUILD_TIME = 1789545000000;
+export const CURRENT_APP_VERSION = "2.11.4";
+export const CURRENT_BUILD_TIME = 1789546000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.11.4",
+    date: "19/09/2026",
+    title: "Diagnóstico de Gestación por Días de Preñez & Alertas Reproductivas",
+    highlights: [
+      "Días de Preñez Aproximados: Permite ingresar directamente los días de preñez diagnosticados (por palpación rectal o ecografía) o seleccionar accesos rápidos por mes (1m a 8m).",
+      "Cálculo Automático de Parto: Sincronización en tiempo real entre días de preñez, fecha de monta/servicio y fecha estimada de parto (283 días).",
+      "Alertas Reproductivas en Vivo: Alertas inteligentes de parto inminente (≤ 10 días), próximo parto (≤ 30 días) y secado/transición (≤ 60 días).",
+      "Integración Total: Sincronización automática con el Calendario de la Finca y el Tablero de Alertas Reproductivas."
+    ]
+  },
   {
     version: "2.11.3",
     date: "19/09/2026",

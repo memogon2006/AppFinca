@@ -13,7 +13,7 @@ import {
   AlertCircle,
   Syringe
 } from 'lucide-react';
-import { formatDate, BOVINE_GESTATION_DAYS } from '../../services/calculations';
+import { formatDate, BOVINE_GESTATION_DAYS, calculateReproduction } from '../../services/calculations';
 import { SANITARY_CYCLES_INFO, MONTH_NAMES } from './calendarConstants';
 
 const DAY_NAMES = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -92,19 +92,15 @@ export function FarmCalendarWidget({
           dotColor: 'bg-amber-500'
         });
       }
-      if (c.sex === 'Hembra' && (c.femaleStatus === 'Gestación' || c.reproductiveStatus === 'Preñada') && c.serviceDate) {
-        try {
-          const sDate = new Date(c.serviceDate);
-          if (!isNaN(sDate.getTime())) {
-            const expCalv = new Date(sDate.getTime() + BOVINE_GESTATION_DAYS * 86400000);
-            const calvStr = expCalv.toISOString().split('T')[0];
-            addEvent(calvStr, {
-              type: 'calving',
-              title: `Parto: ${c.tagNumber}`,
-              dotColor: 'bg-purple-500'
-            });
-          }
-        } catch (e) {}
+      if (c.sex === 'Hembra' && (c.femaleStatus === 'Gestación' || c.reproductiveStatus === 'Preñada')) {
+        const repro = calculateReproduction(c);
+        if (repro?.expectedCalvingDate) {
+          addEvent(repro.expectedCalvingDate, {
+            type: 'calving',
+            title: `Parto: ${c.tagNumber}`,
+            dotColor: 'bg-purple-500'
+          });
+        }
       }
     });
 

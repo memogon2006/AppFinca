@@ -71,10 +71,12 @@ export function FemaleStatusBadge({ status, liters, cycleAvg }) {
 
 export function ReproductiveBadge({ status, isPregnant, daysUntilCalving }) {
   if (status === 'Preñada' || status === 'Gestación' || isPregnant) {
-    const isClose = daysUntilCalving !== null && daysUntilCalving <= 20;
+    const isCritical = daysUntilCalving !== null && daysUntilCalving <= 10;
+    const isClose = daysUntilCalving !== null && daysUntilCalving <= 30;
+    const variant = isCritical ? 'rose' : isClose ? 'amber' : 'emerald';
     return (
-      <Badge variant={isClose ? 'amber' : 'emerald'} className="animate-pulse">
-        🤰 Gestación {daysUntilCalving !== null ? `(Faltan ~${daysUntilCalving}d)` : ''}
+      <Badge variant={variant} className={isCritical ? 'animate-pulse font-black' : ''}>
+        🤰 Gestación {daysUntilCalving !== null ? (daysUntilCalving <= 0 ? '(¡Parto hoy/inminente!)' : `(Faltan ~${daysUntilCalving}d)`) : ''}
       </Badge>
     );
   }

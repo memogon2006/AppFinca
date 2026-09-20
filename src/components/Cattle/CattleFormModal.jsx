@@ -9,8 +9,8 @@ import {
   COMMON_BREEDS,
   getDynamicFarmColors 
 } from '../../types/cattle';
-import { BOVINE_GESTATION_DAYS } from '../../services/calculations';
-import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Heart, Dna, Tag } from 'lucide-react';
+import { BOVINE_GESTATION_DAYS, formatDate } from '../../services/calculations';
+import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Heart, Dna, Tag, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
@@ -33,6 +33,9 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const [isConsecutiveModalOpen, setIsConsecutiveModalOpen] = useState(false);
   const [consecutiveWarningData, setConsecutiveWarningData] = useState(null);
   const [consecutiveConfirmed, setConsecutiveConfirmed] = useState(false);
+
+  // Estado local para input de días de preñez (diagnóstico de palpación/ecografía)
+  const [gestationDaysInput, setGestationDaysInput] = useState('');
 
   // Estadísticas de consecutivos en la finca seleccionada
   const farmConsecutiveStats = useMemo(() => {
@@ -106,6 +109,27 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         )
       ) : 'No aplica';
 
+      let initialPregDays = '';
+      if (isFemale && (animal.pregnancyDays || animal.serviceDate || animal.expectedCalvingDate)) {
+        if (animal.pregnancyDays) {
+          initialPregDays = String(animal.pregnancyDays);
+        } else if (animal.serviceDate) {
+          const sDate = new Date(animal.serviceDate);
+          if (!isNaN(sDate.getTime())) {
+            const diffDays = Math.floor((new Date() - sDate) / 86400000);
+            if (diffDays >= 0 && diffDays <= 300) initialPregDays = String(diffDays);
+          }
+        } else if (animal.expectedCalvingDate) {
+          const expDate = new Date(animal.expectedCalvingDate);
+          if (!isNaN(expDate.getTime())) {
+            const remDays = Math.ceil((expDate - new Date()) / 86400000);
+            const calcDays = BOVINE_GESTATION_DAYS - remDays;
+            if (calcDays >= 0 && calcDays <= 300) initialPregDays = String(calcDays);
+          }
+        }
+      }
+      setGestationDaysInput(initialPregDays);
+
       setFormData({
         ...animal,
         entryBatch: animal.entryBatch || animal.paddock || 'Ingreso #1',
@@ -130,6 +154,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         lactationCycleAvgLiters: isFemale ? (animal.lactationCycleAvgLiters || '') : '',
         serviceDate: isFemale ? (animal.serviceDate || '') : '',
         expectedCalvingDate: isFemale ? (animal.expectedCalvingDate || '') : '',
+        pregnancyDays: isFemale ? (animal.pregnancyDays || (initialPregDays ? parseInt(initialPregDays) : 0)) : 0,
         isBreedingOnly: isFemale ? Boolean(animal.isBreedingOnly) : false,
       });
 
@@ -137,6 +162,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         setShowAdvancedMilk(true);
       }
     } else {
+      setGestationDaysInput('');
       setFormData({
         tagNumber: '',
         name: '',
@@ -166,6 +192,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         reproductiveStatus: 'No aplica',
         serviceDate: '',
         expectedCalvingDate: '',
+        pregnancyDays: 0,
         milkingStatus: 'No aplica',
         dailyMilkLiters: '',
         lactationCycleDays: 305,
@@ -214,19 +241,143 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     return () => clearTimeout(timer);
   }, [formData.tagNumber, formData.ironBrand, formData.owner, cattleList, animal?.id, isOpen]);
 
+  // Sincronización bidireccional de Días de Preñez, Fecha de Servicio y Fecha Estimada de Parto
+  const handleGestationDaysChange = (daysVal) => {
+    setGestationDaysInput(daysVal);
+    if (daysVal === '' || daysVal === null) {
+      return;
+    }
+    const days = parseInt(daysVal);
+    if (!isNaN(days) && days >= 0) {
+      const now = new Date();
+      const sDate = new Date(now.getTime() - days * 86400000);
+      const expDate = new Date(sDate.getTime() + BOVINE_GESTATION_DAYS * 86400000);
+      
+      setFormData(prev => ({
+        ...prev,
+        pregnancyDays: days,
+        serviceDate: sDate.toISOString().split('T')[0],
+        expectedCalvingDate: expDate.toISOString().split('T')[0]
+      }));
+    }
+  };
+
   const handleServiceDateChange = (date) => {
-    let expected = '';
     if (date) {
-      const d = new Date(date);
-      d.setDate(d.getDate() + BOVINE_GESTATION_DAYS);
-      expected = d.toISOString().split('T')[0];
+      const sDate = new Date(date);
+      if (!isNaN(sDate.getTime())) {
+        const expDate = new Date(sDate.getTime() + BOVINE_GESTATION_DAYS * 86400000);
+        const diffDays = Math.max(0, Math.floor((new Date() - sDate) / 86400000));
+        setGestationDaysInput(diffDays <= 300 ? String(diffDays) : '');
+        setFormData(prev => ({
+          ...prev,
+          serviceDate: date,
+          pregnancyDays: diffDays,
+          expectedCalvingDate: expDate.toISOString().split('T')[0]
+        }));
+        return;
+      }
     }
     setFormData(prev => ({
       ...prev,
       serviceDate: date,
-      expectedCalvingDate: expected,
+      expectedCalvingDate: ''
     }));
   };
+
+  const handleExpectedCalvingDateChange = (date) => {
+    if (date) {
+      const expDate = new Date(date);
+      if (!isNaN(expDate.getTime())) {
+        const sDate = new Date(expDate.getTime() - BOVINE_GESTATION_DAYS * 86400000);
+        const remDays = Math.ceil((expDate - new Date()) / 86400000);
+        const calcDays = Math.max(0, BOVINE_GESTATION_DAYS - remDays);
+        setGestationDaysInput(calcDays >= 0 && calcDays <= 300 ? String(calcDays) : '');
+        setFormData(prev => ({
+          ...prev,
+          expectedCalvingDate: date,
+          serviceDate: sDate.toISOString().split('T')[0],
+          pregnancyDays: calcDays
+        }));
+        return;
+      }
+    }
+    setFormData(prev => ({
+      ...prev,
+      expectedCalvingDate: date
+    }));
+  };
+
+  // Cálculo en vivo de métricas y alertas de gestación
+  const gestationStats = useMemo(() => {
+    if (formData.femaleStatus !== 'Gestación') return null;
+
+    let daysPregnant = parseInt(gestationDaysInput);
+    if (isNaN(daysPregnant) || daysPregnant < 0) {
+      if (formData.serviceDate) {
+        const sDate = new Date(formData.serviceDate);
+        if (!isNaN(sDate.getTime())) {
+          daysPregnant = Math.max(0, Math.floor((new Date() - sDate) / 86400000));
+        }
+      } else if (formData.expectedCalvingDate) {
+        const expDate = new Date(formData.expectedCalvingDate);
+        if (!isNaN(expDate.getTime())) {
+          const remDays = Math.ceil((expDate - new Date()) / 86400000);
+          daysPregnant = Math.max(0, BOVINE_GESTATION_DAYS - remDays);
+        }
+      }
+    }
+
+    if (isNaN(daysPregnant)) daysPregnant = 0;
+    const daysRemaining = Math.max(0, BOVINE_GESTATION_DAYS - daysPregnant);
+    const monthsApprox = (daysPregnant / 30.4).toFixed(1);
+    const progressPercent = Math.min(100, Math.max(0, Math.round((daysPregnant / BOVINE_GESTATION_DAYS) * 100)));
+
+    let alertBadge = null;
+    if (daysPregnant > 0 || formData.expectedCalvingDate || formData.serviceDate) {
+      if (daysRemaining <= 10) {
+        alertBadge = {
+          level: 'critical',
+          title: `🚨 Alerta Máxima: Parto Inminente (en ~${daysRemaining} días)`,
+          description: 'Trasladar a potrero de paritorio o maternidad y mantener supervisión constante.',
+          classes: 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-700/70 text-rose-900 dark:text-rose-100',
+          badgeClass: 'bg-rose-500 text-white'
+        };
+      } else if (daysRemaining <= 30) {
+        alertBadge = {
+          level: 'warning',
+          title: `⚠️ Alerta Próximo Parto: Faltan ~${daysRemaining} días (1 mes o menos)`,
+          description: 'Adecuar suplementación pre-parto, revisar estado de la ubre y preparar lote de maternidad.',
+          classes: 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-700/70 text-amber-900 dark:text-amber-100',
+          badgeClass: 'bg-amber-500 text-white'
+        };
+      } else if (daysRemaining <= 60) {
+        alertBadge = {
+          level: 'info',
+          title: `ℹ️ Gestación Avanzada: Faltan ~${daysRemaining} días (~2 meses)`,
+          description: 'Período óptimo para secado si estaba en ordeño e iniciar nutrición de transición.',
+          classes: 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-300 dark:border-indigo-700/70 text-indigo-900 dark:text-indigo-100',
+          badgeClass: 'bg-indigo-500 text-white'
+        };
+      } else {
+        alertBadge = {
+          level: 'normal',
+          title: `🍼 Gestación en Progreso: ${daysPregnant} días cumplidos (~${monthsApprox} meses)`,
+          description: `Faltan aprox. ${daysRemaining} días para la fecha estimada de parto.`,
+          classes: 'bg-purple-50 dark:bg-purple-950/50 border-purple-300 dark:border-purple-700/70 text-purple-900 dark:text-purple-100',
+          badgeClass: 'bg-purple-600 text-white'
+        };
+      }
+    }
+
+    return {
+      daysPregnant,
+      daysRemaining,
+      monthsApprox,
+      progressPercent,
+      alertBadge
+    };
+  }, [formData.femaleStatus, formData.serviceDate, formData.expectedCalvingDate, gestationDaysInput]);
 
   // Cálculo automático del promedio y total de litros por ciclo para hembras
   const handleDailyMilkChange = (val) => {
@@ -394,8 +545,9 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       lactationCycleDays: isFemale ? parseInt(dataToSave.lactationCycleDays || 305) : 0,
       lactationCycleTotalLiters: isFemale ? parseFloat(dataToSave.lactationCycleTotalLiters || 0) : 0,
       lactationCycleAvgLiters: isFemale ? parseFloat(dataToSave.lactationCycleAvgLiters || 0) : 0,
-      serviceDate: isFemale ? (dataToSave.serviceDate || '') : '',
-      expectedCalvingDate: isFemale ? (dataToSave.expectedCalvingDate || '') : '',
+      serviceDate: isFemale && dataToSave.femaleStatus === 'Gestación' ? (dataToSave.serviceDate || '') : '',
+      expectedCalvingDate: isFemale && dataToSave.femaleStatus === 'Gestación' ? (dataToSave.expectedCalvingDate || '') : '',
+      pregnancyDays: isFemale && dataToSave.femaleStatus === 'Gestación' ? (parseInt(gestationDaysInput) || parseInt(dataToSave.pregnancyDays) || 0) : 0,
       isBreedingOnly: isFemale ? Boolean(dataToSave.isBreedingOnly) : false,
     });
     onClose();
@@ -976,34 +1128,190 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               </div>
             )}
 
-            {/* Si está en Gestación (Preñada): Fecha de servicio y parto */}
+            {/* Si está en Gestación (Preñada): Días de preñez, fechas calculadas y alertas */}
             {formData.femaleStatus === 'Gestación' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-500/30">
-                <div>
-                  <label className="block text-xs font-semibold text-purple-950 dark:text-purple-200 mb-1">
-                    Fecha de Servicio / Inseminación
-                  </label>
-                  <input
-                    type="date"
-                    name="serviceDate"
-                    value={formData.serviceDate}
-                    onChange={(e) => handleServiceDateChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-purple-300 dark:border-purple-500/40 text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition min-h-[44px]"
-                  />
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-purple-300 dark:border-purple-500/40 shadow-sm space-y-4">
+                
+                {/* Encabezado del Módulo de Gestación */}
+                <div className="flex items-start justify-between gap-2 border-b border-purple-100 dark:border-purple-800/40 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-xl shrink-0">
+                      🤰
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-black text-purple-950 dark:text-purple-100 uppercase tracking-wider flex items-center gap-2">
+                        Control Reproductivo & Diagnóstico de Gestación
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
+                          283 Días Gestación
+                        </span>
+                      </h5>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Ingresa los <strong>días aproximados de preñez</strong> (palpación/ecografía) o la <strong>fecha de monta</strong> para calcular el parto y alertas.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-purple-950 dark:text-purple-200 mb-1">
-                    Fecha Estimada Parto (+283d)
-                  </label>
-                  <input
-                    type="date"
-                    name="expectedCalvingDate"
-                    value={formData.expectedCalvingDate}
-                    onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-purple-300 dark:border-purple-500/40 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none min-h-[44px]"
-                  />
+                {/* Campos Principales de Entrada y Fechas Sincronizadas */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  
+                  {/* 1. Días de Preñez Aproximados */}
+                  <div className="bg-purple-50/60 dark:bg-purple-950/30 p-3 rounded-xl border border-purple-200 dark:border-purple-800/50">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-purple-950 dark:text-purple-200">
+                        ⏱️ Días de Preñez Aprox.
+                      </label>
+                      {gestationStats?.monthsApprox > 0 && (
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-purple-200/70 dark:bg-purple-800/60 text-purple-900 dark:text-purple-200">
+                          ~{gestationStats.monthsApprox} meses
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="300"
+                        value={gestationDaysInput}
+                        onChange={(e) => handleGestationDaysChange(e.target.value)}
+                        placeholder="Ej. 90 (palpación)"
+                        className="w-full px-3 py-2 text-sm font-extrabold rounded-lg bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-600/60 text-purple-950 dark:text-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[42px]"
+                      />
+                      <span className="absolute right-3 top-2.5 text-xs text-purple-500 font-bold pointer-events-none">
+                        días
+                      </span>
+                    </div>
+
+                    {/* Botones de Selección Rápida por Meses */}
+                    <div className="mt-2.5">
+                      <span className="text-[10px] font-bold text-purple-800 dark:text-purple-300 block mb-1">
+                        Acceso rápido por meses de palpación:
+                      </span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[
+                          { m: '1m', d: 30 },
+                          { m: '2m', d: 60 },
+                          { m: '3m', d: 90 },
+                          { m: '4m', d: 120 },
+                          { m: '5m', d: 150 },
+                          { m: '6m', d: 180 },
+                          { m: '7m', d: 210 },
+                          { m: '8m', d: 240 },
+                        ].map(preset => {
+                          const isActive = parseInt(gestationDaysInput) === preset.d;
+                          return (
+                            <button
+                              type="button"
+                              key={preset.d}
+                              onClick={() => handleGestationDaysChange(String(preset.d))}
+                              className={`px-1.5 py-1 text-[10px] font-extrabold rounded-md transition cursor-pointer border text-center ${
+                                isActive
+                                  ? 'bg-purple-700 text-white border-purple-800 shadow-sm'
+                                  : 'bg-white dark:bg-slate-800 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-800/70 hover:bg-purple-100 dark:hover:bg-purple-900/40'
+                              }`}
+                            >
+                              {preset.m} ({preset.d}d)
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Fecha de Servicio / Monta / Inseminación */}
+                  <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                        📅 Fecha Servicio / Monta
+                      </label>
+                      <input
+                        type="date"
+                        name="serviceDate"
+                        value={formData.serviceDate}
+                        onChange={(e) => handleServiceDateChange(e.target.value)}
+                        className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[42px]"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+                      Sincronizada automáticamente (Hoy - días de preñez). Puedes ajustarla manualmente.
+                    </p>
+                  </div>
+
+                  {/* 3. Fecha Estimada de Parto (+283d) */}
+                  <div className="bg-emerald-50/60 dark:bg-emerald-950/30 p-3 rounded-xl border-2 border-emerald-300 dark:border-emerald-600/50 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-black text-emerald-950 dark:text-emerald-200">
+                          🍼 Fecha Estimada de Parto
+                        </label>
+                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100">
+                          +283 días
+                        </span>
+                      </div>
+                      <input
+                        type="date"
+                        name="expectedCalvingDate"
+                        value={formData.expectedCalvingDate}
+                        onChange={(e) => handleExpectedCalvingDateChange(e.target.value)}
+                        className="w-full px-3 py-2 text-xs font-black rounded-lg bg-white dark:bg-slate-800 border border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[42px]"
+                      />
+                    </div>
+                    <p className="text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 mt-2">
+                      {formData.expectedCalvingDate ? `Parto proyectado: ${formatDate(formData.expectedCalvingDate)}` : 'Calculada automáticamente al ingresar días o servicio.'}
+                    </p>
+                  </div>
+
                 </div>
+
+                {/* Resumen en Vivo del Estado y Alertas Reproductivas */}
+                {gestationStats && (gestationStats.daysPregnant > 0 || formData.expectedCalvingDate) && (
+                  <div className={`p-3.5 rounded-xl border ${gestationStats.alertBadge?.classes || 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 text-purple-900'}`}>
+                    
+                    {/* Barra de Progreso de Gestación */}
+                    <div className="mb-2.5">
+                      <div className="flex items-center justify-between text-[11px] font-extrabold mb-1">
+                        <span>Progreso de Gestación ({gestationStats.daysPregnant} de {BOVINE_GESTATION_DAYS} días)</span>
+                        <span>{gestationStats.progressPercent}% cumplido</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${
+                            gestationStats.daysRemaining <= 10 
+                              ? 'bg-rose-500' 
+                              : gestationStats.daysRemaining <= 30 
+                                ? 'bg-amber-500' 
+                                : 'bg-purple-600'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.max(3, gestationStats.progressPercent))}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Alerta Reproductiva */}
+                    {gestationStats.alertBadge && (
+                      <div className="flex items-start gap-2.5 pt-1">
+                        <div className="text-base shrink-0">
+                          {gestationStats.alertBadge.level === 'critical' ? '🚨' : gestationStats.alertBadge.level === 'warning' ? '⚠️' : '🍼'}
+                        </div>
+                        <div>
+                          <span className="font-black text-xs block">
+                            {gestationStats.alertBadge.title}
+                          </span>
+                          <p className="text-[11px] font-medium opacity-90 mt-0.5">
+                            {gestationStats.alertBadge.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-2.5 pt-2 border-t border-purple-200/50 dark:border-purple-700/40 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-purple-900/80 dark:text-purple-200/80">
+                      <span>📆 Se sincroniza con el Calendario de la Finca</span>
+                      <span>🔔 Genera notificación automática en el Tablero de Alertas</span>
+                    </div>
+
+                  </div>
+                )}
+
               </div>
             )}
 

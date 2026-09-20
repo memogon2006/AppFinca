@@ -25,7 +25,7 @@ import {
   Activity,
   Info
 } from 'lucide-react';
-import { formatDate, formatNumber, formatCurrency, BOVINE_GESTATION_DAYS } from '../../services/calculations';
+import { formatDate, formatNumber, formatCurrency, BOVINE_GESTATION_DAYS, calculateReproduction } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
 import {
   SANITARY_CYCLES_INFO,
@@ -178,22 +178,18 @@ export function FarmCalendarModal({
       }
 
       // 4. Partos estimados en hembras preñadas
-      if (c.sex === 'Hembra' && (c.femaleStatus === 'Gestación' || c.reproductiveStatus === 'Preñada') && c.serviceDate) {
-        try {
-          const sDate = new Date(c.serviceDate);
-          if (!isNaN(sDate.getTime())) {
-            const expCalv = new Date(sDate.getTime() + BOVINE_GESTATION_DAYS * 86400000);
-            const calvStr = expCalv.toISOString().split('T')[0];
-            addEvent(calvStr, {
-              type: 'calving',
-              title: `Parto Estimado: Vaca ${c.tagNumber}`,
-              subtitle: `Servicio: ${formatDate(c.serviceDate)} (${c.breedingMethod || 'Monta'})`,
-              icon: Baby,
-              color: 'text-purple-600 dark:text-purple-400',
-              dotColor: 'bg-purple-500'
-            });
-          }
-        } catch (e) {}
+      if (c.sex === 'Hembra' && (c.femaleStatus === 'Gestación' || c.reproductiveStatus === 'Preñada')) {
+        const repro = calculateReproduction(c);
+        if (repro.expectedCalvingDate) {
+          addEvent(repro.expectedCalvingDate, {
+            type: 'calving',
+            title: `Parto Estimado: Vaca ${c.tagNumber} ${c.name ? `(${c.name})` : ''}`,
+            subtitle: repro.serviceDate ? `Servicio: ${formatDate(repro.serviceDate)} • ${repro.statusLabel}` : repro.statusLabel,
+            icon: CalendarDays,
+            color: 'text-purple-600 dark:text-purple-400',
+            dotColor: 'bg-purple-500'
+          });
+        }
       }
     });
 
