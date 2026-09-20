@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.12.1";
-export const CURRENT_BUILD_TIME = 1789876000000;
+export const CURRENT_APP_VERSION = "2.12.2";
+export const CURRENT_BUILD_TIME = 1789877000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.2",
+    date: "19/09/2026",
+    title: "Botón de Reinicio y Limpieza de Jornada de Palpación Ampliado",
+    highlights: [
+      "Botón Superior Destacado: El botón de 'Reiniciar Jornada' ahora es más grande, claramente visible y cuenta con texto explicativo.",
+      "Acceso en Barra Inferior Flotante: Se integró el botón 'Reiniciar' en la barra inferior persistente junto a WhatsApp y Guardar Todo para máxima comodidad en el corral."
+    ]
+  },
   {
     version: "2.12.1",
     date: "19/09/2026",

@@ -523,10 +523,11 @@ export function QuickPalpationView({
 
             <button
               onClick={handleClearDraft}
-              className="p-2 rounded-xl bg-white/10 hover:bg-rose-500/20 text-purple-200 hover:text-rose-300 border border-white/10 transition cursor-pointer"
-              title="Limpiar borrador de la jornada"
+              className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 hover:text-white border border-rose-400/40 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+              title="Reiniciar y limpiar todos los datos de esta jornada de palpación"
             >
               <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reiniciar Jornada</span>
             </button>
           </div>
         </div>
@@ -1120,6 +1121,15 @@ export function QuickPalpationView({
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleClearDraft}
+            className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 hover:text-white border border-rose-400/40 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+            title="Reiniciar y limpiar todos los datos de esta jornada de palpación"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reiniciar</span>
+          </button>
+
           <button
             onClick={handleShareWhatsApp}
             className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"

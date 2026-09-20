@@ -1,5 +1,5 @@
 {
-  "version": "2.12.1",
-  "buildTime": 1789876000000,
-  "description": "Ajuste de barra superior de navegación y botón de Palpación Rápida en banner del Tablero."
+  "version": "2.12.2",
+  "buildTime": 1789877000000,
+  "description": "Botón de reinicio y limpieza de jornada de palpación ampliado y accesible en barra inferior."
 }
