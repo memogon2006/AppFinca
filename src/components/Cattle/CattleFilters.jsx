@@ -11,6 +11,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
       sex: '',
       productionType: '',
       status: 'Activo',
+      origin: '',
       saleType: '',
       reproductiveStatus: '',
       milkingStatus: '',
@@ -27,7 +28,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
   };
 
   const isFiltered = filters.search || filters.sex || filters.productionType || 
-    filters.status !== 'Activo' || filters.saleType || filters.reproductiveStatus || 
+    filters.status !== 'Activo' || filters.origin || filters.saleType || filters.reproductiveStatus || 
     filters.milkingStatus || filters.isBreedingOnly || filters.performanceFilter || filters.owner || filters.entryBatch ||
     filters.entryDateStart || filters.entryDateEnd || filters.saleDateStart || filters.saleDateEnd;
 
@@ -245,8 +246,21 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
       </div>
 
       {/* Dropdown Filters Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
         
+        {/* FILTRO: Procedencia / Origen */}
+        <select
+          value={filters.origin || ''}
+          onChange={(e) => setFilters(prev => ({ ...prev, origin: e.target.value }))}
+          className="px-2.5 sm:px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 min-h-[40px]"
+        >
+          <option value="">🌱 Todo Origen</option>
+          <option value="Nacido">🌱 Nacido en Finca</option>
+          <option value="Comprado">🛒 Comprado (Comercial)</option>
+          <option value="Compania">🤝 En Compañía</option>
+          <option value="Traslado">🔄 Traslado Interno</option>
+        </select>
+
         {/* FILTRO: Ingreso # */}
         <select
           value={filters.entryBatch || ''}

@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.11.0";
-export const CURRENT_BUILD_TIME = 1789530000000;
+export const CURRENT_APP_VERSION = "2.11.1";
+export const CURRENT_BUILD_TIME = 1789535000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.11.1",
+    date: "19/09/2026",
+    title: "Identificación Visual de Procedencia: Nacidos vs Comprados",
+    highlights: [
+      "Insignias Visuales de Origen: Etiquetas distintivas en cada tarjeta y fila del inventario ('🌱 Nacido en Finca', '🛒 Comprado', '🤝 En Compañía', '🔄 Traslado').",
+      "Linaje Rápido en Tarjetas y Tablas: Visualización inmediata de la madre ('🐄 M: #105') y el padre ('🐂 P: Toro / Pajilla') en crías nacidas en el predio.",
+      "Métricas Adaptadas: Muestra '⚖️ Peso al Nacer' y '🛒 Costo Entrada (Cría): $0' para crías nacidas, diferenciándolas de los animales comprados.",
+      "Filtro por Procedencia: Nuevo menú desplegable en los filtros de inventario para segmentar al instante nacidos en finca vs comprados vs compañía vs traslados."
+    ]
+  },
   {
     version: "2.11.0",
     date: "19/09/2026",

@@ -69,6 +69,7 @@ export function CattleListView({
     reproductiveStatus: '',
     milkingStatus: '',
     isBreedingOnly: false,
+    origin: '',
     performanceFilter: '',
     owner: '',
     entryBatch: '',
@@ -108,6 +109,19 @@ export function CattleListView({
         if (filters.performanceFilter === 'ready480' && !wm.cebaProjection?.isReady) return false;
         if (filters.performanceFilter === 'highGdp' && wm.performance?.level !== 'excelente') return false;
         if (filters.performanceFilter === 'lowGdp' && wm.performance?.level !== 'bajo' && wm.performance?.level !== 'estancado') return false;
+      }
+
+      // Filtro por Procedencia / Origen (Nacidos vs Comprados vs Compañía vs Traslado)
+      if (filters.origin) {
+        const isBorn = animal.entryType === 'Nacimiento' || animal.origin === 'Nacido en finca' || (!animal.entryType && (animal.motherTag || animal.motherId));
+        const isComp = animal.entryType === 'Compañía' || animal.origin === 'En Compañía' || (animal.owner && animal.owner.toLowerCase().includes('compañía'));
+        const isTrans = animal.entryType === 'Traslado' || animal.origin === 'Traslado';
+        const isPurch = !isBorn && !isComp && !isTrans;
+
+        if (filters.origin === 'Nacido' && !isBorn) return false;
+        if (filters.origin === 'Comprado' && !isPurch) return false;
+        if (filters.origin === 'Compania' && !isComp) return false;
+        if (filters.origin === 'Traslado' && !isTrans) return false;
       }
 
       // Filtro por Fecha de Compra / Ingreso
@@ -433,13 +447,18 @@ export function CattleListView({
                     return false;
                   }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
+                  const isBornInFarm = animal.entryType === 'Nacimiento' || animal.origin === 'Nacido en finca' || (!animal.entryType && (animal.motherTag || animal.motherId));
+                  const isCompany = animal.entryType === 'Compañía' || animal.origin === 'En Compañía' || (animal.owner && animal.owner.toLowerCase().includes('compañía'));
+                  const isTransfer = animal.entryType === 'Traslado' || animal.origin === 'Traslado';
+                  const isPurchased = !isBornInFarm && !isCompany && !isTransfer;
+
                   const femaleStatus = animal.femaleStatus || (
                     animal.reproductiveStatus === 'Preñada' ? 'Gestación' : animal.milkingStatus === 'En ordeño' ? 'Producción de leche' : 'Vacía'
                   );
 
                   const entryWeightStr = animal.entryWeight && parseFloat(animal.entryWeight) > 0 
                     ? `${animal.entryWeight} kg` 
-                    : (animal.origin === 'Nacido en finca' || animal.entryType === 'Nacimiento' ? '0 kg (Nacido)' : 'Sin peso');
+                    : (isBornInFarm ? '0 kg (Nacido)' : 'Sin peso');
 
                   const entryPriceStr = animal.entryPrice && parseFloat(animal.entryPrice) > 0 
                     ? formatCurrency(animal.entryPrice) 
@@ -459,12 +478,46 @@ export function CattleListView({
                     >
                       {/* Arete y Nombre */}
                       <td className="p-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`font-extrabold ${isSold ? 'text-amber-800 dark:text-amber-300' : isDead ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                             {animal.tagNumber}
                           </span>
                           {animal.name && <span className="text-slate-500 dark:text-slate-400 font-normal">({animal.name})</span>}
+                          
+                          {/* Badge de Origen / Procedencia */}
+                          {isBornInFarm && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shadow-xs">
+                              🌱 Nacido
+                            </span>
+                          )}
+                          {isPurchased && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-xs">
+                              🛒 Comprado
+                            </span>
+                          )}
+                          {isCompany && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-200 border border-teal-300 dark:border-teal-700 shadow-xs">
+                              🤝 Compañía
+                            </span>
+                          )}
+                          {isTransfer && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700 shadow-xs">
+                              🔄 Traslado
+                            </span>
+                          )}
                         </div>
+
+                        {/* Linaje si es nacido en finca */}
+                        {isBornInFarm && (animal.motherTag || animal.motherId || animal.fatherTag || animal.fatherDetails) && (
+                          <div className="flex items-center gap-1.5 text-[9px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                            {(animal.motherTag || animal.motherId) && (
+                              <span className="text-pink-600 dark:text-pink-400 font-bold">🐄 M: #{animal.motherTag || animal.motherId}</span>
+                            )}
+                            {(animal.fatherTag || animal.fatherDetails) && (
+                              <span className="text-blue-600 dark:text-blue-400 font-bold">🐂 P: {animal.fatherTag || animal.fatherDetails}</span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* Estado */}
@@ -528,10 +581,11 @@ export function CattleListView({
                         <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
                           <Scale className="w-3 h-3 text-slate-400" />
                           <span>{entryWeightStr}</span>
+                          {isBornInFarm && <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">(Nacer)</span>}
                         </div>
                         <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                           <ShoppingBag className="w-3 h-3 text-slate-400" />
-                          <span>{entryPriceStr}</span>
+                          <span>{isBornInFarm ? '$0 (Cría)' : entryPriceStr}</span>
                         </div>
                       </td>
 

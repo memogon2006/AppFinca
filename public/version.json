@@ -1,5 +1,5 @@
 {
-  "version": "2.11.0",
-  "buildTime": 1789530000000,
-  "description": "Trazabilidad de nacimientos y genealogía de crías (madre, padre toro/pajilla) en ingresos individuales y por lote."
+  "version": "2.11.1",
+  "buildTime": 1789535000000,
+  "description": "Identificación visual de procedencia (Nacidos en finca vs Comprados) en tarjetas, tablas y filtros."
 }

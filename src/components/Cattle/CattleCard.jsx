@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
-import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe } from 'lucide-react';
+import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Baby, Heart } from 'lucide-react';
 
 export function CattleCard({ 
   animal, 
@@ -19,6 +19,11 @@ export function CattleCard({
   const financials = calculateFinancials(animal);
   const repro = calculateReproduction(animal);
   const milk = calculateMilkMetrics(animal);
+
+  const isBornInFarm = animal.entryType === 'Nacimiento' || animal.origin === 'Nacido en finca' || (!animal.entryType && (animal.motherTag || animal.motherId));
+  const isCompany = animal.entryType === 'Compañía' || animal.origin === 'En Compañía' || (animal.owner && animal.owner.toLowerCase().includes('compañía'));
+  const isTransfer = animal.entryType === 'Traslado' || animal.origin === 'Traslado';
+  const isPurchased = !isBornInFarm && !isCompany && !isTransfer;
 
   const animalVaccinations = (vaccinations || []).filter(v => {
     if (v.targetType === 'all') return true;
@@ -53,11 +58,11 @@ export function CattleCard({
 
   const entryWeightFormatted = animal.entryWeight && parseFloat(animal.entryWeight) > 0 
     ? `${animal.entryWeight} kg` 
-    : (animal.origin === 'Nacido en finca' || animal.entryType === 'Nacimiento' ? '0 kg (Nacido)' : 'Sin peso inicial');
+    : (isBornInFarm ? '0 kg (Nacido)' : 'Sin peso inicial');
 
   const entryPriceFormatted = animal.entryPrice && parseFloat(animal.entryPrice) > 0 
     ? formatCurrency(animal.entryPrice) 
-    : (animal.origin === 'Nacido en finca' || animal.entryType === 'Nacimiento' ? '$0 (Nacido)' : '$0');
+    : (isBornInFarm ? '$0 (Nacido)' : '$0');
 
   // Cálculos de liquidación en compañía si aplica
   const part = animal.partnershipDetails || (isCompanySale ? {
@@ -123,11 +128,47 @@ export function CattleCard({
           </div>
         </div>
 
-        {/* Badges de Raza, Propósito, Ingreso # y Estado de Venta */}
+        {/* Badges de Procedencia / Origen, Raza, Propósito, Ingreso # y Estado de Venta */}
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          
+          {/* BADGE DESTACADO DE ORIGEN (NACIDO EN FINCA VS COMPRADO VS COMPAÑÍA) */}
+          {isBornInFarm ? (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-emerald-100 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-200 border border-emerald-400 dark:border-emerald-600 flex items-center gap-1 shadow-xs">
+              <Baby className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>🌱 Nacido en Finca</span>
+            </span>
+          ) : isCompany ? (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-200 border border-teal-300 dark:border-teal-700 flex items-center gap-1">
+              <Users className="w-3 h-3 text-teal-600" />
+              <span>🤝 En Compañía</span>
+            </span>
+          ) : isTransfer ? (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 flex items-center gap-1">
+              <span>🔄 Traslado</span>
+            </span>
+          ) : (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-blue-50 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+              <ShoppingBag className="w-3 h-3 text-blue-600" />
+              <span>🛒 Comprado</span>
+            </span>
+          )}
+
           <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-1">
             <Tag className="w-3 h-3" /> {batchName}
           </span>
+
+          {/* Genealogía Rápida si existe Madre o Padre */}
+          {animal.motherTag && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-0.5" title={`Madre: ${animal.motherTag}`}>
+              <span>🐄 M: #{animal.motherTag}</span>
+            </span>
+          )}
+
+          {animal.fatherTag && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-0.5" title={`Padre: ${animal.fatherTag}`}>
+              <span>🐂 P: {animal.fatherTag}</span>
+            </span>
+          )}
 
           {/* DISTINCIÓN DESTACADA: VENTA EN COMPAÑÍA VS VENTA DIRECTA */}
           {animal.status === 'Vendido' && (
@@ -261,18 +302,18 @@ export function CattleCard({
               )}
             </div>
 
-            {/* Datos compra base */}
+            {/* Datos compra / origen base */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
-                  <Scale className="w-3 h-3 text-slate-500" /> Peso Entrada:
+                  <Scale className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Peso Nacer:' : 'Peso Entrada:'}
                 </span>
                 <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">{entryWeightFormatted}</p>
               </div>
 
               <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
-                  <ShoppingBag className="w-3 h-3 text-slate-500" /> Costo Entrada:
+                  <ShoppingBag className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Costo Cría:' : 'Costo Entrada:'}
                 </span>
                 <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">{entryPriceFormatted}</p>
               </div>
@@ -281,11 +322,11 @@ export function CattleCard({
         ) : (
           /* CASO B: ANIMAL ACTIVO EN FINCA */
           <>
-            {/* 1. DATOS INICIALES / COMPRA */}
+            {/* 1. DATOS INICIALES / COMPRA / NACIMIENTO */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
-                  <Scale className="w-3 h-3 text-slate-500" /> Peso Inicial / Compra:
+                  <Scale className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Peso al Nacer:' : 'Peso Inicial / Compra:'}
                 </span>
                 <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">
                   {entryWeightFormatted}
@@ -294,7 +335,7 @@ export function CattleCard({
 
               <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
-                  <ShoppingBag className="w-3 h-3 text-slate-500" /> Precio Inicial / Compra:
+                  <ShoppingBag className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Costo Entrada (Cría):' : 'Precio Inicial / Compra:'}
                 </span>
                 <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">
                   {entryPriceFormatted}
