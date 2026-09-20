@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.11.2";
-export const CURRENT_BUILD_TIME = 1789540000000;
+export const CURRENT_APP_VERSION = "2.11.3";
+export const CURRENT_BUILD_TIME = 1789545000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.11.3",
+    date: "19/09/2026",
+    title: "Propósito Automático en Machos & Limpieza Visual de Insignias",
+    highlights: [
+      "Propósito Automático en Machos: Al seleccionar 'Macho', el tipo de producción siempre se fija por defecto en 'Ceba / Engorde / Levante', evitando que quede seleccionado 'Cría / Vientres'.",
+      "Actualización de Etiqueta: El propósito de carne ahora se muestra claramente como 'Ceba / Engorde / Levante' en selectores y distintivos.",
+      "Insignia de Origen Simplificada: Eliminación del icono de bebé para dejar una etiqueta nítida y profesional con el sello '🌱 Nacido en Finca'."
+    ]
+  },
   {
     version: "2.11.2",
     date: "19/09/2026",

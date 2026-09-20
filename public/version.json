@@ -1,5 +1,5 @@
 {
-  "version": "2.11.2",
-  "buildTime": 1789540000000,
-  "description": "Ingreso # (Lote) opcional para animales nacidos en la finca y ganado no destinado a ceba o compañía."
+  "version": "2.11.3",
+  "buildTime": 1789545000000,
+  "description": "Propósito automático 'Ceba / Engorde / Levante' para machos y remoción de icono de bebé."
 }

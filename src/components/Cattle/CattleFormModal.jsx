@@ -10,7 +10,7 @@ import {
   getDynamicFarmColors 
 } from '../../types/cattle';
 import { BOVINE_GESTATION_DAYS } from '../../services/calculations';
-import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Baby, Heart, Dna, Tag } from 'lucide-react';
+import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Heart, Dna, Tag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
@@ -304,8 +304,8 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         setFormData(prev => ({
           ...prev,
           sex: 'Macho',
-          category: 'Novillo',
-          productionType: prev.productionType === 'Lechería' ? 'Ceba' : prev.productionType,
+          category: prev.category === 'Vaca' || prev.category === 'Novilla' ? 'Novillo' : (prev.category || 'Novillo'),
+          productionType: 'Ceba', // Macho siempre por defecto Ceba / Engorde / Levante
           femaleStatus: 'No aplica',
           reproductiveStatus: 'No aplica',
           serviceDate: '',
@@ -321,7 +321,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         setFormData(prev => ({
           ...prev,
           sex: 'Hembra',
-          category: 'Vaca',
+          category: prev.category === 'Novillo' || prev.category === 'Toro' || prev.category === 'Torete' || prev.category === 'Buey' ? 'Vaca' : (prev.category || 'Vaca'),
           productionType: prev.productionType === 'Ceba' ? 'Cría' : prev.productionType,
           femaleStatus: 'Vacía',
           reproductiveStatus: 'Vacía',
@@ -1152,7 +1152,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-3.5 shadow-xs">
               <div className="flex items-center justify-between border-b border-emerald-200 dark:border-emerald-800/60 pb-2">
                 <div className="flex items-center gap-2">
-                  <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-base">🌱</span>
                   <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
                     Genealogía: Registro de Vaca Madre y Padre / Reproductor
                   </span>

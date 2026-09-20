@@ -4,7 +4,7 @@ export const SEX_OPTIONS = [
 ];
 
 export const PRODUCTION_TYPES = [
-  { value: 'Ceba', label: 'Ceba / Engorde', color: 'emerald', desc: 'Producción de carne' },
+  { value: 'Ceba', label: 'Ceba / Engorde / Levante', color: 'emerald', desc: 'Producción de carne, levante y engorde' },
   { value: 'Lechería', label: 'Lechería Especializada', color: 'blue', desc: 'Producción láctea' },
   { value: 'Cría', label: 'Cría / Vientres', color: 'purple', desc: 'Multiplicación y terneros' },
   { value: 'Doble Propósito', label: 'Doble Propósito (Carne y Leche)', color: 'amber', desc: 'Carne y leche combinados' },

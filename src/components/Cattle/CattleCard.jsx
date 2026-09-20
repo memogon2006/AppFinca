@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
-import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Baby, Heart } from 'lucide-react';
+import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart } from 'lucide-react';
 
 export function CattleCard({ 
   animal, 
@@ -134,7 +134,6 @@ export function CattleCard({
           {/* BADGE DESTACADO DE ORIGEN (NACIDO EN FINCA VS COMPRADO VS COMPAÑÍA) */}
           {isBornInFarm ? (
             <span className="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-emerald-100 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-200 border border-emerald-400 dark:border-emerald-600 flex items-center gap-1 shadow-xs">
-              <Baby className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>🌱 Nacido en Finca</span>
             </span>
           ) : isCompany ? (

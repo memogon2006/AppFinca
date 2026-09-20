@@ -107,7 +107,7 @@ export function MilkingBadge({ status, liters }) {
 export function ProductionTypeBadge({ type }) {
   switch (type) {
     case 'Ceba':
-      return <Badge variant="emerald">🥩 Ceba / Engorde</Badge>;
+      return <Badge variant="emerald">🥩 Ceba / Engorde / Levante</Badge>;
     case 'Lechería':
       return <Badge variant="blue">🥛 Lechería</Badge>;
     case 'Cría':
