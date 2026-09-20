@@ -27,7 +27,10 @@ import {
   Hash,
   Info,
   Truck,
-  Receipt
+  Receipt,
+  Baby,
+  Dna,
+  Heart
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
@@ -45,8 +48,19 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     return analyzeFarmConsecutives(cattleList);
   }, [cattleList]);
 
+  // Lista de posibles vacas madres del hato
+  const availableMothers = useMemo(() => {
+    return cattleList.filter(c => c.sex === 'Hembra');
+  }, [cattleList]);
+
+  // Lista de posibles toros reproductores del hato
+  const availableBulls = useMemo(() => {
+    return cattleList.filter(c => c.sex === 'Macho');
+  }, [cattleList]);
+
   // Configuración general del lote
   const [batchInfo, setBatchInfo] = useState({
+    entryType: 'Compra', // 'Compra' | 'Nacimiento' | 'Compañía' | 'Traslado'
     entryBatch: 'Ingreso #1',
     entryDate: new Date().toISOString().split('T')[0],
     owner: 'Hacienda Principal',
@@ -56,9 +70,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     category: 'Novillo',
     breed: '',
     notes: '',
+    fatherType: 'toro', // 'toro' | 'pajilla' | 'desconocido'
+    fatherId: '',
+    fatherTag: '',
   });
 
-  // Modalidad de costo: 'fixedPrice' (por cabeza) | 'pricePerKg' (kilos * $/kg)
+  // Modalidad de costo: 'pricePerKg' (kilos * $/kg) | 'fixedPrice' (por cabeza) | 'zeroCost' ($0 por nacimiento)
   const [costMode, setCostMode] = useState('pricePerKg');
   const [fixedPricePerHead, setFixedPricePerHead] = useState('');
   const [pricePerKg, setPricePerKg] = useState('');
@@ -69,9 +86,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
   // Filas de animales del lote
   const [rows, setRows] = useState([
-    { id: '1', tagNumber: '', color: '', entryWeight: '' },
-    { id: '2', tagNumber: '', color: '', entryWeight: '' },
-    { id: '3', tagNumber: '', color: '', entryWeight: '' },
+    { id: '1', tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
+    { id: '2', tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
+    { id: '3', tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
   ]);
 
   // Generador de serie rápida de aretes
@@ -107,7 +124,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const handleAddRow = () => {
     setRows(prev => [
       ...prev,
-      { id: String(Date.now() + Math.random()), tagNumber: '', color: '', entryWeight: '' }
+      { id: String(Date.now() + Math.random()), tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' }
     ]);
   };
 
@@ -119,7 +136,16 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
   // Modificar campo de una fila
   const handleRowChange = (rowId, field, value) => {
-    setRows(prev => prev.map(r => r.id === rowId ? { ...r, [field]: value } : r));
+    setRows(prev => prev.map(r => {
+      if (r.id === rowId) {
+        if (field === 'motherTag') {
+          const match = availableMothers.find(m => m.tagNumber.toLowerCase() === value.trim().toLowerCase());
+          return { ...r, motherTag: value, motherId: match ? match.id : '' };
+        }
+        return { ...r, [field]: value };
+      }
+      return r;
+    }));
     setErrors(null);
   };
 
@@ -148,6 +174,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         tagNumber: tag,
         color: color || '',
         entryWeight: weight,
+        motherTag: '',
+        motherId: '',
       });
     }
 
@@ -157,9 +185,14 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
   // Cálculo individual para cada fila
   const calculateRowCost = (rowWeight) => {
+    if (batchInfo.entryType === 'Nacimiento' && costMode === 'zeroCost') {
+      return 0;
+    }
     const weightNum = parseFloat(rowWeight) || 0;
     if (costMode === 'fixedPrice') {
       return parseFloat(fixedPricePerHead) || 0;
+    } else if (costMode === 'zeroCost') {
+      return 0;
     } else {
       const priceKg = parseFloat(pricePerKg) || 0;
       return Math.round(weightNum * priceKg);
@@ -217,7 +250,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       return;
     }
 
-    // Validar pesos si es ceba o por kilo
+    const isBorn = batchInfo.entryType === 'Nacimiento';
+
+    // Validar costos si no es costo cero por nacimiento
     if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
       setErrors('Por favor ingresa un precio pactado por kilo ($/kg) válido.');
       return;
@@ -252,7 +287,14 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         entryBatch: batchInfo.entryBatch.trim() || 'Ingreso #1',
         paddock: batchInfo.entryBatch.trim() || 'Ingreso #1',
         entryDate: batchInfo.entryDate || new Date().toISOString().split('T')[0],
-        entryType: 'Compra',
+        entryType: batchInfo.entryType || 'Compra',
+        origin: isBorn ? 'Nacido en finca' : 'Comprado / Externo',
+        motherId: r.motherId || '',
+        motherTag: r.motherTag || '',
+        fatherType: isBorn ? (batchInfo.fatherType || 'toro') : 'desconocido',
+        fatherId: isBorn ? (batchInfo.fatherId || '') : '',
+        fatherTag: isBorn ? (batchInfo.fatherTag || '') : '',
+        birthWeight: isBorn && weight ? weight : null,
         entryWeight: weight,
         currentWeight: weight,
         entryPrice: individualPurchasePrice,
@@ -260,7 +302,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         femaleStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'Ceba / Levante / Engorde' : 'Vacía') : 'No aplica',
         reproductiveStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'No aplica' : 'Vacía') : 'No aplica',
         milkingStatus: 'No aplica',
-        notes: animalNotes || `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`,
+        notes: animalNotes || (isBorn ? `Lote de crías nacidas en finca` : `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`),
       };
     });
 
@@ -331,12 +373,165 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2.5">
             <h4 className="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>1. Datos Generales del Ingreso / Lote</span>
+              <span>1. Datos Generales del Ingreso / Lote & Origen</span>
             </h4>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
               Se aplicará a todos los animales del lote
             </span>
           </div>
+
+          {/* Selector de Origen / Tipo de Entrada del Lote */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Procedencia / Origen del Lote <span className="text-rose-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { value: 'Compra', label: '🛒 Compra Comercial', desc: 'Ingreso externo / Subasta' },
+                { value: 'Nacimiento', label: '🌱 Crías Nacidas en Finca', desc: 'Nacimientos / Partos en predio' },
+                { value: 'Compañía', label: '🤝 En Compañía', desc: 'Inversión compartida' },
+                { value: 'Traslado', label: '🔄 Traslado Interno', desc: 'Entre fincas / potreros' },
+              ].map(item => {
+                const isSelected = batchInfo.entryType === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => {
+                      setBatchInfo(prev => ({
+                        ...prev,
+                        entryType: item.value,
+                        category: item.value === 'Nacimiento' && prev.category === 'Novillo' ? 'Ternero' : prev.category,
+                      }));
+                      if (item.value === 'Nacimiento') {
+                        setCostMode('zeroCost');
+                      } else if (costMode === 'zeroCost') {
+                        setCostMode('pricePerKg');
+                      }
+                    }}
+                    className={`p-2.5 sm:p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer min-h-[56px] ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-400/50'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-emerald-400'
+                    }`}
+                  >
+                    <span className="text-xs font-black leading-snug">{item.label}</span>
+                    <span className={`text-[10px] font-bold mt-1 ${isSelected ? 'text-emerald-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                      {item.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Panel Condicional: Padre / Reproductor Común del Lote (Si es Nacimiento) */}
+          {batchInfo.entryType === 'Nacimiento' && (
+            <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
+                    Trazabilidad de Crías: Padre / Reproductor del Lote
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                  (La madre de cada cría se selecciona en la tabla de abajo)
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 items-center">
+                <div className="flex items-center gap-1 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setBatchInfo(prev => ({ ...prev, fatherType: 'toro' }))}
+                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      (batchInfo.fatherType || 'toro') === 'toro'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    🐂 Toro Finca
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBatchInfo(prev => ({ ...prev, fatherType: 'pajilla' }))}
+                    className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      batchInfo.fatherType === 'pajilla'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    🧪 Pajilla / I.A.
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBatchInfo(prev => ({ ...prev, fatherType: 'desconocido', fatherTag: '', fatherId: '' }))}
+                    className={`py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      batchInfo.fatherType === 'desconocido'
+                        ? 'bg-slate-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                    title="Padre no registrado"
+                  >
+                    ❓ No reg.
+                  </button>
+                </div>
+
+                <div className="sm:col-span-2">
+                  {batchInfo.fatherType === 'toro' && (
+                    <div className="flex gap-2">
+                      {availableBulls.length > 0 && (
+                        <select
+                          value={batchInfo.fatherId || ''}
+                          onChange={(e) => {
+                            const bId = e.target.value;
+                            const found = availableBulls.find(b => String(b.id) === String(bId));
+                            setBatchInfo(prev => ({
+                              ...prev,
+                              fatherId: bId,
+                              fatherTag: found ? found.tagNumber : prev.fatherTag
+                            }));
+                          }}
+                          className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500"
+                        >
+                          <option value="">-- Toro del Hato --</option>
+                          {availableBulls.map(b => (
+                            <option key={b.id} value={b.id}>
+                              🐂 #{b.tagNumber} {b.name ? `• ${b.name}` : ''} {b.breed ? `(${b.breed})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <input
+                        type="text"
+                        value={batchInfo.fatherTag || ''}
+                        onChange={(e) => setBatchInfo(prev => ({ ...prev, fatherTag: e.target.value }))}
+                        placeholder="O nombre/chapa del toro..."
+                        className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  )}
+
+                  {batchInfo.fatherType === 'pajilla' && (
+                    <input
+                      type="text"
+                      value={batchInfo.fatherTag || ''}
+                      onChange={(e) => setBatchInfo(prev => ({ ...prev, fatherTag: e.target.value }))}
+                      placeholder="Código de pajilla / Nombre del reproductor donante..."
+                      className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-600 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-purple-500"
+                    />
+                  )}
+
+                  {batchInfo.fatherType === 'desconocido' && (
+                    <span className="text-xs text-slate-500 italic font-medium">
+                      Padre sin identificar para este lote de nacimientos.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Ingreso # */}
@@ -354,10 +549,10 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
               />
             </div>
 
-            {/* Fecha de Entrada */}
+            {/* Fecha de Entrada / Nacimiento */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Fecha de Ingreso <span className="text-rose-500">*</span>
+                {batchInfo.entryType === 'Nacimiento' ? 'Fecha de Nacimiento' : 'Fecha de Ingreso'} <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
@@ -471,12 +666,49 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
               <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>2. ¿Cómo deseas liquidar el costo de compra de este lote?</span>
+              <span>2. ¿Cómo deseas liquidar el costo de este lote?</span>
             </h4>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div className={`grid grid-cols-1 ${batchInfo.entryType === 'Nacimiento' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3 sm:gap-4`}>
             
+            {/* Opción C: Costo Cero (Solo si es Nacimiento) */}
+            {batchInfo.entryType === 'Nacimiento' && (
+              <div 
+                onClick={() => setCostMode('zeroCost')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                  costMode === 'zeroCost'
+                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>$0 COP (Nacimiento en Finca)</span>
+                    </span>
+                    <input 
+                      type="radio" 
+                      name="costMode" 
+                      checked={costMode === 'zeroCost'} 
+                      onChange={() => setCostMode('zeroCost')}
+                      className="accent-emerald-600 w-4 h-4 cursor-pointer" 
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Asigna costo de compra $0 a cada cría. La rentabilidad se calculará a partir de los gastos de manejo posteriores.
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 mt-3">
+                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                    ✓ Sin costo de compra inicial
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Opción B: Por Kilos de Entrada * $/kg */}
             <div 
               onClick={() => setCostMode('pricePerKg')}
@@ -490,7 +722,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                     <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Por Kilos $\times$ Precio por Kilo ($/kg)</span>
+                    <span>Por Kilos $\times$ $/kg</span>
                   </span>
                   <input 
                     type="radio" 
@@ -501,14 +733,14 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   />
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-                  Multiplica los kilos de entrada de cada animal por el precio pactado por kilo. Cada animal tendrá su valor exacto según su peso.
+                  Multiplica los kilos de entrada de cada animal por el precio pactado por kilo.
                 </p>
               </div>
 
               {costMode === 'pricePerKg' && (
                 <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60" onClick={(e) => e.stopPropagation()}>
                   <label className="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-1">
-                    Precio por Kilo en Pie (COP/kg) <span className="text-rose-500">*</span>
+                    Precio por Kilo (COP/kg) <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
@@ -540,7 +772,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                     <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span>Valor Promedio Fijo por Cabeza ($/cab)</span>
+                    <span>Valor Fijo por Animal ($/cab)</span>
                   </span>
                   <input 
                     type="radio" 
@@ -551,7 +783,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   />
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-                  Asigna el mismo costo promedio a todos los animales del lote (ej. lote comprado a granel a un valor único por animal).
+                  Asigna el mismo costo promedio a todos los animales del lote.
                 </p>
               </div>
 
@@ -829,13 +1061,20 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
           {/* TABLA DE FILAS DINÁMICAS */}
           <div className="overflow-x-auto max-h-80 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl">
-            <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[550px]">
+            <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[620px]">
               <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 uppercase font-extrabold text-[10px] sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th className="p-3 w-12 text-center">#</th>
                   <th className="p-3">N° Arete / Chapa <span className="text-rose-500">*</span></th>
+                  {batchInfo.entryType === 'Nacimiento' && (
+                    <th className="p-3">
+                      <span className="text-emerald-700 dark:text-emerald-300 font-black flex items-center gap-1">
+                        <span>🐄 Vaca Madre (Chapa)</span>
+                      </span>
+                    </th>
+                  )}
                   <th className="p-3">Color / Pelaje <span className="text-rose-500">*</span></th>
-                  <th className="p-3">Peso Entrada (kg)</th>
+                  <th className="p-3">{batchInfo.entryType === 'Nacimiento' ? 'Peso Nacer (kg)' : 'Peso Entrada (kg)'}</th>
                   <th className="p-3 text-right">Costo Calculado (COP)</th>
                   <th className="p-3 w-10 text-center"></th>
                 </tr>
@@ -885,6 +1124,20 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                         </div>
                       </td>
 
+                      {/* Vaca Madre (Solo en Nacimiento) */}
+                      {batchInfo.entryType === 'Nacimiento' && (
+                        <td className="p-2.5 min-w-[150px]">
+                          <input
+                            type="text"
+                            value={row.motherTag || ''}
+                            onChange={(e) => handleRowChange(row.id, 'motherTag', e.target.value)}
+                            list="batch-mothers-list"
+                            placeholder="Chapa/nombre madre..."
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-700 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500"
+                          />
+                        </td>
+                      )}
+
                       {/* Color */}
                       <td className="p-2.5">
                         <input
@@ -897,13 +1150,13 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                         />
                       </td>
 
-                      {/* Peso Entrada */}
+                      {/* Peso Entrada / Nacer */}
                       <td className="p-2.5">
                         <input
                           type="number"
                           value={row.entryWeight}
                           onChange={(e) => handleRowChange(row.id, 'entryWeight', e.target.value)}
-                          placeholder="Ej. 280, 315"
+                          placeholder={batchInfo.entryType === 'Nacimiento' ? 'Ej. 32, 35' : 'Ej. 280, 315'}
                           min="0"
                           step="0.5"
                           className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 font-bold text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
@@ -940,6 +1193,15 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
               </tbody>
             </table>
           </div>
+
+          {/* Datalist de Madres del Hato */}
+          <datalist id="batch-mothers-list">
+            {availableMothers.map(m => (
+              <option key={m.id} value={m.tagNumber}>
+                {m.tagNumber} {m.name ? `(${m.name})` : ''} - {m.breed || 'Hembra'}
+              </option>
+            ))}
+          </datalist>
 
           <datalist id="colors-list-quick">
             {availableColors.map(c => (

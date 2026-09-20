@@ -31,7 +31,9 @@ import {
   Flame,
   CheckCircle2,
   Zap,
-  Syringe
+  Syringe,
+  Dna,
+  Heart
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -47,6 +49,8 @@ export function CattleDetailModal({
   isOpen, 
   onClose, 
   animal, 
+  cattle = [],
+  cattleList = [],
   weighings = [], 
   vaccinations = [],
   onOpenAddWeight, 
@@ -61,6 +65,12 @@ export function CattleDetailModal({
   if (!animal) return null;
 
   const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'financials' | 'sanitary' | 'general'
+
+  const allCattle = cattleList.length > 0 ? cattleList : cattle;
+  const offspring = (allCattle || []).filter(c => 
+    (c.motherTag && animal?.tagNumber && c.motherTag.trim().toLowerCase() === animal.tagNumber.trim().toLowerCase()) ||
+    (c.motherId && animal?.id && String(c.motherId) === String(animal.id))
+  );
 
   const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
@@ -706,6 +716,61 @@ export function CattleDetailModal({
               </div>
 
             </div>
+
+            {/* HISTORIAL DE CRÍAS Y NACIMIENTOS DE ESTA VACA */}
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                  <Baby className="w-4 h-4 text-purple-600" />
+                  <span>Historial de Crías & Partos Registrados ({offspring.length})</span>
+                </h4>
+                <span className="text-[11px] text-purple-700 dark:text-purple-300 font-bold">
+                  {offspring.length === 0 ? 'Sin crías registradas' : `${offspring.length} ${offspring.length === 1 ? 'cría registrada' : 'crías registradas'}`}
+                </span>
+              </div>
+
+              {offspring.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-dashed border-slate-200 dark:border-slate-700 text-center text-xs text-slate-500">
+                  No hay crías en el inventario vinculadas a la madre #{animal.tagNumber}. Cuando registres un nacimiento individual o por lote con esta vaca como madre, aparecerán aquí automáticamente.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {offspring.map((calf) => (
+                    <div
+                      key={calf.id}
+                      className="p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/60 flex items-start justify-between gap-2"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-slate-900 dark:text-white text-xs">
+                            👶 #{calf.tagNumber} {calf.name ? `• ${calf.name}` : ''}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-200">
+                            {calf.sex}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+                          📅 Nacimiento: {formatDate(calf.entryDate)}
+                        </p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+                          🐂 Padre: {calf.fatherTag ? `${calf.fatherTag} (${calf.fatherType === 'pajilla' ? 'Pajilla / I.A.' : 'Toro'})` : 'No registrado'}
+                        </p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+                          ⚖️ Peso: {calf.birthWeight ? `${calf.birthWeight} kg (nacer)` : ''} {calf.currentWeight ? `• ${calf.currentWeight} kg actual` : ''}
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                        calf.status === 'Activo'
+                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {calf.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -886,7 +951,7 @@ export function CattleDetailModal({
           </div>
         )}
 
-        {/* 5. Ficha General */}
+        {/* 5. Ficha General & Genealogía */}
         {activeTab === 'general' && (
           <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-4 text-xs font-bold shadow-sm">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -909,6 +974,30 @@ export function CattleDetailModal({
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Tipo de Entrada</span>
                 <p className="font-black text-slate-950 dark:text-white text-sm">{animal.entryType || 'Compra'}</p>
+              </div>
+              <div>
+                <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Procedencia / Origen</span>
+                <p className="font-black text-emerald-700 dark:text-emerald-400 text-sm">
+                  {animal.origin || (animal.entryType === 'Nacimiento' ? 'Nacido en finca' : 'Comprado / Externo')}
+                </p>
+              </div>
+              <div>
+                <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">🐄 Vaca Madre (Chapa)</span>
+                <p className="font-black text-purple-700 dark:text-purple-300 text-sm">
+                  {animal.motherTag ? `Madre #${animal.motherTag}` : 'No registrada'}
+                </p>
+              </div>
+              <div>
+                <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">🐂 Padre / Reproductor</span>
+                <p className="font-black text-blue-700 dark:text-blue-300 text-sm">
+                  {animal.fatherTag ? `${animal.fatherTag} (${animal.fatherType === 'pajilla' ? 'Pajilla / I.A.' : 'Toro en finca'})` : 'No registrado'}
+                </p>
+              </div>
+              <div>
+                <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Peso al Nacer</span>
+                <p className="font-black text-slate-950 dark:text-white text-sm">
+                  {animal.birthWeight ? `${animal.birthWeight} kg` : (animal.entryType === 'Nacimiento' && animal.entryWeight ? `${animal.entryWeight} kg` : 'N/A')}
+                </p>
               </div>
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Peso Inicial / Compra</span>

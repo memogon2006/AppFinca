@@ -903,6 +903,7 @@ export default function App() {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         animal={cattle.find(c => String(c.id) === String(selectedAnimal?.id)) || selectedAnimal}
+        cattleList={cattle}
         weighings={weighings}
         vaccinations={vaccinations}
         onOpenEdit={handleOpenEdit}

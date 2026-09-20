@@ -579,6 +579,11 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                     cow.reproductiveStatus === 'Preñada' ? 'Gestación' : cow.milkingStatus === 'En ordeño' ? 'Producción de leche' : 'Vacía'
                   );
 
+                  const calvesCount = cattle.filter(c => 
+                    (c.motherTag && c.motherTag.trim().toLowerCase() === cow.tagNumber.trim().toLowerCase()) ||
+                    (c.motherId && String(c.motherId) === String(cow.id))
+                  ).length;
+
                   return (
                     <tr
                       key={cow.id}
@@ -586,7 +591,15 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition"
                     >
                       <td className="p-3 font-bold text-slate-900 dark:text-white">
-                        {cow.tagNumber} {cow.name && <span className="text-slate-500 dark:text-slate-400 font-normal">({cow.name})</span>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span>{cow.tagNumber}</span>
+                          {cow.name && <span className="text-slate-500 dark:text-slate-400 font-normal">({cow.name})</span>}
+                          {calvesCount > 0 && (
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300" title={`${calvesCount} crías registradas de esta vaca`}>
+                              👶 {calvesCount} {calvesCount === 1 ? 'cría' : 'crías'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3">
                         <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-500/30 text-[11px]">

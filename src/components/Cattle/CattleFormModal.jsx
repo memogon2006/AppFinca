@@ -10,7 +10,7 @@ import {
   getDynamicFarmColors 
 } from '../../types/cattle';
 import { BOVINE_GESTATION_DAYS } from '../../services/calculations';
-import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info } from 'lucide-react';
+import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Baby, Heart, Dna, Tag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
@@ -58,6 +58,13 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     additionalCosts: 0,
     currentWeight: '',
     notes: '',
+    // Trazabilidad de Nacimientos & Genealogía
+    motherId: '',
+    motherTag: '',
+    fatherType: 'toro', // 'toro' | 'pajilla' | 'desconocido'
+    fatherId: '',
+    fatherTag: '',
+    birthWeight: '',
     // Campos Exclusivos de Hembras
     femaleStatus: 'Vacía',
     reproductiveStatus: 'Vacía',
@@ -73,6 +80,16 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
   const [showAdvancedMilk, setShowAdvancedMilk] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Lista de posibles vacas madres del hato
+  const availableMothers = useMemo(() => {
+    return cattleList.filter(c => c.sex === 'Hembra' && (!animal || c.id !== animal.id));
+  }, [cattleList, animal]);
+
+  // Lista de posibles toros reproductores del hato
+  const availableBulls = useMemo(() => {
+    return cattleList.filter(c => c.sex === 'Macho' && (!animal || c.id !== animal.id));
+  }, [cattleList, animal]);
 
   useEffect(() => {
     if (animal) {
@@ -93,6 +110,13 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         ...animal,
         entryBatch: animal.entryBatch || animal.paddock || 'Ingreso #1',
         breed: animal.breed || '',
+        entryType: animal.entryType || (animal.origin === 'Nacido en finca' ? 'Nacimiento' : 'Compra'),
+        motherId: animal.motherId || '',
+        motherTag: animal.motherTag || '',
+        fatherType: animal.fatherType || 'toro',
+        fatherId: animal.fatherId || '',
+        fatherTag: animal.fatherTag || '',
+        birthWeight: animal.birthWeight || '',
         entryWeight: animal.entryWeight !== undefined && animal.entryWeight !== null ? animal.entryWeight : '',
         entryPrice: animal.entryPrice !== undefined && animal.entryPrice !== null ? animal.entryPrice : '',
         additionalCosts: animal.additionalCosts || 0,
@@ -132,6 +156,12 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         additionalCosts: 0,
         currentWeight: '',
         notes: '',
+        motherId: '',
+        motherTag: '',
+        fatherType: 'toro',
+        fatherId: '',
+        fatherTag: '',
+        birthWeight: '',
         femaleStatus: 'No aplica',
         reproductiveStatus: 'No aplica',
         serviceDate: '',
@@ -329,14 +359,23 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const executeSave = (dataToSave) => {
     const parsedEntryWeight = dataToSave.entryWeight && parseFloat(dataToSave.entryWeight) > 0 ? parseFloat(dataToSave.entryWeight) : null;
     const parsedCurrentWeight = dataToSave.currentWeight && parseFloat(dataToSave.currentWeight) > 0 ? parseFloat(dataToSave.currentWeight) : parsedEntryWeight;
+    const isBorn = dataToSave.entryType === 'Nacimiento';
 
     onSave({
       ...dataToSave,
       entryBatch: dataToSave.entryBatch || 'Ingreso #1',
       paddock: dataToSave.entryBatch || 'Ingreso #1',
+      entryType: dataToSave.entryType || 'Compra',
+      origin: isBorn ? 'Nacido en finca' : (dataToSave.origin || 'Comprado / Externo'),
+      motherId: dataToSave.motherId || '',
+      motherTag: dataToSave.motherTag || '',
+      fatherType: dataToSave.fatherType || 'toro',
+      fatherId: dataToSave.fatherId || '',
+      fatherTag: dataToSave.fatherTag || '',
+      birthWeight: isBorn && parsedEntryWeight ? parsedEntryWeight : (dataToSave.birthWeight || null),
       entryWeight: parsedEntryWeight,
       currentWeight: parsedCurrentWeight,
-      entryPrice: parseFloat(dataToSave.entryPrice || 0),
+      entryPrice: isBorn && (!dataToSave.entryPrice || parseFloat(dataToSave.entryPrice) <= 0) ? 0 : parseFloat(dataToSave.entryPrice || 0),
       additionalCosts: parseFloat(dataToSave.additionalCosts || 0),
       // Campos de hembra: se guardan sólo si es hembra, si es macho se limpian por completo
       femaleStatus: isFemale ? (dataToSave.femaleStatus || 'Vacía') : 'No aplica',
@@ -375,8 +414,14 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       }
     }
 
-    if (formData.entryPrice === '' || Number(formData.entryPrice) < 0) {
-      newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
+    if (formData.entryType !== 'Nacimiento') {
+      if (formData.entryPrice === '' || Number(formData.entryPrice) < 0) {
+        newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
+      }
+    } else {
+      if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
+        newErrors.entryPrice = 'El valor de cría no puede ser negativo.';
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -1030,17 +1075,224 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
           </div>
         )}
 
-        {/* SECCIÓN 3: Ingreso y Costos */}
-        <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            3. Datos de Ingreso, Pesaje Inicial y Costos
-          </h4>
+        {/* SECCIÓN 3: Ingreso, Origen & Genealogía (Nacimientos / Compra) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              3. Datos de Ingreso, Origen & Genealogía
+            </h4>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Trazabilidad de Nacimientos</span>
+          </div>
+
+          {/* Selector de Procedencia / Origen */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { value: 'Compra', label: '🛒 Compra Comercial', desc: 'Ingreso externo / Subasta' },
+              { value: 'Nacimiento', label: '🌱 Cría Nacida en Finca', desc: 'Parto / Nacimiento en predio' },
+              { value: 'Compañía', label: '🤝 En Compañía', desc: 'Inversión compartida / Medianería' },
+              { value: 'Traslado', label: '🔄 Traslado Interno', desc: 'Cambio entre predios' },
+            ].map(item => {
+              const isSelected = formData.entryType === item.value;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      entryType: item.value,
+                      category: item.value === 'Nacimiento' && prev.category === 'Novillo' ? 'Ternero' : prev.category,
+                      entryPrice: item.value === 'Nacimiento' && (!prev.entryPrice || prev.entryPrice === '0') ? '0' : prev.entryPrice
+                    }));
+                  }}
+                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer min-h-[58px] ${
+                    isSelected
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-400/50'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-emerald-400'
+                  }`}
+                >
+                  <span className="text-xs font-black leading-snug">{item.label}</span>
+                  <span className={`text-[10px] font-bold mt-1 ${isSelected ? 'text-emerald-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {item.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* BLOQUE CONDICIONAL: GENEALOGÍA & PADRES SI ES CRÍA NACIDA EN FINCA */}
+          {formData.entryType === 'Nacimiento' && (
+            <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-3.5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-emerald-200 dark:border-emerald-800/60 pb-2">
+                <div className="flex items-center gap-2">
+                  <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
+                    Genealogía: Registro de Vaca Madre y Padre / Reproductor
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-400/30">
+                  Trazabilidad Activa
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                
+                {/* 1. SELECCIÓN DE LA MADRE */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span>🐄 Vaca Madre (Identificación)</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Madre en hato</span>
+                  </label>
+                  
+                  <div className="space-y-2">
+                    {availableMothers.length > 0 && (
+                      <select
+                        value={formData.motherId || ''}
+                        onChange={(e) => {
+                          const mId = e.target.value;
+                          const found = availableMothers.find(m => String(m.id) === String(mId));
+                          setFormData(prev => ({
+                            ...prev,
+                            motherId: mId,
+                            motherTag: found ? found.tagNumber : prev.motherTag,
+                            owner: found?.owner ? found.owner : prev.owner,
+                            ironBrand: found?.ironBrand ? found.ironBrand : prev.ironBrand,
+                          }));
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600/70 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                      >
+                        <option value="">-- Seleccionar Vaca Madre del Hato --</option>
+                        {availableMothers.map(m => (
+                          <option key={m.id} value={m.id}>
+                            🐄 #{m.tagNumber} {m.name ? `• ${m.name}` : ''} {m.breed ? `(${m.breed})` : ''} - {m.owner || 'Finca'}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    <input
+                      type="text"
+                      name="motherTag"
+                      value={formData.motherTag || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const match = availableMothers.find(m => m.tagNumber.toLowerCase() === val.trim().toLowerCase());
+                        setFormData(prev => ({
+                          ...prev,
+                          motherTag: val,
+                          motherId: match ? match.id : ''
+                        }));
+                      }}
+                      placeholder="O escribe chapa/nombre manual de la madre (ej. Vaca #104, Lucero)"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. SELECCIÓN DEL PADRE / REPRODUCTOR */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                    <span>🐂 Padre / Reproductor (Opcional)</span>
+                    <span className="text-[10px] text-slate-500 font-semibold">Toro o I.A.</span>
+                  </label>
+
+                  <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'toro' }))}
+                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        (formData.fatherType || 'toro') === 'toro'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      🐂 Toro de Finca
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'pajilla' }))}
+                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        formData.fatherType === 'pajilla'
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      🧪 Pajilla / I.A.
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'desconocido', fatherTag: '', fatherId: '' }))}
+                      className={`py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        formData.fatherType === 'desconocido'
+                          ? 'bg-slate-600 text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                      title="Padre Desconocido"
+                    >
+                      ❓ No reg.
+                    </button>
+                  </div>
+
+                  {/* Si es Toro de Finca */}
+                  {formData.fatherType === 'toro' && (
+                    <div className="space-y-1.5">
+                      {availableBulls.length > 0 && (
+                        <select
+                          value={formData.fatherId || ''}
+                          onChange={(e) => {
+                            const bId = e.target.value;
+                            const found = availableBulls.find(b => String(b.id) === String(bId));
+                            setFormData(prev => ({
+                              ...prev,
+                              fatherId: bId,
+                              fatherTag: found ? found.tagNumber : prev.fatherTag
+                            }));
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                        >
+                          <option value="">-- Seleccionar Toro Reproductor del Hato --</option>
+                          {availableBulls.map(b => (
+                            <option key={b.id} value={b.id}>
+                              🐂 #{b.tagNumber} {b.name ? `• ${b.name}` : ''} {b.breed ? `(${b.breed})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <input
+                        type="text"
+                        name="fatherTag"
+                        value={formData.fatherTag || ''}
+                        onChange={handleChange}
+                        placeholder="O escribe chapa/nombre del toro (ej. Toro #05, Sansón)"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                      />
+                    </div>
+                  )}
+
+                  {/* Si es Pajilla / I.A. */}
+                  {formData.fatherType === 'pajilla' && (
+                    <input
+                      type="text"
+                      name="fatherTag"
+                      value={formData.fatherTag || ''}
+                      onChange={handleChange}
+                      placeholder="Código de pajilla / Nombre del toro donante (ej. Pajilla Gyr 302, Brahman Rojo)"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-600 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-purple-500 min-h-[40px]"
+                    />
+                  )}
+                </div>
+
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Fecha de Ingreso <span className="text-rose-500">*</span>
+                {formData.entryType === 'Nacimiento' ? 'Fecha de Nacimiento' : 'Fecha de Ingreso'} <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
@@ -1051,29 +1303,13 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               />
             </div>
 
+            {/* Peso Inicial / Nacimiento */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Tipo de Entrada
-              </label>
-              <select
-                name="entryType"
-                value={formData.entryType}
-                onChange={handleChange}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
-              >
-                {ENTRY_TYPES.map(e => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Peso Inicial: Obligatorio para machos y ceba de hembras, OPCIONAL para vientres/cría/lechería */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Peso Inicial (kg) {isWeightRequired ? (
+                {formData.entryType === 'Nacimiento' ? 'Peso al Nacer (kg)' : 'Peso Inicial (kg)'} {isWeightRequired ? (
                   <span className="text-rose-500">*</span>
                 ) : (
-                  <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">(Opcional en Cría/Lechería)</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">(Opcional en Cría)</span>
                 )}
               </label>
               <input
@@ -1082,7 +1318,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 name="entryWeight"
                 value={formData.entryWeight}
                 onChange={handleChange}
-                placeholder={isWeightRequired ? "Ej. 280 (Obligatorio)" : "Ej. 420 (Opcional)"}
+                placeholder={formData.entryType === 'Nacimiento' ? "Ej. 32 (Al nacer)" : isWeightRequired ? "Ej. 280 (Obligatorio)" : "Ej. 420 (Opcional)"}
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px] ${
                   errors.entryWeight ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'
                 }`}
@@ -1092,29 +1328,29 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Valor Inicial / Compra ($) <span className="text-rose-500">*</span>
+                {formData.entryType === 'Nacimiento' ? 'Costo de Nacimiento ($)' : 'Valor Inicial / Compra ($)'} {formData.entryType !== 'Nacimiento' && <span className="text-rose-500">*</span>}
               </label>
               <input
                 type="number"
                 name="entryPrice"
                 value={formData.entryPrice}
                 onChange={handleChange}
-                placeholder="Ej. 2500000"
+                placeholder={formData.entryType === 'Nacimiento' ? "Ej. 0 (Nacido en finca)" : "Ej. 2500000"}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
               />
               {errors.entryPrice && <p className="text-[11px] text-rose-500 mt-1">{errors.entryPrice}</p>}
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Costos Directos Acumulados ($) (Fletes, vacunas, etc.)
+                Costos Directos / Insumos ($)
               </label>
               <input
                 type="number"
                 name="additionalCosts"
                 value={formData.additionalCosts}
                 onChange={handleChange}
-                placeholder="Ej. 120000"
+                placeholder="Pajilla, vacunas, fletes..."
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
               />
             </div>

@@ -1,5 +1,5 @@
 {
-  "version": "2.10.0",
-  "buildTime": 1789520000000,
-  "description": "Barra superior en Lotes & Ingresos 100% analítica con Comparativa Excel y Exportar Todo."
+  "version": "2.11.0",
+  "buildTime": 1789530000000,
+  "description": "Trazabilidad de nacimientos y genealogía de crías (madre, padre toro/pajilla) en ingresos individuales y por lote."
 }

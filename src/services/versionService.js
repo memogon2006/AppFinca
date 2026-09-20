@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.10.0";
-export const CURRENT_BUILD_TIME = 1789520000000;
+export const CURRENT_APP_VERSION = "2.11.0";
+export const CURRENT_BUILD_TIME = 1789530000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.11.0",
+    date: "19/09/2026",
+    title: "Trazabilidad de Nacimientos & Genealogía (Madre y Padre / Pajilla)",
+    highlights: [
+      "Registro de Crías Nacidas en Finca: Opción de procedencia ('Cría Nacida en Finca / Nacimiento') tanto en registro individual como por lote.",
+      "Genealogía Completa: Selección de Vaca Madre del hato (o ingreso manual) y Padre / Reproductor (Toro de Finca con selector de machos o Pajilla / I.A. con código/donante).",
+      "Costo Inicial $0: Validación adaptada para crías con valor de entrada inicial $0 y cálculo de rentabilidad basado en gastos posteriores.",
+      "Historial de Partos en Hembras: Ficha técnica y módulo de hembras con contador y visualización de todas las crías paridas por cada vaca en la finca."
+    ]
+  },
   {
     version: "2.10.0",
     date: "19/09/2026",
