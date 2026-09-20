@@ -490,7 +490,11 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
  * Calcula datos de reproducción de hembras (preñez, fecha parto, días de gestación)
  */
 export function calculateReproduction(animal) {
-  const isGestating = animal.femaleStatus === 'Gestación' || animal.reproductiveStatus === 'Preñada' || animal.reproductiveStatus === 'Gestación';
+  const isGestating = (Array.isArray(animal.femaleStatuses) && animal.femaleStatuses.includes('Gestación')) ||
+    (typeof animal.femaleStatus === 'string' && animal.femaleStatus.includes('Gestación')) ||
+    animal.femaleStatus === 'Gestación' || 
+    animal.reproductiveStatus === 'Preñada' || 
+    animal.reproductiveStatus === 'Gestación';
 
   if (animal.sex !== 'Hembra' || !isGestating) {
     return {
@@ -598,7 +602,11 @@ export function calculateMilkMetrics(animal) {
     cycleAvgDaily = cycleDays > 0 ? cycleTotalLiters / cycleDays : dailyLiters;
   }
 
-  const isMilking = animal.femaleStatus === 'Producción de leche' || animal.milkingStatus === 'En ordeño' || dailyLiters > 0;
+  const isMilking = (Array.isArray(animal.femaleStatuses) && animal.femaleStatuses.includes('Producción de leche')) ||
+    (typeof animal.femaleStatus === 'string' && animal.femaleStatus.includes('Producción de leche')) ||
+    animal.femaleStatus === 'Producción de leche' || 
+    animal.milkingStatus === 'En ordeño' || 
+    dailyLiters > 0;
 
   return {
     isMilking,

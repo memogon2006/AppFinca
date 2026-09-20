@@ -563,7 +563,7 @@ export function CattleListView({
                         </div>
                         {animal.sex === 'Hembra' && (
                           <div className="mt-0.5">
-                            <FemaleStatusBadge status={femaleStatus} liters={animal.dailyMilkLiters} />
+                            <FemaleStatusBadge status={femaleStatus} statuses={animal.femaleStatuses} liters={animal.dailyMilkLiters} />
                           </div>
                         )}
                         {aVaccines.length > 0 && (

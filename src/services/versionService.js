@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.11.4";
-export const CURRENT_BUILD_TIME = 1789546000000;
+export const CURRENT_APP_VERSION = "2.11.5";
+export const CURRENT_BUILD_TIME = 1789871000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.11.5",
+    date: "19/09/2026",
+    title: "Multiselección de Estados Productivos en Hembras & Registro Simultáneo",
+    highlights: [
+      "Selección Múltiple de Estados: Ahora las hembras pueden tener simultáneamente más de un estado productivo (por ejemplo, 'Producción de leche' + 'Gestación', o 'Levante de cría' + 'Gestación').",
+      "Formularios Dinámicos Simultáneos: Al seleccionar varios estados, se abren en tiempo real todos los módulos correspondientes para diligenciar la información de cada uno (Control de Gestación, Control Lechero, etc.) en un solo paso.",
+      "Reglas Inteligentes de Compatibilidad: Alternancia y exclusión lógica entre preñada y vacía, manteniendo la coherencia de los datos.",
+      "Insignias y Filtros Multiestado: En el inventario, fichas y vista de hembras se muestran todas las insignias activas y el animal participa de forma dinámica en cada sección y reporte correspondiente."
+    ]
+  },
   {
     version: "2.11.4",
     date: "19/09/2026",

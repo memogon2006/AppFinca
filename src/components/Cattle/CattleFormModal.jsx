@@ -69,6 +69,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     fatherTag: '',
     birthWeight: '',
     // Campos Exclusivos de Hembras
+    femaleStatuses: ['Vacía'],
     femaleStatus: 'Vacía',
     reproductiveStatus: 'Vacía',
     serviceDate: '',
@@ -97,17 +98,34 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   useEffect(() => {
     if (animal) {
       const isFemale = animal.sex === 'Hembra';
-      const initialFemaleStatus = isFemale ? (
-        animal.femaleStatus || (
-          animal.reproductiveStatus === 'Preñada' || animal.reproductiveStatus === 'Gestación'
-            ? 'Gestación'
-            : animal.milkingStatus === 'En ordeño'
-              ? 'Producción de leche'
-              : animal.isBreedingOnly
-                ? 'Levante de cría'
-                : 'Vacía'
-        )
-      ) : 'No aplica';
+      
+      let initialFemaleStatuses = [];
+      if (isFemale) {
+        if (Array.isArray(animal.femaleStatuses) && animal.femaleStatuses.length > 0) {
+          initialFemaleStatuses = [...animal.femaleStatuses];
+        } else if (typeof animal.femaleStatus === 'string' && animal.femaleStatus.includes(',')) {
+          initialFemaleStatuses = animal.femaleStatus.split(',').map(s => s.trim()).filter(Boolean);
+        } else if (animal.femaleStatus && animal.femaleStatus !== 'No aplica') {
+          initialFemaleStatuses = [animal.femaleStatus];
+        } else {
+          if (animal.reproductiveStatus === 'Preñada' || animal.reproductiveStatus === 'Gestación') {
+            initialFemaleStatuses.push('Gestación');
+          }
+          if (animal.milkingStatus === 'En ordeño' || (parseFloat(animal.dailyMilkLiters) > 0)) {
+            initialFemaleStatuses.push('Producción de leche');
+          }
+          if (animal.isBreedingOnly) {
+            initialFemaleStatuses.push('Levante de cría');
+          }
+          if (animal.productionType === 'Ceba' && initialFemaleStatuses.length === 0) {
+            initialFemaleStatuses.push('Ceba / Levante / Engorde');
+          }
+          if (initialFemaleStatuses.length === 0) {
+            initialFemaleStatuses = ['Vacía'];
+          }
+        }
+      }
+      const initialFemaleStatus = initialFemaleStatuses.join(', ') || 'Vacía';
 
       let initialPregDays = '';
       if (isFemale && (animal.pregnancyDays || animal.serviceDate || animal.expectedCalvingDate)) {
@@ -145,9 +163,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         entryPrice: animal.entryPrice !== undefined && animal.entryPrice !== null ? animal.entryPrice : '',
         additionalCosts: animal.additionalCosts || 0,
         currentWeight: animal.currentWeight || animal.entryWeight || '',
+        femaleStatuses: isFemale ? initialFemaleStatuses : [],
         femaleStatus: isFemale ? initialFemaleStatus : 'No aplica',
-        reproductiveStatus: isFemale ? (animal.reproductiveStatus || (initialFemaleStatus === 'Gestación' ? 'Preñada' : 'Vacía')) : 'No aplica',
-        milkingStatus: isFemale ? (animal.milkingStatus || (initialFemaleStatus === 'Producción de leche' ? 'En ordeño' : 'Seca')) : 'No aplica',
+        reproductiveStatus: isFemale ? (initialFemaleStatuses.includes('Gestación') ? 'Preñada' : 'Vacía') : 'No aplica',
+        milkingStatus: isFemale ? (initialFemaleStatuses.includes('Producción de leche') ? 'En ordeño' : 'Seca') : 'No aplica',
         dailyMilkLiters: isFemale ? (animal.dailyMilkLiters || '') : '',
         lactationCycleDays: isFemale ? (animal.lactationCycleDays || 305) : 305,
         lactationCycleTotalLiters: isFemale ? (animal.lactationCycleTotalLiters || '') : '',
@@ -155,10 +174,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         serviceDate: isFemale ? (animal.serviceDate || '') : '',
         expectedCalvingDate: isFemale ? (animal.expectedCalvingDate || '') : '',
         pregnancyDays: isFemale ? (animal.pregnancyDays || (initialPregDays ? parseInt(initialPregDays) : 0)) : 0,
-        isBreedingOnly: isFemale ? Boolean(animal.isBreedingOnly) : false,
+        isBreedingOnly: isFemale ? Boolean(initialFemaleStatuses.includes('Levante de cría') || animal.isBreedingOnly) : false,
       });
 
-      if (isFemale && (animal.lactationCycleTotalLiters || animal.lactationCycleAvgLiters || (animal.dailyMilkLiters && animal.dailyMilkLiters > 0))) {
+      if (isFemale && (initialFemaleStatuses.includes('Producción de leche') || animal.lactationCycleTotalLiters || animal.lactationCycleAvgLiters || (animal.dailyMilkLiters && animal.dailyMilkLiters > 0))) {
         setShowAdvancedMilk(true);
       }
     } else {
@@ -188,6 +207,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         fatherId: '',
         fatherTag: '',
         birthWeight: '',
+        femaleStatuses: [],
         femaleStatus: 'No aplica',
         reproductiveStatus: 'No aplica',
         serviceDate: '',
@@ -310,7 +330,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
   // Cálculo en vivo de métricas y alertas de gestación
   const gestationStats = useMemo(() => {
-    if (formData.femaleStatus !== 'Gestación') return null;
+    const isGestating = (Array.isArray(formData.femaleStatuses) && formData.femaleStatuses.includes('Gestación')) ||
+      (typeof formData.femaleStatus === 'string' && formData.femaleStatus.includes('Gestación'));
+    
+    if (!isGestating) return null;
 
     let daysPregnant = parseInt(gestationDaysInput);
     if (isNaN(daysPregnant) || daysPregnant < 0) {
@@ -377,7 +400,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       progressPercent,
       alertBadge
     };
-  }, [formData.femaleStatus, formData.serviceDate, formData.expectedCalvingDate, gestationDaysInput]);
+  }, [formData.femaleStatuses, formData.femaleStatus, formData.serviceDate, formData.expectedCalvingDate, gestationDaysInput]);
 
   // Cálculo automático del promedio y total de litros por ciclo para hembras
   const handleDailyMilkChange = (val) => {
@@ -406,45 +429,68 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     }));
   };
 
+  // Selección múltiple interactiva del estado productivo de la hembra
+  const toggleFemaleStatus = (statusValue) => {
+    setFormData(prev => {
+      let currentStatuses = Array.isArray(prev.femaleStatuses) && prev.femaleStatuses.length > 0
+        ? [...prev.femaleStatuses]
+        : (prev.femaleStatus && prev.femaleStatus !== 'No aplica' ? [prev.femaleStatus] : ['Vacía']);
+
+      const isAlreadySelected = currentStatuses.includes(statusValue);
+      let newStatuses = [];
+
+      if (isAlreadySelected) {
+        newStatuses = currentStatuses.filter(s => s !== statusValue);
+        if (newStatuses.length === 0) {
+          newStatuses = ['Vacía'];
+        }
+      } else {
+        if (statusValue === 'Gestación') {
+          newStatuses = [...currentStatuses.filter(s => s !== 'Vacía'), 'Gestación'];
+        } else if (statusValue === 'Vacía') {
+          newStatuses = [...currentStatuses.filter(s => s !== 'Gestación'), 'Vacía'];
+        } else {
+          const filtered = currentStatuses.filter(s => s !== 'Vacía');
+          newStatuses = [...filtered, statusValue];
+        }
+      }
+
+      const isPregnant = newStatuses.includes('Gestación');
+      const isMilking = newStatuses.includes('Producción de leche');
+      const isNursing = newStatuses.includes('Levante de cría');
+      const isFattening = newStatuses.includes('Ceba / Levante / Engorde');
+
+      let repro = isPregnant ? 'Preñada' : 'Vacía';
+      let milk = isMilking ? 'En ordeño' : 'Seca';
+      let breedingOnly = isNursing;
+      let prodType = prev.productionType;
+
+      if (isMilking && !isFattening) {
+        prodType = (isPregnant || isNursing) ? 'Doble Propósito' : 'Lechería';
+      } else if (isFattening && !isMilking) {
+        prodType = 'Ceba';
+      } else if (isPregnant || isNursing) {
+        if (prodType === 'Ceba') prodType = 'Cría';
+      }
+
+      if (isMilking) {
+        setShowAdvancedMilk(true);
+      }
+
+      return {
+        ...prev,
+        femaleStatuses: newStatuses,
+        femaleStatus: newStatuses.join(', '),
+        reproductiveStatus: repro,
+        milkingStatus: milk,
+        isBreedingOnly: breedingOnly,
+        productionType: prodType,
+      };
+    });
+  };
+
   const handleFemaleStatusChange = (status) => {
-    let repro = 'Vacía';
-    let milk = 'No aplica';
-    let breedingOnly = formData.isBreedingOnly;
-    let prodType = formData.productionType;
-
-    if (status === 'Gestación') {
-      repro = 'Preñada';
-      milk = formData.milkingStatus === 'En ordeño' ? 'En ordeño' : 'Seca';
-      if (prodType === 'Ceba') prodType = 'Cría';
-    } else if (status === 'Producción de leche') {
-      repro = 'Vacía';
-      milk = 'En ordeño';
-      prodType = 'Lechería';
-      setShowAdvancedMilk(true);
-    } else if (status === 'Levante de cría') {
-      repro = 'Vacía';
-      milk = 'No aplica';
-      breedingOnly = true;
-      if (prodType === 'Ceba') prodType = 'Cría';
-    } else if (status === 'Ceba / Levante / Engorde') {
-      repro = 'No aplica';
-      milk = 'No aplica';
-      breedingOnly = false;
-      prodType = 'Ceba';
-      setShowAdvancedMilk(false);
-    } else if (status === 'Vacía') {
-      repro = 'Vacía';
-      milk = 'Seca';
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      femaleStatus: status,
-      reproductiveStatus: repro,
-      milkingStatus: milk,
-      isBreedingOnly: breedingOnly,
-      productionType: prodType,
-    }));
+    toggleFemaleStatus(status);
   };
 
   const handleChange = (e) => {
@@ -457,10 +503,12 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
           sex: 'Macho',
           category: prev.category === 'Vaca' || prev.category === 'Novilla' ? 'Novillo' : (prev.category || 'Novillo'),
           productionType: 'Ceba', // Macho siempre por defecto Ceba / Engorde / Levante
+          femaleStatuses: [],
           femaleStatus: 'No aplica',
           reproductiveStatus: 'No aplica',
           serviceDate: '',
           expectedCalvingDate: '',
+          pregnancyDays: 0,
           milkingStatus: 'No aplica',
           dailyMilkLiters: '',
           lactationCycleTotalLiters: '',
@@ -474,6 +522,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
           sex: 'Hembra',
           category: prev.category === 'Novillo' || prev.category === 'Toro' || prev.category === 'Torete' || prev.category === 'Buey' ? 'Vaca' : (prev.category || 'Vaca'),
           productionType: prev.productionType === 'Ceba' ? 'Cría' : prev.productionType,
+          femaleStatuses: ['Vacía'],
           femaleStatus: 'Vacía',
           reproductiveStatus: 'Vacía',
           milkingStatus: 'Seca',
@@ -504,7 +553,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   // Regla de Negocio: El peso inicial es obligatorio si es Macho o si es Hembra destinada a Levante y Ceba/Engorde.
   // Si la hembra se usa para Vientre, Cría, Lechería o Vaca de Producción, el peso inicial NO es obligatorio.
   const isFemale = formData.sex === 'Hembra';
-  const isFatteningFemale = isFemale && formData.productionType === 'Ceba';
+  const isFatteningFemale = isFemale && (formData.productionType === 'Ceba' || formData.femaleStatuses?.includes('Ceba / Levante / Engorde') || formData.femaleStatus?.includes('Ceba'));
   const isWeightRequired = formData.sex === 'Macho' || isFatteningFemale;
 
   // Regla de Negocio: Ingreso # (Lote / Consecutivo)
@@ -512,7 +561,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   // NO es obligatorio para animales nacidos en la finca, ni para animales de cría, vientre, lechería o doble propósito.
   const isBornInFarm = formData.entryType === 'Nacimiento' || formData.origin === 'Nacido en finca';
   const isCompany = formData.entryType === 'Compañía' || (formData.owner && formData.owner.toLowerCase().includes('compañía'));
-  const isFattening = formData.productionType === 'Ceba' || formData.femaleStatus === 'Ceba / Levante / Engorde';
+  const isFattening = formData.productionType === 'Ceba' || formData.femaleStatuses?.includes('Ceba / Levante / Engorde') || formData.femaleStatus?.includes('Ceba');
   const isEntryBatchRequired = !isBornInFarm && (isFattening || isCompany);
 
   const executeSave = (dataToSave) => {
@@ -520,6 +569,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     const parsedCurrentWeight = dataToSave.currentWeight && parseFloat(dataToSave.currentWeight) > 0 ? parseFloat(dataToSave.currentWeight) : parsedEntryWeight;
     const isBorn = dataToSave.entryType === 'Nacimiento';
     const batchValue = dataToSave.entryBatch?.trim() || '';
+
+    const savedStatuses = isFemale ? (dataToSave.femaleStatuses?.length ? dataToSave.femaleStatuses : [dataToSave.femaleStatus || 'Vacía']) : [];
+    const isSavedPregnant = savedStatuses.includes('Gestación');
+    const isSavedMilking = savedStatuses.includes('Producción de leche');
+    const isSavedNursing = savedStatuses.includes('Levante de cría');
 
     onSave({
       ...dataToSave,
@@ -538,17 +592,18 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       entryPrice: isBorn && (!dataToSave.entryPrice || parseFloat(dataToSave.entryPrice) <= 0) ? 0 : parseFloat(dataToSave.entryPrice || 0),
       additionalCosts: parseFloat(dataToSave.additionalCosts || 0),
       // Campos de hembra: se guardan sólo si es hembra, si es macho se limpian por completo
-      femaleStatus: isFemale ? (dataToSave.femaleStatus || 'Vacía') : 'No aplica',
-      reproductiveStatus: isFemale ? (dataToSave.reproductiveStatus || 'Vacía') : 'No aplica',
-      milkingStatus: isFemale ? (dataToSave.milkingStatus || 'No aplica') : 'No aplica',
-      dailyMilkLiters: isFemale ? parseFloat(dataToSave.dailyMilkLiters || 0) : 0,
+      femaleStatuses: savedStatuses,
+      femaleStatus: isFemale ? savedStatuses.join(', ') : 'No aplica',
+      reproductiveStatus: isFemale ? (isSavedPregnant ? 'Preñada' : 'Vacía') : 'No aplica',
+      milkingStatus: isFemale ? (isSavedMilking ? 'En ordeño' : 'Seca') : 'No aplica',
+      dailyMilkLiters: isFemale && isSavedMilking ? parseFloat(dataToSave.dailyMilkLiters || 0) : parseFloat(dataToSave.dailyMilkLiters || 0),
       lactationCycleDays: isFemale ? parseInt(dataToSave.lactationCycleDays || 305) : 0,
       lactationCycleTotalLiters: isFemale ? parseFloat(dataToSave.lactationCycleTotalLiters || 0) : 0,
       lactationCycleAvgLiters: isFemale ? parseFloat(dataToSave.lactationCycleAvgLiters || 0) : 0,
-      serviceDate: isFemale && dataToSave.femaleStatus === 'Gestación' ? (dataToSave.serviceDate || '') : '',
-      expectedCalvingDate: isFemale && dataToSave.femaleStatus === 'Gestación' ? (dataToSave.expectedCalvingDate || '') : '',
-      pregnancyDays: isFemale && dataToSave.femaleStatus === 'Gestación' ? (parseInt(gestationDaysInput) || parseInt(dataToSave.pregnancyDays) || 0) : 0,
-      isBreedingOnly: isFemale ? Boolean(dataToSave.isBreedingOnly) : false,
+      serviceDate: isFemale && isSavedPregnant ? (dataToSave.serviceDate || '') : '',
+      expectedCalvingDate: isFemale && isSavedPregnant ? (dataToSave.expectedCalvingDate || '') : '',
+      pregnancyDays: isFemale && isSavedPregnant ? (parseInt(gestationDaysInput) || parseInt(dataToSave.pregnancyDays) || 0) : 0,
+      isBreedingOnly: isFemale ? Boolean(isSavedNursing || dataToSave.isBreedingOnly) : false,
     });
     onClose();
   };
@@ -1082,331 +1137,497 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         </div>
 
         {/* SECCIÓN CONDICIONAL: ÚNICAMENTE PARA HEMBRAS */}
-        {formData.sex === 'Hembra' && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/30 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-purple-900 dark:text-purple-200 flex items-center gap-2">
-                <span>🐄 Estado Productivo de la Hembra (Solo Hembras)</span>
-              </h4>
-              <span className="text-[11px] text-purple-700 dark:text-purple-300 font-semibold">Ceba, Lechería o Cría</span>
-            </div>
+        {formData.sex === 'Hembra' && (() => {
+          const activeStatuses = Array.isArray(formData.femaleStatuses) && formData.femaleStatuses.length > 0
+            ? formData.femaleStatuses
+            : (formData.femaleStatus && formData.femaleStatus !== 'No aplica' 
+                ? (formData.femaleStatus.includes(',') ? formData.femaleStatus.split(',').map(s => s.trim()) : [formData.femaleStatus])
+                : ['Vacía']);
 
-            {/* Selector Principal de Estado de Hembra */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-              {FEMALE_STATUSES.map((item) => {
-                const isSelected = formData.femaleStatus === item.value;
-                return (
-                  <button
-                    type="button"
-                    key={item.value}
-                    onClick={() => handleFemaleStatusChange(item.value)}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition min-h-[60px] cursor-pointer ${
-                      isSelected
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-400/50'
-                        : 'bg-white dark:bg-slate-800/80 border-purple-200 dark:border-purple-500/30 text-slate-800 dark:text-slate-200 hover:border-purple-400'
-                    }`}
-                  >
-                    <span className="text-xs font-extrabold leading-snug">{item.label}</span>
-                    <span className={`text-[10px] font-bold mt-1.5 ${isSelected ? 'text-purple-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {item.short || (item.value === 'Producción de leche' ? 'Ordeño' : item.value === 'Levante de cría' ? 'Con ternero' : item.value === 'Gestación' ? 'Preñez' : item.value === 'Ceba / Levante / Engorde' ? 'Ceba / Engorde' : 'Abierta')}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          const isGestating = activeStatuses.includes('Gestación') || formData.femaleStatus?.includes('Gestación');
+          const isMilking = activeStatuses.includes('Producción de leche') || formData.femaleStatus?.includes('Producción de leche');
+          const isNursing = activeStatuses.includes('Levante de cría') || formData.femaleStatus?.includes('Levante de cría');
+          const isFattening = activeStatuses.includes('Ceba / Levante / Engorde') || formData.femaleStatus?.includes('Ceba');
+          const isEmpty = activeStatuses.includes('Vacía') && !isGestating;
 
-            {/* Si es Ceba / Levante / Engorde: Explicación de ceba */}
-            {formData.femaleStatus === 'Ceba / Levante / Engorde' && (
-              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700/60 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
-                <span className="text-base shrink-0">🥩</span>
+          return (
+            <div className="p-4 sm:p-5 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/30 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <div>
-                  <span className="font-extrabold block">Espacio de Ceba, Levante o Engorde de Hembras</span>
-                  <span className="text-[11px] text-amber-800 dark:text-amber-300">
-                    Animal clasificado para ganancia de peso (GDP), engorde de novilla o vaca de ceba comercial para venta por kilo.
+                  <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                    <span>🐄 Estado Productivo de la Hembra (Selección Múltiple)</span>
+                  </h4>
+                  <p className="text-[11px] text-purple-800 dark:text-purple-300">
+                    💡 Puedes seleccionar <strong>más de 1 estado a la vez</strong> (ej. <em>En Ordeño</em> + <em>Preñada</em>). Los módulos de datos correspondientes se abrirán abajo para ser completados.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                  <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700">
+                    {activeStatuses.length} {activeStatuses.length === 1 ? 'estado seleccionado' : 'estados seleccionados'}
                   </span>
                 </div>
               </div>
-            )}
 
-            {/* Si está en Gestación (Preñada): Días de preñez, fechas calculadas y alertas */}
-            {formData.femaleStatus === 'Gestación' && (
-              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-purple-300 dark:border-purple-500/40 shadow-sm space-y-4">
-                
-                {/* Encabezado del Módulo de Gestación */}
-                <div className="flex items-start justify-between gap-2 border-b border-purple-100 dark:border-purple-800/40 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-xl shrink-0">
-                      🤰
-                    </div>
-                    <div>
-                      <h5 className="text-xs font-black text-purple-950 dark:text-purple-100 uppercase tracking-wider flex items-center gap-2">
-                        Control Reproductivo & Diagnóstico de Gestación
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
-                          283 Días Gestación
-                        </span>
-                      </h5>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Ingresa los <strong>días aproximados de preñez</strong> (palpación/ecografía) o la <strong>fecha de monta</strong> para calcular el parto y alertas.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Campos Principales de Entrada y Fechas Sincronizadas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              {/* Selector Principal Múltiple de Estado de Hembra */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                {FEMALE_STATUSES.map((item) => {
+                  const isSelected = activeStatuses.includes(item.value);
                   
-                  {/* 1. Días de Preñez Aproximados */}
-                  <div className="bg-purple-50/60 dark:bg-purple-950/30 p-3 rounded-xl border border-purple-200 dark:border-purple-800/50">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-purple-950 dark:text-purple-200">
-                        ⏱️ Días de Preñez Aprox.
-                      </label>
-                      {gestationStats?.monthsApprox > 0 && (
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-purple-200/70 dark:bg-purple-800/60 text-purple-900 dark:text-purple-200">
-                          ~{gestationStats.monthsApprox} meses
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0"
-                        max="300"
-                        value={gestationDaysInput}
-                        onChange={(e) => handleGestationDaysChange(e.target.value)}
-                        placeholder="Ej. 90 (palpación)"
-                        className="w-full px-3 py-2 text-sm font-extrabold rounded-lg bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-600/60 text-purple-950 dark:text-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[42px]"
-                      />
-                      <span className="absolute right-3 top-2.5 text-xs text-purple-500 font-bold pointer-events-none">
-                        días
-                      </span>
-                    </div>
+                  let activeTheme = 'bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-400/50';
+                  if (item.value === 'Producción de leche') {
+                    activeTheme = 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-400/50';
+                  } else if (item.value === 'Gestación') {
+                    activeTheme = 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-400/50';
+                  } else if (item.value === 'Levante de cría') {
+                    activeTheme = 'bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-400/50';
+                  } else if (item.value === 'Ceba / Levante / Engorde') {
+                    activeTheme = 'bg-amber-600 text-white border-amber-600 shadow-md ring-2 ring-amber-400/50';
+                  } else if (item.value === 'Vacía') {
+                    activeTheme = 'bg-slate-700 text-white border-slate-700 shadow-md ring-2 ring-slate-400/50';
+                  }
 
-                    {/* Botones de Selección Rápida por Meses */}
-                    <div className="mt-2.5">
-                      <span className="text-[10px] font-bold text-purple-800 dark:text-purple-300 block mb-1">
-                        Acceso rápido por meses de palpación:
-                      </span>
-                      <div className="grid grid-cols-4 gap-1">
-                        {[
-                          { m: '1m', d: 30 },
-                          { m: '2m', d: 60 },
-                          { m: '3m', d: 90 },
-                          { m: '4m', d: 120 },
-                          { m: '5m', d: 150 },
-                          { m: '6m', d: 180 },
-                          { m: '7m', d: 210 },
-                          { m: '8m', d: 240 },
-                        ].map(preset => {
-                          const isActive = parseInt(gestationDaysInput) === preset.d;
-                          return (
-                            <button
-                              type="button"
-                              key={preset.d}
-                              onClick={() => handleGestationDaysChange(String(preset.d))}
-                              className={`px-1.5 py-1 text-[10px] font-extrabold rounded-md transition cursor-pointer border text-center ${
-                                isActive
-                                  ? 'bg-purple-700 text-white border-purple-800 shadow-sm'
-                                  : 'bg-white dark:bg-slate-800 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-800/70 hover:bg-purple-100 dark:hover:bg-purple-900/40'
-                              }`}
-                            >
-                              {preset.m} ({preset.d}d)
-                            </button>
-                          );
-                        })}
+                  return (
+                    <button
+                      type="button"
+                      key={item.value}
+                      onClick={() => toggleFemaleStatus(item.value)}
+                      className={`p-3 rounded-xl border text-left flex flex-col justify-between transition min-h-[72px] cursor-pointer relative overflow-hidden ${
+                        isSelected
+                          ? activeTheme
+                          : 'bg-white dark:bg-slate-800/80 border-purple-200 dark:border-purple-500/30 text-slate-800 dark:text-slate-200 hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/20'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-1 w-full">
+                        <span className="text-xs font-black leading-tight">{item.label}</span>
+                        <span className={`w-4 h-4 rounded flex items-center justify-center text-[10px] font-black shrink-0 transition ${
+                          isSelected ? 'bg-white text-slate-900 shadow-sm' : 'border border-slate-300 dark:border-slate-600 text-transparent'
+                        }`}>
+                          ✓
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/20 dark:border-slate-700/50">
+                        <span className={`text-[10px] font-bold ${isSelected ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'}`}>
+                          {item.short || item.value}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[9px] font-black uppercase tracking-wider bg-white/25 px-1 py-0.2 rounded">
+                            Activo
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* MÓDULO 1: CONTROL DE GESTACIÓN (Preñada) */}
+              {isGestating && (
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-emerald-400 dark:border-emerald-500/50 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  
+                  {/* Encabezado del Módulo de Gestación */}
+                  <div className="flex items-start justify-between gap-2 border-b border-emerald-100 dark:border-emerald-800/40 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-xl shrink-0">
+                        🤰
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-emerald-950 dark:text-emerald-100 uppercase tracking-wider flex items-center gap-2">
+                          Control Reproductivo & Diagnóstico de Gestación
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700">
+                            283 Días Gestación
+                          </span>
+                        </h5>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Ingresa los <strong>días aproximados de preñez</strong> (palpación/ecografía) o la <strong>fecha de monta</strong> para calcular el parto y alertas.
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* 2. Fecha de Servicio / Monta / Inseminación */}
-                  <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                        📅 Fecha Servicio / Monta
-                      </label>
-                      <input
-                        type="date"
-                        name="serviceDate"
-                        value={formData.serviceDate}
-                        onChange={(e) => handleServiceDateChange(e.target.value)}
-                        className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[42px]"
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
-                      Sincronizada automáticamente (Hoy - días de preñez). Puedes ajustarla manualmente.
-                    </p>
-                  </div>
-
-                  {/* 3. Fecha Estimada de Parto (+283d) */}
-                  <div className="bg-emerald-50/60 dark:bg-emerald-950/30 p-3 rounded-xl border-2 border-emerald-300 dark:border-emerald-600/50 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-black text-emerald-950 dark:text-emerald-200">
-                          🍼 Fecha Estimada de Parto
-                        </label>
-                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100">
-                          +283 días
-                        </span>
-                      </div>
-                      <input
-                        type="date"
-                        name="expectedCalvingDate"
-                        value={formData.expectedCalvingDate}
-                        onChange={(e) => handleExpectedCalvingDateChange(e.target.value)}
-                        className="w-full px-3 py-2 text-xs font-black rounded-lg bg-white dark:bg-slate-800 border border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[42px]"
-                      />
-                    </div>
-                    <p className="text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 mt-2">
-                      {formData.expectedCalvingDate ? `Parto proyectado: ${formatDate(formData.expectedCalvingDate)}` : 'Calculada automáticamente al ingresar días o servicio.'}
-                    </p>
-                  </div>
-
-                </div>
-
-                {/* Resumen en Vivo del Estado y Alertas Reproductivas */}
-                {gestationStats && (gestationStats.daysPregnant > 0 || formData.expectedCalvingDate) && (
-                  <div className={`p-3.5 rounded-xl border ${gestationStats.alertBadge?.classes || 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 text-purple-900'}`}>
+                  {/* Campos Principales de Entrada y Fechas Sincronizadas */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                     
-                    {/* Barra de Progreso de Gestación */}
-                    <div className="mb-2.5">
-                      <div className="flex items-center justify-between text-[11px] font-extrabold mb-1">
-                        <span>Progreso de Gestación ({gestationStats.daysPregnant} de {BOVINE_GESTATION_DAYS} días)</span>
-                        <span>{gestationStats.progressPercent}% cumplido</span>
+                    {/* 1. Días de Preñez Aproximados */}
+                    <div className="bg-emerald-50/60 dark:bg-emerald-950/30 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-emerald-950 dark:text-emerald-200">
+                          ⏱️ Días de Preñez Aprox.
+                        </label>
+                        {gestationStats?.monthsApprox > 0 && (
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-200/70 dark:bg-emerald-800/60 text-emerald-900 dark:text-emerald-200">
+                            ~{gestationStats.monthsApprox} meses
+                          </span>
+                        )}
                       </div>
-                      <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-300 ${
-                            gestationStats.daysRemaining <= 10 
-                              ? 'bg-rose-500' 
-                              : gestationStats.daysRemaining <= 30 
-                                ? 'bg-amber-500' 
-                                : 'bg-purple-600'
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(3, gestationStats.progressPercent))}%` }}
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="300"
+                          value={gestationDaysInput}
+                          onChange={(e) => handleGestationDaysChange(e.target.value)}
+                          placeholder="Ej. 90 (palpación)"
+                          className="w-full px-3 py-2 text-sm font-extrabold rounded-lg bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600/60 text-emerald-950 dark:text-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[42px]"
+                        />
+                        <span className="absolute right-3 top-2.5 text-xs text-emerald-600 font-bold pointer-events-none">
+                          días
+                        </span>
+                      </div>
+
+                      {/* Botones de Selección Rápida por Meses */}
+                      <div className="mt-2.5">
+                        <span className="text-[10px] font-bold text-emerald-900 dark:text-emerald-300 block mb-1">
+                          Acceso rápido por meses de palpación:
+                        </span>
+                        <div className="grid grid-cols-4 gap-1">
+                          {[
+                            { m: '1m', d: 30 },
+                            { m: '2m', d: 60 },
+                            { m: '3m', d: 90 },
+                            { m: '4m', d: 120 },
+                            { m: '5m', d: 150 },
+                            { m: '6m', d: 180 },
+                            { m: '7m', d: 210 },
+                            { m: '8m', d: 240 },
+                          ].map(preset => {
+                            const isActive = parseInt(gestationDaysInput) === preset.d;
+                            return (
+                              <button
+                                type="button"
+                                key={preset.d}
+                                onClick={() => handleGestationDaysChange(String(preset.d))}
+                                className={`px-1.5 py-1 text-[10px] font-extrabold rounded-md transition cursor-pointer border text-center ${
+                                  isActive
+                                    ? 'bg-emerald-700 text-white border-emerald-800 shadow-sm'
+                                    : 'bg-white dark:bg-slate-800 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/70 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+                                }`}
+                              >
+                                {preset.m} ({preset.d}d)
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Fecha de Servicio / Monta / Inseminación */}
+                    <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          📅 Fecha Servicio / Monta
+                        </label>
+                        <input
+                          type="date"
+                          name="serviceDate"
+                          value={formData.serviceDate}
+                          onChange={(e) => handleServiceDateChange(e.target.value)}
+                          className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[42px]"
                         />
                       </div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+                        Sincronizada automáticamente (Hoy - días de preñez). Puedes ajustarla manualmente.
+                      </p>
                     </div>
 
-                    {/* Alerta Reproductiva */}
-                    {gestationStats.alertBadge && (
-                      <div className="flex items-start gap-2.5 pt-1">
-                        <div className="text-base shrink-0">
-                          {gestationStats.alertBadge.level === 'critical' ? '🚨' : gestationStats.alertBadge.level === 'warning' ? '⚠️' : '🍼'}
-                        </div>
-                        <div>
-                          <span className="font-black text-xs block">
-                            {gestationStats.alertBadge.title}
+                    {/* 3. Fecha Estimada de Parto (+283d) */}
+                    <div className="bg-emerald-50/60 dark:bg-emerald-950/30 p-3 rounded-xl border-2 border-emerald-300 dark:border-emerald-600/50 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-black text-emerald-950 dark:text-emerald-200">
+                            🍼 Fecha Estimada de Parto
+                          </label>
+                          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100">
+                            +283 días
                           </span>
-                          <p className="text-[11px] font-medium opacity-90 mt-0.5">
-                            {gestationStats.alertBadge.description}
-                          </p>
+                        </div>
+                        <input
+                          type="date"
+                          name="expectedCalvingDate"
+                          value={formData.expectedCalvingDate}
+                          onChange={(e) => handleExpectedCalvingDateChange(e.target.value)}
+                          className="w-full px-3 py-2 text-xs font-black rounded-lg bg-white dark:bg-slate-800 border border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[42px]"
+                        />
+                      </div>
+                      <p className="text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 mt-2">
+                        {formData.expectedCalvingDate ? `Parto proyectado: ${formatDate(formData.expectedCalvingDate)}` : 'Calculada automáticamente al ingresar días o servicio.'}
+                      </p>
+                    </div>
+
+                  </div>
+
+                  {/* Resumen en Vivo del Estado y Alertas Reproductivas */}
+                  {gestationStats && (gestationStats.daysPregnant > 0 || formData.expectedCalvingDate) && (
+                    <div className={`p-3.5 rounded-xl border ${gestationStats.alertBadge?.classes || 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 text-emerald-900'}`}>
+                      
+                      {/* Barra de Progreso de Gestación */}
+                      <div className="mb-2.5">
+                        <div className="flex items-center justify-between text-[11px] font-extrabold mb-1">
+                          <span>Progreso de Gestación ({gestationStats.daysPregnant} de {BOVINE_GESTATION_DAYS} días)</span>
+                          <span>{gestationStats.progressPercent}% cumplido</span>
+                        </div>
+                        <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-300 ${
+                              gestationStats.daysRemaining <= 10 
+                                ? 'bg-rose-500' 
+                                : gestationStats.daysRemaining <= 30 
+                                  ? 'bg-amber-500' 
+                                  : 'bg-emerald-600'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(3, gestationStats.progressPercent))}%` }}
+                          />
                         </div>
                       </div>
-                    )}
 
-                    <div className="mt-2.5 pt-2 border-t border-purple-200/50 dark:border-purple-700/40 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-purple-900/80 dark:text-purple-200/80">
-                      <span>📆 Se sincroniza con el Calendario de la Finca</span>
-                      <span>🔔 Genera notificación automática en el Tablero de Alertas</span>
+                      {/* Alerta Reproductiva */}
+                      {gestationStats.alertBadge && (
+                        <div className="flex items-start gap-2.5 pt-1">
+                          <div className="text-base shrink-0">
+                            {gestationStats.alertBadge.level === 'critical' ? '🚨' : gestationStats.alertBadge.level === 'warning' ? '⚠️' : '🍼'}
+                          </div>
+                          <div>
+                            <span className="font-black text-xs block">
+                              {gestationStats.alertBadge.title}
+                            </span>
+                            <p className="text-[11px] font-medium opacity-90 mt-0.5">
+                              {gestationStats.alertBadge.description}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-2.5 pt-2 border-t border-emerald-200/50 dark:border-emerald-700/40 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-emerald-900/80 dark:text-emerald-200/80">
+                        <span>📆 Se sincroniza con el Calendario de la Finca</span>
+                        <span>🔔 Genera notificación automática en el Tablero de Alertas</span>
+                      </div>
+
                     </div>
-
-                  </div>
-                )}
-
-              </div>
-            )}
-
-            {/* SECCIÓN OPCIONAL / AVANZADA DE LECHERÍA Y CICLO PRODUCTIVO (SOLO HEMBRAS) */}
-            <div className="rounded-xl border border-purple-200 dark:border-purple-500/30 overflow-hidden bg-white/70 dark:bg-slate-900/60">
-              <button
-                type="button"
-                onClick={() => setShowAdvancedMilk(!showAdvancedMilk)}
-                className="w-full p-3 flex items-center justify-between text-xs font-bold text-purple-900 dark:text-purple-200 hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <Milk className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span>Control Lechero: Producción Diaria y Litros por Ciclo Productivo (Opcional)</span>
-                </span>
-                {showAdvancedMilk ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-
-              {showAdvancedMilk && (
-                <div className="p-3.5 pt-0 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs border-t border-purple-100 dark:border-purple-500/20">
-                  
-                  {/* Litros por día */}
-                  <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Producción de Leche por Día (Litros / Día)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      name="dailyMilkLiters"
-                      value={formData.dailyMilkLiters}
-                      onChange={(e) => handleDailyMilkChange(e.target.value)}
-                      placeholder="Ej. 14.5"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-blue-500 min-h-[44px]"
-                    />
-                    <span className="text-[10px] text-slate-400">Litros diarios actuales</span>
-                  </div>
-
-                  {/* Litros totales por ciclo */}
-                  <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Litros por Ciclo Productivo (Lactancia)
-                    </label>
-                    <input
-                      type="number"
-                      step="1"
-                      name="lactationCycleTotalLiters"
-                      value={formData.lactationCycleTotalLiters}
-                      onChange={(e) => handleTotalCycleChange(e.target.value)}
-                      placeholder="Ej. 4500"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-blue-500 min-h-[44px]"
-                    />
-                    <span className="text-[10px] text-slate-400">Total litros del ciclo</span>
-                  </div>
-
-                  {/* Promedio litros por ciclo */}
-                  <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Promedio Litros / Ciclo Productivo
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      name="lactationCycleAvgLiters"
-                      value={formData.lactationCycleAvgLiters}
-                      onChange={handleChange}
-                      placeholder="Ej. 14.8"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-blue-600 dark:text-blue-400 font-extrabold focus:outline-none focus:border-blue-500 min-h-[44px]"
-                    />
-                    <span className="text-[10px] text-slate-400">Litros promedio/día en ciclo</span>
-                  </div>
+                  )}
 
                 </div>
               )}
-            </div>
 
-            {/* Checkbox Solo Cría (Solo Hembras) */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-500/20">
-              <input
-                type="checkbox"
-                id="isBreedingOnly"
-                name="isBreedingOnly"
-                checked={formData.isBreedingOnly}
-                onChange={handleChange}
-                className="w-5 h-5 rounded border-purple-400 text-purple-600 focus:ring-purple-500 cursor-pointer flex-shrink-0"
-              />
-              <label htmlFor="isBreedingOnly" className="text-xs sm:text-sm text-purple-950 dark:text-purple-100 font-medium cursor-pointer select-none">
-                <span className="font-bold">¿Es hembra destinada solamente a cría / vientre reproductor?</span>
-                <span className="block text-xs text-purple-800 dark:text-purple-300">
-                  Marca esta casilla si el animal está reservado exclusivamente para multiplicación y terneros.
-                </span>
-              </label>
-            </div>
+              {/* MÓDULO 2: CONTROL LECHERO (Producción de leche en ordeño) */}
+              {isMilking && (
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-blue-400 dark:border-blue-500/50 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  <div className="flex items-start justify-between gap-2 border-b border-blue-100 dark:border-blue-800/40 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-xl shrink-0">
+                        🥛
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-black text-blue-950 dark:text-blue-100 uppercase tracking-wider flex items-center gap-2">
+                          Control Lechero: Registro de Producción Láctea
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
+                            Ordeño Activo
+                          </span>
+                        </h5>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Registra la producción diaria y litros acumulados por ciclo para seguimiento productivo y curvas de lactancia.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-          </div>
-        )}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    {/* Litros por día */}
+                    <div className="bg-blue-50/60 dark:bg-blue-950/30 p-3 rounded-xl border border-blue-200 dark:border-blue-800/50">
+                      <label className="block text-xs font-bold text-blue-950 dark:text-blue-200 mb-1">
+                        🥛 Litros por Día (Producción Diaria)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.1"
+                          name="dailyMilkLiters"
+                          value={formData.dailyMilkLiters}
+                          onChange={(e) => handleDailyMilkChange(e.target.value)}
+                          placeholder="Ej. 14.5"
+                          className="w-full px-3 py-2 text-sm font-extrabold rounded-lg bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600/60 text-blue-950 dark:text-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[42px]"
+                        />
+                        <span className="absolute right-3 top-2.5 text-xs text-blue-500 font-bold pointer-events-none">
+                          L/día
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-blue-700 dark:text-blue-300 font-medium block mt-1.5">
+                        Medición diaria de ordeño
+                      </span>
+                    </div>
+
+                    {/* Litros totales por ciclo */}
+                    <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60">
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                        🍼 Litros por Ciclo (Lactancia)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="1"
+                          name="lactationCycleTotalLiters"
+                          value={formData.lactationCycleTotalLiters}
+                          onChange={(e) => handleTotalCycleChange(e.target.value)}
+                          placeholder="Ej. 4500"
+                          className="w-full px-3 py-2 text-sm font-bold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[42px]"
+                        />
+                        <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold pointer-events-none">
+                          Litros
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1.5">
+                        Total proyectado en ~305 días
+                      </span>
+                    </div>
+
+                    {/* Promedio diario por ciclo */}
+                    <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60">
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                        📊 Promedio Diario / Ciclo
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.1"
+                          name="lactationCycleAvgLiters"
+                          value={formData.lactationCycleAvgLiters}
+                          onChange={handleChange}
+                          placeholder="Ej. 14.8"
+                          className="w-full px-3 py-2 text-sm font-extrabold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[42px]"
+                        />
+                        <span className="absolute right-3 top-2.5 text-xs text-blue-500 font-bold pointer-events-none">
+                          L/d prom.
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1.5">
+                        Promedio diario durante la lactancia
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MÓDULO 3: LEVANTE DE CRÍA (Amamantando / Cría al pie) */}
+              {isNursing && (
+                <div className="p-3.5 rounded-xl bg-purple-100/60 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-700/60 flex items-start gap-3 text-xs text-purple-950 dark:text-purple-200">
+                  <span className="text-xl shrink-0">👶</span>
+                  <div className="space-y-1">
+                    <span className="font-black block text-sm">Hembra con Cría al Pie (Lactante / Levante)</span>
+                    <span className="text-[11px] text-purple-900 dark:text-purple-300 block">
+                      Vaca amamantando ternero al pie en finca. Si la vaca además se encuentra preñada o en ordeño comercial, sus datos reproductivos y lecheros se mantendrán sincronizados.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* MÓDULO 4: CEBA, LEVANTE O ENGORDE (Hembra de carne) */}
+              {isFattening && (
+                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700/60 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
+                  <span className="text-xl shrink-0">🥩</span>
+                  <div>
+                    <span className="font-black block text-sm">Hembra Destinada a Ceba / Levante / Engorde</span>
+                    <span className="text-[11px] text-amber-800 dark:text-amber-300 block">
+                      Animal clasificado para ganancia de peso (GDP), novilla de levante o vaca de descarte/engorde para venta por kilo.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* MÓDULO 5: VACÍA / ABIERTA */}
+              {isEmpty && (
+                <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 flex items-start gap-3 text-xs text-slate-800 dark:text-slate-200">
+                  <span className="text-xl shrink-0">⭕</span>
+                  <div>
+                    <span className="font-black block text-sm">Hembra Vacía / Abierta</span>
+                    <span className="text-[11px] text-slate-600 dark:text-slate-400 block">
+                      Vaca seca o abierta, disponible para próximo servicio reproductivo (monta natural o inseminación artificial).
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Acordeón Opcional si NO está marcado ordeño activo */}
+              {!isMilking && (
+                <div className="rounded-xl border border-purple-200 dark:border-purple-500/30 overflow-hidden bg-white/70 dark:bg-slate-900/60">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedMilk(!showAdvancedMilk)}
+                    className="w-full p-3 flex items-center justify-between text-xs font-bold text-purple-900 dark:text-purple-200 hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Milk className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span>Control Lechero Opcional (Registrar historial de producción en vaca seca o gestante)</span>
+                    </span>
+                    {showAdvancedMilk ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+
+                  {showAdvancedMilk && (
+                    <div className="p-3.5 pt-0 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs border-t border-purple-100 dark:border-purple-500/20">
+                      <div>
+                        <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Producción de Leche por Día (Litros / Día)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          name="dailyMilkLiters"
+                          value={formData.dailyMilkLiters}
+                          onChange={(e) => handleDailyMilkChange(e.target.value)}
+                          placeholder="Ej. 14.5"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-blue-500 min-h-[44px]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Litros por Ciclo Productivo (Lactancia)
+                        </label>
+                        <input
+                          type="number"
+                          step="1"
+                          name="lactationCycleTotalLiters"
+                          value={formData.lactationCycleTotalLiters}
+                          onChange={(e) => handleTotalCycleChange(e.target.value)}
+                          placeholder="Ej. 4500"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:border-blue-500 min-h-[44px]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Promedio Litros / Ciclo
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          name="lactationCycleAvgLiters"
+                          value={formData.lactationCycleAvgLiters}
+                          onChange={handleChange}
+                          placeholder="Ej. 14.8"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-blue-600 dark:text-blue-400 font-extrabold focus:outline-none focus:border-blue-500 min-h-[44px]"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Checkbox Solo Cría (Solo Hembras) */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-500/20">
+                <input
+                  type="checkbox"
+                  id="isBreedingOnly"
+                  name="isBreedingOnly"
+                  checked={formData.isBreedingOnly}
+                  onChange={handleChange}
+                  className="w-5 h-5 rounded border-purple-400 text-purple-600 focus:ring-purple-500 cursor-pointer flex-shrink-0"
+                />
+                <label htmlFor="isBreedingOnly" className="text-xs sm:text-sm text-purple-950 dark:text-purple-100 font-medium cursor-pointer select-none">
+                  <span className="font-bold">¿Es hembra destinada solamente a cría / vientre reproductor?</span>
+                  <span className="block text-xs text-purple-800 dark:text-purple-300">
+                    Marca esta casilla si el animal está reservado exclusivamente para multiplicación y terneros.
+                  </span>
+                </label>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* SECCIÓN 3: Ingreso, Origen & Genealogía (Nacimientos / Compra) */}
         <div className="space-y-4">

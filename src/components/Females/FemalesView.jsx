@@ -9,27 +9,33 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
   const femaleCattle = cattle.filter(c => c.sex === 'Hembra' && c.status === 'Activo');
 
   // Clasificación por los 5 estados principales de hembra
+  const hasStatus = (c, statusName) => {
+    if (Array.isArray(c.femaleStatuses) && c.femaleStatuses.includes(statusName)) return true;
+    if (typeof c.femaleStatus === 'string' && c.femaleStatus.includes(statusName)) return true;
+    return false;
+  };
+
   const milkingFemales = femaleCattle.filter(c => 
-    c.femaleStatus === 'Producción de leche' || c.milkingStatus === 'En ordeño' || (parseFloat(c.dailyMilkLiters) > 0)
+    hasStatus(c, 'Producción de leche') || c.milkingStatus === 'En ordeño' || (parseFloat(c.dailyMilkLiters) > 0)
   );
   
   const pregnantFemales = femaleCattle.filter(c => 
-    c.femaleStatus === 'Gestación' || c.reproductiveStatus === 'Preñada' || c.reproductiveStatus === 'Gestación'
+    hasStatus(c, 'Gestación') || c.reproductiveStatus === 'Preñada' || c.reproductiveStatus === 'Gestación'
   );
   
   const calfRaisingFemales = femaleCattle.filter(c => 
-    c.femaleStatus === 'Levante de cría' || (c.isBreedingOnly && c.femaleStatus !== 'Producción de leche' && c.femaleStatus !== 'Gestación' && c.femaleStatus !== 'Ceba / Levante / Engorde')
+    hasStatus(c, 'Levante de cría') || (c.isBreedingOnly && !hasStatus(c, 'Producción de leche') && !hasStatus(c, 'Gestación') && !hasStatus(c, 'Ceba / Levante / Engorde'))
   );
 
   const fatteningFemales = femaleCattle.filter(c => 
-    c.femaleStatus === 'Ceba / Levante / Engorde' || 
+    hasStatus(c, 'Ceba / Levante / Engorde') || 
     c.femaleStatus === 'Ceba' || 
     c.femaleStatus === 'Engorde' ||
-    (c.productionType === 'Ceba' && c.femaleStatus !== 'Producción de leche' && c.femaleStatus !== 'Gestación' && c.femaleStatus !== 'Levante de cría')
+    (c.productionType === 'Ceba' && !hasStatus(c, 'Producción de leche') && !hasStatus(c, 'Gestación') && !hasStatus(c, 'Levante de cría'))
   );
   
   const openFemales = femaleCattle.filter(c => 
-    c.femaleStatus === 'Vacía' || (!c.femaleStatus && c.reproductiveStatus === 'Vacía' && c.milkingStatus !== 'En ordeño' && c.femaleStatus !== 'Ceba / Levante / Engorde' && c.productionType !== 'Ceba')
+    hasStatus(c, 'Vacía') || (!c.femaleStatus && !c.femaleStatuses?.length && c.reproductiveStatus === 'Vacía' && c.milkingStatus !== 'En ordeño' && !hasStatus(c, 'Ceba / Levante / Engorde') && c.productionType !== 'Ceba')
   );
 
   const totalMilkToday = milkingFemales.reduce((sum, c) => sum + (parseFloat(c.dailyMilkLiters) || 0), 0);
@@ -37,10 +43,10 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
 
   // Estadísticas de Ceba & Engorde de Hembras
   const fatteningWithMetrics = femaleCattle.filter(c => 
-    c.femaleStatus === 'Ceba / Levante / Engorde' || 
+    hasStatus(c, 'Ceba / Levante / Engorde') || 
     c.femaleStatus === 'Ceba' || 
     c.femaleStatus === 'Engorde' ||
-    (c.productionType === 'Ceba' && c.femaleStatus !== 'Producción de leche' && c.femaleStatus !== 'Gestación' && c.femaleStatus !== 'Levante de cría')
+    (c.productionType === 'Ceba' && !hasStatus(c, 'Producción de leche') && !hasStatus(c, 'Gestación') && !hasStatus(c, 'Levante de cría'))
   ).map(cow => {
     const animalWeighs = weighings.filter(w => String(w.cattleId) === String(cow.id));
     const wm = calculateWeightMetrics(cow, animalWeighs);
@@ -607,7 +613,7 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                         </span>
                       </td>
                       <td className="p-3">
-                        <FemaleStatusBadge status={femaleStatus} liters={cow.dailyMilkLiters} />
+                        <FemaleStatusBadge status={femaleStatus} statuses={cow.femaleStatuses} liters={cow.dailyMilkLiters} />
                       </td>
                       <td className="p-3">
                         <div className="font-semibold">{cow.color || cow.breed || 'Sin color'}</div>

@@ -45,7 +45,7 @@ export function StatusBadge({ status }) {
   }
 }
 
-export function FemaleStatusBadge({ status, liters, cycleAvg }) {
+function SingleFemaleStatusBadge({ status, liters }) {
   switch (status) {
     case 'Producción de leche':
       return (
@@ -67,6 +67,33 @@ export function FemaleStatusBadge({ status, liters, cycleAvg }) {
     default:
       return <Badge variant="default">{status || 'Hembra'}</Badge>;
   }
+}
+
+export function FemaleStatusBadge({ status, statuses, liters, cycleAvg }) {
+  let list = [];
+  if (Array.isArray(statuses) && statuses.length > 0) {
+    list = statuses;
+  } else if (Array.isArray(status) && status.length > 0) {
+    list = status;
+  } else if (typeof status === 'string' && status.includes(',')) {
+    list = status.split(',').map(s => s.trim()).filter(Boolean);
+  } else if (status) {
+    list = [status];
+  } else {
+    list = ['Vacía'];
+  }
+
+  if (list.length > 1) {
+    return (
+      <div className="flex flex-wrap gap-1 items-center">
+        {list.map((st, idx) => (
+          <SingleFemaleStatusBadge key={idx} status={st} liters={st === 'Producción de leche' ? liters : undefined} />
+        ))}
+      </div>
+    );
+  }
+
+  return <SingleFemaleStatusBadge status={list[0]} liters={liters} />;
 }
 
 export function ReproductiveBadge({ status, isPregnant, daysUntilCalving }) {

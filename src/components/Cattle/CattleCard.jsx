@@ -208,7 +208,7 @@ export function CattleCard({
           <Badge variant="default">{animal.sex === 'Macho' ? '🐂 Macho' : '🐄 Hembra'}</Badge>
           
           {animal.sex === 'Hembra' && (
-            <FemaleStatusBadge status={femaleStatus} liters={animal.dailyMilkLiters} />
+            <FemaleStatusBadge status={femaleStatus} statuses={animal.femaleStatuses} liters={animal.dailyMilkLiters} />
           )}
 
           {(animal.color || animal.breed) && <Badge variant="default">{animal.color || animal.breed}</Badge>}
