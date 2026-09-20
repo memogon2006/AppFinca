@@ -1,10 +1,18 @@
-export const CURRENT_APP_VERSION = "2.9.9";
-export const CURRENT_BUILD_TIME = 1789510000000;
+export const CURRENT_APP_VERSION = "2.10.0";
+export const CURRENT_BUILD_TIME = 1789520000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.10.0",
+    date: "19/09/2026",
+    title: "Optimización Analítica en Módulo de Lotes & Ingresos",
+    highlights: [
+      "Enfoque 100% Analítico en Lotes: Remoción del botón de ingreso de lote en la vista de Lotes & Ingresos para mantener la barra superior exclusivamente enfocada en análisis de rendimiento ('Comparativa Excel' y 'Exportar Todo')."
+    ]
+  },
   {
     version: "2.9.9",
     date: "19/09/2026",

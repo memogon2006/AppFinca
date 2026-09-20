@@ -550,25 +550,14 @@ export function BatchAnalyticsView({
             <span>{exportingExcel ? 'Generando Excel...' : '📊 Comparativa Excel'}</span>
           </button>
 
-          {onOpenBatchEntry && (
-            <button
-              onClick={onOpenBatchEntry}
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer min-h-[40px] whitespace-nowrap"
-              title="Registrar un nuevo lote completo con cálculo por kilo o precio fijo"
-            >
-              <PackagePlus className="w-4 h-4 shrink-0" />
-              <span>📦 Ingresar Lote</span>
-            </button>
-          )}
-
           {onOpenExportImport && (
             <button
               onClick={onOpenExportImport}
-              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 transition cursor-pointer min-h-[40px] whitespace-nowrap"
+              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 transition cursor-pointer min-h-[40px] whitespace-nowrap shadow-sm"
               title="Exportar Todos los Lotes a Excel"
             >
               <DownloadCloud className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className="hidden sm:inline">Exportar Todo</span>
+              <span>Exportar Todo</span>
             </button>
           )}
         </div>
