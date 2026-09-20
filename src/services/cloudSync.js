@@ -1,16 +1,22 @@
 import { db } from './db';
 
-const CLOUD_API_URL = 'https://api.restful-api.dev/objects';
-const REGISTRY_STORAGE_KEY = 'ganado_cloud_user_id_';
-const DATA_STORAGE_KEY = 'ganado_cloud_data_id_';
+const FIREBASE_URL = 'https://ganadera-plataforma-default-rtdb.firebaseio.com';
 
 /**
- * Guarda o actualiza el usuario en la Nube Global
+ * Normaliza y codifica el correo electrónico para ser una clave válida en Firebase Realtime Database
+ */
+export function toSafeEmailKey(email) {
+  if (!email) return '';
+  return encodeURIComponent(email.trim().toLowerCase()).replace(/\./g, '_dot_');
+}
+
+/**
+ * Guarda o actualiza el perfil del usuario en Firebase Realtime Database
  */
 export async function cloudSaveUser(user) {
   if (!user || !user.email) return false;
   const cleanEmail = (user.email || '').trim().toLowerCase();
-  const targetName = `bovino_usr_${cleanEmail}`;
+  const safeEmail = toSafeEmailKey(cleanEmail);
 
   const userPayload = {
     id: user.id,
@@ -23,250 +29,181 @@ export async function cloudSaveUser(user) {
   };
 
   try {
-    let cloudId = localStorage.getItem(REGISTRY_STORAGE_KEY + cleanEmail);
-
-    if (!cloudId) {
-      const listRes = await fetch(CLOUD_API_URL).catch(() => null);
-      if (listRes && listRes.ok) {
-        const list = await listRes.json();
-        if (Array.isArray(list)) {
-          const found = list.find(item => item.name === targetName);
-          if (found && found.id) {
-            cloudId = found.id;
-            localStorage.setItem(REGISTRY_STORAGE_KEY + cleanEmail, cloudId);
-          }
-        }
-      }
-    }
-
-    if (cloudId) {
-      const updateRes = await fetch(`${CLOUD_API_URL}/${cloudId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: targetName,
-          data: userPayload,
-        }),
-      }).catch(() => null);
-
-      if (updateRes && updateRes.ok) return true;
-    }
-
-    const createRes = await fetch(CLOUD_API_URL, {
-      method: 'POST',
+    const res = await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: targetName,
-        data: userPayload,
-      }),
+      body: JSON.stringify(userPayload),
     });
-
-    if (createRes.ok) {
-      const created = await createRes.json();
-      if (created && created.id) {
-        localStorage.setItem(REGISTRY_STORAGE_KEY + cleanEmail, created.id);
-        return true;
-      }
-    }
+    return res.ok;
   } catch (err) {
-    console.warn('Error en cloudSaveUser:', err);
+    console.warn('⚠️ Error en cloudSaveUser Firebase:', err);
+    return false;
   }
-
-  return false;
 }
 
 /**
- * Busca un usuario en la Nube Global
+ * Busca un usuario en Firebase Realtime Database por correo
  */
 export async function cloudFindUser(email) {
   if (!email) return null;
   const cleanEmail = (email || '').trim().toLowerCase();
-  const targetName = `bovino_usr_${cleanEmail}`;
+  const safeEmail = toSafeEmailKey(cleanEmail);
 
   try {
-    const res = await fetch(`${CLOUD_API_URL}?_t=${Date.now()}`);
+    const res = await fetch(`${FIREBASE_URL}/users/${safeEmail}.json?_t=${Date.now()}`);
     if (res.ok) {
-      const list = await res.json();
-      if (Array.isArray(list)) {
-        const found = list.find(item => item.name === targetName);
-        if (found && found.data && (found.data.email || '').toLowerCase() === cleanEmail) {
-          localStorage.setItem(REGISTRY_STORAGE_KEY + cleanEmail, found.id);
-          return found.data;
-        }
+      const data = await res.json();
+      if (data && (data.email || '').toLowerCase() === cleanEmail) {
+        return data;
       }
     }
   } catch (e) {
-    console.warn('Error en cloudFindUser:', e);
+    console.warn('⚠️ Error en cloudFindUser Firebase:', e);
   }
 
   return null;
 }
 
 /**
- * Sube a la nube el inventario completo de ganado, pesajes y vacunaciones del usuario
+ * Sube a Firebase el inventario completo de ganado, pesajes, vacunaciones, palpaciones y finanzas
  */
 export async function cloudPushData(userId) {
   if (!userId) return false;
-  const targetName = `bovino_dat_${userId}`;
 
   try {
     const cattle = await db.cattle.filter(c => c.userId === userId || !c.userId).toArray();
     const weighings = await db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
+    const expenses = db.expenses ? await db.expenses.filter(e => e.userId === userId || !e.userId).toArray() : [];
     const vaccinations = db.vaccinations ? await db.vaccinations.filter(v => v.userId === userId || !v.userId).toArray() : [];
     const audits = db.audits ? await db.audits.filter(a => a.userId === userId || !a.userId).toArray() : [];
     const palpations = db.palpations ? await db.palpations.filter(p => p.userId === userId || !p.userId).toArray() : [];
+    const paddocks = db.paddocks ? await db.paddocks.filter(p => p.userId === userId || !p.userId).toArray() : [];
+    const milkRecords = db.milkRecords ? await db.milkRecords.filter(m => m.userId === userId || !m.userId).toArray() : [];
+    const milkDeliveries = db.milkDeliveries ? await db.milkDeliveries.filter(m => m.userId === userId || !m.userId).toArray() : [];
+    const transactions = db.transactions ? await db.transactions.filter(t => t.userId === userId || !t.userId).toArray() : [];
 
     const payload = {
       userId,
       cattle,
       weighings,
+      expenses,
       vaccinations,
       audits,
       palpations,
+      paddocks,
+      milkRecords,
+      milkDeliveries,
+      transactions,
       syncedAt: new Date().toISOString(),
     };
 
-    let cloudDataId = localStorage.getItem(DATA_STORAGE_KEY + userId);
-
-    if (!cloudDataId) {
-      const listRes = await fetch(CLOUD_API_URL).catch(() => null);
-      if (listRes && listRes.ok) {
-        const list = await listRes.json();
-        if (Array.isArray(list)) {
-          const found = list.find(item => item.name === targetName);
-          if (found && found.id) {
-            cloudDataId = found.id;
-            localStorage.setItem(DATA_STORAGE_KEY + userId, cloudDataId);
-          }
-        }
-      }
-    }
-
-    if (cloudDataId) {
-      const updateRes = await fetch(`${CLOUD_API_URL}/${cloudDataId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: targetName,
-          data: payload,
-        }),
-      }).catch(() => null);
-
-      if (updateRes && updateRes.ok) return true;
-    }
-
-    const createRes = await fetch(CLOUD_API_URL, {
-      method: 'POST',
+    const res = await fetch(`${FIREBASE_URL}/userData/${userId}.json`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: targetName,
-        data: payload,
-      }),
+      body: JSON.stringify(payload),
     });
 
-    if (createRes.ok) {
-      const created = await createRes.json();
-      if (created && created.id) {
-        localStorage.setItem(DATA_STORAGE_KEY + userId, created.id);
-        return true;
-      }
-    }
+    return res.ok;
   } catch (e) {
-    console.warn('Error en cloudPushData:', e);
-  }
-
-  return false;
-}
-
-/**
- * Descarga el inventario, pesajes y vacunaciones del usuario desde la nube a este dispositivo
- */
-export async function cloudPullData(userId) {
-  if (!userId) return false;
-  const targetName = `bovino_dat_${userId}`;
-
-  try {
-    const res = await fetch(`${CLOUD_API_URL}?_t=${Date.now()}`);
-    if (res.ok) {
-      const list = await res.json();
-      if (Array.isArray(list)) {
-        const found = list.find(item => item.name === targetName);
-        if (found && found.data) {
-          const remoteData = found.data;
-          if (Array.isArray(remoteData.cattle)) {
-            for (const item of remoteData.cattle) {
-              await db.cattle.put({ ...item, userId });
-            }
-          }
-          if (Array.isArray(remoteData.weighings)) {
-            for (const item of remoteData.weighings) {
-              await db.weighings.put({ ...item, userId });
-            }
-          }
-          if (Array.isArray(remoteData.vaccinations) && db.vaccinations) {
-            for (const item of remoteData.vaccinations) {
-              await db.vaccinations.put({ ...item, userId });
-            }
-          }
-          if (Array.isArray(remoteData.audits) && db.audits) {
-            for (const item of remoteData.audits) {
-              await db.audits.put({ ...item, userId });
-            }
-          }
-          if (Array.isArray(remoteData.palpations) && db.palpations) {
-            for (const item of remoteData.palpations) {
-              await db.palpations.put({ ...item, userId });
-            }
-          }
-          localStorage.setItem(DATA_STORAGE_KEY + userId, found.id);
-          return true;
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('Error en cloudPullData:', e);
-  }
-
-  return false;
-}
-
-/**
- * Elimina completamente todos los registros del usuario en la nube
- */
-export async function cloudDeleteUserData(userId, email) {
-  try {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const userTarget = `bovino_usr_${cleanEmail}`;
-    const dataTarget = `bovino_dat_${userId}`;
-
-    const listRes = await fetch(`${CLOUD_API_URL}?_t=${Date.now()}`).catch(() => null);
-    if (listRes && listRes.ok) {
-      const list = await listRes.json();
-      if (Array.isArray(list)) {
-        const userObj = list.find(item => item.name === userTarget);
-        if (userObj && userObj.id) {
-          await fetch(`${CLOUD_API_URL}/${userObj.id}`, { method: 'DELETE' }).catch(() => null);
-        }
-
-        const dataObj = list.find(item => item.name === dataTarget);
-        if (dataObj && dataObj.id) {
-          await fetch(`${CLOUD_API_URL}/${dataObj.id}`, { method: 'DELETE' }).catch(() => null);
-        }
-      }
-    }
-
-    if (cleanEmail) localStorage.removeItem(REGISTRY_STORAGE_KEY + cleanEmail);
-    if (userId) localStorage.removeItem(DATA_STORAGE_KEY + userId);
-
-    return true;
-  } catch (err) {
-    console.warn('Error en cloudDeleteUserData:', err);
+    console.warn('⚠️ Error en cloudPushData Firebase:', e);
     return false;
   }
 }
 
 /**
- * Sincronización automática de todas las cuentas locales existentes hacia la nube
+ * Descarga el inventario, pesajes, vacunaciones y registros desde Firebase Realtime Database
+ */
+export async function cloudPullData(userId) {
+  if (!userId) return false;
+
+  try {
+    const res = await fetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`);
+    if (res.ok) {
+      const remoteData = await res.json();
+      if (remoteData && typeof remoteData === 'object') {
+        if (Array.isArray(remoteData.cattle)) {
+          for (const item of remoteData.cattle) {
+            await db.cattle.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.weighings)) {
+          for (const item of remoteData.weighings) {
+            await db.weighings.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.expenses) && db.expenses) {
+          for (const item of remoteData.expenses) {
+            await db.expenses.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.vaccinations) && db.vaccinations) {
+          for (const item of remoteData.vaccinations) {
+            await db.vaccinations.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.audits) && db.audits) {
+          for (const item of remoteData.audits) {
+            await db.audits.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.palpations) && db.palpations) {
+          for (const item of remoteData.palpations) {
+            await db.palpations.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.paddocks) && db.paddocks) {
+          for (const item of remoteData.paddocks) {
+            await db.paddocks.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.milkRecords) && db.milkRecords) {
+          for (const item of remoteData.milkRecords) {
+            await db.milkRecords.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.milkDeliveries) && db.milkDeliveries) {
+          for (const item of remoteData.milkDeliveries) {
+            await db.milkDeliveries.put({ ...item, userId });
+          }
+        }
+        if (Array.isArray(remoteData.transactions) && db.transactions) {
+          for (const item of remoteData.transactions) {
+            await db.transactions.put({ ...item, userId });
+          }
+        }
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Error en cloudPullData Firebase:', e);
+  }
+
+  return false;
+}
+
+/**
+ * Elimina completamente todos los registros del usuario en Firebase
+ */
+export async function cloudDeleteUserData(userId, email) {
+  try {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const safeEmail = toSafeEmailKey(cleanEmail);
+
+    if (safeEmail) {
+      await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+    if (userId) {
+      await fetch(`${FIREBASE_URL}/userData/${userId}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+    return true;
+  } catch (err) {
+    console.warn('⚠️ Error en cloudDeleteUserData Firebase:', err);
+    return false;
+  }
+}
+
+/**
+ * Sincronización automática de todas las cuentas locales existentes hacia Firebase
  */
 export async function syncAllLocalAccountsToCloud() {
   try {
@@ -276,7 +213,7 @@ export async function syncAllLocalAccountsToCloud() {
       await cloudPushData(u.id);
     }
   } catch (e) {
-    console.warn('Error en auto-sync de cuentas locales:', e);
+    console.warn('⚠️ Error en auto-sync de cuentas locales Firebase:', e);
   }
 }
 
@@ -289,6 +226,6 @@ export async function syncCloudAndLocal(userId) {
     await cloudPullData(userId);
     await cloudPushData(userId);
   } catch (e) {
-    console.warn('Error en syncCloudAndLocal:', e);
+    console.warn('⚠️ Error en syncCloudAndLocal Firebase:', e);
   }
 }

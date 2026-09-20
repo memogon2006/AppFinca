@@ -241,7 +241,7 @@ export async function loginUser({ email, password }) {
   }
 
   if (!user) {
-    throw new Error('No se encontró cuenta en este dispositivo. Pulsa la pestaña "Crear Cuenta" arriba e ingresa con los mismos datos de tu cuenta original para ingresar.');
+    throw new Error('No se encontró ninguna cuenta con este correo en la nube ni en este dispositivo. Por favor verifica tu correo o pulsa "Crear Cuenta" para registrarte.');
   }
 
   const inputHash = await hashPassword(cleanPassword);

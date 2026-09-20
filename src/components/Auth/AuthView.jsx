@@ -203,33 +203,25 @@ export function AuthView() {
             </button>
           </div>
 
-          {/* 💡 CONSEJO DE ACCESO MULTI-DISPOSITIVO & COPIA DE SEGURIDAD (Visible en Login y Registro) */}
-          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700/60 flex items-start gap-2.5 text-xs text-amber-950 dark:text-amber-200 mb-4 shadow-sm">
-            <span className="text-lg flex-shrink-0">💡</span>
+          {/* ☁️ CONEXIÓN EN LA NUBE ACTIVA & COPIA DE SEGURIDAD */}
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700/60 flex items-start gap-2.5 text-xs text-emerald-950 dark:text-emerald-200 mb-4 shadow-sm">
+            <span className="text-lg flex-shrink-0">☁️</span>
             <div className="space-y-1.5 w-full">
-              <p className="font-extrabold text-amber-900 dark:text-amber-300">
-                ¿Estás en un nuevo dispositivo o no te deja ingresar?
+              <p className="font-extrabold text-emerald-900 dark:text-emerald-300">
+                Sincronización en la Nube Activa (Multi-dispositivo)
               </p>
-              <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300/90">
-                Si el sistema no reconoce tu cuenta en este teléfono o navegador:
+              <p className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300/90">
+                Tu información de ganado, pesajes y finanzas se sincroniza en la nube. Inicia sesión con tu correo y contraseña desde cualquier dispositivo para ver toda tu finca.
               </p>
-              <div className="text-[11px] space-y-1 text-amber-900 dark:text-amber-200 font-medium">
-                <p>
-                  1. Pulsa la pestaña <strong className="underline font-bold">"Crear Cuenta"</strong> arriba y crea la cuenta con los <strong>mismos datos exactos</strong> (mismo correo, finca y contraseña).
-                </p>
-                <p>
-                  2. O si tienes tu <strong>archivo de copia de seguridad (.json)</strong>, cárgalo directamente abajo para restaurar todo tu ganado y datos de inmediato.
-                </p>
-              </div>
               
               <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-sm cursor-pointer transition active:scale-95"
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-sm cursor-pointer transition active:scale-95"
                 >
-                  <DownloadCloud className="w-3.5 h-3.5" />
-                  <span>📥 Cargar Archivo de Copia de Seguridad (.json)</span>
+                  <DownloadCloud className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>📥 Restaurar desde Copia de Seguridad (.json)</span>
                 </button>
               </div>
             </div>

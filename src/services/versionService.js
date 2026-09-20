@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.12.8";
-export const CURRENT_BUILD_TIME = 1789883000000;
+export const CURRENT_APP_VERSION = "2.12.9";
+export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.9",
+    date: "20/09/2026",
+    title: "Sincronización Multi-Dispositivo Permanente en Google Cloud (Firebase)",
+    highlights: [
+      "Autenticación Centralizada en la Nube: Inicia sesión con tu correo y contraseña desde cualquier celular, tablet o computador sin límites.",
+      "Sincronización Total Automática: Descarga inmediata de tu inventario de ganado, pesajes, vacunaciones, chequeos y finanzas en cualquier dispositivo nuevo.",
+      "Persistencia de Datos en Google Firebase Realtime Database: Cero límites de peticiones y disponibilidad 24/7 en tiempo real."
+    ]
+  },
   {
     version: "2.12.8",
     date: "19/09/2026",

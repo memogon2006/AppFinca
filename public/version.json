@@ -1,5 +1,5 @@
 {
-  "version": "2.12.8",
-  "buildTime": 1789883000000,
-  "description": "Blindaje de base de datos con operaciones idempotentes (bulkPut) contra ConstraintError."
+  "version": "2.12.9",
+  "buildTime": 1789948000000,
+  "description": "Sincronización multi-dispositivo permanente en la nube con Google Firebase Realtime Database."
 }
