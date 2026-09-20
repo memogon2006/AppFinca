@@ -18,7 +18,14 @@ import {
   Percent,
   Users,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Stethoscope,
+  ShieldCheck,
+  FileText,
+  Tag,
+  Sparkles,
+  ClipboardCheck,
+  HeartPulse
 } from 'lucide-react';
 
 export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
@@ -27,7 +34,15 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
-  const categories = ['Todos', 'Zootecnia & Pesos', 'Ceba & Venta', 'Finanzas & Negocios', 'Reproducción'];
+  const categories = [
+    'Todos', 
+    'Zootecnia & Pesos', 
+    'Ceba & Venta', 
+    'Reproducción & Palpación', 
+    'Sanidad & Censo ICA', 
+    'Manejo & Trazabilidad', 
+    'Finanzas & Negocios'
+  ];
 
   const glossaryItems = [
     {
@@ -57,6 +72,128 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
       benchmark: [
         { label: '🎯 ¡Listo para Venta!', value: 'Peso Actual ≥ 480 kg (Activa botón de liquidación)', color: 'text-emerald-600 dark:text-emerald-400' },
         { label: '📈 En Proceso de Ceba', value: 'Peso Actual < 480 kg (Muestra barra de progreso y fecha)', color: 'text-blue-600 dark:text-blue-400' },
+      ]
+    },
+    {
+      id: 'palpationFast',
+      title: 'Palpación Rápida & Diagnóstico Reproductivo',
+      icon: Stethoscope,
+      badge: 'Reproducción & Palpación',
+      color: 'purple',
+      formula: 'Tasa de Preñez = (Hembras Preñadas / Total Hembras Evaluadas en Jornada) × 100',
+      summary: 'Módulo ultrarrápido de manga y corral para registrar en un toque el diagnóstico ginecológico de hembras (Preñada, Vacía, Dudosa), registrar hallazgos clínicos de ovarios/útero (Cuerpo Lúteo, Feto Viable, Anestro, Quistes), condición corporal y evaluar la aptitud para I.A. o monta.',
+      example: '• Jornada de 30 vacas en manga: 24 preñadas, 5 vacías y 1 dudosa.\n• Tasa de preñez de la jornada: (24/30) × 100 = 80.0%.\n• Guarda borrador seguro en memoria local contra pérdidas de señal.',
+      benchmark: [
+        { label: '🤰 Preñada', value: 'Ingreso rápido de días/meses y cálculo en vivo de parto', color: 'text-amber-600 dark:text-amber-400' },
+        { label: '⚪ Vacía', value: 'Hallazgos de ovarios estáticos, folículos o aptitud IATF', color: 'text-slate-600 dark:text-slate-400' },
+        { label: '❓ Dudosa', value: 'Programación para rechequeo ginecológico en 30-45 días', color: 'text-sky-600 dark:text-sky-400' },
+      ]
+    },
+    {
+      id: 'gestationDays',
+      title: 'Días de Gestación Diagnosticados & Cálculo de Parto',
+      icon: Clock,
+      badge: 'Reproducción & Palpación',
+      color: 'amber',
+      formula: 'Fecha de Parto = Fecha de Jornada + (283 - Días de Preñez) | Días Faltantes = 283 - Días de Preñez',
+      summary: 'Sincroniza en tiempo real los días de preñez diagnosticados (1 a 8+ meses) con el período de gestación bovina (283 días), calculando la fecha exacta en que parirá la vaca y clasificando el nivel de alerta.',
+      example: '• Palpación el 20-Sep-2026: Vaca diagnosticada con 180 días de preñez (~6 meses).\n• Días faltantes: 283 - 180 = 103 días.\n• Fecha estimada de parto: 1-Ene-2027.',
+      benchmark: [
+        { label: '🚨 Parto Inminente', value: '≤ 10 días restantes (traslado a maternidad)', color: 'text-rose-600 dark:text-rose-400' },
+        { label: '⚠️ Próximo Parto', value: '≤ 30 días restantes (monitoreo preparto)', color: 'text-amber-600 dark:text-amber-400' },
+        { label: '🥛 Secado Requerido', value: '≤ 60 días restantes (suspender ordeño en lechería)', color: 'text-purple-600 dark:text-purple-400' },
+        { label: '🌱 Gestación Normal', value: '> 60 días restantes (pastoreo regular)', color: 'text-emerald-600 dark:text-emerald-400' },
+      ]
+    },
+    {
+      id: 'checkupHistory',
+      title: 'Intervalo Entre Chequeos & Proyección de Días',
+      icon: Sparkles,
+      badge: 'Reproducción & Palpación',
+      color: 'indigo',
+      formula: 'Días Transcurridos = Fecha Sesión - Fecha Chequeo Previo | Proyección = Días Previos + Días Transcurridos',
+      summary: 'Compara automáticamente el chequeo ginecológico actual con el histórico anterior de la vaca, mostrando cuántos días transcurrieron entre revisiones y permitiendo proyectar en 1 clic los días de gestación acumulados.',
+      example: '• Chequeo previo (1-Ago): Diagnosticada con 60 días de preñez.\n• Chequeo actual (15-Sep): Han transcurrido 45 días.\n• Botón inteligente: Proyecta automáticamente a ~105 días de preñez (60 + 45).',
+      benchmark: [
+        { label: 'Trazabilidad Ginecológica', value: 'Muestra CC anterior, evaluador y hallazgos previos en la tarjeta.', color: 'text-indigo-600 dark:text-indigo-400' }
+      ]
+    },
+    {
+      id: 'multiStatusFemales',
+      title: 'Multiselección de Estados Productivos en Hembras',
+      icon: Layers,
+      badge: 'Reproducción & Palpación',
+      color: 'teal',
+      formula: 'Coexistencia = [Producción de Leche] + [Gestación] o [Levante] + [Gestación]',
+      summary: 'Permite que una hembra tenga simultáneamente más de un estado productivo activo (por ejemplo, estar en ordeño diario y preñada al mismo tiempo, o novilla de levante preñada), abriendo los formularios de control pertinentes en una sola pantalla.',
+      example: '• Vaca #105: Seleccionada con "Producción de leche" + "Gestación (Preñada)".\n• El sistema despliega tanto el control de lactancia/leche como el módulo de gestación, parto estimado y alertas sin exclusiones artificiales.',
+      benchmark: [
+        { label: 'Regla Lógica', value: 'Alternancia automática entre Preñada y Vacía para evitar contradicciones clínicas.', color: 'text-teal-600 dark:text-teal-400' }
+      ]
+    },
+    {
+      id: 'sanitaryPlanICA',
+      title: 'Plan Sanitario FEDEGAN-ICA & Censo RUV',
+      icon: ShieldCheck,
+      badge: 'Sanidad & Censo ICA',
+      color: 'emerald',
+      formula: 'Censo ICA = Desglose de Hato en Categorías FEDEGAN (Vacas, Novillas, Terneras, Toros, Novillos, Terneros)',
+      summary: 'Módulo sanitario oficial adaptado a la normatividad colombiana del ICA. Permite programar ciclos de vacunación nacional (Fiebre Aftosa, Brucelosis Bovina C19 en terneras 3-9m y RB51 en adultas, Carbón, Rabia, Vitaminas y Antiparasitarios) y generar la planilla oficial para el RUV (Registro Único de Vacunación).',
+      example: '• Ciclos oficiales nacionales: Ciclo I (Mayo-Junio) y Ciclo II (Noviembre-Diciembre).\n• Alerta en tiempo real en el Calendario Ganadero con biológicos exigidos y estado de vacunación del predio.',
+      benchmark: [
+        { label: '📋 Censo Poblacional', value: 'Exporta reporte listo para brigadista y oficina local del ICA.', color: 'text-emerald-600 dark:text-emerald-400' }
+      ]
+    },
+    {
+      id: 'fieldAuditChecklist',
+      title: 'Arqueo de Inventario en Corral & Checklist de Manga',
+      icon: ClipboardCheck,
+      badge: 'Manejo & Trazabilidad',
+      color: 'blue',
+      formula: 'Balance = Cabezas Esperadas - Verificadas = Faltantes (+ Animales Extras No Registrados)',
+      summary: 'Herramienta de auditoría física para dedos en manga. Permite verificar la presencia física de cada bovino en el corral, registrar novedades clínicas rápidas (cojera, bichera, ojo malo, pérdida de arete, cría al pie), detectar animales de otros lotes y registrar animales extra.',
+      example: '• Lote de 50 novillos en manga: 48 verificados, 2 faltantes y 1 animal extra no registrado.\n• Genera balance instantáneo con botón directo para compartir alerta a vaqueros.',
+      benchmark: [
+        { label: 'Conexión con Báscula', value: 'Permite conectar el checklist con la Báscula Rápida para pesar y contar simultáneamente.', color: 'text-blue-600 dark:text-blue-400' }
+      ]
+    },
+    {
+      id: 'originTraceability',
+      title: 'Trazabilidad de Procedencia: Nacidos vs Comprados',
+      icon: Baby,
+      badge: 'Manejo & Trazabilidad',
+      color: 'emerald',
+      formula: 'Costo Entrada Cría Nacida = $0 COP | Genealogía = Madre (Vaca) + Padre (Toro / Pajilla IA)',
+      summary: 'Diferencia el ganado nacido en el predio (🌱 Nacido en Finca) del ganado comprado (🛒 Comprado), en compañía (🤝) o traslados (🔄). Asigna costo inicial de $0 a los nacimientos para calcular la rentabilidad real con base exclusiva en gastos operativos posteriores.',
+      example: '• Ternero nacido en la finca: Arete #25-6, Madre: Vaca #105, Padre: Toro Reproductor #12.\n• Costo inicial de compra: $0. Gastos de levante acumulados: $450.000 COP.\n• Rentabilidad calculada sobre los $450.000 invertidos.',
+      benchmark: [
+        { label: 'Flexibilidad de Lote', value: 'El número de lote no es obligatorio para nacimientos ni ganado de cría.', color: 'text-emerald-600 dark:text-emerald-400' }
+      ]
+    },
+    {
+      id: 'consecutiveControl',
+      title: 'Control de Consecutivos y Numeración de Predio',
+      icon: Tag,
+      badge: 'Manejo & Trazabilidad',
+      color: 'purple',
+      formula: 'Consecutivo Base = Número antes del separador (ej. "25-6" o "25/5" ➔ Consecutivo Principal = 25)',
+      summary: 'Audita la numeración de los aretes y marcas de la finca, sugiere automáticamente el siguiente número consecutivo y alerta preventivamente si se intenta registrar un número de arete duplicado en un animal activo del mismo hierro o dueño.',
+      example: '• Último consecutivo registrado: #48-6.\n• Siguiente sugerido por el sistema: #49-6.\n• Alerta inmediata si el arete #48-6 ya existe activo en la finca.',
+      benchmark: [
+        { label: 'Detección de Duplicados', value: 'Previene confusiones en manga entre animales activos con la misma chapa.', color: 'text-purple-600 dark:text-purple-400' }
+      ]
+    },
+    {
+      id: 'batchExpenseProration',
+      title: 'Prorrateo de Gastos Globales en Lotes de Ganado',
+      icon: DollarSign,
+      badge: 'Finanzas & Negocios',
+      color: 'amber',
+      formula: 'Gasto por Cabeza = Total Gastos Globales (Flete + Guías + Báscula + Comisión) ÷ Total Cabezas',
+      summary: 'Al ingresar un lote de ganado comprado, permite digitar los gastos globales del negocio (camión de transporte, pesaje en báscula pública, comisiones, vacunas de entrada y guías de movilización ICA) y los reparte automáticamente a partes iguales entre todos los animales.',
+      example: '• Compra de 20 novillos por $40.000.000 COP.\n• Flete de camión ($1.200.000) + Guía ICA y báscula ($200.000) = $1.400.000 en gastos globales.\n• Gasto prorrateado: $70.000 COP por novillo.\n• Costo real unitario de entrada: $2.070.000 COP por cabeza.',
+      benchmark: [
+        { label: 'Costo Real de Compra', value: 'Garantiza que la inversión inicial refleje todos los costos indirectos reales.', color: 'text-amber-600 dark:text-amber-400' }
       ]
     },
     {
@@ -90,7 +227,7 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
     },
     {
       id: 'roi',
-      title: 'ROI (Retorno sobre la Inversión)',
+      title: 'ROI (Retorno sobre la Inversión & Costo/Kg)',
       icon: DollarSign,
       badge: 'Finanzas & Negocios',
       color: 'amber',
@@ -116,7 +253,7 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
     },
     {
       id: 'biomass',
-      title: 'Biomasa Total del Hato',
+      title: 'Biomasa Total del Hato & Carga Animal',
       icon: Layers,
       badge: 'Zootecnia & Pesos',
       color: 'purple',
@@ -129,23 +266,23 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
     },
     {
       id: 'projectedProfit',
-      title: 'Utilidad Proyectada vs Utilidad Real',
+      title: 'Valoración Patrimonial & Utilidad Real Liquidada',
       icon: Percent,
       badge: 'Finanzas & Negocios',
       color: 'blue',
-      formula: 'Utilidad = Valor de Venta (o Valor Mercado) - Inversión Total',
-      summary: 'Distingue entre el valor patrimonial estimado del hato en pastoreo y el dinero líquido real cobrado tras la venta.',
-      example: '• Utilidad Proyectada: Simulación matemática de ganancia si vendieras hoy todos los animales a precio de mercado actual.\n• Utilidad Real: Ganancia neta y definitiva tras cerrar la venta formal en báscula y recibir el pago.',
+      formula: 'Patrimonio Ganadero = Suma Costos de Compra | Utilidad Real = Valor Venta - Inversión Total',
+      summary: 'Distingue entre el valor patrimonial de los animales presentes en la finca (calculado de forma conservadora sobre su costo inicial de compra) y la ganancia líquida real obtenida tras liquidar un lote en báscula.',
+      example: '• Valor Total de Ganado: Capital real invertido en animales que pastan en el predio.\n• Utilidad de Venta: Dinero neto recibido tras descontar costos de compra, fletes y gastos operativos.',
       benchmark: []
     },
     {
       id: 'gestation',
-      title: 'Ciclo Reproductivo y Días a Parto (283 Días)',
+      title: 'Gestación Bovina Estándar (283 Días)',
       icon: Baby,
-      badge: 'Reproducción',
+      badge: 'Reproducción & Palpación',
       color: 'rose',
       formula: 'Fecha Estimada Parto = Fecha de Servicio / Monta + 283 Días',
-      summary: 'La duración promedio de gestación en bovinos es de 283 días (9 meses y 10 días). El sistema emite alertas preventivas cuando faltan menos de 30 y 10 días para el parto.',
+      summary: 'La duración promedio de gestación en vacas y novillas es de 283 días (9 meses y 10 días). El sistema monitorea el avance y emite alertas automáticas para secado y traslado a maternidad.',
       example: 'Una vaca inseminada o montada el 1 de Enero tendrá su fecha estimada de parto alrededor del 11 de Octubre.',
       benchmark: [
         { label: 'Alerta Preparto', value: 'Permite trasladar la vaca a potrero de maternidad 20-30 días antes del parto.', color: 'text-rose-600 dark:text-rose-400' }

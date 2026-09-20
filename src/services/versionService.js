@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.6";
-export const CURRENT_BUILD_TIME = 1789881000000;
+export const CURRENT_APP_VERSION = "2.12.7";
+export const CURRENT_BUILD_TIME = 1789882000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.7",
+    date: "19/09/2026",
+    title: "Actualización Integral de Guía de Métricas & Glosario Ganadero",
+    highlights: [
+      "Nuevos Conceptos Reproductivos: Inclusión de fórmulas de palpación rápida, tasa de preñez, días de gestación, intervalos entre chequeos ginecológicos y multiselección de estados en hembras.",
+      "Sanidad Oficial & Censo ICA: Explicación de ciclos FEDEGAN-ICA, categorías poblacionales, RUV y biológicos obligatorios/preventivos.",
+      "Manejo, Arqueo & Trazabilidad: Guías de auditoría en corral, distinción nacidos vs comprados, costo $0 en crías y control de consecutivos.",
+      "Finanzas & Prorrateo de Lotes: Fórmulas de distribución de fletes, guías y gastos de compra por cabeza y valoración patrimonial."
+    ]
+  },
   {
     version: "2.12.6",
     date: "19/09/2026",
