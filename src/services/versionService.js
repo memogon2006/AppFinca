@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.9.6";
-export const CURRENT_BUILD_TIME = 1789480000000;
+export const CURRENT_APP_VERSION = "2.9.7";
+export const CURRENT_BUILD_TIME = 1789490000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.7",
+    date: "19/09/2026",
+    title: "Acceso Directo a Venta y Liquidación de Ganado en el Tablero Principal",
+    highlights: [
+      "Venta y Liquidación en el Banner Principal: Integración del botón '💰 Venta / Liquidar Lote' directamente en el panel superior del Dashboard.",
+      "Modalidad Flexible: Soporta liquidación de lotes enteros o selección individual con cálculo de venta directa (100% dueño) o en compañía (reparto 50/50 o personalizado), precios por kilo y pesos de salida.",
+      "Acceso Rápido en Módulo Financiero: Botón de liquidación rápida incorporado en la tarjeta de resumen financiero del tablero."
+    ]
+  },
   {
     version: "2.9.6",
     date: "18/09/2026",

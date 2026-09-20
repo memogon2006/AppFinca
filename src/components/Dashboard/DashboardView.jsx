@@ -49,7 +49,8 @@ export function DashboardView({
   onOpenCalendar,
   onOpenVaccinationModal,
   onOpenCensusModal,
-  onDeleteVaccination
+  onDeleteVaccination,
+  onOpenPartnershipModal
 }) {
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
@@ -154,6 +155,17 @@ export function DashboardView({
               >
                 <Syringe className="w-4 h-4 text-emerald-200" />
                 <span>+ Registrar Vacunación</span>
+              </button>
+            )}
+
+            {onOpenPartnershipModal && (
+              <button
+                onClick={onOpenPartnershipModal}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer active:scale-95"
+                title="Venta o liquidación de ganado: por lote completo o animal individual (venta directa o en compañía)"
+              >
+                <DollarSign className="w-4 h-4 text-slate-950" />
+                <span>💰 Venta / Liquidar Lote</span>
               </button>
             )}
 
@@ -424,7 +436,16 @@ export function DashboardView({
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Mantén los pesos actualizados para calcular las ganancias de peso diarias (GDP).</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+              {onOpenPartnershipModal && (
+                <button
+                  onClick={onOpenPartnershipModal}
+                  className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm cursor-pointer"
+                  title="Liquidar o vender ganado"
+                >
+                  💰 Liquidar / Venta
+                </button>
+              )}
               {onOpenGlossary && (
                 <button
                   onClick={onOpenGlossary}

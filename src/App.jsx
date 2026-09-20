@@ -807,6 +807,7 @@ export default function App() {
             onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
             onOpenCensusModal={() => setIsCensusModalOpen(true)}
             onDeleteVaccination={handleDeleteVaccination}
+            onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
           />
         )}
 
