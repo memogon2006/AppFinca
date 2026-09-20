@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.11.5";
-export const CURRENT_BUILD_TIME = 1789871000000;
+export const CURRENT_APP_VERSION = "2.12.0";
+export const CURRENT_BUILD_TIME = 1789874000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.0",
+    date: "19/09/2026",
+    title: "Módulo de Palpación Rápida & Diagnóstico Reproductivo de Hembras",
+    highlights: [
+      "Jornada Veterinaria de Manga y Corral: Nuevo módulo ultrarrápido (estilo Báscula y Checklist) exclusivo para hembras activas, optimizado para campo y trabajo táctil.",
+      "Diagnóstico Ágil de Preñez y Vacías: Registro en 1 toque de estado (Preñada, Vacía, Dudosa), botones rápidos de meses (1m a 8m), entrada libre de días y cálculo en vivo de fecha de parto y alertas.",
+      "Hallazgos Ginecológicos Clínicos: Registro de cuerno derecho/izquierdo, cuerpo lúteo (CL), feto viable, ovarios estáticos/anestro, quistes, aptitud para IA/monta y protocolos IATF.",
+      "Borrador Seguro & Reportes WhatsApp: Guardado automático en memoria local contra pérdidas de señal, reporte clínico instantáneo por WhatsApp al dueño o veterinario y sincronización total en la nube."
+    ]
+  },
   {
     version: "2.11.5",
     date: "19/09/2026",

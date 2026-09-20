@@ -45,6 +45,17 @@ db.version(5).stores({
   settings: 'key, userId'
 });
 
+db.version(6).stores({
+  users: 'id, email, username, farmName, name, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Solicitar al navegador almacenamiento permanente protegido
 export async function requestPersistentStorage() {
   if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
@@ -70,6 +81,7 @@ export async function clearAllData(userId) {
   const tables = [db.cattle, db.weighings, db.expenses];
   if (db.vaccinations) tables.push(db.vaccinations);
   if (db.audits) tables.push(db.audits);
+  if (db.palpations) tables.push(db.palpations);
   await db.transaction('rw', tables, async () => {
     await db.cattle.where('userId').equals(userId).delete();
     await db.weighings.where('userId').equals(userId).delete();
@@ -79,6 +91,9 @@ export async function clearAllData(userId) {
     }
     if (db.audits) {
       await db.audits.where('userId').equals(userId).delete();
+    }
+    if (db.palpations) {
+      await db.palpations.where('userId').equals(userId).delete();
     }
   });
 }

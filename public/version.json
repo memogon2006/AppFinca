@@ -1,5 +1,5 @@
 {
-  "version": "2.11.5",
-  "buildTime": 1789871000000,
-  "description": "Multiselección de estados productivos en hembras y diligenciamiento simultáneo de datos de gestación, ordeño y cría."
+  "version": "2.12.0",
+  "buildTime": 1789874000000,
+  "description": "Módulo de Palpación Rápida y Diagnóstico Reproductivo de Hembras (estilo Báscula y Checklist)."
 }

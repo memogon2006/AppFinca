@@ -10,6 +10,7 @@ import { CattleListView } from './components/Cattle/CattleListView';
 import { WeightsView } from './components/Weights/WeightsView';
 import { QuickWeighinView } from './components/Weights/QuickWeighinView';
 import { FemalesView } from './components/Females/FemalesView';
+import { QuickPalpationView } from './components/Females/QuickPalpationView';
 import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { FinancesView } from './components/Finances/FinancesView';
 import { CattleFormModal } from './components/Cattle/CattleFormModal';
@@ -175,6 +176,14 @@ export default function App() {
     () => {
       if (!userId) return [];
       return db.audits ? db.audits.filter(a => a.userId === userId || !a.userId).toArray() : [];
+    },
+    [userId]
+  ) || [];
+
+  const palpations = useLiveQuery(
+    () => {
+      if (!userId) return [];
+      return db.palpations ? db.palpations.filter(p => p.userId === userId || !p.userId).toArray() : [];
     },
     [userId]
   ) || [];
@@ -636,6 +645,134 @@ export default function App() {
     showToast('Registro de vacunación eliminado 🗑️');
   };
 
+  const handleSavePalpation = async (palpationData) => {
+    if (!userId) return;
+    const { animalId, tagNumber, date, diagnosis, pregnancyDays, serviceDate, expectedCalvingDate, findings, bodyCondition, veterinarian, method, notes, recheckDays } = palpationData;
+
+    const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
+    if (!animal) return;
+
+    let currentStatuses = Array.isArray(animal.femaleStatuses) ? [...animal.femaleStatuses] : (animal.femaleStatus ? [animal.femaleStatus] : ['Vacía']);
+
+    if (diagnosis === 'Preñada') {
+      currentStatuses = currentStatuses.filter(s => s !== 'Vacía');
+      if (!currentStatuses.includes('Gestación')) {
+        currentStatuses.push('Gestación');
+      }
+    } else if (diagnosis === 'Vacía') {
+      currentStatuses = currentStatuses.filter(s => s !== 'Gestación');
+      if (currentStatuses.length === 0 || (!currentStatuses.includes('Producción de leche') && !currentStatuses.includes('Levante de cría') && !currentStatuses.includes('Ceba / Levante / Engorde'))) {
+        if (!currentStatuses.includes('Vacía')) currentStatuses.push('Vacía');
+      }
+    }
+
+    const animalUpdates = {
+      femaleStatuses: currentStatuses,
+      femaleStatus: currentStatuses.join(', '),
+      reproductiveStatus: diagnosis === 'Preñada' ? 'Preñada' : 'Vacía',
+      pregnancyDays: diagnosis === 'Preñada' ? (parseInt(pregnancyDays) || 0) : 0,
+      serviceDate: diagnosis === 'Preñada' ? (serviceDate || '') : '',
+      expectedCalvingDate: diagnosis === 'Preñada' ? (expectedCalvingDate || '') : '',
+      lastPalpationDate: date,
+      lastPalpationDiagnosis: diagnosis,
+      lastPalpationFindings: findings,
+      bodyCondition: bodyCondition || animal.bodyCondition || '3.0',
+      lastPalpationVet: veterinarian || '',
+    };
+
+    await db.cattle.update(animal.id, animalUpdates);
+
+    if (db.palpations) {
+      const palpId = 'palp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      await db.palpations.add({
+        id: palpId,
+        cattleId: String(animal.id),
+        tagNumber: tagNumber || animal.tagNumber,
+        date,
+        diagnosis,
+        pregnancyDays: diagnosis === 'Preñada' ? (parseInt(pregnancyDays) || 0) : 0,
+        serviceDate: serviceDate || '',
+        expectedCalvingDate: expectedCalvingDate || '',
+        findings: findings || [],
+        bodyCondition: bodyCondition || '3.0',
+        veterinarian: veterinarian || '',
+        method: method || 'Palpación Rectal',
+        notes: notes || '',
+        recheckDays: recheckDays || '',
+        userId,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    cloudPushData(userId);
+    showToast(`Diagnóstico de ${animal.tagNumber} (${diagnosis}) guardado y sincronizado 🩺☁️`);
+  };
+
+  const handleSaveBatchPalpations = async (batchPalpations) => {
+    if (!userId || !batchPalpations || batchPalpations.length === 0) return;
+
+    for (const pData of batchPalpations) {
+      const { animalId, tagNumber, date, diagnosis, pregnancyDays, serviceDate, expectedCalvingDate, findings, bodyCondition, veterinarian, method, notes, recheckDays } = pData;
+      const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
+      if (!animal) continue;
+
+      let currentStatuses = Array.isArray(animal.femaleStatuses) ? [...animal.femaleStatuses] : (animal.femaleStatus ? [animal.femaleStatus] : ['Vacía']);
+
+      if (diagnosis === 'Preñada') {
+        currentStatuses = currentStatuses.filter(s => s !== 'Vacía');
+        if (!currentStatuses.includes('Gestación')) {
+          currentStatuses.push('Gestación');
+        }
+      } else if (diagnosis === 'Vacía') {
+        currentStatuses = currentStatuses.filter(s => s !== 'Gestación');
+        if (currentStatuses.length === 0 || (!currentStatuses.includes('Producción de leche') && !currentStatuses.includes('Levante de cría') && !currentStatuses.includes('Ceba / Levante / Engorde'))) {
+          if (!currentStatuses.includes('Vacía')) currentStatuses.push('Vacía');
+        }
+      }
+
+      const animalUpdates = {
+        femaleStatuses: currentStatuses,
+        femaleStatus: currentStatuses.join(', '),
+        reproductiveStatus: diagnosis === 'Preñada' ? 'Preñada' : 'Vacía',
+        pregnancyDays: diagnosis === 'Preñada' ? (parseInt(pregnancyDays) || 0) : 0,
+        serviceDate: diagnosis === 'Preñada' ? (serviceDate || '') : '',
+        expectedCalvingDate: diagnosis === 'Preñada' ? (expectedCalvingDate || '') : '',
+        lastPalpationDate: date,
+        lastPalpationDiagnosis: diagnosis,
+        lastPalpationFindings: findings,
+        bodyCondition: bodyCondition || animal.bodyCondition || '3.0',
+        lastPalpationVet: veterinarian || '',
+      };
+
+      await db.cattle.update(animal.id, animalUpdates);
+
+      if (db.palpations) {
+        const palpId = 'palp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        await db.palpations.add({
+          id: palpId,
+          cattleId: String(animal.id),
+          tagNumber: tagNumber || animal.tagNumber,
+          date,
+          diagnosis,
+          pregnancyDays: diagnosis === 'Preñada' ? (parseInt(pregnancyDays) || 0) : 0,
+          serviceDate: serviceDate || '',
+          expectedCalvingDate: expectedCalvingDate || '',
+          findings: findings || [],
+          bodyCondition: bodyCondition || '3.0',
+          veterinarian: veterinarian || '',
+          method: method || 'Palpación Rectal',
+          notes: notes || '',
+          recheckDays: recheckDays || '',
+          userId,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    cloudPushData(userId);
+    showToast(`¡Jornada de ${batchPalpations.length} diagnósticos guardada y sincronizada en la nube! 🩺☁️`, 'success');
+  };
+
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
@@ -875,12 +1012,26 @@ export default function App() {
           />
         )}
 
+        {currentView === 'palpation' && (
+          <QuickPalpationView
+            cattle={cattle}
+            palpations={palpations}
+            onSavePalpation={handleSavePalpation}
+            onSaveBatchPalpations={handleSaveBatchPalpations}
+            onSelectAnimal={handleSelectAnimal}
+            onNavigate={setCurrentView}
+            currentUser={currentUser}
+          />
+        )}
+
         {currentView === 'females' && (
           <FemalesView
             cattle={cattle}
             weighings={weighings}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
+            onNavigate={setCurrentView}
+            onOpenPalpation={() => setCurrentView('palpation')}
           />
         )}
 

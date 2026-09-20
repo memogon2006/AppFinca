@@ -18,7 +18,8 @@ import {
   Boxes,
   MessageCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Stethoscope
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +43,7 @@ export function Navbar({
     { id: 'dashboard', label: 'Tablero', shortLabel: 'Tablero', icon: LayoutDashboard },
     { id: 'cattle', label: 'Inventario', shortLabel: 'Ganado', icon: Layers },
     { id: 'batches', label: 'Lotes & Ingresos', shortLabel: 'Lotes', icon: Boxes },
+    { id: 'palpation', label: 'Palpación Rápida', shortLabel: 'Palpación', icon: Stethoscope },
     { id: 'weights', label: 'Control Pesos', shortLabel: 'Pesos', icon: Scale },
     { id: 'quickWeigh', label: 'Báscula Rápida', shortLabel: 'Báscula', icon: Zap },
     { id: 'finances', label: 'Ventas & Utilidades', shortLabel: 'Ventas', icon: DollarSign },
@@ -375,7 +377,7 @@ export function Navbar({
 
       {/* Mobile Bottom Navigation Bar (< md) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,6px)] shadow-lg">
-        <div className="grid grid-cols-6 h-15 sm:h-16 items-center px-1">
+        <div className="grid grid-cols-7 h-15 sm:h-16 items-center px-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -383,16 +385,16 @@ export function Navbar({
               <button
                 key={item.id}
                 onClick={() => handleNavigate(item.id)}
-                className={`flex flex-col items-center justify-center h-full py-1 text-[10px] font-bold transition-all ${
+                className={`flex flex-col items-center justify-center h-full py-1 text-[9px] font-bold transition-all ${
                   isActive
                     ? 'text-emerald-600 dark:text-emerald-400 font-black'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 <div className={`p-1 rounded-lg transition-colors ${isActive ? 'bg-emerald-100 dark:bg-emerald-500/20 shadow-sm' : ''}`}>
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                 </div>
-                <span className="truncate max-w-[52px] text-[10px] mt-0.5 leading-tight">{item.shortLabel}</span>
+                <span className="truncate max-w-[46px] text-[9px] mt-0.5 leading-tight">{item.shortLabel}</span>
               </button>
             );
           })}

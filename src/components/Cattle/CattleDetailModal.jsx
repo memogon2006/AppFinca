@@ -671,6 +671,39 @@ export function CattleDetailModal({
                       {animal.isBreedingOnly ? 'Sí (Vientre Reemplazo)' : 'No'}
                     </span>
                   </div>
+
+                  {animal.lastPalpationDate && (
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-purple-900 dark:text-purple-300 font-extrabold flex items-center gap-1">
+                          🩺 Última Palpación:
+                        </span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {formatDate(animal.lastPalpationDate)}
+                        </span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/60 text-[11px] space-y-0.5">
+                        <p className="font-bold text-purple-950 dark:text-purple-200">
+                          Diagnóstico: <span className="font-black">{animal.lastPalpationDiagnosis || animal.reproductiveStatus}</span>
+                        </p>
+                        {animal.lastPalpationVet && (
+                          <p className="text-slate-600 dark:text-slate-400">
+                            Evaluador: {animal.lastPalpationVet}
+                          </p>
+                        )}
+                        {animal.bodyCondition && (
+                          <p className="text-slate-600 dark:text-slate-400">
+                            Condición Corporal: CC {animal.bodyCondition}
+                          </p>
+                        )}
+                        {Array.isArray(animal.lastPalpationFindings) && animal.lastPalpationFindings.length > 0 && (
+                          <p className="text-slate-600 dark:text-slate-400">
+                            Hallazgos: {animal.lastPalpationFindings.join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

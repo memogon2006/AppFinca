@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { HeartHandshake, Milk, Sparkles, PlusCircle, Baby, Tag, CircleDot, Activity, TrendingUp, Scale, CheckCircle2 } from 'lucide-react';
+import { HeartHandshake, Milk, Sparkles, PlusCircle, Baby, Tag, CircleDot, Activity, TrendingUp, Scale, CheckCircle2, Stethoscope } from 'lucide-react';
 import { Badge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge } from '../Common/Badge';
 import { calculateReproduction, calculateMilkMetrics, calculateWeightMetrics, formatNumber, formatDate } from '../../services/calculations';
 
-export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpenNewAnimal }) {
+export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpenNewAnimal, onNavigate, onOpenPalpation }) {
   const [subTab, setSubTab] = useState('all');
 
   const femaleCattle = cattle.filter(c => c.sex === 'Hembra' && c.status === 'Activo');
@@ -57,6 +57,11 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
   const avgFatteningWeight = fatteningWithMetrics.length > 0 ? (totalFatteningWeight / fatteningWithMetrics.length).toFixed(1) : 0;
   const readyToSellFattening = fatteningWithMetrics.filter(item => item.currentWeight >= 480).length;
 
+  const handleLaunchPalpation = () => {
+    if (onOpenPalpation) onOpenPalpation();
+    else if (onNavigate) onNavigate('palpation');
+  };
+
   return (
     <div className="space-y-6">
       
@@ -72,13 +77,24 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
           </p>
         </div>
 
-        <button
-          onClick={onOpenNewAnimal}
-          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md transition self-start sm:self-auto min-h-[44px] cursor-pointer"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Registrar Hembra</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={handleLaunchPalpation}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-900/30 transition min-h-[44px] cursor-pointer"
+            title="Iniciar jornada de palpación y diagnóstico ginecológico en corral"
+          >
+            <Stethoscope className="w-4 h-4" />
+            <span>Palpación Rápida</span>
+          </button>
+
+          <button
+            onClick={onOpenNewAnimal}
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition min-h-[44px] cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>+ Hembra</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards de Estados de Hembras */}
