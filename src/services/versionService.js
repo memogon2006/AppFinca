@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.9.8";
-export const CURRENT_BUILD_TIME = 1789500000000;
+export const CURRENT_APP_VERSION = "2.9.9";
+export const CURRENT_BUILD_TIME = 1789510000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.9.9",
+    date: "19/09/2026",
+    title: "Restauración de Colores del Tablero & Limpieza del Módulo Inventario",
+    highlights: [
+      "Restauración de Colores del Banner: Regreso a la combinación visual original del tablero principal con sus emojis y contrastes familiares.",
+      "Optimización de Botones en Inventario: Eliminación de accesos secundarios redundantes e integración directa de '+ Nuevo Bovino' e 'Ingresar Lote' junto al selector de vista."
+    ]
+  },
   {
     version: "2.9.8",
     date: "19/09/2026",

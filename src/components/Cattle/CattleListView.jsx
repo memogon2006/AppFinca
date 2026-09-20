@@ -306,80 +306,8 @@ export function CattleListView({
           </span>
         </div>
 
-        {/* Botones de Acción a la Derecha */}
-        <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto overflow-x-auto no-scrollbar py-0.5 justify-start xl:justify-end shrink-0">
-          {/* Botón Censo Sanitario ICA */}
-          {onOpenCensusModal && (
-            <button
-              onClick={onOpenCensusModal}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-slate-300 dark:border-slate-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
-              title="Ver y exportar censo poblacional oficial ICA / FEDEGAN"
-            >
-              <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>📄 Censo ICA</span>
-            </button>
-          )}
-
-          {/* Botón Registrar Vacunación */}
-          {onOpenVaccinationModal && (
-            <button
-              onClick={onOpenVaccinationModal}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 sm:gap-1.5 shadow-sm shadow-emerald-600/30 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
-              title="Registrar vacunación o tratamiento sanitario"
-            >
-              <Syringe className="w-3.5 h-3.5 text-white shrink-0" />
-              <span>+ Vacunación</span>
-            </button>
-          )}
-
-          {/* Botón Liquidar Lote / Compañía */}
-          {onOpenPartnershipModal && (
-            <button
-              onClick={onOpenPartnershipModal}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-teal-300 dark:border-teal-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
-              title="Liquidar venta de varios animales en compañía (50/50)"
-            >
-              <Users className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-              <span>🤝 Liquidar Compañía</span>
-            </button>
-          )}
-
-          {/* Botón WhatsApp Report */}
-          {onOpenWhatsAppReport && (
-            <button
-              onClick={onOpenWhatsAppReport}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-emerald-300 dark:border-emerald-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
-              title="Generar y Enviar Reporte por WhatsApp con filtro por Dueño/Marca"
-            >
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>📲 WhatsApp</span>
-            </button>
-          )}
-
-          {/* Botón Arqueo / Checklist de Campo */}
-          {onOpenChecklist && (
-            <button
-              onClick={onOpenChecklist}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-amber-300 dark:border-amber-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
-              title="Arqueo y Censo Físico de Campo (Checklist en Manga / Corral)"
-            >
-              <ClipboardCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>📋 Arqueo</span>
-            </button>
-          )}
-
-          {/* Botón Glosario */}
-          {onOpenGlossary && (
-            <button
-              onClick={onOpenGlossary}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
-              title="Explicación de GDP, ROI, Biomasa y Fórmulas"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>Guía</span>
-            </button>
-          )}
-
+        {/* Botones de Acción a la Derecha: Ingresar Lote, + Individual y Selector de Vista */}
+        <div className="flex items-center gap-2 w-full xl:w-auto overflow-x-auto no-scrollbar py-0.5 justify-start xl:justify-end shrink-0">
           {/* Selector de modo Vista */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm shrink-0 min-h-[36px] sm:min-h-[38px]">
             <button
@@ -402,11 +330,23 @@ export function CattleListView({
           {onOpenBatchEntry && (
             <button
               onClick={onOpenBatchEntry}
-              className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
+              className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-teal-600/20 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
               title="Registrar un lote completo con cálculo por kilo o precio fijo"
             >
               <PackagePlus className="w-3.5 h-3.5 shrink-0" />
               <span>📦 Ingresar Lote</span>
+            </button>
+          )}
+
+          {/* Botón + Individual */}
+          {handleOpenNewAnimalSafe && (
+            <button
+              onClick={handleOpenNewAnimalSafe}
+              className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-emerald-600/30 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
+              title="Registrar un nuevo bovino individual"
+            >
+              <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>+ Nuevo Bovino</span>
             </button>
           )}
         </div>

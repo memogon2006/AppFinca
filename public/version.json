@@ -1,5 +1,5 @@
 {
-  "version": "2.9.8",
-  "buildTime": 1789500000000,
-  "description": "Armonización de colores semánticos y limpieza visual de botones en banner del Dashboard."
+  "version": "2.9.9",
+  "buildTime": 1789510000000,
+  "description": "Restauración de colores originales en el banner y botones de alta individual/lote en Inventario."
 }
