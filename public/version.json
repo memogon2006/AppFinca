@@ -1,5 +1,5 @@
 {
-  "version": "2.12.3",
-  "buildTime": 1789878000000,
-  "description": "Historial de chequeo anterior, días de preñez y días transcurridos entre chequeos en palpación."
+  "version": "2.12.4",
+  "buildTime": 1789879000000,
+  "description": "Limpieza de barra inferior en palpación: botón de WhatsApp exclusivo en panel superior."
 }

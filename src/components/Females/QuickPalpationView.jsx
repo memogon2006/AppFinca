@@ -1248,14 +1248,6 @@ export function QuickPalpationView({
           </button>
 
           <button
-            onClick={handleShareWhatsApp}
-            className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            <span>WhatsApp</span>
-          </button>
-
-          <button
             onClick={handleSaveAllBatch}
             disabled={savingBatch || stats.evaluated === 0}
             className="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-purple-950/60 transition cursor-pointer disabled:opacity-50"

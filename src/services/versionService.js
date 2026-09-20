@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.12.3";
-export const CURRENT_BUILD_TIME = 1789878000000;
+export const CURRENT_APP_VERSION = "2.12.4";
+export const CURRENT_BUILD_TIME = 1789879000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.4",
+    date: "19/09/2026",
+    title: "Limpieza de Barra Inferior: Reporte WhatsApp Exclusivo en Panel Superior",
+    highlights: [
+      "Barra Inferior Simplificada: Se removió el botón redundante de WhatsApp de la barra flotante inferior, dejando únicamente las acciones clave de campo ('Reiniciar' y 'Guardar Todo').",
+      "Ubicación Única de WhatsApp: El acceso al envío y generación de reportes ginecológicos por WhatsApp queda ubicado de forma exclusiva y destacada en el banner superior."
+    ]
+  },
   {
     version: "2.12.3",
     date: "19/09/2026",
