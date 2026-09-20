@@ -11,7 +11,6 @@ import {
   Save, 
   RotateCcw, 
   Printer, 
-  MessageCircle, 
   Share2, 
   Sparkles, 
   Baby, 
@@ -407,63 +406,6 @@ export function QuickPalpationView({
     });
   }, [femaleCattle, selectedBatch, subTab, searchTerm, diagnosesMap]);
 
-  // Generar reporte formateado para WhatsApp
-  const handleShareWhatsApp = () => {
-    const farmName = currentUser?.farmName || 'Finca Ganadera';
-    const evaluatedList = femaleCattle.filter(c => diagnosesMap[c.id]?.diagnosis);
-
-    let text = `🩺 *INFORME DE JORNADA DE PALPACIÓN & DIAGNÓSTICO REPRODUCTIVO*\n`;
-    text += `🏡 *Finca:* ${farmName}\n`;
-    text += `📅 *Fecha:* ${formatDate(sessionDate)}\n`;
-    text += `👨‍⚕️ *Veterinario:* ${vetName}\n`;
-    text += `🔬 *Método:* ${method}\n\n`;
-
-    text += `📊 *RESUMEN GENERAL:*\n`;
-    text += `• Total Hembras Evaluadas: *${stats.evaluated}* de ${stats.total}\n`;
-    text += `• 🤰 Preñadas: *${stats.pregnant}* (*${stats.pregRate}%* de preñez)\n`;
-    text += `  - 1 a 3 meses (≤90d): ${stats.m1_3}\n`;
-    text += `  - 4 a 6 meses (91-180d): ${stats.m4_6}\n`;
-    text += `  - 7 a 8+ meses (>180d): ${stats.m7_8}\n`;
-    text += `• ⚪ Vacías (Abiertas): *${stats.open}*\n`;
-    if (stats.doubt > 0) text += `• ❓ Dudosas / Rechequeo: *${stats.doubt}*\n`;
-    text += `\n━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `📋 *DETALLE POR HEMBRA:*\n`;
-
-    evaluatedList.forEach((c, idx) => {
-      const diag = diagnosesMap[c.id];
-      text += `\n*${idx + 1}. Vaca ${c.tagNumber}* ${c.name ? `(${c.name})` : ''}\n`;
-      text += `• Estado: *${diag.diagnosis === 'Preñada' ? `🤰 PREÑADA (${diag.pregnancyDays} días)` : diag.diagnosis === 'Vacía' ? '⚪ VACÍA' : '❓ DUDOSA'}*\n`;
-      
-      if (diag.diagnosis === 'Preñada') {
-        const calc = getCalculatedCalving(diag.pregnancyDays, sessionDate);
-        if (calc) {
-          text += `• Parto Estimado: *${formatDate(calc.expectedCalvingDate)}* (en ~${calc.remainingDays} días)\n`;
-        }
-      }
-      
-      if (diag.findings && diag.findings.length > 0) {
-        const labels = diag.findings.map(fId => {
-          const item = [...PREGNANT_FINDINGS, ...OPEN_FINDINGS].find(item => item.id === fId);
-          return item ? item.label : fId;
-        });
-        text += `• Hallazgos: ${labels.join(', ')}\n`;
-      }
-      
-      if (diag.bodyCondition) {
-        text += `• Condición Corporal: CC ${diag.bodyCondition}\n`;
-      }
-      
-      if (diag.notes) {
-        text += `• Obs/Tratamiento: ${diag.notes}\n`;
-      }
-    });
-
-    text += `\n_Generado automáticamente desde Inventario Ganadero Pro._`;
-
-    const encoded = encodeURIComponent(text);
-    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
-  };
-
   return (
     <div className="space-y-5 animate-fade-in">
       
@@ -502,15 +444,6 @@ export function QuickPalpationView({
                 <span className="hidden sm:inline">Volver a Hembras</span>
               </button>
             )}
-
-            <button
-              onClick={handleShareWhatsApp}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition cursor-pointer"
-              title="Compartir informe clínico de la jornada por WhatsApp"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>Reporte WhatsApp</span>
-            </button>
 
             <button
               onClick={handleSaveAllBatch}

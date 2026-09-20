@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.12.5";
-export const CURRENT_BUILD_TIME = 1789880000000;
+export const CURRENT_APP_VERSION = "2.12.6";
+export const CURRENT_BUILD_TIME = 1789881000000;
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.6",
+    date: "19/09/2026",
+    title: "Retiro Total del Botón de WhatsApp en la Vista de Palpación",
+    highlights: [
+      "Eliminación de WhatsApp en Palpación: Se removió el botón 'Reporte WhatsApp' del encabezado superior de la jornada de palpación para mantener la cabecera limpia y enfocada en 'Guardar Todo' y 'Reiniciar Jornada'.",
+      "Consistencia de Interfaz: Interfaz despejada y directa para el trabajo en manga y corral."
+    ]
+  },
   {
     version: "2.12.5",
     date: "19/09/2026",

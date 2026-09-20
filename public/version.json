@@ -1,5 +1,5 @@
 {
-  "version": "2.12.5",
-  "buildTime": 1789880000000,
-  "description": "Estabilización de arranque, ErrorBoundary y Service Worker Network-First."
+  "version": "2.12.6",
+  "buildTime": 1789881000000,
+  "description": "Retiro total del botón de WhatsApp en la vista de palpación."
 }
