@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.17";
+export const CURRENT_APP_VERSION = "2.12.18";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.18",
+    date: "20/09/2026",
+    title: "Sincronización Multi-Dispositivo Perfeccionada & Cero Conflictos",
+    highlights: [
+      "Normalización Universal de Firebase: Detección precisa de listas vacías, objetos indexados y arrays nativos para reconciliación exacta.",
+      "Eliminaciones Espejadas al 100%: Si eliminas un bovino en tu celular o en una ventana, se borra de inmediato en todas las demás pestañas y dispositivos sin resucitar.",
+      "Sincronización PULL Exclusiva: Las descargas en segundo plano no sobrescriben datos de otros dispositivos.",
+      "Sondeo Ultra Reactivo: Detección automática en 10s y al enfocar la pantalla."
+    ]
+  },
   {
     version: "2.12.17",
     date: "20/09/2026",

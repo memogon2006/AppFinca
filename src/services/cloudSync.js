@@ -112,17 +112,31 @@ export async function cloudPushData(userId) {
 }
 
 /**
+ * Normaliza cualquier valor recibido de Firebase a un array seguro
+ * (Soporta arrays nativos, objetos indexados {0:..., 1:...}, null y undefined)
+ */
+function normalizeRemoteList(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === 'object') return Object.values(val).filter(Boolean);
+  return [];
+}
+
+/**
  * Reconcilia y sincroniza una tabla local con la versión remota de Firebase
  * (Añade, actualiza y elimina automáticamente para reflejar cambios de otros dispositivos)
  */
-async function reconcileCollection(tableName, remoteList, userId) {
-  if (!db[tableName] || !Array.isArray(remoteList)) return;
+async function reconcileCollection(tableName, rawRemoteData, userId) {
+  if (!db[tableName]) return;
 
+  const remoteList = normalizeRemoteList(rawRemoteData);
   const remoteIds = new Set(remoteList.map(item => String(item.id)));
 
   // 1. Guardar o actualizar todos los registros recibidos de la nube
   for (const item of remoteList) {
-    await db[tableName].put({ ...item, userId });
+    if (item && item.id) {
+      await db[tableName].put({ ...item, userId });
+    }
   }
 
   // 2. Eliminar registros locales que ya no existen en la nube (fueron borrados en otro celular/computador)
@@ -164,9 +178,8 @@ export async function cloudPullData(userId) {
         ];
 
         for (const col of collections) {
-          if (Array.isArray(remoteData[col])) {
-            await reconcileCollection(col, remoteData[col], userId);
-          }
+          // Reconciliar siempre para asegurar que eliminaciones remotas se reflejen en local
+          await reconcileCollection(col, remoteData[col], userId);
         }
 
         return true;
@@ -227,7 +240,7 @@ export async function cloudDeleteUserData(userId, email) {
 
 
 /**
- * Sincronización bidireccional automática (Pull + Push)
+ * Sincronización automática de descarga desde la nube
  */
 export async function syncCloudAndLocal(userId) {
   if (!userId) return;
@@ -236,12 +249,12 @@ export async function syncCloudAndLocal(userId) {
     if (localUser && localUser.email && navigator.onLine) {
       const remoteUser = await cloudFindUser(localUser.email);
       if (!remoteUser) {
-        // Si la cuenta no existe en la nube, no empujar datos a Firebase
+        // Si la cuenta no existe en la nube, no descargar ni continuar
         return;
       }
     }
+    // Solo descargar y reconciliar (las subidas solo ocurren cuando el usuario crea/edita/borra en este dispositivo)
     await cloudPullData(userId);
-    await cloudPushData(userId);
   } catch (e) {
     console.warn('⚠️ Error en syncCloudAndLocal Firebase:', e);
   }
