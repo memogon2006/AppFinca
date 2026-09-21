@@ -84,6 +84,7 @@ export async function cloudPushData(userId) {
     const milkDeliveries = db.milkDeliveries ? await db.milkDeliveries.filter(isTarget).toArray() : [];
     const transactions = db.transactions ? await db.transactions.filter(isTarget).toArray() : [];
     const activityLogs = db.activityLogs ? await db.activityLogs.filter(isTarget).toArray() : [];
+    const calendarNotes = db.calendarNotes ? await db.calendarNotes.filter(isTarget).toArray() : [];
 
     const payload = {
       userId,
@@ -98,6 +99,7 @@ export async function cloudPushData(userId) {
       milkDeliveries,
       transactions,
       activityLogs,
+      calendarNotes,
       syncedAt: new Date().toISOString(),
     };
 
@@ -181,7 +183,8 @@ export async function cloudPullData(userId) {
           'milkRecords',
           'milkDeliveries',
           'transactions',
-          'activityLogs'
+          'activityLogs',
+          'calendarNotes'
         ];
 
         for (const col of collections) {

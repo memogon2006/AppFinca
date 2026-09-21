@@ -40,6 +40,7 @@ export function DashboardView({
   weighings = [], 
   vaccinations = [],
   audits = [],
+  calendarNotes = [],
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -347,6 +348,7 @@ export function DashboardView({
         cattle={cattle}
         weighings={weighings}
         vaccinations={vaccinations}
+        notes={calendarNotes}
         onOpenCalendar={onOpenCalendar}
       />
 

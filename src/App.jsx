@@ -229,6 +229,14 @@ export default function App() {
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
 
+  const calendarNotes = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.calendarNotes ? db.calendarNotes.filter(n => !n.userId || allowedUserIds.has(n.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
   // Auto-reparación y optimización de datos de pesajes al cargar
   useEffect(() => {
     if (!userId || cattle.length === 0 || weighings.length === 0) return;
@@ -986,6 +994,65 @@ export default function App() {
     showToast(`¡Jornada de ${batchPalpations.length} diagnósticos guardada y sincronizada en la nube! 🩺☁️`, 'success');
   };
 
+  const handleSaveCalendarNote = async (noteData) => {
+    if (!userId) return;
+    const noteId = noteData.id || ('cn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+    const record = {
+      ...noteData,
+      id: noteId,
+      userId,
+      createdAt: noteData.createdAt || new Date().toISOString()
+    };
+    if (db.calendarNotes) {
+      await db.calendarNotes.put(record);
+    }
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'calendar_note_created',
+      description: `Agregó recordatorio/tarea en agenda: "${noteData.title}" para el día ${noteData.date}`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('success');
+    showToast(`Recordatorio "${noteData.title}" guardado y sincronizado 📅☁️`);
+  };
+
+  const handleToggleCalendarNote = async (noteId) => {
+    if (!userId || !db.calendarNotes) return;
+    const note = await db.calendarNotes.get(noteId) || await db.calendarNotes.get(Number(noteId));
+    if (note) {
+      const updated = { ...note, completed: !note.completed };
+      await db.calendarNotes.put(updated);
+      cloudPushData(userId);
+      triggerFeedback('click');
+    }
+  };
+
+  const handleDeleteCalendarNote = async (noteId) => {
+    if (!userId || !db.calendarNotes) return;
+    const note = await db.calendarNotes.get(noteId) || await db.calendarNotes.get(Number(noteId));
+    await db.calendarNotes.delete(note ? note.id : noteId);
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'calendar_note_deleted',
+      description: `Eliminó recordatorio de agenda: "${note?.title || 'Tarea'}"`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Recordatorio eliminado del calendario 🗑️');
+  };
+
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
@@ -1146,6 +1213,7 @@ export default function App() {
             weighings={weighings}
             vaccinations={vaccinations}
             audits={audits}
+            calendarNotes={calendarNotes}
             onNavigate={setCurrentView}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
@@ -1387,6 +1455,10 @@ export default function App() {
         cattle={cattle}
         weighings={weighings}
         vaccinations={vaccinations}
+        notes={calendarNotes}
+        onSaveNote={handleSaveCalendarNote}
+        onToggleNote={handleToggleCalendarNote}
+        onDeleteNote={handleDeleteCalendarNote}
         onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
         zIndex="z-[60]"
       />

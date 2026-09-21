@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.13.9";
+export const CURRENT_APP_VERSION = "2.14.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.0",
+    date: "21/09/2026",
+    title: "Sincronización en Tiempo Real de Alertas y Agenda/Calendario Ganadero",
+    highlights: [
+      "Sincronización Total de Alertas: Todas las alertas ganaderas (partos próximos, machos listos para venta ≥480 kg, chequeos reproductivos post-servicio, posibles identificaciones duplicadas y ciclos oficiales ICA) se reflejan idénticamente en las cuentas de trabajadores y administrador.",
+      "Agenda & Notas de Calendario en Tiempo Real: Las tareas, recordatorios de corral y notas de manejo creadas en el calendario se almacenan en base de datos y se sincronizan instantáneamente a través de Google Cloud Firebase en todos los dispositivos.",
+      "Visualización Reactiva en Tablero: El widget de calendario y la agenda del día muestran en vivo todas las notas y tareas agregadas tanto por el patrón como por los vaqueros.",
+      "Auditoría y Respaldo Completo: Inclusión de recordatorios y tareas en la bitácora de auditoría y en las copias de seguridad descargables en JSON."
+    ]
+  },
   {
     version: "2.13.9",
     date: "21/09/2026",

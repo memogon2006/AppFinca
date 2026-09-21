@@ -43,6 +43,10 @@ export function FarmCalendarModal({
   cattle = [],
   weighings = [],
   vaccinations = [],
+  notes: propNotes,
+  onSaveNote,
+  onToggleNote,
+  onDeleteNote,
   onOpenVaccinationModal,
   zIndex = 'z-[60]'
 }) {
@@ -69,8 +73,8 @@ export function FarmCalendarModal({
 
   const [selectedDateStr, setSelectedDateStr] = useState(todayStr);
 
-  // Notas / Recordatorios de la finca (persistencia en localStorage)
-  const [notes, setNotes] = useState(() => {
+  // Notas / Recordatorios locales (fallback si no se pasan props)
+  const [localNotes, setLocalNotes] = useState(() => {
     try {
       const saved = localStorage.getItem('ganado_farm_calendar_notes');
       return saved ? JSON.parse(saved) : [];
@@ -79,8 +83,10 @@ export function FarmCalendarModal({
     }
   });
 
+  const notes = propNotes !== undefined ? propNotes : localNotes;
+
   const saveNotes = (updated) => {
-    setNotes(updated);
+    setLocalNotes(updated);
     try {
       localStorage.setItem('ganado_farm_calendar_notes', JSON.stringify(updated));
     } catch (e) {
@@ -332,7 +338,7 @@ export function FarmCalendarModal({
     e.preventDefault();
     if (!newNoteTitle.trim()) return;
 
-    const newNote = {
+    const notePayload = {
       id: Date.now(),
       date: selectedDateStr,
       title: newNoteTitle.trim(),
@@ -341,25 +347,37 @@ export function FarmCalendarModal({
       createdAt: new Date().toISOString()
     };
 
-    saveNotes([...notes, newNote]);
+    if (onSaveNote) {
+      onSaveNote(notePayload);
+    } else {
+      saveNotes([...notes, notePayload]);
+      triggerFeedback('success');
+    }
     setNewNoteTitle('');
     setShowAddNote(false);
-    triggerFeedback('success');
   };
 
   // Alternar estado de completado de una nota
   const handleToggleNoteComplete = (noteId) => {
-    const updated = notes.map(n => n.id === noteId ? { ...n, completed: !n.completed } : n);
-    saveNotes(updated);
-    triggerFeedback('click');
+    if (onToggleNote) {
+      onToggleNote(noteId);
+    } else {
+      const updated = notes.map(n => n.id === noteId ? { ...n, completed: !n.completed } : n);
+      saveNotes(updated);
+      triggerFeedback('click');
+    }
   };
 
   // Eliminar una nota
   const handleDeleteNote = (noteId) => {
     if (window.confirm('¿Deseas eliminar este recordatorio?')) {
-      const updated = notes.filter(n => n.id !== noteId);
-      saveNotes(updated);
-      triggerFeedback('danger');
+      if (onDeleteNote) {
+        onDeleteNote(noteId);
+      } else {
+        const updated = notes.filter(n => n.id !== noteId);
+        saveNotes(updated);
+        triggerFeedback('danger');
+      }
     }
   };
 

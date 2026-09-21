@@ -22,6 +22,7 @@ export function FarmCalendarWidget({
   cattle = [],
   weighings = [],
   vaccinations = [],
+  notes: propNotes,
   onOpenCalendar
 }) {
   const [now, setNow] = useState(new Date());
@@ -38,15 +39,16 @@ export function FarmCalendarWidget({
     return `${y}-${m}-${d}`;
   }, [now]);
 
-  // Farm notes from localStorage
-  const [notes] = useState(() => {
+  // Farm notes (prop or fallback to localStorage)
+  const notes = useMemo(() => {
+    if (propNotes !== undefined) return propNotes;
     try {
       const saved = localStorage.getItem('ganado_farm_calendar_notes');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
-  });
+  }, [propNotes]);
 
   // Calculate events for today and this month
   const eventsByDate = useMemo(() => {

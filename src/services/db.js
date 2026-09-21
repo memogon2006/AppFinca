@@ -103,6 +103,19 @@ db.version(10).stores({
   settings: 'key, userId'
 });
 
+db.version(11).stores({
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  calendarNotes: '++id, date, title, category, completed, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Registrar una acción en la bitácora de auditoría
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {
@@ -188,6 +201,30 @@ export async function requestPersistentStorage() {
 // Inicialización de la base de datos segura
 export async function initializeDatabase() {
   await requestPersistentStorage();
+  try {
+    if (typeof localStorage !== 'undefined' && db.calendarNotes) {
+      const rawLegacy = localStorage.getItem('ganado_farm_calendar_notes');
+      if (rawLegacy) {
+        const parsed = JSON.parse(rawLegacy);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const count = await db.calendarNotes.count();
+          if (count === 0) {
+            for (const item of parsed) {
+              if (item && item.title) {
+                await db.calendarNotes.put({
+                  ...item,
+                  userId: item.userId || 'default',
+                  createdAt: item.createdAt || new Date().toISOString()
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Error migrando notas de calendario a IndexedDB:', e);
+  }
 }
 
 // Limpiar todos los inventarios del usuario activo
@@ -198,6 +235,7 @@ export async function clearAllData(userId) {
   if (db.audits) tables.push(db.audits);
   if (db.palpations) tables.push(db.palpations);
   if (db.activityLogs) tables.push(db.activityLogs);
+  if (db.calendarNotes) tables.push(db.calendarNotes);
   await db.transaction('rw', tables, async () => {
     await db.cattle.where('userId').equals(userId).delete();
     await db.weighings.where('userId').equals(userId).delete();
@@ -213,6 +251,9 @@ export async function clearAllData(userId) {
     }
     if (db.activityLogs) {
       await db.activityLogs.where('userId').equals(userId).delete();
+    }
+    if (db.calendarNotes) {
+      await db.calendarNotes.where('userId').equals(userId).delete();
     }
   });
 }
@@ -353,6 +394,7 @@ export async function exportBackupData(userId, userDetails = {}) {
   let palpations = [];
   let audits = [];
   let activityLogs = [];
+  let calendarNotes = [];
 
   if (userId) {
     cattle = await db.cattle.where('userId').equals(userId).toArray();
@@ -370,6 +412,9 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.activityLogs) {
       activityLogs = await db.activityLogs.where('userId').equals(userId).toArray();
     }
+    if (db.calendarNotes) {
+      calendarNotes = await db.calendarNotes.where('userId').equals(userId).toArray();
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
@@ -378,6 +423,7 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.palpations) palpations = await db.palpations.toArray();
     if (db.audits) audits = await db.audits.toArray();
     if (db.activityLogs) activityLogs = await db.activityLogs.toArray();
+    if (db.calendarNotes) calendarNotes = await db.calendarNotes.toArray();
   }
 
   const backup = {
@@ -394,6 +440,7 @@ export async function exportBackupData(userId, userDetails = {}) {
     palpations,
     audits,
     activityLogs,
+    calendarNotes,
   };
 
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
@@ -419,6 +466,7 @@ export async function importBackupData(jsonData, userId) {
     if (db.palpations) tables.push(db.palpations);
     if (db.audits) tables.push(db.audits);
     if (db.activityLogs) tables.push(db.activityLogs);
+    if (db.calendarNotes) tables.push(db.calendarNotes);
 
     await db.transaction('rw', tables, async () => {
       if (userId) {
@@ -429,6 +477,7 @@ export async function importBackupData(jsonData, userId) {
         if (db.palpations) await db.palpations.where('userId').equals(userId).delete();
         if (db.audits) await db.audits.where('userId').equals(userId).delete();
         if (db.activityLogs) await db.activityLogs.where('userId').equals(userId).delete();
+        if (db.calendarNotes) await db.calendarNotes.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
@@ -437,6 +486,7 @@ export async function importBackupData(jsonData, userId) {
         if (db.palpations) await db.palpations.clear();
         if (db.audits) await db.audits.clear();
         if (db.activityLogs) await db.activityLogs.clear();
+        if (db.calendarNotes) await db.calendarNotes.clear();
       }
 
       if (data.cattle?.length) {
@@ -488,6 +538,13 @@ export async function importBackupData(jsonData, userId) {
           userId: userId || l.userId || 'default',
         }));
         await db.activityLogs.bulkPut(cleanedL);
+      }
+      if (data.calendarNotes?.length && db.calendarNotes) {
+        const cleanedCN = data.calendarNotes.map(n => ({
+          ...n,
+          userId: userId || n.userId || 'default',
+        }));
+        await db.calendarNotes.bulkPut(cleanedCN);
       }
     });
 
