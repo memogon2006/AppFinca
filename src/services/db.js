@@ -56,6 +56,17 @@ db.version(6).stores({
   settings: 'key, userId'
 });
 
+db.version(7).stores({
+  users: 'id, &email, username, farmName, name, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Solicitar al navegador almacenamiento permanente protegido
 export async function requestPersistentStorage() {
   if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {

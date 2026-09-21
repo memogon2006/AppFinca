@@ -133,37 +133,21 @@ export async function registerUser({ name, farmName, email, password }) {
   if (!cleanEmail) throw new Error('Por favor ingresa un correo o nombre de usuario.');
   if (!cleanPassword || cleanPassword.length < 4) throw new Error('La contraseña debe tener al menos 4 caracteres.');
 
-  const passwordHash = await hashPassword(cleanPassword);
-
-  // 1. Verificar si ya existe localmente
+  // 1. Validar si ya existe localmente (1 sola cuenta por correo)
   const allUsers = await db.users.toArray();
   let existing = allUsers.find(u => (u.email || '').toLowerCase() === cleanEmail);
 
   if (existing) {
-    if (existing.passwordHash === passwordHash) {
-      return loginUser({ email: cleanEmail, password: cleanPassword });
-    } else {
-      throw new Error('Ya existe una cuenta registrada con este correo en este equipo. Si es tuya, pulsa "Iniciar Sesión" o verifica tu contraseña.');
-    }
+    throw new Error(`El correo "${cleanEmail}" ya se encuentra registrado. Solo se permite una sola cuenta por correo. Por favor dirígete a la pestaña "Iniciar Sesión" para ingresar.`);
   }
 
-  // 2. Si no existe localmente pero existe en la nube
+  // 2. Validar si ya existe en la Nube Firebase (1 sola cuenta por correo)
   const cloudUser = await cloudFindUser(cleanEmail);
   if (cloudUser) {
-    if (cloudUser.passwordHash === passwordHash) {
-      await db.users.put(cloudUser);
-      await cloudPullData(cloudUser.id);
-      const sessionUser = {
-        id: cloudUser.id,
-        name: cloudUser.name || cleanName,
-        farmName: cloudUser.farmName || cleanFarm,
-        email: cloudUser.email,
-        createdAt: cloudUser.createdAt,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
-      return sessionUser;
-    }
+    throw new Error(`El correo "${cleanEmail}" ya está registrado en la nube. Solo se permite una sola cuenta por correo. Por favor pulsa la pestaña "Iniciar Sesión" para ingresar.`);
   }
+
+  const passwordHash = await hashPassword(cleanPassword);
 
   const userId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 
@@ -285,11 +269,22 @@ export async function updateUserProfile(userId, { name, farmName, email }) {
   const user = await db.users.get(userId);
   if (!user) throw new Error('Usuario no encontrado.');
 
-  if (cleanEmail !== (user.email || '').toLowerCase()) {
+  const oldEmail = (user.email || '').toLowerCase();
+  if (cleanEmail !== oldEmail) {
     const allUsers = await db.users.toArray();
     const existing = allUsers.find(u => u.id !== userId && (u.email || '').toLowerCase() === cleanEmail);
     if (existing) {
       throw new Error('Este correo o usuario ya está en uso por otra cuenta.');
+    }
+
+    const cloudUser = await cloudFindUser(cleanEmail);
+    if (cloudUser && cloudUser.id !== userId) {
+      throw new Error('Este correo electrónico ya está registrado en otra cuenta en la nube.');
+    }
+
+    // Limpiar registro anterior en Firebase
+    if (oldEmail) {
+      await cloudDeleteUserData(null, oldEmail);
     }
   }
 

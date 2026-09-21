@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.12.9";
+export const CURRENT_APP_VERSION = "2.12.10";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.10",
+    date: "20/09/2026",
+    title: "Restricción de Cuenta Única por Correo Electrónico (1 Correo = 1 Cuenta)",
+    highlights: [
+      "Índice Único en Base de Datos: Configuración de clave única (&email) en Dexie (IndexedDB) para impedir duplicidad de cuentas por correo.",
+      "Blindaje en Registro & Edición: Verificación estricta en tiempo real local y en Google Firebase para rechazar intentos de registro con correos ya existentes.",
+      "Trazabilidad de Perfil: Validación de disponibilidad al actualizar correo electrónico en la configuración de la cuenta."
+    ]
+  },
   {
     version: "2.12.9",
     date: "20/09/2026",
