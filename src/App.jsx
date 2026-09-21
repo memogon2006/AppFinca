@@ -273,6 +273,7 @@ export default function App() {
   if (authLoading || !isInitialized) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white space-y-4">
+        <UpdateNotificationBanner />
         <div className="w-20 h-20 rounded-3xl bg-slate-900 border border-emerald-500/30 flex items-center justify-center shadow-2xl shadow-emerald-500/20 overflow-hidden p-0.5 animate-pulse">
           <img src="/icon-512.png" alt="Logo" className="w-full h-full object-cover rounded-2xl" />
         </div>
@@ -285,7 +286,12 @@ export default function App() {
   }
 
   if (!isAuthenticated) {
-    return <AuthView />;
+    return (
+      <>
+        <UpdateNotificationBanner />
+        <AuthView />
+      </>
+    );
   }
 
   const activeCattleCount = cattle.filter(c => c.status === 'Activo').length;

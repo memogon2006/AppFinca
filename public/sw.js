@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ganado-app-cache-v2.13.0';
+const CACHE_NAME = 'ganado-app-cache-v2.13.1';
 
 // Recursos estáticos críticos base precacheados en instalación
 const STATIC_ASSETS = [
@@ -36,7 +36,13 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()).then(() => {
+      return self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SW_UPDATED', version: '2.13.1' });
+        });
+      });
+    })
   );
 });
 

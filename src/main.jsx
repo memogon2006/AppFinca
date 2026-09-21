@@ -24,10 +24,32 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => {
         console.log('✅ Service Worker PWA activo en finca:', reg.scope);
+        // Comprobar actualizaciones de inmediato
+        reg.update().catch(() => null);
+
+        // Detectar si se está instalando un nuevo worker
+        reg.addEventListener('updatefound', () => {
+          const installingWorker = reg.installing;
+          if (installingWorker) {
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                window.dispatchEvent(new CustomEvent('app-update-available', { detail: { version: '2.13.1' } }));
+              }
+            });
+          }
+        });
       })
       .catch((err) => {
         console.warn('⚠️ Error registrando Service Worker PWA:', err);
       });
+
+    // Escuchar mensajes emitidos por el nuevo Service Worker
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SW_UPDATED') {
+        window.dispatchEvent(new CustomEvent('app-update-available', { detail: { version: event.data.version } }));
+      }
+    });
   });
 }
+
 

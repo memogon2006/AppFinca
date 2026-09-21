@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.13.0";
+export const CURRENT_APP_VERSION = "2.13.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.1",
+    date: "21/09/2026",
+    title: "Aviso Automático de Actualización & Modo Mayordomo / Vaquero Perfeccionado",
+    highlights: [
+      "Aviso Automático e Instantáneo: Notificación automática en tiempo real al publicar nuevas versiones con botón de actualización en 1 clic y sonido distintivo.",
+      "Confirmación Visual de Bienvenida: Mensaje automático al ingresar a la versión actualizada detallando las nuevas herramientas de campo.",
+      "Gestión Directa de Mayordomos y Vaqueros: El propietario crea y administra cuentas operativas con usuario y PIN/clave personalizada.",
+      "Privacidad Financiera Total: Interfaz de campo simplificada para vaqueros sin precios de compra, ventas ni utilidades.",
+      "Auditoría en Tiempo Real: Registro histórico de pesajes, palpaciones y vacunas realizadas por cada trabajador con fecha exacta."
+    ]
+  },
   {
     version: "2.13.0",
     date: "21/09/2026",
