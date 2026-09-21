@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.16";
+export const CURRENT_APP_VERSION = "2.12.17";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.17",
+    date: "20/09/2026",
+    title: "Sincronización Multi-Dispositivo en Tiempo Real & Reconciliación Total",
+    highlights: [
+      "Sincronización Instantánea entre Dispositivos: Cualquier cambio, nuevo bovino, pesaje, vacuna o edición hecho en tu celular se refleja automáticamente en tu computador o tablet en segundos.",
+      "Reconciliación Bidireccional Completa: Si eliminas o vendes un animal en un dispositivo, se actualiza y remueve limpiamente en todos los demás dispositivos.",
+      "Sondeo Inteligente en Vivo: Detección continua cada 10 segundos y al cambiar o enfocar la pantalla para mantener tu inventario 100% sincronizado.",
+      "Cero Pérdida de Datos: Sincronización protegida con Google Cloud Firebase y modo sin conexión (offline) en potrero."
+    ]
+  },
   {
     version: "2.12.16",
     date: "20/09/2026",

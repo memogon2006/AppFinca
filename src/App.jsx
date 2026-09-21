@@ -120,24 +120,48 @@ export default function App() {
 
   const userId = currentUser?.id;
 
-  // Sincronización automática con la nube al entrar o reconectarse
+  // Sincronización automática con la nube multi-dispositivo en tiempo real
   useEffect(() => {
     if (!userId) return;
 
+    let isSyncingNow = false;
     async function sync() {
+      if (isSyncingNow || !navigator.onLine) return;
+      isSyncingNow = true;
       setIsSyncing(true);
-      await syncCloudAndLocal(userId);
-      setIsSyncing(false);
+      try {
+        await syncCloudAndLocal(userId);
+      } finally {
+        setIsSyncing(false);
+        isSyncingNow = false;
+      }
     }
 
+    // 1. Sincronizar de inmediato al entrar
     sync();
 
-    window.addEventListener('online', sync);
-    window.addEventListener('focus', sync);
+    // 2. Sincronizar al reconectarse, volver a la ventana o enfocar la pantalla
+    const handleSyncTrigger = () => sync();
+    window.addEventListener('online', handleSyncTrigger);
+    window.addEventListener('focus', handleSyncTrigger);
+    
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') sync();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // 3. Sondeo en vivo cada 10 segundos para descargar cambios de otros dispositivos automáticamente
+    const syncInterval = setInterval(() => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        sync();
+      }
+    }, 10000);
 
     return () => {
-      window.removeEventListener('online', sync);
-      window.removeEventListener('focus', sync);
+      window.removeEventListener('online', handleSyncTrigger);
+      window.removeEventListener('focus', handleSyncTrigger);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(syncInterval);
     };
   }, [userId]);
 

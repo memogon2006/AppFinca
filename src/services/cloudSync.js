@@ -112,7 +112,35 @@ export async function cloudPushData(userId) {
 }
 
 /**
+ * Reconcilia y sincroniza una tabla local con la versión remota de Firebase
+ * (Añade, actualiza y elimina automáticamente para reflejar cambios de otros dispositivos)
+ */
+async function reconcileCollection(tableName, remoteList, userId) {
+  if (!db[tableName] || !Array.isArray(remoteList)) return;
+
+  const remoteIds = new Set(remoteList.map(item => String(item.id)));
+
+  // 1. Guardar o actualizar todos los registros recibidos de la nube
+  for (const item of remoteList) {
+    await db[tableName].put({ ...item, userId });
+  }
+
+  // 2. Eliminar registros locales que ya no existen en la nube (fueron borrados en otro celular/computador)
+  try {
+    const localItems = await db[tableName].filter(item => item.userId === userId || !item.userId).toArray();
+    for (const localItem of localItems) {
+      if (localItem.id && !remoteIds.has(String(localItem.id))) {
+        await db[tableName].delete(localItem.id).catch(() => null);
+      }
+    }
+  } catch (err) {
+    console.warn(`Error reconciliando colección ${tableName}:`, err);
+  }
+}
+
+/**
  * Descarga el inventario, pesajes, vacunaciones y registros desde Firebase Realtime Database
+ * Sincroniza bidireccionalmente cualquier cambio hecho en otro dispositivo en tiempo real
  */
 export async function cloudPullData(userId) {
   if (!userId) return false;
@@ -122,56 +150,25 @@ export async function cloudPullData(userId) {
     if (res.ok) {
       const remoteData = await res.json();
       if (remoteData && typeof remoteData === 'object') {
-        if (Array.isArray(remoteData.cattle)) {
-          for (const item of remoteData.cattle) {
-            await db.cattle.put({ ...item, userId });
+        const collections = [
+          'cattle',
+          'weighings',
+          'expenses',
+          'vaccinations',
+          'audits',
+          'palpations',
+          'paddocks',
+          'milkRecords',
+          'milkDeliveries',
+          'transactions'
+        ];
+
+        for (const col of collections) {
+          if (Array.isArray(remoteData[col])) {
+            await reconcileCollection(col, remoteData[col], userId);
           }
         }
-        if (Array.isArray(remoteData.weighings)) {
-          for (const item of remoteData.weighings) {
-            await db.weighings.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.expenses) && db.expenses) {
-          for (const item of remoteData.expenses) {
-            await db.expenses.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.vaccinations) && db.vaccinations) {
-          for (const item of remoteData.vaccinations) {
-            await db.vaccinations.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.audits) && db.audits) {
-          for (const item of remoteData.audits) {
-            await db.audits.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.palpations) && db.palpations) {
-          for (const item of remoteData.palpations) {
-            await db.palpations.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.paddocks) && db.paddocks) {
-          for (const item of remoteData.paddocks) {
-            await db.paddocks.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.milkRecords) && db.milkRecords) {
-          for (const item of remoteData.milkRecords) {
-            await db.milkRecords.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.milkDeliveries) && db.milkDeliveries) {
-          for (const item of remoteData.milkDeliveries) {
-            await db.milkDeliveries.put({ ...item, userId });
-          }
-        }
-        if (Array.isArray(remoteData.transactions) && db.transactions) {
-          for (const item of remoteData.transactions) {
-            await db.transactions.put({ ...item, userId });
-          }
-        }
+
         return true;
       }
     }
