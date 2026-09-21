@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.15";
+export const CURRENT_APP_VERSION = "2.12.16";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.16",
+    date: "20/09/2026",
+    title: "Blindaje Definitivo de Cuentas & Sincronización Bidireccional Limpia",
+    highlights: [
+      "Cero Resurrección de Cuentas: Eliminación permanente de sincronizaciones ciegas para evitar que dispositivos abiertos recreen cuentas borradas.",
+      "Validación de Sesión con la Nube: Si una cuenta es eliminada en Firebase (o desde otro dispositivo), la app purga automáticamente la memoria local y cierra la sesión.",
+      "Sincronización Inteligente: Se bloquean subidas de datos huérfanos si el usuario no existe en la nube.",
+      "Liberación Total de Correos: Garantía de reutilización inmediata de cualquier correo en cuentas nuevas."
+    ]
+  },
   {
     version: "2.12.15",
     date: "20/09/2026",

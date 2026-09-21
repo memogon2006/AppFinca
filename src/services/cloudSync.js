@@ -235,6 +235,14 @@ export async function cloudDeleteUserData(userId, email) {
 export async function syncCloudAndLocal(userId) {
   if (!userId) return;
   try {
+    const localUser = await db.users.get(userId);
+    if (localUser && localUser.email && navigator.onLine) {
+      const remoteUser = await cloudFindUser(localUser.email);
+      if (!remoteUser) {
+        // Si la cuenta no existe en la nube, no empujar datos a Firebase
+        return;
+      }
+    }
     await cloudPullData(userId);
     await cloudPushData(userId);
   } catch (e) {

@@ -452,6 +452,46 @@ export async function deleteUserAccount(userId, password) {
   return { success: true };
 }
 
+/**
+ * Purga y limpia de forma exhaustiva todos los datos locales de un usuario
+ * (usado cuando la cuenta es eliminada desde la nube o desde la app)
+ */
+export async function purgeLocalUserData(userId, email) {
+  const cleanEmail = (email || '').trim().toLowerCase();
+
+  const allTables = ['cattle', 'weighings', 'expenses', 'vaccinations', 'audits', 'palpations', 'paddocks', 'milkRecords', 'milkDeliveries', 'transactions', 'settings'];
+  for (const table of allTables) {
+    if (db[table]) {
+      try {
+        if (userId) {
+          await db[table].where('userId').equals(userId).delete().catch(() => null);
+        }
+        const orphans = await db[table].filter(item => !item.userId || (userId && item.userId === userId)).toArray().catch(() => []);
+        for (const item of orphans) {
+          if (item.id) await db[table].delete(item.id).catch(() => null);
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (db.users) {
+    if (userId) await db.users.delete(userId).catch(() => null);
+    const remainingUsers = await db.users.toArray().catch(() => []);
+    for (const u of remainingUsers) {
+      if ((u.email || '').trim().toLowerCase() === cleanEmail || (userId && u.id === userId)) {
+        await db.users.delete(u.id).catch(() => null);
+      }
+    }
+  }
+
+  logoutUser();
+  try {
+    sessionStorage.clear();
+    localStorage.removeItem('ganado_current_user_session');
+    localStorage.removeItem('ganado_session_token');
+  } catch (e) {}
+}
+
 
 /**
  * Genera una clave temporal segura y fácil de recordar para ganaderos (ej. Ganado-4829, Finca-7310)

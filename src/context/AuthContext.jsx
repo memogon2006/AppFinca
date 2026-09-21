@@ -8,8 +8,10 @@ import {
   changeUserPassword,
   deleteUserAccount,
   requestPasswordReset,
-  forceSetNewPassword
+  forceSetNewPassword,
+  purgeLocalUserData
 } from '../services/auth';
+import { cloudFindUser } from '../services/cloudSync';
 import { triggerFeedback } from '../services/soundService';
 
 const AuthContext = createContext();
@@ -18,10 +20,53 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Valida si la cuenta del usuario aún existe en Firebase Cloud
+  const validateSessionWithCloud = async () => {
+    const session = getCurrentUser();
+    if (session && session.email) {
+      try {
+        const remoteUser = await cloudFindUser(session.email);
+        // Si no se encuentra en la nube (porque fue eliminada en Firebase Console o desde otro equipo)
+        if (remoteUser === null && navigator.onLine) {
+          console.warn('⚠️ La cuenta fue eliminada en la nube. Purgando datos locales...');
+          await purgeLocalUserData(session.id, session.email);
+          setCurrentUser(null);
+          return null;
+        }
+      } catch (err) {
+        // En caso de modo offline (sin conexión), se mantiene la sesión local
+      }
+    }
+    return session;
+  };
+
   useEffect(() => {
-    const user = getCurrentUser();
-    setCurrentUser(user);
-    setLoading(false);
+    let mounted = true;
+
+    async function initAuth() {
+      const user = await validateSessionWithCloud();
+      if (mounted) {
+        setCurrentUser(user);
+        setLoading(false);
+      }
+    }
+
+    initAuth();
+
+    const handleCheck = () => {
+      validateSessionWithCloud().then(u => {
+        if (mounted && u !== undefined) setCurrentUser(u);
+      });
+    };
+
+    window.addEventListener('focus', handleCheck);
+    window.addEventListener('online', handleCheck);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('focus', handleCheck);
+      window.removeEventListener('online', handleCheck);
+    };
   }, []);
 
   const handleLogin = async (credentials) => {
