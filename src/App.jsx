@@ -180,45 +180,53 @@ export default function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [currentView]);
 
-  // Consultas reactivas filtradas exclusivamente por el usuario activo (Multi-Tenancy)
+  // Identificadores autorizados para consultar datos del predio (incluye dueño y trabajador)
+  const allowedUserIds = new Set([
+    userId,
+    currentUser?.id,
+    currentUser?.ownerId,
+    effectiveUserId
+  ].filter(Boolean));
+
+  // Consultas reactivas filtradas por el usuario y predio activo (Multi-Tenancy)
   const cattle = useLiveQuery(
     () => {
-      if (!userId) return [];
-      return db.cattle.filter(c => c.userId === userId || !c.userId).toArray();
+      if (!userId && !currentUser?.id) return [];
+      return db.cattle.filter(c => !c.userId || allowedUserIds.has(c.userId)).toArray();
     },
-    [userId]
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
 
   const weighings = useLiveQuery(
     () => {
-      if (!userId) return [];
-      return db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
+      if (!userId && !currentUser?.id) return [];
+      return db.weighings.filter(w => !w.userId || allowedUserIds.has(w.userId)).toArray();
     },
-    [userId]
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
 
   const vaccinations = useLiveQuery(
     () => {
-      if (!userId) return [];
-      return db.vaccinations ? db.vaccinations.filter(v => v.userId === userId || !v.userId).toArray() : [];
+      if (!userId && !currentUser?.id) return [];
+      return db.vaccinations ? db.vaccinations.filter(v => !v.userId || allowedUserIds.has(v.userId)).toArray() : [];
     },
-    [userId]
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
 
   const audits = useLiveQuery(
     () => {
-      if (!userId) return [];
-      return db.audits ? db.audits.filter(a => a.userId === userId || !a.userId).toArray() : [];
+      if (!userId && !currentUser?.id) return [];
+      return db.audits ? db.audits.filter(a => !a.userId || allowedUserIds.has(a.userId)).toArray() : [];
     },
-    [userId]
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
 
   const palpations = useLiveQuery(
     () => {
-      if (!userId) return [];
-      return db.palpations ? db.palpations.filter(p => p.userId === userId || !p.userId).toArray() : [];
+      if (!userId && !currentUser?.id) return [];
+      return db.palpations ? db.palpations.filter(p => !p.userId || allowedUserIds.has(p.userId)).toArray() : [];
     },
-    [userId]
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
 
   // Auto-reparación y optimización de datos de pesajes al cargar

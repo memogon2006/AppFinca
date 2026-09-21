@@ -16,7 +16,8 @@ import {
   updateWorkerPassword,
   deleteWorkerAccount
 } from '../services/auth';
-import { cloudFindUser } from '../services/cloudSync';
+import { db } from '../services/db';
+import { cloudFindUser, cloudPullData } from '../services/cloudSync';
 import { triggerFeedback } from '../services/soundService';
 
 const AuthContext = createContext();

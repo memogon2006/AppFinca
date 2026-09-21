@@ -23,11 +23,13 @@ import {
   Play,
   Check,
   Send,
-  Users
+  Users,
+  Cloud,
+  DownloadCloud
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
-import { cloudPushData } from '../../services/cloudSync';
+import { cloudPushData, cloudPullData, syncCloudAndLocal } from '../../services/cloudSync';
 import { adminResendCredentials } from '../../services/auth';
 import { 
   isSoundEnabled, 
@@ -102,6 +104,7 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
   // Version check
   const [versionChecking, setVersionChecking] = useState(false);
   const [versionResult, setVersionResult] = useState(null);
+  const [syncingFarm, setSyncingFarm] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -241,6 +244,27 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
 
   const handleApplyUpdate = async () => {
     await applyAppUpdate();
+  };
+
+  const handleSyncFarmData = async () => {
+    const targetId = isWorker ? (currentUser?.ownerId || currentUser?.id) : (currentUser?.id);
+    if (!targetId) return;
+    try {
+      setSyncingFarm(true);
+      await cloudPullData(targetId);
+      setProfileMsg({
+        type: 'success',
+        text: `¡Datos y animales de la finca "${currentUser?.farmName || 'GANADERIA'}" sincronizados con éxito desde la nube!`
+      });
+      alert(`☁️ ¡Sincronización Exitosa!\n\nSe han descargado y actualizado los datos de la finca "${currentUser?.farmName || 'Finca Asignada'}".\n\nTodos los animales, pesajes, palpaciones y vacunas están al día.`);
+    } catch (e) {
+      setProfileMsg({
+        type: 'error',
+        text: 'Error al sincronizar con la nube: ' + (e.message || e)
+      });
+    } finally {
+      setSyncingFarm(false);
+    }
   };
 
   const handleClearInventory = async () => {
@@ -487,6 +511,28 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
                   <p className="text-[11px] text-slate-600 dark:text-slate-400 pl-5">
                     Tienes acceso para registrar pesajes en báscula, partos, palpaciones y vacunas. Los balances de compra, venta y utilidades son confidenciales del dueño.
                   </p>
+                </div>
+
+                {/* Botones de Acción Inmediata para el Vaquero / Mayordomo */}
+                <div className="pt-2 border-t border-amber-200/80 dark:border-amber-800/60 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSyncFarmData}
+                    disabled={syncingFarm}
+                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer min-h-[42px]"
+                  >
+                    <Cloud className={`w-4 h-4 ${syncingFarm ? 'animate-spin' : ''}`} />
+                    <span>{syncingFarm ? 'Sincronizando Finca...' : '☁️ Sincronizar Ganado de la Finca'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleApplyUpdate}
+                    className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-black text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer min-h-[42px]"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>⚡ Actualizar Sistema y Limpiar Caché</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -919,6 +965,30 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
               <p className="text-xs text-slate-600 dark:text-slate-300">
                 Cada vez que se publica una mejora o nueva función en la nube, la app te notificará automáticamente para actualizar con un solo clic.
               </p>
+
+              {/* Botones de Acción Inmediata de Versión & Caché */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleApplyUpdate}
+                  className="w-full py-3 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer min-h-[44px]"
+                  title="Fuerza la descarga de la última versión y limpia toda la memoria caché del navegador"
+                >
+                  <RefreshCw className="w-4 h-4 shrink-0" />
+                  <span>⚡ Actualizar Sistema y Limpiar Caché</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSyncFarmData}
+                  disabled={syncingFarm}
+                  className="w-full py-3 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer min-h-[44px]"
+                  title="Descargar todos los animales y registros de la finca desde Firebase"
+                >
+                  <Cloud className={`w-4 h-4 text-emerald-400 shrink-0 ${syncingFarm ? 'animate-spin' : ''}`} />
+                  <span>{syncingFarm ? 'Descargando Datos...' : '☁️ Sincronizar Datos de Finca'}</span>
+                </button>
+              </div>
 
               {versionResult && (
                 <div className="mt-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs">

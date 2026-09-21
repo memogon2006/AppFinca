@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.13.1";
+export const CURRENT_APP_VERSION = "2.13.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.2",
+    date: "21/09/2026",
+    title: "Sincronización Directa de Hato en Perfil & Acceso Inmediato a Actualizaciones",
+    highlights: [
+      "Botón Permanente de Actualización y Limpieza de Caché: Visible en todo momento en Configuración > Versión y en el Perfil del Vaquero para forzar la última versión en un clic.",
+      "Sincronización de Ganado en 1 Toque: Botón directo en el perfil del trabajador para descargar y conectar al instante todos los animales, pesajes y registros de la finca asignada.",
+      "Descarga Automática de Hato para Mayordomos: Conexión transparente con los datos del administrador sin bloqueos de consultas locales.",
+      "Auditoría y Trazabilidad en Tiempo Real: Sincronización instantánea de registros de manga y corral con Google Cloud Firebase."
+    ]
+  },
   {
     version: "2.13.1",
     date: "21/09/2026",
