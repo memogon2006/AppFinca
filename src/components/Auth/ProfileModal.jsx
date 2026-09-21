@@ -34,6 +34,7 @@ import {
   playConfirmationSound, 
   SOUND_PROFILES 
 } from '../../services/soundService';
+import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 
 export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout } = useAuth();
@@ -41,6 +42,7 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'version' | 'delete'
   const [demoCount, setDemoCount] = useState(0);
   const [loadingDeleteDemo, setLoadingDeleteDemo] = useState(false);
+  const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
 
   // Configuración de Sonido y Selección de Perfil
   const [soundEnabled, setSoundState] = useState(() => isSoundEnabled());
@@ -994,9 +996,18 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
           </form>
         )}
 
-        {/* BOTÓN DESTACADO: CERRAR SESIÓN (CUANDO NO ESTÁ EN ELIMINAR) */}
+        {/* BOTÓN DESTACADO: CERRAR SESIÓN Y POLÍTICA DE PRIVACIDAD */}
         {activeTab !== 'delete' && (
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
+            <button
+              type="button"
+              onClick={() => setIsPrivacyPolicyOpen(true)}
+              className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Política de Privacidad y Tratamiento de Datos (Ley 1581)</span>
+            </button>
+
             <button
               type="button"
               onClick={handleLogout}
@@ -1009,6 +1020,13 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
         )}
 
       </div>
+
+      {/* Modal de Política de Privacidad */}
+      <PrivacyPolicyModal
+        isOpen={isPrivacyPolicyOpen}
+        onClose={() => setIsPrivacyPolicyOpen(false)}
+        zIndex="z-[80]"
+      />
     </Modal>
   );
 }

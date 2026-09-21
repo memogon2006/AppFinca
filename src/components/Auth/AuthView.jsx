@@ -24,6 +24,8 @@ import {
   FileCheck
 } from 'lucide-react';
 
+import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
+
 export function AuthView() {
   const { login, register, setSessionUser } = useAuth();
   const { isDark, toggleTheme } = useTheme();
@@ -33,6 +35,7 @@ export function AuthView() {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   // Toggle para ver / ocultar contraseñas
   const [showPassword, setShowPassword] = useState(false);
@@ -435,15 +438,27 @@ export function AuthView() {
               <span>Restaurar Finca desde Archivo de Respaldo (.json)</span>
             </button>
 
-            <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-              <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              <span>Sincronización segura en la nube para acceso universal en cualquier dispositivo.</span>
+            <div className="pt-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
+              Al usar la plataforma aceptas la{' '}
+              <button
+                type="button"
+                onClick={() => setIsPrivacyModalOpen(true)}
+                className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+              >
+                Política de Privacidad y Tratamiento de Datos (Ley 1581)
+              </button>
             </div>
           </div>
 
         </div>
 
       </div>
+
+      {/* Modal de Política de Privacidad & Habeas Data */}
+      <PrivacyPolicyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+      />
 
     </div>
   );

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.12.10";
+export const CURRENT_APP_VERSION = "2.12.11";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.11",
+    date: "20/09/2026",
+    title: "Política de Privacidad y Tratamiento de Datos Personales (Ley 1581 de 2012)",
+    highlights: [
+      "Documento Legal Oficial Integrado: Marco de protección de datos personales y pecuarios conforme a la Ley 1581 de 2012 y Decreto 1377 de 2013 de Colombia.",
+      "Acceso Directo Universal: Enlace interactivo en la pantalla de inicio de sesión, registro y en la configuración del perfil del ganadero.",
+      "Garantía de Habeas Data y No Comercialización: Declaración de estricta confidencialidad pecuaria, portabilidad de datos (Excel/JSON), derecho de rectificación y supresión total."
+    ]
+  },
   {
     version: "2.12.10",
     date: "20/09/2026",

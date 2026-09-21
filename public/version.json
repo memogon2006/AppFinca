@@ -1,5 +1,5 @@
 {
-  "version": "2.12.10",
-  "buildTime": 1789949000000,
-  "description": "Restricción estricta de una sola cuenta por correo electrónico (1 correo = 1 cuenta) con índice único y validación en la nube."
+  "version": "2.12.11",
+  "buildTime": 1789950000000,
+  "description": "Política de Privacidad y Tratamiento de Datos Personales conforme a la Ley 1581 de 2012 (Habeas Data Colombia)."
 }
