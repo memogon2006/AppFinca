@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, RefreshCw, X } from 'lucide-react';
-import { checkAppUpdate, applyAppUpdate } from '../../services/versionService';
+import { checkAppUpdate, applyAppUpdate, isVersionGreater } from '../../services/versionService';
 import { triggerFeedback } from '../../services/soundService';
 
 export function UpdateNotificationBanner() {
@@ -19,12 +19,20 @@ export function UpdateNotificationBanner() {
       lastCheckTime = now;
       try {
         const res = await checkAppUpdate();
-        if (mounted && res && res.hasUpdate) {
-          setUpdateInfo(res);
-          if (!hasAnnouncedUpdateRef.current) {
-            hasAnnouncedUpdateRef.current = true;
-            // SONIDO AL DETECTAR NUEVA ACTUALIZACIÓN
-            triggerFeedback('update');
+        if (mounted) {
+          if (res && res.hasUpdate && isVersionGreater(res.latestVersion, res.currentVersion)) {
+            // Verificar si fue pospuesta por el usuario en esta sesión
+            const wasDismissed = sessionStorage.getItem(`dismissed_update_${res.latestVersion}`) === 'true';
+            if (!wasDismissed) {
+              setUpdateInfo(res);
+              if (!hasAnnouncedUpdateRef.current) {
+                hasAnnouncedUpdateRef.current = true;
+                // SONIDO AL DETECTAR NUEVA ACTUALIZACIÓN
+                triggerFeedback('update');
+              }
+            }
+          } else {
+            setUpdateInfo(null);
           }
         }
       } catch (err) {
@@ -71,13 +79,22 @@ export function UpdateNotificationBanner() {
     };
   }, []);
 
+  const handleDismiss = () => {
+    setDismissed(true);
+    if (updateInfo?.latestVersion) {
+      try {
+        sessionStorage.setItem(`dismissed_update_${updateInfo.latestVersion}`, 'true');
+      } catch (e) {}
+    }
+  };
+
   const handleUpdateClick = async () => {
     triggerFeedback('update');
     setUpdating(true);
     await applyAppUpdate();
   };
 
-  if (!updateInfo || !updateInfo.hasUpdate || dismissed) return null;
+  if (!updateInfo || !updateInfo.hasUpdate || !isVersionGreater(updateInfo.latestVersion, updateInfo.currentVersion) || dismissed) return null;
 
   return (
     <div className="fixed top-2 sm:top-4 left-0 right-0 z-[9990] px-3 sm:px-4 flex justify-center pointer-events-none">
@@ -105,7 +122,7 @@ export function UpdateNotificationBanner() {
           </div>
 
           <button
-            onClick={() => setDismissed(true)}
+            onClick={handleDismiss}
             className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 transition cursor-pointer shrink-0 active:scale-95"
             title="Cerrar aviso"
           >
@@ -123,7 +140,7 @@ export function UpdateNotificationBanner() {
         {/* Botón de Actualizar */}
         <div className="mt-3 flex items-center justify-end gap-2">
           <button
-            onClick={() => setDismissed(true)}
+            onClick={handleDismiss}
             className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-100 text-xs font-bold transition cursor-pointer min-h-[40px]"
           >
             Más tarde
@@ -143,3 +160,4 @@ export function UpdateNotificationBanner() {
     </div>
   );
 }
+

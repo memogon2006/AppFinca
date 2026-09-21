@@ -1056,6 +1056,27 @@ export const APP_CHANGELOG = [
 ];
 
 /**
+ * Compara dos versiones semánticas (ej. "2.12.12" vs "2.12.11")
+ * Retorna true únicamente si remoteVer es estrictamente superior a currentVer
+ */
+export function isVersionGreater(remoteVer, currentVer) {
+  if (!remoteVer || !currentVer) return false;
+  const clean = v => String(v).replace(/^v/i, '').trim();
+  if (clean(remoteVer) === clean(currentVer)) return false;
+  
+  const rParts = clean(remoteVer).split('.').map(n => parseInt(n, 10) || 0);
+  const cParts = clean(currentVer).split('.').map(n => parseInt(n, 10) || 0);
+  
+  for (let i = 0; i < Math.max(rParts.length, cParts.length); i++) {
+    const r = rParts[i] || 0;
+    const c = cParts[i] || 0;
+    if (r > c) return true;
+    if (r < c) return false;
+  }
+  return false;
+}
+
+/**
  * Consulta en la nube si hay una nueva versión publicada
  */
 export async function checkAppUpdate() {
@@ -1077,12 +1098,13 @@ export async function checkAppUpdate() {
     if (!response.ok) return { hasUpdate: false };
 
     const remote = await response.json();
-    const hasNewVersion = remote.version !== CURRENT_APP_VERSION || (remote.buildTime && remote.buildTime > CURRENT_BUILD_TIME);
+    const remoteVer = remote.version || CURRENT_APP_VERSION;
+    const hasNewVersion = isVersionGreater(remoteVer, CURRENT_APP_VERSION);
 
     return {
       hasUpdate: hasNewVersion,
       currentVersion: CURRENT_APP_VERSION,
-      latestVersion: remote.version || CURRENT_APP_VERSION,
+      latestVersion: remoteVer,
       description: remote.description || 'Mejoras de rendimiento y nuevas funciones ganaderas.',
     };
   } catch (err) {
@@ -1090,6 +1112,7 @@ export async function checkAppUpdate() {
     return { hasUpdate: false };
   }
 }
+
 
 /**
  * Aplica la actualización limpiando cachés del navegador, desregistrando service workers obsoletos y recargando limpiamente
