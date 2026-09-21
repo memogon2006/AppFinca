@@ -228,42 +228,24 @@ export async function loginUser({ email, password }) {
     throw new Error('Por favor ingresa tu correo/usuario y contraseña.');
   }
 
-  // Bloqueo explícito y purga permanente de cuentas eliminadas
+  // Bloqueo explícito de cuentas eliminadas en la nube
   const rawAlias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
-  const blockedList = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro', 'mariogomez', 'mario.gomez', 'mario_gomez', 'mario'];
   const isDeletedRemote = await cloudIsWorkerDeleted(cleanInput);
 
-  if (
-    isDeletedRemote ||
-    blockedList.includes(rawAlias) || 
-    blockedList.includes(cleanInput) || 
-    blockedList.some(b => cleanInput === b || cleanInput === `${b}@finca.local` || cleanInput.startsWith(`${b}@`))
-  ) {
+  if (isDeletedRemote) {
     try {
       const allUsers = await db.users.toArray();
       for (const u of allUsers) {
         const uEmail = (u.email || '').toLowerCase().trim();
         const uUser = (u.username || '').toLowerCase().trim();
-        const uId = String(u.id || '').toLowerCase().trim();
-        const uName = (u.name || '').toLowerCase().trim();
-        if (
-          isDeletedRemote ||
-          blockedList.some(b => 
-            uEmail === b || 
-            uEmail === `${b}@finca.local` || 
-            uUser === b || 
-            uId === b || 
-            uEmail.startsWith(`${b}@`) ||
-            (u.role === 'worker' && uName === b)
-          )
-        ) {
+        if (u.role === 'worker' && (uEmail === cleanInput || uEmail === `${rawAlias}@finca.local` || uUser === rawAlias)) {
           await db.users.delete(u.id).catch(() => null);
         }
       }
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('ganado_current_user_session');
     } catch (e) {}
-    throw new Error(`⚠️ La cuenta "${cleanInput}" ha sido eliminada permanentemente del sistema.`);
+    throw new Error(`⚠️ La cuenta "${cleanInput}" ha sido eliminada por el administrador.`);
   }
 
   // 1. Buscar en la Nube Firebase (soporta correo directo o usuario sin @)
@@ -737,19 +719,40 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
   const alias = rawInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
   const cleanEmail = rawInput.includes('@') ? rawInput : `${alias}@finca.local`;
 
-  // Verificar si ya existe en Firebase o en base local Dexie
+  // Verificar si ya existe una cuenta principal o trabajador ACTIVO
   const existingCloud = await cloudFindUser(cleanEmail);
   const existingCloudAlias = await cloudFindUser(alias);
-  const allLocal = await db.users.toArray();
-  const existingLocal = allLocal.find(u => {
-    const uEmail = (u.email || '').toLowerCase();
-    const uUser = (u.username || '').toLowerCase();
-    return uEmail === cleanEmail || uEmail === alias || uUser === alias;
-  });
+  
+  // Si la cuenta remota está marcada como eliminada, liberarla
+  const isCloudConflict = (existingCloud && !existingCloud.isDeleted && existingCloud.role !== 'worker') ||
+                          (existingCloudAlias && !existingCloudAlias.isDeleted && existingCloudAlias.role !== 'worker');
 
-  if (existingCloud || existingCloudAlias || existingLocal) {
-    throw new Error(`El usuario o correo "${rawInput}" ya se encuentra registrado. Por favor utiliza otro diferente.`);
+  if (isCloudConflict) {
+    throw new Error(`El usuario o correo "${rawInput}" ya está en uso como cuenta principal de administrador. Por favor utiliza otro diferente.`);
   }
+
+  // Purgar cualquier residuo huérfano local previo de este trabajador para liberarlo
+  const allLocal = await db.users.toArray();
+  for (const u of allLocal) {
+    if (u.role === 'worker') {
+      const uEmail = (u.email || '').toLowerCase();
+      const uUser = (u.username || '').toLowerCase();
+      if (uEmail === cleanEmail || uEmail === alias || uUser === alias) {
+        await db.users.delete(u.id).catch(() => null);
+      }
+    }
+  }
+
+  // Limpiar memoria de último trabajador eliminado si coincide
+  try {
+    const lastDeletedRaw = localStorage.getItem('ganado_last_deleted_worker');
+    if (lastDeletedRaw) {
+      const del = JSON.parse(lastDeletedRaw);
+      if (del.email === cleanEmail || del.alias === alias) {
+        localStorage.removeItem('ganado_last_deleted_worker');
+      }
+    }
+  } catch (e) {}
 
   const passwordHash = await hashPassword(cleanPassword);
   const workerId = 'usr_wrk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -769,7 +772,7 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
     updatedAt: new Date().toISOString()
   };
 
-  // Guardar en Dexie y en Firebase
+  // Guardar en Dexie y en Firebase (cloudSaveWorker además limpiará deletedWorkers)
   await db.users.put(newWorker);
   await cloudSaveWorker(ownerUser.id, newWorker);
 

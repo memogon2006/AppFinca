@@ -1,5 +1,5 @@
 {
-  "version": "2.14.6",
-  "buildTime": 1790060000000,
-  "description": "Registro global en la nube de cuentas eliminadas y bloqueo definitivo de mariogomez y pedro.vaquero."
+  "version": "2.14.7",
+  "buildTime": 1790070000000,
+  "description": "Reutilización total de cuentas eliminadas y persistencia fluida de sesión de trabajador al recargar."
 }

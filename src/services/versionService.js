@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.6";
+export const CURRENT_APP_VERSION = "2.14.7";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.7",
+    date: "21/09/2026",
+    title: "Reutilización Total de Cuentas y Persistencia Fluida de Sesión de Trabajador al Recargar",
+    highlights: [
+      "Liberación Total de Nombres y Correos: Cualquier usuario o correo previamente eliminado queda 100% disponible para ser registrado en una nueva cuenta sin bloqueos ni falsos conflictos.",
+      "Persistencia de Sesión de Trabajador: Los vaqueros y trabajadores activos permanecen autenticados sin ser expulsados al recargar el navegador o actualizar la página.",
+      "Validación Dinámica sin Listas Estáticas: Eliminación de bloqueos fijos en el sistema, permitiendo crear y eliminar cuentas de trabajadores de forma completamente flexible."
+    ]
+  },
   {
     version: "2.14.6",
     date: "21/09/2026",

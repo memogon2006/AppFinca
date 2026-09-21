@@ -48,13 +48,6 @@ export async function cloudSaveUser(user) {
 export async function cloudFindUser(email) {
   if (!email) return null;
   const cleanEmail = (email || '').trim().toLowerCase();
-
-  // Si está marcado como eliminado, nunca retornarlo como usuario válido
-  const isDeleted = await cloudIsWorkerDeleted(cleanEmail);
-  if (isDeleted) {
-    return { isDeleted: true, email: cleanEmail, role: 'worker' };
-  }
-
   const safeEmail = toSafeEmailKey(cleanEmail);
 
   // 1. Búsqueda directa por clave segura
@@ -63,6 +56,10 @@ export async function cloudFindUser(email) {
     if (res.ok) {
       const data = await res.json();
       if (data && (data.id || data.email)) {
+        const isDel = await cloudIsWorkerDeleted(data.email || cleanEmail);
+        if (isDel) {
+          return { ...data, isDeleted: true };
+        }
         return data;
       }
     }
@@ -78,6 +75,10 @@ export async function cloudFindUser(email) {
       if (res.ok) {
         const data = await res.json();
         if (data && (data.id || data.email)) {
+          const isDel = await cloudIsWorkerDeleted(data.email || cleanEmail);
+          if (isDel) {
+            return { ...data, isDeleted: true };
+          }
           return data;
         }
       }
@@ -96,6 +97,10 @@ export async function cloudFindUser(email) {
         if (res.ok) {
           const data = await res.json();
           if (data && (data.id || data.email)) {
+            const isDel = await cloudIsWorkerDeleted(data.email || cleanEmail);
+            if (isDel) {
+              return { ...data, isDeleted: true };
+            }
             return data;
           }
         }
@@ -103,6 +108,12 @@ export async function cloudFindUser(email) {
     } catch (e) {
       console.warn('⚠️ Error en cloudFindUser Firebase (alias plano):', e);
     }
+  }
+
+  // 4. Si no se encontró en /users/, verificar si está en la lista de eliminados
+  const isDel = await cloudIsWorkerDeleted(cleanEmail);
+  if (isDel) {
+    return { isDeleted: true, email: cleanEmail, role: 'worker' };
   }
 
   return null;
@@ -322,23 +333,13 @@ export async function cloudGetDeletedWorkers() {
 }
 
 /**
- * Verifica si un trabajador o usuario está registrado como eliminado
+ * Verifica si un trabajador o usuario está registrado como eliminado en Firebase
  */
 export async function cloudIsWorkerDeleted(emailOrUsername) {
   if (!emailOrUsername) return false;
   const clean = String(emailOrUsername).trim().toLowerCase();
   const rawAlias = clean.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
   const withDomain = clean.includes('@') ? clean : `${rawAlias}@finca.local`;
-
-  // Comprobar lista fija de usuarios eliminados
-  const hardcodedBlocked = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro', 'mariogomez', 'mario.gomez', 'mario_gomez', 'mario'];
-  if (
-    hardcodedBlocked.includes(clean) || 
-    hardcodedBlocked.includes(rawAlias) || 
-    hardcodedBlocked.some(b => clean.startsWith(`${b}@`) || clean === `${b}@finca.local`)
-  ) {
-    return true;
-  }
 
   try {
     const safeDirect = toSafeEmailKey(clean);
@@ -387,6 +388,10 @@ export async function cloudSaveWorker(ownerId, workerUser) {
     }
     if (safeAlias && safeAlias !== safeEmail) {
       await fetch(`${FIREBASE_URL}/deletedWorkers/${safeAlias}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+    if (!cleanEmail.includes('@') && cleanEmail) {
+      const safeWithDomain = toSafeEmailKey(`${cleanEmail}@finca.local`);
+      await fetch(`${FIREBASE_URL}/deletedWorkers/${safeWithDomain}.json`, { method: 'DELETE' }).catch(() => null);
     }
 
     // 1. Guardar en /users/<safeEmail>.json para autenticación directa con correo
