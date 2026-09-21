@@ -144,7 +144,7 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
         text: `¡Cuenta para ${created.name} creada exitosamente! Puedes entregarle sus datos de acceso.`,
         data: {
           name: created.name,
-          username: created.email,
+          username: created.username || created.email,
           password: newPassword.trim()
         }
       });
@@ -577,7 +577,7 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                               {w.name}
                             </h4>
                             <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                              {w.email}
+                              Usuario: <strong className="text-emerald-700 dark:text-emerald-400">{w.username || (w.email && w.email.replace('@finca.local', '')) || w.email}</strong>
                             </p>
                           </div>
                         </div>
@@ -633,7 +633,7 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                           {/* Enviar credenciales WhatsApp */}
                           <button
                             type="button"
-                            onClick={() => handleShareWhatsApp(w.name, w.email, '[Tu clave asignada]')}
+                            onClick={() => handleShareWhatsApp(w.name, w.username || w.email, '[Tu clave asignada]')}
                             className="p-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 transition"
                             title="Compartir datos de acceso por WhatsApp"
                           >

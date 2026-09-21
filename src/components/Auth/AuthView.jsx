@@ -486,7 +486,7 @@ export function AuthView() {
                   <input
                     type="text"
                     name="email"
-                    placeholder="ejemplo@miganaderia.com"
+                    placeholder={mode === 'login' ? 'Ej. tu.correo@gmail.com o usuario_vaquero' : 'ejemplo@miganaderia.com'}
                     value={formData.email}
                     onChange={handleChange}
                     autoCapitalize="none"

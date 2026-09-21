@@ -50,16 +50,52 @@ export async function cloudFindUser(email) {
   const cleanEmail = (email || '').trim().toLowerCase();
   const safeEmail = toSafeEmailKey(cleanEmail);
 
+  // 1. Búsqueda directa por clave segura
   try {
     const res = await fetch(`${FIREBASE_URL}/users/${safeEmail}.json?_t=${Date.now()}`);
     if (res.ok) {
       const data = await res.json();
-      if (data && (data.email || '').toLowerCase() === cleanEmail) {
+      if (data && (data.id || data.email)) {
         return data;
       }
     }
   } catch (e) {
-    console.warn('⚠️ Error en cloudFindUser Firebase:', e);
+    console.warn('⚠️ Error en cloudFindUser Firebase (directo):', e);
+  }
+
+  // 2. Si no contiene '@', buscar con '@finca.local'
+  if (!cleanEmail.includes('@')) {
+    try {
+      const safeWithDomain = toSafeEmailKey(`${cleanEmail}@finca.local`);
+      const res = await fetch(`${FIREBASE_URL}/users/${safeWithDomain}.json?_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.id || data.email)) {
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Error en cloudFindUser Firebase (con dominio):', e);
+    }
+  }
+
+  // 3. Si termina en '@finca.local', buscar sin el dominio (alias plano)
+  if (cleanEmail.endsWith('@finca.local')) {
+    try {
+      const alias = cleanEmail.replace('@finca.local', '');
+      const safeAlias = toSafeEmailKey(alias);
+      if (safeAlias && safeAlias !== safeEmail) {
+        const res = await fetch(`${FIREBASE_URL}/users/${safeAlias}.json?_t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && (data.id || data.email)) {
+            return data;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Error en cloudFindUser Firebase (alias plano):', e);
+    }
   }
 
   return null;
@@ -267,22 +303,47 @@ export async function syncCloudAndLocal(userId) {
  */
 export async function cloudSaveWorker(ownerId, workerUser) {
   if (!ownerId || !workerUser || !workerUser.email) return false;
-  const safeEmail = toSafeEmailKey(workerUser.email);
+  const cleanEmail = (workerUser.email || '').trim().toLowerCase();
+  const safeEmail = toSafeEmailKey(cleanEmail);
+  const rawAlias = (workerUser.username || cleanEmail.replace('@finca.local', '')).trim().toLowerCase();
+  const safeAlias = toSafeEmailKey(rawAlias);
+
   try {
-    // 1. Guardar en /users/<safeEmail>.json para autenticación directa
+    // 1. Guardar en /users/<safeEmail>.json para autenticación directa con correo
     await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(workerUser),
-    });
+    }).catch(() => null);
 
-    // 2. Guardar en /userData/<ownerId>/workers/<workerId>.json para listado del administrador
+    // 2. Guardar también en /users/<safeAlias>.json para autenticación directa con usuario simple
+    if (safeAlias && safeAlias !== safeEmail) {
+      await fetch(`${FIREBASE_URL}/users/${safeAlias}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workerUser),
+      }).catch(() => null);
+    }
+
+    // 3. Guardar en /userData/<ownerId>/workers/<workerId>.json para listado del administrador
     if (workerUser.id) {
       await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerUser.id}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(workerUser),
-      });
+      }).catch(() => null);
+    }
+
+    // 4. Si el propietario tiene ownerEmail, guardar también bajo la clave del email del propietario
+    if (workerUser.ownerEmail) {
+      const safeOwnerEmail = toSafeEmailKey(workerUser.ownerEmail);
+      if (safeOwnerEmail && safeOwnerEmail !== ownerId && workerUser.id) {
+        await fetch(`${FIREBASE_URL}/userData/${safeOwnerEmail}/workers/${workerUser.id}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(workerUser),
+        }).catch(() => null);
+      }
     }
     return true;
   } catch (e) {
@@ -314,23 +375,40 @@ export async function cloudGetFarmWorkers(ownerId) {
  * Actualiza el estado (activo/inactivo) o contraseña del trabajador en Firebase
  */
 export async function cloudUpdateWorker(ownerId, workerId, workerEmail, updates) {
-  if (!workerEmail) return false;
-  const safeEmail = toSafeEmailKey(workerEmail);
+  if (!workerEmail && !workerId) return false;
+  const cleanEmail = (workerEmail || '').trim().toLowerCase();
+  const safeEmail = toSafeEmailKey(cleanEmail);
+  const rawAlias = cleanEmail.replace('@finca.local', '');
+  const safeAlias = toSafeEmailKey(rawAlias);
+
   try {
+    const payload = JSON.stringify({ ...updates, updatedAt: new Date().toISOString() });
+
     // Actualizar en /users/<safeEmail>
-    await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...updates, updatedAt: new Date().toISOString() }),
-    });
+    if (safeEmail) {
+      await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      }).catch(() => null);
+    }
+
+    // Actualizar en /users/<safeAlias>
+    if (safeAlias && safeAlias !== safeEmail) {
+      await fetch(`${FIREBASE_URL}/users/${safeAlias}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      }).catch(() => null);
+    }
 
     // Actualizar en /userData/<ownerId>/workers/<workerId>
     if (ownerId && workerId) {
       await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerId}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...updates, updatedAt: new Date().toISOString() }),
-      });
+        body: payload,
+      }).catch(() => null);
     }
     return true;
   } catch (e) {
@@ -343,16 +421,30 @@ export async function cloudUpdateWorker(ownerId, workerId, workerEmail, updates)
  * Elimina permanentemente la cuenta de un trabajador de Firebase
  */
 export async function cloudDeleteWorker(ownerId, workerId, workerEmail) {
-  if (!workerEmail) return false;
-  const safeEmail = toSafeEmailKey(workerEmail);
+  if (!workerEmail && !workerId) return false;
+  const cleanEmail = (workerEmail || '').trim().toLowerCase();
+  const safeEmail = toSafeEmailKey(cleanEmail);
+  const rawAlias = cleanEmail.replace('@finca.local', '');
+  const safeAlias = toSafeEmailKey(rawAlias);
+
   try {
-    // 1. Eliminar acceso de usuario
-    await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, { method: 'DELETE' });
+    // 1. Eliminar acceso de usuario en todas las variantes de clave
+    if (safeEmail) {
+      await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+    if (safeAlias && safeAlias !== safeEmail) {
+      await fetch(`${FIREBASE_URL}/users/${safeAlias}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+    if (!cleanEmail.includes('@') && cleanEmail) {
+      const safeWithDomain = toSafeEmailKey(`${cleanEmail}@finca.local`);
+      await fetch(`${FIREBASE_URL}/users/${safeWithDomain}.json`, { method: 'DELETE' }).catch(() => null);
+    }
 
     // 2. Eliminar del listado del propietario
     if (ownerId && workerId) {
-      await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerId}.json`, { method: 'DELETE' });
+      await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerId}.json`, { method: 'DELETE' }).catch(() => null);
     }
+
     return true;
   } catch (e) {
     console.warn('⚠️ Error en cloudDeleteWorker:', e);

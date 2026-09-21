@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.0";
+export const CURRENT_APP_VERSION = "2.14.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.1",
+    date: "21/09/2026",
+    title: "Eliminación Definitiva de Cuentas y Creación Instantánea de Trabajadores",
+    highlights: [
+      "Eliminación Total y Permanente: Al borrar un trabajador, se purga exhaustivamente de la base de datos local y de la nube Firebase, cerrando su sesión de inmediato e impidiendo cualquier reingreso.",
+      "Cero Resurrección de Cuentas: Filtrado estricto por propietario que elimina definitivamente cualquier registro fantasma o huérfano en el panel del administrador.",
+      "Acceso Multi-Formato Instantáneo: Los mayordomos y vaqueros pueden iniciar sesión de forma transparente utilizando su usuario simple (ej. 'juan') o su formato completo ('juan@finca.local').",
+      "Actualización Inmediata de Listas: La lista de trabajadores en el panel de administración se refresca en tiempo real al crear, modificar o eliminar cuentas de campo."
+    ]
+  },
   {
     version: "2.14.0",
     date: "21/09/2026",

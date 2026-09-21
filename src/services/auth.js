@@ -231,30 +231,8 @@ export async function loginUser({ email, password }) {
   if (!user && !cleanEmail.includes('@')) {
     user = await cloudFindUser(`${cleanEmail}@finca.local`);
   }
-
-  // Si no se encuentra y no tiene @, buscar en toda la base de usuarios por alias o nombre
-  if (!user && navigator.onLine) {
-    try {
-      const res = await fetch('https://ganadera-plataforma-default-rtdb.firebaseio.com/users.json?_t=' + Date.now());
-      if (res.ok) {
-        const allUsers = await res.json();
-        if (allUsers && typeof allUsers === 'object') {
-          for (const u of Object.values(allUsers)) {
-            if (u && (
-              (u.email && u.email.toLowerCase() === cleanEmail) ||
-              (u.email && u.email.toLowerCase().startsWith(`${cleanEmail}@`)) ||
-              (u.name && u.name.toLowerCase() === cleanEmail) ||
-              (u.username && u.username.toLowerCase() === cleanEmail)
-            )) {
-              user = u;
-              break;
-            }
-          }
-        }
-      }
-    } catch (scanErr) {
-      console.warn('Error escaneando usuarios:', scanErr);
-    }
+  if (!user && cleanEmail.endsWith('@finca.local')) {
+    user = await cloudFindUser(cleanEmail.replace('@finca.local', ''));
   }
 
   if (user) {
@@ -264,15 +242,19 @@ export async function loginUser({ email, password }) {
       console.warn('Nota: no se pudo actualizar caché local de usuario:', dbErr);
     }
   } else {
-    // Si no está en la nube, buscar en local por si está sin internet (offline)
+    // Si no está en la nube o no hay conexión, buscar en base local Dexie
     try {
       const allUsers = await db.users.toArray();
+      const alias = cleanEmail.replace('@finca.local', '');
       user = allUsers.find(u => {
         const uEmail = (u.email || '').toLowerCase();
+        const uUser = (u.username || '').toLowerCase();
         const uName = (u.name || '').toLowerCase();
         return uEmail === cleanEmail || 
-               (!cleanEmail.includes('@') && uEmail === `${cleanEmail}@finca.local`) || 
-               uEmail.startsWith(`${cleanEmail}@`) ||
+               uEmail === `${alias}@finca.local` || 
+               uEmail === alias ||
+               uUser === alias ||
+               uUser === cleanEmail ||
                uName === cleanEmail;
       });
     } catch (localErr) {
@@ -296,13 +278,14 @@ export async function loginUser({ email, password }) {
 
   // 3. Sincronización de datos pecuarios según el rol
   const dataOwnerId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
-  await cloudPullData(dataOwnerId);
+  await cloudPullData(dataOwnerId).catch(() => null);
 
   const sessionUser = {
     id: user.id,
     name: user.name,
     farmName: user.farmName,
     email: user.email,
+    username: user.username || user.email?.replace('@finca.local', '') || '',
     role: user.role || 'admin',
     ownerId: user.ownerId || null,
     ownerEmail: user.ownerEmail || null,
@@ -674,23 +657,30 @@ export async function adminResendCredentials(userId) {
  */
 export async function createWorkerAccount({ name, username, password, ownerUser }) {
   const cleanName = (name || '').trim();
-  let cleanUsername = (username || '').trim().toLowerCase();
+  const rawInput = (username || '').trim().toLowerCase();
   const cleanPassword = (password || '').trim();
 
   if (!ownerUser || !ownerUser.id) throw new Error('No se encontró la sesión del administrador.');
   if (!cleanName) throw new Error('Por favor ingresa el nombre del trabajador o mayordomo.');
-  if (!cleanUsername) throw new Error('Por favor ingresa un usuario o correo para el trabajador.');
+  if (!rawInput) throw new Error('Por favor ingresa un usuario o correo para el trabajador.');
   if (!cleanPassword || cleanPassword.length < 4) throw new Error('La clave o PIN debe tener al menos 4 caracteres.');
 
-  // Si el usuario no tiene formato de correo, estandarizar para identificación segura
-  if (!cleanUsername.includes('@')) {
-    cleanUsername = `${cleanUsername.replace(/[^a-z0-9_.-]/g, '')}@finca.local`;
-  }
+  // Formato estandarizado de correo y alias
+  const alias = rawInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
+  const cleanEmail = rawInput.includes('@') ? rawInput : `${alias}@finca.local`;
 
-  // Verificar si ya existe en Firebase
-  const existingCloud = await cloudFindUser(cleanUsername);
-  if (existingCloud) {
-    throw new Error(`El usuario o correo "${cleanUsername}" ya se encuentra registrado. Por favor utiliza otro diferente.`);
+  // Verificar si ya existe en Firebase o en base local Dexie
+  const existingCloud = await cloudFindUser(cleanEmail);
+  const existingCloudAlias = await cloudFindUser(alias);
+  const allLocal = await db.users.toArray();
+  const existingLocal = allLocal.find(u => {
+    const uEmail = (u.email || '').toLowerCase();
+    const uUser = (u.username || '').toLowerCase();
+    return uEmail === cleanEmail || uEmail === alias || uUser === alias;
+  });
+
+  if (existingCloud || existingCloudAlias || existingLocal) {
+    throw new Error(`El usuario o correo "${rawInput}" ya se encuentra registrado. Por favor utiliza otro diferente.`);
   }
 
   const passwordHash = await hashPassword(cleanPassword);
@@ -699,12 +689,13 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
   const newWorker = {
     id: workerId,
     name: cleanName,
-    farmName: ownerUser.farmName,
-    email: cleanUsername,
+    username: alias,
+    farmName: ownerUser.farmName || 'Mi Finca',
+    email: cleanEmail,
     passwordHash,
     role: 'worker',
     ownerId: ownerUser.id,
-    ownerEmail: ownerUser.email,
+    ownerEmail: (ownerUser.email || '').trim().toLowerCase(),
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -716,7 +707,7 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
 
   await logActivity({
     action: 'worker_created',
-    description: `Creó la cuenta de trabajador para ${cleanName} (${cleanUsername})`,
+    description: `Creó la cuenta de trabajador para ${cleanName} (${cleanEmail})`,
     operatorName: ownerUser.name,
     operatorRole: 'admin',
     userId: ownerUser.id,
@@ -730,53 +721,69 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
  */
 export async function getFarmWorkers(ownerId, ownerEmail = null) {
   if (!ownerId && !ownerEmail) return [];
-  let results = [];
+  const cleanOwnerId = (ownerId || '').trim();
+  const cleanOwnerEmail = (ownerEmail || '').trim().toLowerCase();
+
+  let remoteWorkers = [];
+  let fetchedRemote = false;
   try {
-    if (ownerId) {
-      const remoteWorkers = await cloudGetFarmWorkers(ownerId);
-      if (remoteWorkers && remoteWorkers.length > 0) {
-        for (const w of remoteWorkers) {
-          if (w && w.id) await db.users.put(w).catch(() => null);
-        }
-        results = remoteWorkers;
+    if (cleanOwnerId) {
+      const res = await cloudGetFarmWorkers(cleanOwnerId);
+      if (Array.isArray(res)) {
+        remoteWorkers = res;
+        fetchedRemote = true;
       }
     }
   } catch (e) {
     console.warn('Error leyendo trabajadores de la nube:', e);
   }
 
-  try {
-    const cleanOwnerEmail = (ownerEmail || '').trim().toLowerCase();
-    const local = await db.users.filter(u => {
-      if (u.role !== 'worker') return false;
-      if (ownerId && u.ownerId === ownerId) return true;
-      if (cleanOwnerEmail && (u.ownerEmail === cleanOwnerEmail || u.ownerId === cleanOwnerEmail)) return true;
-      if (ownerId && u.ownerEmail === ownerId) return true;
-      if (!u.ownerId || u.ownerId === 'default') return true;
-      return false;
-    }).toArray();
+  // 1. Obtener todos los trabajadores locales que pertenecen estrictamente a este propietario
+  const allUsers = await db.users.toArray();
+  const localWorkers = allUsers.filter(u => {
+    if (u.role !== 'worker') return false;
+    const uOwnerId = String(u.ownerId || '').trim();
+    const uOwnerEmail = (u.ownerEmail || '').trim().toLowerCase();
+    return (cleanOwnerId && uOwnerId === cleanOwnerId) ||
+           (cleanOwnerEmail && uOwnerEmail === cleanOwnerEmail) ||
+           (cleanOwnerEmail && uOwnerId === cleanOwnerEmail) ||
+           (cleanOwnerId && uOwnerEmail === cleanOwnerId);
+  });
 
-    const seen = new Set();
-    const combined = [];
-    for (const w of [...results, ...local]) {
-      const key = String(w.id || w.email || w.username);
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        combined.push(w);
+  // 2. Si obtuvimos la lista remota de la nube con éxito
+  if (fetchedRemote) {
+    // Guardar trabajadores remotos en Dexie
+    for (const rw of remoteWorkers) {
+      if (rw && rw.id) await db.users.put(rw).catch(() => null);
+    }
+    // Purgar trabajadores locales que ya no existen en la nube (fueron eliminados)
+    const remoteKeys = new Set(
+      remoteWorkers.flatMap(w => [
+        String(w.id || '').toLowerCase(),
+        String(w.email || '').toLowerCase(),
+        String(w.username || '').toLowerCase()
+      ]).filter(Boolean)
+    );
+    for (const lw of localWorkers) {
+      const lId = String(lw.id || '').toLowerCase();
+      const lEmail = (lw.email || '').toLowerCase();
+      const lUser = (lw.username || '').toLowerCase();
+      if (!remoteKeys.has(lId) && !remoteKeys.has(lEmail) && !remoteKeys.has(lUser)) {
+        await db.users.delete(lw.id).catch(() => null);
       }
     }
-    return combined;
-  } catch (err) {
-    console.warn('Error combinando trabajadores locales:', err);
-    return results;
+    return remoteWorkers;
   }
+
+  // 3. Si no hay lista remota (modo offline), retornar trabajadores locales válidos
+  return localWorkers;
 }
 
 /**
  * Habilita o deshabilita la cuenta del trabajador en tiempo real
  */
 export async function toggleWorkerStatus(workerId, workerEmail, ownerId, isActive, adminName = 'Administrador') {
-  if (!workerEmail) throw new Error('Correo/usuario de trabajador no especificado.');
+  if (!workerEmail && !workerId) throw new Error('Correo/usuario de trabajador no especificado.');
   const updates = { isActive: !!isActive };
   await cloudUpdateWorker(ownerId, workerId, workerEmail, updates);
   const local = await db.users.get(workerId);
@@ -820,18 +827,58 @@ export async function updateWorkerPassword(workerId, workerEmail, ownerId, newPa
  * Elimina definitivamente una cuenta de trabajador
  */
 export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminName = 'Administrador') {
-  if (!workerEmail) throw new Error('Correo/usuario no especificado.');
+  if (!workerEmail && !workerId) throw new Error('Correo/usuario no especificado.');
+
+  // 1. Eliminar de Firebase
   await cloudDeleteWorker(ownerId, workerId, workerEmail);
+
+  // 2. Eliminar de Dexie por ID primario
   if (workerId) {
     await db.users.delete(workerId).catch(() => null);
   }
+
+  // 3. Barrido profundo en Dexie db.users para borrar todas las filas de este trabajador
+  const cleanEmail = (workerEmail || '').trim().toLowerCase();
+  const cleanAlias = cleanEmail.replace('@finca.local', '');
+  try {
+    const allUsers = await db.users.toArray();
+    for (const u of allUsers) {
+      const uEmail = (u.email || '').trim().toLowerCase();
+      const uUser = (u.username || '').trim().toLowerCase();
+      const uId = String(u.id || '').trim();
+      if (
+        (workerId && uId === workerId) ||
+        (cleanEmail && uEmail === cleanEmail) ||
+        (cleanAlias && (uEmail === cleanAlias || uEmail === `${cleanAlias}@finca.local` || uUser === cleanAlias))
+      ) {
+        await db.users.delete(u.id).catch(() => null);
+      }
+    }
+  } catch (err) {
+    console.warn('Error en barrido local de eliminación de trabajador:', err);
+  }
+
+  // 4. Si la sesión activa en este dispositivo coincide con el trabajador eliminado, cerrarla
+  try {
+    const currentRaw = localStorage.getItem(STORAGE_KEY);
+    if (currentRaw) {
+      const current = JSON.parse(currentRaw);
+      const curEmail = (current.email || '').toLowerCase();
+      const curId = String(current.id || '');
+      if (curId === workerId || curEmail === cleanEmail || curEmail === cleanAlias || curEmail === `${cleanAlias}@finca.local`) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  } catch (e) {}
+
   await logActivity({
     action: 'worker_deleted',
-    description: `Eliminó permanentemente la cuenta de trabajador (${workerEmail})`,
+    description: `Eliminó permanentemente la cuenta de trabajador (${workerEmail || workerId})`,
     operatorName: adminName,
     operatorRole: 'admin',
     userId: ownerId,
   });
+
   return true;
 }
 

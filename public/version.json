@@ -1,5 +1,5 @@
 {
-  "version": "2.14.0",
-  "buildTime": 1790000000000,
-  "description": "Sincronización en tiempo real de alertas y notas del calendario para vaqueros y administrador."
+  "version": "2.14.1",
+  "buildTime": 1790010000000,
+  "description": "Eliminación definitiva de cuentas y creación instantánea de trabajadores sin duplicidad ni cuentas fantasma."
 }
