@@ -22,7 +22,7 @@ import {
 import { ConsecutiveWarningModal } from './ConsecutiveWarningModal';
 
 export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[60]', cattleList = [] }) {
-  const { currentUser } = useAuth();
+  const { currentUser, isWorker } = useAuth();
   const isEditing = Boolean(animal && animal.id);
 
   const [detectedDuplicates, setDetectedDuplicates] = useState([]);
@@ -634,13 +634,15 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       }
     }
 
-    if (formData.entryType !== 'Nacimiento') {
-      if (formData.entryPrice === '' || Number(formData.entryPrice) < 0) {
-        newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
-      }
-    } else {
-      if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
-        newErrors.entryPrice = 'El valor de cría no puede ser negativo.';
+    if (!isWorker) {
+      if (formData.entryType !== 'Nacimiento') {
+        if (formData.entryPrice === '' || Number(formData.entryPrice) < 0) {
+          newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
+        }
+      } else {
+        if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
+          newErrors.entryPrice = 'El valor de cría no puede ser negativo.';
+        }
       }
     }
 
@@ -1881,34 +1883,38 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               {errors.entryWeight && <p className="text-[11px] text-rose-500 mt-1">{errors.entryWeight}</p>}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {formData.entryType === 'Nacimiento' ? 'Costo de Nacimiento ($)' : 'Valor Inicial / Compra ($)'} {formData.entryType !== 'Nacimiento' && <span className="text-rose-500">*</span>}
-              </label>
-              <input
-                type="number"
-                name="entryPrice"
-                value={formData.entryPrice}
-                onChange={handleChange}
-                placeholder={formData.entryType === 'Nacimiento' ? "Ej. 0 (Nacido en finca)" : "Ej. 2500000"}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
-              />
-              {errors.entryPrice && <p className="text-[11px] text-rose-500 mt-1">{errors.entryPrice}</p>}
-            </div>
+            {!isWorker && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {formData.entryType === 'Nacimiento' ? 'Costo de Nacimiento ($)' : 'Valor Inicial / Compra ($)'} {formData.entryType !== 'Nacimiento' && <span className="text-rose-500">*</span>}
+                  </label>
+                  <input
+                    type="number"
+                    name="entryPrice"
+                    value={formData.entryPrice}
+                    onChange={handleChange}
+                    placeholder={formData.entryType === 'Nacimiento' ? "Ej. 0 (Nacido en finca)" : "Ej. 2500000"}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                  />
+                  {errors.entryPrice && <p className="text-[11px] text-rose-500 mt-1">{errors.entryPrice}</p>}
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Costos Directos / Insumos ($)
-              </label>
-              <input
-                type="number"
-                name="additionalCosts"
-                value={formData.additionalCosts}
-                onChange={handleChange}
-                placeholder="Pajilla, vacunas, fletes..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
-              />
-            </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Costos Directos / Insumos ($)
+                  </label>
+                  <input
+                    type="number"
+                    name="additionalCosts"
+                    value={formData.additionalCosts}
+                    onChange={handleChange}
+                    placeholder="Pajilla, vacunas, fletes..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">

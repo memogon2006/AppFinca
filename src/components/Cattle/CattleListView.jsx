@@ -33,6 +33,8 @@ import {
   ClipboardCheck
 } from 'lucide-react';
 
+import { useAuth } from '../../context/AuthContext';
+
 export function CattleListView({ 
   cattle = [], 
   weighings = [], 
@@ -56,6 +58,7 @@ export function CattleListView({
   onOpenCensusModal,
   onOpenVaccinationModal
 }) {
+  const { isWorker } = useAuth();
   const handleOpenNewAnimalSafe = onOpenNewAnimal || onOpenNew;
   const handleDeleteAnimalSafe = onDeleteAnimal || onDelete;
   const handleAddWeightSafe = onOpenAddWeight || onAddWeight;
@@ -417,14 +420,16 @@ export function CattleListView({
                   <th className="p-3.5">Ingreso #</th>
                   <th className="p-3.5">Hierro & Dueño</th>
                   <th className="p-3.5">Color & Sanidad</th>
-                  <th className="p-3.5">Compra / Inicial</th>
+                  <th className="p-3.5">{isWorker ? 'Peso Inicial' : 'Compra / Inicial'}</th>
                   <th className="p-3.5">Peso Actual</th>
                   <th className="p-3.5">Ganancia Total</th>
                   <th className="p-3.5 cursor-pointer" onClick={onOpenGlossary} title="Ver qué significa GDP">
                     <span className="flex items-center gap-1">GDP & Días <HelpCircle className="w-3 h-3 text-slate-400" /></span>
                   </th>
-                  <th className="p-3.5 cursor-pointer" onClick={onOpenGlossary} title="Ver qué significa ROI y Utilidad">
-                    <span className="flex items-center gap-1">Utilidad <HelpCircle className="w-3 h-3 text-slate-400" /></span>
+                  <th className="p-3.5 cursor-pointer" onClick={isWorker ? undefined : onOpenGlossary} title={isWorker ? 'Categoría y Lote' : 'Ver qué significa ROI y Utilidad'}>
+                    <span className="flex items-center gap-1">
+                      {isWorker ? 'Categoría / Lote' : <>Utilidad <HelpCircle className="w-3 h-3 text-slate-400" /></>}
+                    </span>
                   </th>
                   <th className="p-3.5 text-right">Acciones</th>
                 </tr>
@@ -587,10 +592,12 @@ export function CattleListView({
                           <span>{entryWeightStr}</span>
                           {isBornInFarm && <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">(Nacer)</span>}
                         </div>
-                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                          <ShoppingBag className="w-3 h-3 text-slate-400" />
-                          <span>{isBornInFarm ? '$0 (Cría)' : entryPriceStr}</span>
-                        </div>
+                        {!isWorker && (
+                          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                            <ShoppingBag className="w-3 h-3 text-slate-400" />
+                            <span>{isBornInFarm ? '$0 (Cría)' : entryPriceStr}</span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Peso Actual */}
@@ -636,9 +643,18 @@ export function CattleListView({
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{wm.totalDays} días en finca</div>
                       </td>
 
-                      {/* Utilidad Neta */}
+                      {/* Utilidad Neta / Categoría & Lote para Trabajadores */}
                       <td className="p-3.5 whitespace-nowrap">
-                        {animal.status === 'Vendido' && (animal.exitType === 'En Compañía' || animal.partnershipDetails) ? (
+                        {isWorker ? (
+                          <div>
+                            <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                              {animal.category || (animal.sex === 'Macho' ? 'Macho' : 'Hembra')}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mt-0.5">
+                              Lote: {batch || 'General'}
+                            </span>
+                          </div>
+                        ) : animal.status === 'Vendido' && (animal.exitType === 'En Compañía' || animal.partnershipDetails) ? (
                           (() => {
                             const partDetails = animal.partnershipDetails || {
                               farmShare: Math.max(0, (parseFloat(animal.exitPrice) || 0) - (parseFloat(animal.entryPrice) || 0)) * 0.5,
@@ -682,14 +698,16 @@ export function CattleListView({
                           >
                             <Scale className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => onOpenSell(animal)}
-                            className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
-                            title="Vender animal"
-                          >
-                            <DollarSign className="w-4 h-4" />
-                          </button>
-                          {animal.status === 'Activo' && (
+                          {!isWorker && (
+                            <button
+                              onClick={() => onOpenSell(animal)}
+                              className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
+                              title="Vender animal"
+                            >
+                              <DollarSign className="w-4 h-4" />
+                            </button>
+                          )}
+                          {!isWorker && animal.status === 'Activo' && (
                             <button
                               onClick={() => onOpenDeath(animal)}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
@@ -698,18 +716,20 @@ export function CattleListView({
                               <Skull className="w-4 h-4" />
                             </button>
                           )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (window.confirm(`⚠️ ¿Estás seguro de que deseas eliminar permanentemente al bovino ${animal.tagNumber} (${animal.name || 'Sin nombre'})?\n\nEsta acción borrará también su historial de pesajes.`)) {
-                                handleDeleteAnimalSafe(animal.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
-                            title="Eliminar registro"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {!isWorker && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`⚠️ ¿Estás seguro de que deseas eliminar permanentemente al bovino ${animal.tagNumber} (${animal.name || 'Sin nombre'})?\n\nEsta acción borrará también su historial de pesajes.`)) {
+                                  handleDeleteAnimalSafe(animal.id);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                              title="Eliminar registro"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -746,7 +766,7 @@ export function CattleListView({
                   </td>
                   <td colSpan={2} className="p-3.5"></td>
                   <td className="p-3.5 whitespace-nowrap font-black text-emerald-700 dark:text-emerald-400 text-xs">
-                    {formatCurrency(summary.totalValue)}
+                    {isWorker ? '—' : formatCurrency(summary.totalValue)}
                   </td>
                   <td className="p-3.5"></td>
                 </tr>

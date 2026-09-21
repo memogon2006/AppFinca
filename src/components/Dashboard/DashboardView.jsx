@@ -33,6 +33,7 @@ import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials } from '../../services/calculations';
+import { useAuth } from '../../context/AuthContext';
 
 export function DashboardView({ 
   cattle = [], 
@@ -53,6 +54,7 @@ export function DashboardView({
   onDeleteVaccination,
   onOpenPartnershipModal
 }) {
+  const { isWorker } = useAuth();
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
 
@@ -159,7 +161,7 @@ export function DashboardView({
               </button>
             )}
 
-            {onOpenPartnershipModal && (
+            {!isWorker && onOpenPartnershipModal && (
               <button
                 onClick={onOpenPartnershipModal}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer active:scale-95"
@@ -267,13 +269,23 @@ export function DashboardView({
           color="blue"
         />
 
-        <KpiCard
-          title="Inversión Activa"
-          value={formatCurrency(totalInvestedActive)}
-          subtitle={soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Ganado actualmente en finca'}
-          icon={DollarSign}
-          color="amber"
-        />
+        {isWorker ? (
+          <KpiCard
+            title="Ganado en Ceba"
+            value={`${fatteningCount} cabezas`}
+            subtitle={`${milkingCount} en ordeño • ${pregnantCount} gestación`}
+            icon={Layers}
+            color="teal"
+          />
+        ) : (
+          <KpiCard
+            title="Inversión Activa"
+            value={formatCurrency(totalInvestedActive)}
+            subtitle={soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Ganado actualmente en finca'}
+            icon={DollarSign}
+            color="amber"
+          />
+        )}
 
       </div>
 

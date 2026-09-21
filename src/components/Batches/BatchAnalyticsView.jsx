@@ -45,7 +45,7 @@ export function BatchAnalyticsView({
   onOpenExportImport,
   onOpenWhatsAppReport
 }) {
-  const { currentUser } = useAuth();
+  const { currentUser, isWorker } = useAuth();
   const [activeTab, setActiveTab] = useState('detail'); // 'detail' | 'compare'
   const [selectedBatch, setSelectedBatch] = useState('all'); // 'all' o nombre del lote
   const [searchQuery, setSearchQuery] = useState('');
@@ -738,82 +738,116 @@ export function BatchAnalyticsView({
               {/* 4 TARJETAS DINÁMICAS SEGÚN EL FILTRO SELECCIONADO */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
-                {/* 1. Valor Compra Total */}
-                <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">
-                      {statusFilter === 'Activo' 
-                        ? 'Valor Compra en Finca (Activos)' 
-                        : statusFilter === 'all' 
-                        ? 'Valor Compra Histórico (Todos)' 
-                        : 'Valor Compra Inicial (Vendidos)'}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-sm">
-                      {statusFilter === 'Activo' 
-                        ? `🟢 ${currentBatchData.activeCount} activos` 
-                        : statusFilter === 'all' 
-                        ? `🌐 ${currentBatchData.headCount} cabezas` 
-                        : `🏷️ ${currentBatchData.soldCount} vendidos`}
-                    </span>
-                  </div>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
-                    {formatCurrency(
-                      statusFilter === 'Activo' 
-                        ? currentBatchData.activePurchaseCost 
-                        : statusFilter === 'all' 
-                        ? currentBatchData.totalPurchaseCost 
-                        : currentBatchData.soldPurchaseCost
-                    )}
-                  </p>
-                  <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-slate-800">
-                    <span>
-                      Promedio: {formatCurrency(
-                        statusFilter === 'Activo' 
-                          ? currentBatchData.activeAvgPricePerHead 
-                          : statusFilter === 'all' 
-                          ? currentBatchData.avgPricePerHead 
-                          : currentBatchData.soldAvgPricePerHead
-                      )} / animal
-                    </span>
-                    {statusFilter === 'Activo' && currentBatchData.soldCount > 0 && (
-                      <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
-                        Histórico: {formatCurrency(currentBatchData.totalPurchaseCost)}
+                {/* 1. Total Cabezas / Valor Compra */}
+                {isWorker ? (
+                  <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">
+                        Total Bovinos en Lote
                       </span>
-                    )}
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-sm">
+                        🟢 {currentBatchData.activeCount} activos
+                      </span>
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                      {currentBatchData.headCount} cabezas
+                    </p>
+                    <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-slate-800">
+                      <span>{currentBatchData.activeCount} en finca • {currentBatchData.soldCount} salidos</span>
+                    </div>
                   </div>
-                </div>
-
-                {/* 2. Valor Kilo Compra / Ingreso por Venta */}
-                <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm space-y-1">
-                  <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">
-                    {statusFilter === 'Vendido' ? 'Total Ingresos por Venta' : 'Valor del Kilo Compra ($/kg)'}
-                  </span>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
-                    {statusFilter === 'Vendido' ? (
-                      formatCurrency(currentBatchData.totalSalesRevenue)
-                    ) : (
-                      <>
-                        {formatCurrency(statusFilter === 'Activo' ? currentBatchData.activeCostPerEntryKg : currentBatchData.costPerEntryKg)}
-                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400"> / kg</span>
-                      </>
-                    )}
-                  </p>
-                  <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-slate-800">
-                    {statusFilter === 'Vendido' ? (
-                      <span>Promedio salida: {formatCurrency(currentBatchData.avgSoldPricePerKg)}/kg ({formatNumber(currentBatchData.totalSoldWeight, 0)} kg)</span>
-                    ) : (
-                      <span>Sobre {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeEntryWeight : currentBatchData.totalEntryWeight, 0)} kg totales de entrada</span>
-                    )}
+                ) : (
+                  <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">
+                        {statusFilter === 'Activo' 
+                          ? 'Valor Compra en Finca (Activos)' 
+                          : statusFilter === 'all' 
+                          ? 'Valor Compra Histórico (Todos)' 
+                          : 'Valor Compra Inicial (Vendidos)'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-sm">
+                        {statusFilter === 'Activo' 
+                          ? `🟢 ${currentBatchData.activeCount} activos` 
+                          : statusFilter === 'all' 
+                          ? `🌐 ${currentBatchData.headCount} cabezas` 
+                          : `🏷️ ${currentBatchData.soldCount} vendidos`}
+                      </span>
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                      {formatCurrency(
+                        statusFilter === 'Activo' 
+                          ? currentBatchData.activePurchaseCost 
+                          : statusFilter === 'all' 
+                          ? currentBatchData.totalPurchaseCost 
+                          : currentBatchData.soldPurchaseCost
+                      )}
+                    </p>
+                    <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-slate-800">
+                      <span>
+                        Promedio: {formatCurrency(
+                          statusFilter === 'Activo' 
+                            ? currentBatchData.activeAvgPricePerHead 
+                            : statusFilter === 'all' 
+                            ? currentBatchData.avgPricePerHead 
+                            : currentBatchData.soldAvgPricePerHead
+                        )} / animal
+                      </span>
+                      {statusFilter === 'Activo' && currentBatchData.soldCount > 0 && (
+                        <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
+                          Histórico: {formatCurrency(currentBatchData.totalPurchaseCost)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* 3. Kilos Promedio / Utilidad */}
+                {/* 2. Biomasa / Valor Kilo Compra */}
+                {isWorker ? (
+                  <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm space-y-1">
+                    <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">
+                      Biomasa Total del Lote
+                    </span>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                      {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeCurrentWeight : currentBatchData.totalCurrentWeight, 0)}
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400"> kg</span>
+                    </p>
+                    <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-slate-800">
+                      <span>Entrada: {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeEntryWeight : currentBatchData.totalEntryWeight, 0)} kg totales</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm space-y-1">
+                    <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">
+                      {statusFilter === 'Vendido' ? 'Total Ingresos por Venta' : 'Valor del Kilo Compra ($/kg)'}
+                    </span>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                      {statusFilter === 'Vendido' ? (
+                        formatCurrency(currentBatchData.totalSalesRevenue)
+                      ) : (
+                        <>
+                          {formatCurrency(statusFilter === 'Activo' ? currentBatchData.activeCostPerEntryKg : currentBatchData.costPerEntryKg)}
+                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400"> / kg</span>
+                        </>
+                      )}
+                    </p>
+                    <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-slate-800">
+                      {statusFilter === 'Vendido' ? (
+                        <span>Promedio salida: {formatCurrency(currentBatchData.avgSoldPricePerKg)}/kg ({formatNumber(currentBatchData.totalSoldWeight, 0)} kg)</span>
+                      ) : (
+                        <span>Sobre {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeEntryWeight : currentBatchData.totalEntryWeight, 0)} kg totales de entrada</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Kilos Promedio / Ganancia */}
                 <div className="p-5 rounded-2xl bg-blue-50/90 dark:bg-slate-900/90 border border-blue-200/90 dark:border-blue-500/30 shadow-sm space-y-1">
                   <span className="text-xs font-bold uppercase text-blue-800 dark:text-blue-400">
-                    {statusFilter === 'Vendido' ? 'Utilidad Neta Realizada' : 'Kilos Promedio por Animal'}
+                    {isWorker || statusFilter !== 'Vendido' ? 'Kilos Promedio por Animal' : 'Utilidad Neta Realizada'}
                   </span>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
-                    {statusFilter === 'Vendido' ? (
+                    {!isWorker && statusFilter === 'Vendido' ? (
                       <span className={currentBatchData.totalProfitRealized >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}>
                         {formatCurrency(currentBatchData.totalProfitRealized)}
                       </span>
@@ -825,7 +859,7 @@ export function BatchAnalyticsView({
                     )}
                   </p>
                   <div className="text-xs text-blue-900 dark:text-blue-300 font-extrabold flex items-center justify-between pt-1 border-t border-blue-200/60 dark:border-slate-800">
-                    {statusFilter === 'Vendido' ? (
+                    {!isWorker && statusFilter === 'Vendido' ? (
                       <span>Ganancia total acumulada</span>
                     ) : (
                       <>
@@ -974,10 +1008,21 @@ export function BatchAnalyticsView({
                       <th className="p-3 border-r border-emerald-900 text-right">Kilos Actuales</th>
                       <th className="p-3 border-r border-emerald-900 text-right">Ganancia (+kg)</th>
                       <th className="p-3 border-r border-emerald-900 text-right">GDP (kg/d)</th>
-                      <th className="p-3 border-r border-emerald-900 text-right">Precio Compra ($)</th>
-                      <th className="p-3 border-r border-emerald-900 text-right">Valor Kilo ($/kg)</th>
-                      <th className="p-3 border-r border-emerald-900 text-right">Inversión Total ($)</th>
-                      <th className="p-3 text-right">Valor Estimado ($)</th>
+                      {isWorker ? (
+                        <>
+                          <th className="p-3 border-r border-emerald-900">Categoría</th>
+                          <th className="p-3 border-r border-emerald-900">Sexo</th>
+                          <th className="p-3 border-r border-emerald-900">Raza</th>
+                          <th className="p-3 text-right">Color</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="p-3 border-r border-emerald-900 text-right">Precio Compra ($)</th>
+                          <th className="p-3 border-r border-emerald-900 text-right">Valor Kilo ($/kg)</th>
+                          <th className="p-3 border-r border-emerald-900 text-right">Inversión Total ($)</th>
+                          <th className="p-3 text-right">Valor Estimado ($)</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-300 dark:divide-slate-700 font-medium">
@@ -1049,21 +1094,40 @@ export function BatchAnalyticsView({
                             {formatNumber(wm.overallGdp, 3)}
                           </td>
 
-                          <td className="p-3 text-right font-black border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                            {formatCurrency(entryPrice)}
-                          </td>
+                          {isWorker ? (
+                            <>
+                              <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                                {animal.category || '-'}
+                              </td>
+                              <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                                {animal.sex || '-'}
+                              </td>
+                              <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                                {animal.breed || '-'}
+                              </td>
+                              <td className="p-3 text-right whitespace-nowrap">
+                                {animal.color || '-'}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="p-3 text-right font-black border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                                {formatCurrency(entryPrice)}
+                              </td>
 
-                          <td className="p-3 text-right font-black text-emerald-700 dark:text-emerald-400 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                            {costPerKg > 0 ? `${formatCurrency(costPerKg)}/kg` : '-'}
-                          </td>
+                              <td className="p-3 text-right font-black text-emerald-700 dark:text-emerald-400 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                                {costPerKg > 0 ? `${formatCurrency(costPerKg)}/kg` : '-'}
+                              </td>
 
-                          <td className="p-3 text-right font-bold text-slate-700 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                            {formatCurrency(fin.totalInvested)}
-                          </td>
+                              <td className="p-3 text-right font-bold text-slate-700 dark:text-slate-300 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                                {formatCurrency(fin.totalInvested)}
+                              </td>
 
-                          <td className="p-3 text-right font-black text-slate-900 dark:text-white whitespace-nowrap">
-                            {isSold ? formatCurrency(animal.exitPrice) : formatCurrency(fin.totalInvested + fin.netProfit)}
-                          </td>
+                              <td className="p-3 text-right font-black text-slate-900 dark:text-white whitespace-nowrap">
+                                {isSold ? formatCurrency(animal.exitPrice) : formatCurrency(fin.totalInvested + fin.netProfit)}
+                              </td>
+                            </>
+                          )}
                         </tr>
                       );
                     })}
@@ -1090,19 +1154,27 @@ export function BatchAnalyticsView({
                       <td className="p-3 text-right border-r border-slate-900 whitespace-nowrap">
                         {formatNumber(tableSummary.avgGdp, 3)}
                       </td>
-                      <td className="p-3 text-right border-r border-slate-900 whitespace-nowrap">
-                        <div>{formatCurrency(tableSummary.totPurchase)}</div>
-                        <div className="text-[10px] font-normal text-slate-700 dark:text-slate-300">Prom: {formatCurrency(tableSummary.avgPurchase)}</div>
-                      </td>
-                      <td className="p-3 text-right border-r border-slate-900 text-emerald-900 dark:text-emerald-300 whitespace-nowrap">
-                        {formatCurrency(tableSummary.costPerKg)}/kg
-                      </td>
-                      <td className="p-3 text-right border-r border-slate-900 whitespace-nowrap">
-                        {formatCurrency(tableSummary.totInvestment)}
-                      </td>
-                      <td className="p-3 text-right whitespace-nowrap">
-                        {formatCurrency(tableSummary.totEstimated)}
-                      </td>
+                      {isWorker ? (
+                        <td colSpan={4} className="p-3 text-right text-slate-700 dark:text-slate-300">
+                          {tableSummary.count} animales registrados en lote
+                        </td>
+                      ) : (
+                        <>
+                          <td className="p-3 text-right border-r border-slate-900 whitespace-nowrap">
+                            <div>{formatCurrency(tableSummary.totPurchase)}</div>
+                            <div className="text-[10px] font-normal text-slate-700 dark:text-slate-300">Prom: {formatCurrency(tableSummary.avgPurchase)}</div>
+                          </td>
+                          <td className="p-3 text-right border-r border-slate-900 text-emerald-900 dark:text-emerald-300 whitespace-nowrap">
+                            {formatCurrency(tableSummary.costPerKg)}/kg
+                          </td>
+                          <td className="p-3 text-right border-r border-slate-900 whitespace-nowrap">
+                            {formatCurrency(tableSummary.totInvestment)}
+                          </td>
+                          <td className="p-3 text-right whitespace-nowrap">
+                            {formatCurrency(tableSummary.totEstimated)}
+                          </td>
+                        </>
+                      )}
                     </tr>
                   </tfoot>
                 </table>

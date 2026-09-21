@@ -38,7 +38,7 @@ import { DuplicateWarningModal } from './DuplicateWarningModal';
 import { analyzeFarmConsecutives, extractConsecutiveNumber } from '../../services/consecutiveService';
 
 export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]', cattleList = [] }) {
-  const { currentUser } = useAuth();
+  const { currentUser, isWorker } = useAuth();
   const [batchDuplicates, setBatchDuplicates] = useState([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
@@ -258,15 +258,17 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       return;
     }
 
-    // Validar costos si no es costo cero por nacimiento
-    if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
-      setErrors('Por favor ingresa un precio pactado por kilo ($/kg) válido.');
-      return;
-    }
+    // Validar costos si no es costo cero por nacimiento (solo administradores)
+    if (!isWorker) {
+      if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
+        setErrors('Por favor ingresa un precio pactado por kilo ($/kg) válido.');
+        return;
+      }
 
-    if (costMode === 'fixedPrice' && (!fixedPricePerHead || parseFloat(fixedPricePerHead) <= 0)) {
-      setErrors('Por favor ingresa el valor promedio por animal ($/cab).');
-      return;
+      if (costMode === 'fixedPrice' && (!fixedPricePerHead || parseFloat(fixedPricePerHead) <= 0)) {
+        setErrors('Por favor ingresa el valor promedio por animal ($/cab).');
+        return;
+      }
     }
 
     const batchAnimalsPayload = validRows.map(r => {
@@ -682,226 +684,216 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           </div>
         </div>
 
-        {/* PASO 2: MODALIDAD DE COSTO DE ENTRADA */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3.5 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
-              <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>2. ¿Cómo deseas liquidar el costo de este lote?</span>
-            </h4>
-          </div>
+        {/* PASO 2: MODALIDAD DE COSTO DE ENTRADA (Solo Administrador) */}
+        {!isWorker && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>2. ¿Cómo deseas liquidar el costo de este lote?</span>
+              </h4>
+            </div>
 
-          <div className={`grid grid-cols-1 ${batchInfo.entryType === 'Nacimiento' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3 sm:gap-4`}>
-            
-            {/* Opción C: Costo Cero (Solo si es Nacimiento) */}
-            {batchInfo.entryType === 'Nacimiento' && (
+            <div className={`grid grid-cols-1 ${batchInfo.entryType === 'Nacimiento' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3 sm:gap-4`}>
+              
+              {/* Opción C: Costo Cero (Solo si es Nacimiento) */}
+              {batchInfo.entryType === 'Nacimiento' && (
+                <div 
+                  onClick={() => setCostMode('zeroCost')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                    costMode === 'zeroCost'
+                      ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>$0 COP (Nacimiento en Finca)</span>
+                      </span>
+                      <input 
+                        type="radio" 
+                        name="costMode" 
+                        checked={costMode === 'zeroCost'} 
+                        onChange={() => setCostMode('zeroCost')}
+                        className="accent-emerald-600 w-4 h-4 cursor-pointer" 
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                      Asigna costo de compra $0 a cada cría. La rentabilidad se calculará a partir de los gastos de manejo posteriores.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 mt-3">
+                    <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                      ✓ Sin costo de compra inicial
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Opción B: Por Kilos de Entrada * $/kg */}
               <div 
-                onClick={() => setCostMode('zeroCost')}
+                onClick={() => setCostMode('pricePerKg')}
                 className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                  costMode === 'zeroCost'
-                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                  costMode === 'pricePerKg'
+                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span>$0 COP (Nacimiento en Finca)</span>
+                      <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Por Kilos $\times$ $/kg</span>
                     </span>
                     <input 
                       type="radio" 
                       name="costMode" 
-                      checked={costMode === 'zeroCost'} 
-                      onChange={() => setCostMode('zeroCost')}
+                      checked={costMode === 'pricePerKg'} 
+                      onChange={() => setCostMode('pricePerKg')}
                       className="accent-emerald-600 w-4 h-4 cursor-pointer" 
                     />
                   </div>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Asigna costo de compra $0 a cada cría. La rentabilidad se calculará a partir de los gastos de manejo posteriores.
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+                    Multiplica los kilos de entrada de cada animal por el precio pactado por kilo.
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 mt-3">
-                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
-                    ✓ Sin costo de compra inicial
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Opción B: Por Kilos de Entrada * $/kg */}
-            <div 
-              onClick={() => setCostMode('pricePerKg')}
-              className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                costMode === 'pricePerKg'
-                  ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
-                  : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Por Kilos $\times$ $/kg</span>
-                  </span>
-                  <input 
-                    type="radio" 
-                    name="costMode" 
-                    checked={costMode === 'pricePerKg'} 
-                    onChange={() => setCostMode('pricePerKg')}
-                    className="accent-emerald-600 w-4 h-4 cursor-pointer" 
-                  />
-                </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-                  Multiplica los kilos de entrada de cada animal por el precio pactado por kilo.
-                </p>
+                {costMode === 'pricePerKg' && (
+                  <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60" onClick={(e) => e.stopPropagation()}>
+                    <label className="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-1">
+                      Precio por Kilo (COP/kg) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                      <input
+                        type="number"
+                        value={pricePerKg}
+                        onChange={(e) => setPricePerKg(e.target.value)}
+                        placeholder="Ej. 8500, 9200"
+                        min="0"
+                        step="50"
+                        className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-emerald-500"
+                        required={costMode === 'pricePerKg'}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {costMode === 'pricePerKg' && (
-                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60" onClick={(e) => e.stopPropagation()}>
-                  <label className="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-1">
-                    Precio por Kilo (COP/kg) <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
-                    <input
-                      type="number"
-                      value={pricePerKg}
-                      onChange={(e) => setPricePerKg(e.target.value)}
-                      placeholder="Ej. 8500, 9200"
-                      min="0"
-                      step="50"
-                      className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-emerald-500"
-                      required={costMode === 'pricePerKg'}
+              {/* Opción A: Valor Promedio Fijo por Cabeza */}
+              <div 
+                onClick={() => setCostMode('fixedPrice')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                  costMode === 'fixedPrice'
+                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span>Valor Fijo por Animal ($/cab)</span>
+                    </span>
+                    <input 
+                      type="radio" 
+                      name="costMode" 
+                      checked={costMode === 'fixedPrice'} 
+                      onChange={() => setCostMode('fixedPrice')}
+                      className="accent-emerald-600 w-4 h-4 cursor-pointer" 
                     />
                   </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+                    Asigna el mismo costo promedio a todos los animales del lote.
+                  </p>
                 </div>
-              )}
+
+                {costMode === 'fixedPrice' && (
+                  <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60" onClick={(e) => e.stopPropagation()}>
+                    <label className="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-1">
+                      Valor Fijo por Animal (COP) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                      <input
+                        type="number"
+                        value={fixedPricePerHead}
+                        onChange={(e) => setFixedPricePerHead(e.target.value)}
+                        placeholder="Ej. 2500000"
+                        min="0"
+                        step="50000"
+                        className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-emerald-500"
+                        required={costMode === 'fixedPrice'}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Opción A: Valor Promedio Fijo por Cabeza */}
-            <div 
-              onClick={() => setCostMode('fixedPrice')}
-              className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                costMode === 'fixedPrice'
-                  ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
-                  : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span>Valor Fijo por Animal ($/cab)</span>
-                  </span>
-                  <input 
-                    type="radio" 
-                    name="costMode" 
-                    checked={costMode === 'fixedPrice'} 
-                    onChange={() => setCostMode('fixedPrice')}
-                    className="accent-emerald-600 w-4 h-4 cursor-pointer" 
-                  />
-                </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-                  Asigna el mismo costo promedio a todos los animales del lote.
-                </p>
+            {/* SECCIÓN ADICIONAL: GASTOS ASOCIADOS AL LOTE (FLETES, COMISIÓN, VACUNACIÓN) */}
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>Gastos Adicionales de Entrada del Lote (Fletes, Comisiones, Insumos)</span>
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">Opcional</span>
               </div>
 
-              {costMode === 'fixedPrice' && (
-                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60" onClick={(e) => e.stopPropagation()}>
-                  <label className="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-1">
-                    Valor Fijo por Animal (COP) <span className="text-rose-500">*</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Total Gastos del Lote (COP):
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
                     <input
                       type="number"
-                      value={fixedPricePerHead}
-                      onChange={(e) => setFixedPricePerHead(e.target.value)}
-                      placeholder="Ej. 1500000, 2200000"
+                      value={batchExpenses}
+                      onChange={(e) => setBatchExpenses(e.target.value)}
+                      placeholder="Ej. 600000 (Flete total)"
                       min="0"
                       step="10000"
-                      className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-emerald-500"
-                      required={costMode === 'fixedPrice'}
+                      className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
-              )}
-            </div>
 
-          </div>
-
-          {/* SECCIÓN DE GASTOS ADICIONALES DEL LOTE (FLETE, COMISIÓN, VACUNAS, GUÍAS) */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/80 via-slate-50 to-blue-50/50 dark:from-blue-950/30 dark:via-slate-900/50 dark:to-blue-950/20 border border-blue-200 dark:border-blue-800/60 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-blue-600 text-white shadow-sm">
-                  <Truck className="w-4 h-4" />
-                </div>
                 <div>
-                  <h5 className="text-xs sm:text-sm font-extrabold text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
-                    <span>Gastos Globales del Lote (Flete, Comisión, Vacunas, Guías)</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
-                      Opcional
-                    </span>
-                  </h5>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                    Ingresa el valor total de gastos pagados por el lote. El sistema lo dividirá automáticamente en partes iguales entre todos los animales.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Valor Total de Gastos del Lote (COP):
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Concepto / Detalle de Gastos (Opcional):
+                  </label>
                   <input
-                    type="number"
-                    value={batchExpenses}
-                    onChange={(e) => setBatchExpenses(e.target.value)}
-                    placeholder="Ej. 1200000 (Flete + comisión)"
-                    min="0"
-                    step="10000"
-                    className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-blue-500"
+                    type="text"
+                    value={expensesConcept}
+                    onChange={(e) => setExpensesConcept(e.target.value)}
+                    placeholder="Ej. Flete camión, comisión, vacuna aftosa"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Concepto / Detalle de Gastos (Opcional):
-                </label>
-                <input
-                  type="text"
-                  value={expensesConcept}
-                  onChange={(e) => setExpensesConcept(e.target.value)}
-                  placeholder="Ej. Flete camión, comisión, vacuna aftosa"
-                  className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
+              {totalBatchExpensesNum > 0 && (
+                <div className="p-3 rounded-xl bg-blue-100/70 dark:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-xs flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Gasto prorrateado por cabeza:
+                    <strong className="text-emerald-700 dark:text-emerald-300 text-sm font-black">
+                      +{formatCurrency(expensePerAnimal)} / animal
+                    </strong>
+                  </span>
+                  <span className="text-[11px] text-blue-700 dark:text-blue-300 font-semibold">
+                    Repartido equitativamente entre {totalAnimals} animales del lote
+                  </span>
+                </div>
+              )}
             </div>
-
-            {totalBatchExpensesNum > 0 && (
-              <div className="p-3 rounded-xl bg-blue-100/70 dark:bg-blue-950/60 border border-blue-300 dark:border-blue-800 text-xs flex flex-wrap items-center justify-between gap-2">
-                <span className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Gasto prorrateado por cabeza:
-                  <strong className="text-emerald-700 dark:text-emerald-300 text-sm font-black">
-                    +{formatCurrency(expensePerAnimal)} / animal
-                  </strong>
-                </span>
-                <span className="text-[11px] text-blue-700 dark:text-blue-300 font-semibold">
-                  Repartido equitativamente entre {totalAnimals} animales del lote
-                </span>
-              </div>
-            )}
           </div>
-        </div>
+        )}
 
         {/* PASO 3: TABLA DE ANIMALES DEL LOTE */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
@@ -1096,7 +1088,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   )}
                   <th className="p-3">Color / Pelaje <span className="text-rose-500">*</span></th>
                   <th className="p-3">{batchInfo.entryType === 'Nacimiento' ? 'Peso Nacer (kg)' : 'Peso Entrada (kg)'}</th>
-                  <th className="p-3 text-right">Costo Calculado (COP)</th>
+                  <th className="p-3 text-right">{isWorker ? 'Categoría' : 'Costo Calculado (COP)'}</th>
                   <th className="p-3 w-10 text-center"></th>
                 </tr>
               </thead>
@@ -1184,15 +1176,24 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                         />
                       </td>
 
-                      {/* Costo Calculado */}
+                      {/* Costo Calculado / Categoría */}
+                      {/* Costo Calculado / Categoría */}
                       <td className="p-2.5 text-right font-extrabold text-slate-900 dark:text-white">
-                        <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(rowCost)}
-                        </div>
-                        {totalBatchExpensesNum > 0 && (
-                          <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">
-                            +{formatCurrency(expensePerAnimal)} gastos
-                          </div>
+                        {isWorker ? (
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            {batchInfo.category || (batchInfo.sex === 'Macho' ? 'Macho' : 'Hembra')}
+                          </span>
+                        ) : (
+                          <>
+                            <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                              {formatCurrency(rowCost)}
+                            </div>
+                            {totalBatchExpensesNum > 0 && (
+                              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">
+                                +{formatCurrency(expensePerAnimal)} gastos
+                              </div>
+                            )}
+                          </>
                         )}
                       </td>
 
@@ -1240,52 +1241,68 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           </button>
         </div>
 
-        {/* RESUMEN TOTAL DEL LOTE (4 KPIs CONSOLIDADOS CON GASTOS) */}
+        {/* RESUMEN TOTAL DEL LOTE */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white space-y-3 shadow-lg">
           <div className="flex items-center justify-between border-b border-white/20 pb-2">
             <h4 className="text-xs font-black uppercase tracking-wider text-emerald-200 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-              <span>Resumen Financiero y de Báscula del Lote</span>
+              <span>{isWorker ? 'Resumen de Animales y Báscula del Lote' : 'Resumen Financiero y de Báscula del Lote'}</span>
             </h4>
             <span className="text-[11px] text-emerald-200 font-bold bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20">
               {batchInfo.entryBatch}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-              <span className="text-emerald-200 block text-[10px] font-semibold">Total Cabezas:</span>
-              <p className="text-lg sm:text-xl font-black text-white mt-0.5">{totalAnimals} cab</p>
-            </div>
+          {isWorker ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <span className="text-emerald-200 block text-[10px] font-semibold">Total Cabezas en el Lote:</span>
+                <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{totalAnimals} cabezas</p>
+                <span className="text-[10px] text-emerald-200/80 mt-0.5 block">{batchInfo.category} • {batchInfo.sex}</span>
+              </div>
 
-            <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-              <span className="text-emerald-200 block text-[10px] font-semibold">Kilos Totales Báscula:</span>
-              <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatNumber(totalKilos, 0)} kg</p>
-              <span className="text-[10px] text-emerald-200/80 mt-0.5 block">Prom: {formatNumber(avgWeight, 1)} kg/cab</span>
+              <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <span className="text-emerald-200 block text-[10px] font-semibold">Kilos Totales Registrados:</span>
+                <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatNumber(totalKilos, 0)} kg</p>
+                <span className="text-[10px] text-emerald-200/80 mt-0.5 block font-bold">Promedio: {formatNumber(avgWeight, 1)} kg/cab</span>
+              </div>
             </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <span className="text-emerald-200 block text-[10px] font-semibold">Total Cabezas:</span>
+                <p className="text-lg sm:text-xl font-black text-white mt-0.5">{totalAnimals} cab</p>
+              </div>
 
-            <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-              <span className="text-emerald-200 block text-[10px] font-semibold">
-                {costMode === 'pricePerKg' ? 'Compra por Kilo:' : 'Compra por Cabeza:'}
-              </span>
-              <p className="text-lg sm:text-xl font-black text-amber-300 mt-0.5">
-                {costMode === 'pricePerKg' ? (pricePerKg ? `${formatCurrency(pricePerKg)}/kg` : '$0/kg') : formatCurrency(fixedPricePerHead || 0)}
-              </p>
-              {totalBatchExpensesNum > 0 && (
-                <span className="text-[10px] text-blue-200 font-bold mt-0.5 block">
-                  + {formatCurrency(expensePerAnimal)}/cab gastos
+              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <span className="text-emerald-200 block text-[10px] font-semibold">Kilos Totales Báscula:</span>
+                <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatNumber(totalKilos, 0)} kg</p>
+                <span className="text-[10px] text-emerald-200/80 mt-0.5 block">Prom: {formatNumber(avgWeight, 1)} kg/cab</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                <span className="text-emerald-200 block text-[10px] font-semibold">
+                  {costMode === 'pricePerKg' ? 'Compra por Kilo:' : 'Compra por Cabeza:'}
                 </span>
-              )}
-            </div>
+                <p className="text-lg sm:text-xl font-black text-amber-300 mt-0.5">
+                  {costMode === 'pricePerKg' ? (pricePerKg ? `${formatCurrency(pricePerKg)}/kg` : '$0/kg') : formatCurrency(fixedPricePerHead || 0)}
+                </p>
+                {totalBatchExpensesNum > 0 && (
+                  <span className="text-[10px] text-blue-200 font-bold mt-0.5 block">
+                    + {formatCurrency(expensePerAnimal)}/cab gastos
+                  </span>
+                )}
+              </div>
 
-            <div className="p-3 rounded-xl bg-emerald-500/30 backdrop-blur-sm border border-emerald-400/40">
-              <span className="text-emerald-100 block text-[10px] font-semibold">Inversión Total con Gastos:</span>
-              <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatCurrency(totalInvestmentWithExpenses)}</p>
-              <span className="text-[10px] text-emerald-200 mt-0.5 block font-bold">
-                Costo Real: {formatCurrency(avgTotalCostPerHead)}/cab
-              </span>
+              <div className="p-3 rounded-xl bg-emerald-500/30 backdrop-blur-sm border border-emerald-400/40">
+                <span className="text-emerald-100 block text-[10px] font-semibold">Inversión Total con Gastos:</span>
+                <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatCurrency(totalInvestmentWithExpenses)}</p>
+                <span className="text-[10px] text-emerald-200 mt-0.5 block font-bold">
+                  Costo Real: {formatCurrency(avgTotalCostPerHead)}/cab
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Mensajes de Error */}
