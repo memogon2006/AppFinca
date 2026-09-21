@@ -350,6 +350,9 @@ export async function exportBackupData(userId, userDetails = {}) {
   let weighings = [];
   let expenses = [];
   let vaccinations = [];
+  let palpations = [];
+  let audits = [];
+  let activityLogs = [];
 
   if (userId) {
     cattle = await db.cattle.where('userId').equals(userId).toArray();
@@ -358,17 +361,27 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.vaccinations) {
       vaccinations = await db.vaccinations.where('userId').equals(userId).toArray();
     }
+    if (db.palpations) {
+      palpations = await db.palpations.where('userId').equals(userId).toArray();
+    }
+    if (db.audits) {
+      audits = await db.audits.where('userId').equals(userId).toArray();
+    }
+    if (db.activityLogs) {
+      activityLogs = await db.activityLogs.where('userId').equals(userId).toArray();
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
     expenses = await db.expenses.toArray();
-    if (db.vaccinations) {
-      vaccinations = await db.vaccinations.toArray();
-    }
+    if (db.vaccinations) vaccinations = await db.vaccinations.toArray();
+    if (db.palpations) palpations = await db.palpations.toArray();
+    if (db.audits) audits = await db.audits.toArray();
+    if (db.activityLogs) activityLogs = await db.activityLogs.toArray();
   }
 
   const backup = {
-    version: 4,
+    version: 5,
     appName: "INVENTARIO BOVINO APP",
     exportDate: new Date().toISOString(),
     farmName: userDetails.farmName || "Mi Finca Ganadera",
@@ -378,6 +391,9 @@ export async function exportBackupData(userId, userDetails = {}) {
     weighings,
     expenses,
     vaccinations,
+    palpations,
+    audits,
+    activityLogs,
   };
 
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
@@ -395,24 +411,32 @@ export async function importBackupData(jsonData, userId) {
   try {
     const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
     if (!data.cattle || !Array.isArray(data.cattle)) {
-      throw new Error('Formato de respaldo no válido.');
+      throw new Error('Formato de respaldo no válido. El archivo debe contener la lista de ganado.');
     }
 
-    await db.transaction('rw', db.cattle, db.weighings, db.expenses, db.vaccinations, async () => {
+    const tables = [db.cattle, db.weighings, db.expenses];
+    if (db.vaccinations) tables.push(db.vaccinations);
+    if (db.palpations) tables.push(db.palpations);
+    if (db.audits) tables.push(db.audits);
+    if (db.activityLogs) tables.push(db.activityLogs);
+
+    await db.transaction('rw', tables, async () => {
       if (userId) {
         await db.cattle.where('userId').equals(userId).delete();
         await db.weighings.where('userId').equals(userId).delete();
         await db.expenses.where('userId').equals(userId).delete();
-        if (db.vaccinations) {
-          await db.vaccinations.where('userId').equals(userId).delete();
-        }
+        if (db.vaccinations) await db.vaccinations.where('userId').equals(userId).delete();
+        if (db.palpations) await db.palpations.where('userId').equals(userId).delete();
+        if (db.audits) await db.audits.where('userId').equals(userId).delete();
+        if (db.activityLogs) await db.activityLogs.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
         await db.expenses.clear();
-        if (db.vaccinations) {
-          await db.vaccinations.clear();
-        }
+        if (db.vaccinations) await db.vaccinations.clear();
+        if (db.palpations) await db.palpations.clear();
+        if (db.audits) await db.audits.clear();
+        if (db.activityLogs) await db.activityLogs.clear();
       }
 
       if (data.cattle?.length) {
@@ -443,6 +467,27 @@ export async function importBackupData(jsonData, userId) {
           userId: userId || v.userId || 'default',
         }));
         await db.vaccinations.bulkPut(cleanedV);
+      }
+      if (data.palpations?.length && db.palpations) {
+        const cleanedP = data.palpations.map(p => ({
+          ...p,
+          userId: userId || p.userId || 'default',
+        }));
+        await db.palpations.bulkPut(cleanedP);
+      }
+      if (data.audits?.length && db.audits) {
+        const cleanedA = data.audits.map(a => ({
+          ...a,
+          userId: userId || a.userId || 'default',
+        }));
+        await db.audits.bulkPut(cleanedA);
+      }
+      if (data.activityLogs?.length && db.activityLogs) {
+        const cleanedL = data.activityLogs.map(l => ({
+          ...l,
+          userId: userId || l.userId || 'default',
+        }));
+        await db.activityLogs.bulkPut(cleanedL);
       }
     });
 
