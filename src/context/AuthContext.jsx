@@ -7,7 +7,8 @@ import {
   updateUserProfile, 
   changeUserPassword,
   deleteUserAccount,
-  requestPasswordReset
+  requestPasswordReset,
+  forceSetNewPassword
 } from '../services/auth';
 import { triggerFeedback } from '../services/soundService';
 
@@ -51,7 +52,19 @@ export function AuthProvider({ children }) {
 
   const handleChangePassword = async (currentPassword, newPassword) => {
     if (!currentUser) return;
-    return await changeUserPassword(currentUser.id, currentPassword, newPassword);
+    const res = await changeUserPassword(currentUser.id, currentPassword, newPassword);
+    setCurrentUser(prev => prev ? { ...prev, mustChangePassword: false } : null);
+    return res;
+  };
+
+  const handleForceSetNewPassword = async (newPassword) => {
+    if (!currentUser) return;
+    const updatedSession = await forceSetNewPassword(currentUser.id, newPassword);
+    if (updatedSession) {
+      setCurrentUser(updatedSession);
+      triggerFeedback('success');
+    }
+    return updatedSession;
   };
 
   const handleDeleteAccount = async (password) => {
@@ -77,6 +90,7 @@ export function AuthProvider({ children }) {
         setSessionUser: handleSetSessionUser,
         updateProfile: handleUpdateProfile,
         changePassword: handleChangePassword,
+        forceSetNewPassword: handleForceSetNewPassword,
         deleteAccount: handleDeleteAccount,
         requestResetPassword: requestPasswordReset,
         isAuthenticated: !!currentUser,

@@ -28,6 +28,7 @@ import { FarmCalendarModal } from './components/Calendar/FarmCalendarModal';
 import { VaccinationRecordModal } from './components/Vaccinations/VaccinationRecordModal';
 import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCensusModal';
 import { InventoryChecklistModal } from './components/Checklist/InventoryChecklistModal';
+import { ForcePasswordChangeModal } from './components/Auth/ForcePasswordChangeModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
 import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
@@ -1200,6 +1201,11 @@ export default function App() {
           cloudPushData(userId);
         }}
         zIndex="z-[60]"
+      />
+
+      {/* 5. Modal de Cambio Obligatorio de Contraseña tras Restablecimiento */}
+      <ForcePasswordChangeModal
+        isOpen={Boolean(currentUser?.mustChangePassword)}
       />
 
     </div>

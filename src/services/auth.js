@@ -241,6 +241,7 @@ export async function loginUser({ email, password }) {
     farmName: user.farmName,
     email: user.email,
     createdAt: user.createdAt,
+    mustChangePassword: !!user.mustChangePassword,
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
@@ -328,11 +329,52 @@ export async function changeUserPassword(userId, currentPassword, newPassword) {
   }
 
   const newHash = await hashPassword(cleanNew);
-  const updated = { ...user, passwordHash: newHash };
+  const updated = { ...user, passwordHash: newHash, mustChangePassword: false, updatedAt: new Date().toISOString() };
   await db.users.put(updated);
   await cloudSaveUser(updated);
 
+  const current = getCurrentUser();
+  if (current && current.id === userId) {
+    const updatedSession = { ...current, mustChangePassword: false };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSession));
+  }
+
   return { success: true, message: '¡Contraseña actualizada con éxito!' };
+}
+
+/**
+ * Fuerza el establecimiento de una nueva contraseña obligatoria (cuando ingresa con clave temporal)
+ */
+export async function forceSetNewPassword(userId, newPassword) {
+  const cleanNew = (newPassword || '').trim();
+
+  if (!cleanNew || cleanNew.length < 4) {
+    throw new Error('La nueva contraseña debe tener al menos 4 caracteres.');
+  }
+
+  const user = await db.users.get(userId);
+  if (!user) throw new Error('Usuario no encontrado.');
+
+  const newHash = await hashPassword(cleanNew);
+  const updated = {
+    ...user,
+    passwordHash: newHash,
+    mustChangePassword: false,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await db.users.put(updated);
+  await cloudSaveUser(updated);
+
+  // Actualizar sesión activa
+  const current = getCurrentUser();
+  if (current && current.id === userId) {
+    const updatedSession = { ...current, mustChangePassword: false };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSession));
+    return updatedSession;
+  }
+
+  return updated;
 }
 
 /**
@@ -440,10 +482,11 @@ export async function requestPasswordReset(email) {
   const tempPassword = generateTemporaryPassword();
   const newHash = await hashPassword(tempPassword);
 
-  // 4. Actualizar usuario en local y nube
+  // 4. Actualizar usuario en local y nube con requerimiento de cambio obligatorio
   const updatedUser = {
     ...user,
     passwordHash: newHash,
+    mustChangePassword: true,
     updatedAt: new Date().toISOString(),
   };
 
@@ -488,6 +531,7 @@ export async function adminResendCredentials(userId) {
   const updated = {
     ...user,
     passwordHash: newHash,
+    mustChangePassword: true,
     updatedAt: new Date().toISOString(),
   };
 

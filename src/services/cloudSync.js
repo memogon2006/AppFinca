@@ -24,6 +24,7 @@ export async function cloudSaveUser(user) {
     farmName: user.farmName,
     email: cleanEmail,
     passwordHash: user.passwordHash,
+    mustChangePassword: !!user.mustChangePassword,
     createdAt: user.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

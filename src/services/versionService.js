@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.12";
+export const CURRENT_APP_VERSION = "2.12.13";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.13",
+    date: "20/09/2026",
+    title: "Cambio Obligatorio de Contraseña tras Restablecimiento de Cuenta",
+    highlights: [
+      "Flujo de Seguridad Blindado: Al ingresar con una clave temporal regenerada o por blanqueo de acceso, el sistema bloquea la navegación con un modal obligatorio para definir la nueva contraseña personal.",
+      "Validación en Tiempo Real: Comprobación de longitud mínima y confirmación exacta de la nueva clave antes de permitir el acceso al inventario ganadero.",
+      "Sincronización Inmediata en la Nube: La nueva contraseña se cifra (SHA-256) y se actualiza simultáneamente en la base de datos local y en Google Cloud Firebase.",
+      "Experiencia Fluida y Segura: Enlace directo para cerrar sesión si el usuario no desea cambiar la clave en ese instante."
+    ]
+  },
   {
     version: "2.12.12",
     date: "20/09/2026",
