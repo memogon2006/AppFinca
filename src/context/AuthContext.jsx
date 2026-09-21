@@ -57,15 +57,26 @@ export function AuthProvider({ children }) {
 
         // 3. Sincronizar y actualizar todos los datos de sesión con la versión más fresca de la nube
         if (remoteUser) {
+          let farmName = remoteUser.farmName || session.farmName;
+          const ownerEmail = remoteUser.ownerEmail || session.ownerEmail;
+          if ((remoteUser.role === 'worker' || session.role === 'worker') && ownerEmail) {
+            try {
+              const ownerRecord = await cloudFindUser(ownerEmail);
+              if (ownerRecord && ownerRecord.farmName) {
+                farmName = ownerRecord.farmName;
+              }
+            } catch (e) {}
+          }
+
           const merged = {
             ...session,
             ...remoteUser,
             id: remoteUser.id || session.id,
             name: remoteUser.name || session.name,
-            farmName: remoteUser.farmName || session.farmName,
+            farmName,
             role: remoteUser.role || session.role || 'admin',
             ownerId: remoteUser.ownerId || session.ownerId || null,
-            ownerEmail: remoteUser.ownerEmail || session.ownerEmail || null,
+            ownerEmail: ownerEmail || null,
             isActive: remoteUser.isActive !== false,
           };
           localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));

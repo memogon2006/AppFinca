@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.13.3";
+export const CURRENT_APP_VERSION = "2.13.4";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.4",
+    date: "21/09/2026",
+    title: "Sincronización Total Multi-Perfil & Multi-Plataforma en Tiempo Real",
+    highlights: [
+      "Espejado Total Administrador ⇄ Vaquero: Todas las modificaciones de animales, pesajes, lotes, potreros, vacunas y partos hechas por el administrador o vaqueros se reflejan instantáneamente en todos los perfiles.",
+      "Sincronización Dinámica de Identidad del Predio: Cambios en el nombre de la finca o configuración se transmiten en vivo a todas las cuentas y dispositivos.",
+      "Reconciliación Universal en 11 Colecciones: Descargas y subidas automáticas cada 10 segundos y al cambiar de ventana para mantener a todo el equipo al día."
+    ]
+  },
   {
     version: "2.13.3",
     date: "21/09/2026",

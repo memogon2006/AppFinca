@@ -72,17 +72,18 @@ export async function cloudPushData(userId) {
   if (!userId) return false;
 
   try {
-    const cattle = await db.cattle.filter(c => c.userId === userId || !c.userId).toArray();
-    const weighings = await db.weighings.filter(w => w.userId === userId || !w.userId).toArray();
-    const expenses = db.expenses ? await db.expenses.filter(e => e.userId === userId || !e.userId).toArray() : [];
-    const vaccinations = db.vaccinations ? await db.vaccinations.filter(v => v.userId === userId || !v.userId).toArray() : [];
-    const audits = db.audits ? await db.audits.filter(a => a.userId === userId || !a.userId).toArray() : [];
-    const palpations = db.palpations ? await db.palpations.filter(p => p.userId === userId || !p.userId).toArray() : [];
-    const paddocks = db.paddocks ? await db.paddocks.filter(p => p.userId === userId || !p.userId).toArray() : [];
-    const milkRecords = db.milkRecords ? await db.milkRecords.filter(m => m.userId === userId || !m.userId).toArray() : [];
-    const milkDeliveries = db.milkDeliveries ? await db.milkDeliveries.filter(m => m.userId === userId || !m.userId).toArray() : [];
-    const transactions = db.transactions ? await db.transactions.filter(t => t.userId === userId || !t.userId).toArray() : [];
-    const activityLogs = db.activityLogs ? await db.activityLogs.filter(a => a.userId === userId || !a.userId).toArray() : [];
+    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_');
+    const cattle = await db.cattle.filter(isTarget).toArray();
+    const weighings = await db.weighings.filter(isTarget).toArray();
+    const expenses = db.expenses ? await db.expenses.filter(isTarget).toArray() : [];
+    const vaccinations = db.vaccinations ? await db.vaccinations.filter(isTarget).toArray() : [];
+    const audits = db.audits ? await db.audits.filter(isTarget).toArray() : [];
+    const palpations = db.palpations ? await db.palpations.filter(isTarget).toArray() : [];
+    const paddocks = db.paddocks ? await db.paddocks.filter(isTarget).toArray() : [];
+    const milkRecords = db.milkRecords ? await db.milkRecords.filter(isTarget).toArray() : [];
+    const milkDeliveries = db.milkDeliveries ? await db.milkDeliveries.filter(isTarget).toArray() : [];
+    const transactions = db.transactions ? await db.transactions.filter(isTarget).toArray() : [];
+    const activityLogs = db.activityLogs ? await db.activityLogs.filter(isTarget).toArray() : [];
 
     const payload = {
       userId,
@@ -143,7 +144,8 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
 
   // 2. Eliminar registros locales que ya no existen en la nube (fueron borrados en otro celular/computador)
   try {
-    const localItems = await db[tableName].filter(item => item.userId === userId || !item.userId).toArray();
+    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_');
+    const localItems = await db[tableName].filter(isTarget).toArray();
     for (const localItem of localItems) {
       if (localItem.id && !remoteIds.has(String(localItem.id))) {
         await db[tableName].delete(localItem.id).catch(() => null);
