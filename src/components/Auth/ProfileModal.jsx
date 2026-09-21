@@ -21,11 +21,13 @@ import {
   Volume2,
   VolumeX,
   Play,
-  Check
+  Check,
+  Send
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
 import { cloudPushData } from '../../services/cloudSync';
+import { adminResendCredentials } from '../../services/auth';
 import { 
   isSoundEnabled, 
   setSoundEnabled, 
@@ -164,6 +166,31 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
       setSecurityMsg({ type: 'error', text: err.message });
     } finally {
       setLoadingSecurity(false);
+    }
+  };
+
+  const [loadingAdminReset, setLoadingAdminReset] = useState(false);
+
+  const handleAdminResend = async () => {
+    if (!currentUser?.id) return;
+    const confirm = window.confirm(
+      `¿Deseas generar una nueva clave temporal segura y enviarla a tu correo (${currentUser.email})?\n\nEsta clave reemplazará tu contraseña actual de forma segura.`
+    );
+    if (!confirm) return;
+
+    try {
+      setLoadingAdminReset(true);
+      setSecurityMsg(null);
+      const res = await adminResendCredentials(currentUser.id);
+      setSecurityMsg({
+        type: 'success',
+        text: `¡Clave temporal generada (${res.tempPassword})! ${res.emailSent ? `Se envió al correo ${currentUser.email}.` : ''}`
+      });
+      alert(`✅ ¡Nueva clave temporal generada con éxito!\n\nClave: ${res.tempPassword}\n\nGuárdala o revísala en tu correo (${currentUser.email}).`);
+    } catch (e) {
+      setSecurityMsg({ type: 'error', text: e.message || 'Error al generar clave temporal.' });
+    } finally {
+      setLoadingAdminReset(false);
     }
   };
 
@@ -730,6 +757,30 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                 <KeyRound className="w-4 h-4" />
                 <span>{loadingSecurity ? 'Actualizando...' : 'Actualizar Contraseña'}</span>
               </button>
+            </div>
+
+            {/* Zona Administrativa: Blanqueo / Reenvío de Clave por Correo */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="p-4 rounded-2xl bg-sky-50/90 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
+                    <Send className="w-4 h-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                    Blanqueo & Clave Temporal por Correo
+                  </h4>
+                  <p className="text-[11px] text-sky-800 dark:text-sky-300/80 mt-0.5 leading-relaxed">
+                    Genera una clave temporal nueva y la despacha automáticamente a tu correo registrado (<strong>{currentUser.email}</strong>).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAdminResend}
+                  disabled={loadingAdminReset}
+                  className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-bold whitespace-nowrap shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0 min-h-[38px]"
+                >
+                  <Send className={`w-3.5 h-3.5 ${loadingAdminReset ? 'animate-spin' : ''}`} />
+                  <span>{loadingAdminReset ? 'Enviando...' : 'Generar y Enviar al Correo'}</span>
+                </button>
+              </div>
             </div>
 
           </form>

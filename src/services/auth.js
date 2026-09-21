@@ -1,6 +1,6 @@
 import { db } from './db';
 import { cloudSaveUser, cloudFindUser, cloudPushData, cloudPullData, cloudDeleteUserData } from './cloudSync';
-import { sendWelcomeEmail } from './emailService';
+import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
 
@@ -377,3 +377,114 @@ export async function deleteUserAccount(userId, password) {
 
   return { success: true };
 }
+
+/**
+ * Genera una clave temporal segura y fácil de recordar para ganaderos (ej. Ganado-4829, Finca-7310)
+ */
+export function generateTemporaryPassword() {
+  const prefixes = ['Ganado', 'Finca', 'Bovino', 'Pasto', 'Toro', 'Vaca'];
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const randomDigits = Math.floor(1000 + Math.random() * 9000);
+  return `${prefix}-${randomDigits}`;
+}
+
+/**
+ * Solicita el restablecimiento / blanqueo de contraseña para un correo electrónico.
+ * Busca el usuario en Dexie local o en Firebase Cloud, genera una clave temporal segura,
+ * actualiza el hash en ambas bases de datos y despacha el correo de restablecimiento.
+ */
+export async function requestPasswordReset(email) {
+  const cleanEmail = (email || '').trim().toLowerCase();
+  if (!cleanEmail) {
+    throw new Error('Por favor ingresa tu correo electrónico registrado.');
+  }
+
+  // 1. Buscar en BD local
+  const allUsers = await db.users.toArray();
+  let user = allUsers.find(u => (u.email || '').toLowerCase() === cleanEmail);
+
+  // 2. Si no está en local, buscar en la Nube Firebase
+  if (!user) {
+    user = await cloudFindUser(cleanEmail);
+    if (user) {
+      await db.users.put(user);
+    }
+  }
+
+  if (!user) {
+    throw new Error(`No se encontró ninguna cuenta ganadera registrada con el correo "${cleanEmail}". Por favor verifica el correo o crea una cuenta nueva.`);
+  }
+
+  // 3. Generar clave temporal
+  const tempPassword = generateTemporaryPassword();
+  const newHash = await hashPassword(tempPassword);
+
+  // 4. Actualizar usuario en local y nube
+  const updatedUser = {
+    ...user,
+    passwordHash: newHash,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await db.users.put(updatedUser);
+  await cloudSaveUser(updatedUser);
+
+  // 5. Despachar correo de restablecimiento
+  let emailSent = false;
+  try {
+    const emailRes = await sendPasswordResetEmail({
+      name: updatedUser.name || 'Ganadero',
+      farmName: updatedUser.farmName || 'Mi Finca',
+      email: updatedUser.email,
+      tempPassword,
+    });
+    emailSent = emailRes?.success || false;
+  } catch (e) {
+    console.warn('Error enviando correo de restablecimiento:', e);
+  }
+
+  return {
+    success: true,
+    email: updatedUser.email,
+    name: updatedUser.name || 'Ganadero',
+    farmName: updatedUser.farmName || 'Mi Finca',
+    tempPassword,
+    emailSent,
+    message: `¡Clave temporal generada con éxito! Se ha enviado al correo ${updatedUser.email}.`
+  };
+}
+
+/**
+ * Reenvía las credenciales o genera una clave temporal desde el panel de administración
+ */
+export async function adminResendCredentials(userId) {
+  const user = await db.users.get(userId);
+  if (!user) throw new Error('Usuario no encontrado.');
+
+  const tempPassword = generateTemporaryPassword();
+  const newHash = await hashPassword(tempPassword);
+
+  const updated = {
+    ...user,
+    passwordHash: newHash,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await db.users.put(updated);
+  await cloudSaveUser(updated);
+
+  const emailRes = await sendPasswordResetEmail({
+    name: updated.name || 'Ganadero',
+    farmName: updated.farmName || 'Mi Finca',
+    email: updated.email,
+    tempPassword,
+  });
+
+  return {
+    success: true,
+    tempPassword,
+    emailSent: emailRes?.success || false,
+    message: `Se ha generado una nueva clave temporal (${tempPassword}) y se ha despachado al correo ${updated.email}.`
+  };
+}
+

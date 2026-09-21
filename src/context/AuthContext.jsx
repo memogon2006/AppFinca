@@ -6,7 +6,8 @@ import {
   logoutUser, 
   updateUserProfile, 
   changeUserPassword,
-  deleteUserAccount
+  deleteUserAccount,
+  requestPasswordReset
 } from '../services/auth';
 import { triggerFeedback } from '../services/soundService';
 
@@ -77,6 +78,7 @@ export function AuthProvider({ children }) {
         updateProfile: handleUpdateProfile,
         changePassword: handleChangePassword,
         deleteAccount: handleDeleteAccount,
+        requestResetPassword: requestPasswordReset,
         isAuthenticated: !!currentUser,
       }}
     >

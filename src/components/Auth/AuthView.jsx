@@ -21,17 +21,21 @@ import {
   HelpCircle,
   Smartphone,
   KeyRound,
-  FileCheck
+  FileCheck,
+  Copy,
+  Check,
+  ArrowLeft,
+  Send
 } from 'lucide-react';
 
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 
 export function AuthView() {
-  const { login, register, setSessionUser } = useAuth();
+  const { login, register, setSessionUser, requestResetPassword } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const fileInputRef = useRef(null);
 
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -50,12 +54,46 @@ export function AuthView() {
     confirmPassword: '',
   });
 
+  // Estado para clave temporal recuperada
+  const [recoveredData, setRecoveredData] = useState(null);
+  const [copiedKey, setCopiedKey] = useState(false);
+
   const handleChange = (e) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
     setError(null);
+  };
+
+  const handleCopyTempKey = (key) => {
+    if (!key) return;
+    navigator.clipboard.writeText(key);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 3000);
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+    setRecoveredData(null);
+
+    const email = (formData.email || '').trim();
+    if (!email) {
+      return setError('Por favor ingresa el correo electrónico de tu cuenta.');
+    }
+
+    try {
+      setLoading(true);
+      const res = await (requestResetPassword ? requestResetPassword(email) : Promise.reject(new Error('Función no disponible')));
+      setRecoveredData(res);
+      setSuccessMsg(`¡Clave temporal generada! Revisa tu correo ${email} o usa la clave que aparece en pantalla.`);
+    } catch (err) {
+      setError(err.message || 'Error al restablecer la contraseña.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -188,47 +226,57 @@ export function AuthView() {
         {/* Tarjeta de Autenticación */}
         <div className="bg-white dark:bg-slate-900/90 rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-xl">
           
-          {/* Selector de Pestañas: Iniciar Sesión / Crear Cuenta */}
+          {/* Selector de Pestañas: Iniciar Sesión / Crear Cuenta / Recuperar */}
           <div className="flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 mb-4">
             <button
               type="button"
-              onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
+              onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); setRecoveredData(null); }}
               className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold transition min-h-[44px] cursor-pointer ${mode === 'login' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
             >
               Iniciar Sesión
             </button>
             <button
               type="button"
-              onClick={() => { setMode('register'); setError(null); setSuccessMsg(null); }}
+              onClick={() => { setMode('register'); setError(null); setSuccessMsg(null); setRecoveredData(null); }}
               className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold transition min-h-[44px] cursor-pointer ${mode === 'register' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
             >
               Crear Cuenta
             </button>
+            {mode === 'forgot' && (
+              <button
+                type="button"
+                className="flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-sm"
+              >
+                Recuperar Clave
+              </button>
+            )}
           </div>
 
           {/* ☁️ CONEXIÓN EN LA NUBE ACTIVA & COPIA DE SEGURIDAD */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700/60 flex items-start gap-2.5 text-xs text-emerald-950 dark:text-emerald-200 mb-4 shadow-sm">
-            <span className="text-lg flex-shrink-0">☁️</span>
-            <div className="space-y-1.5 w-full">
-              <p className="font-extrabold text-emerald-900 dark:text-emerald-300">
-                Sincronización en la Nube Activa (Multi-dispositivo)
-              </p>
-              <p className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300/90">
-                Tu información de ganado, pesajes y finanzas se sincroniza en la nube. Inicia sesión con tu correo y contraseña desde cualquier dispositivo para ver toda tu finca.
-              </p>
-              
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-sm cursor-pointer transition active:scale-95"
-                >
-                  <DownloadCloud className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>📥 Restaurar desde Copia de Seguridad (.json)</span>
-                </button>
+          {mode !== 'forgot' && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700/60 flex items-start gap-2.5 text-xs text-emerald-950 dark:text-emerald-200 mb-4 shadow-sm">
+              <span className="text-lg flex-shrink-0">☁️</span>
+              <div className="space-y-1.5 w-full">
+                <p className="font-extrabold text-emerald-900 dark:text-emerald-300">
+                  Sincronización en la Nube Activa (Multi-dispositivo)
+                </p>
+                <p className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300/90">
+                  Tu información de ganado, pesajes y finanzas se sincroniza en la nube. Inicia sesión con tu correo y contraseña desde cualquier dispositivo para ver toda tu finca.
+                </p>
+                
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-sm cursor-pointer transition active:scale-95"
+                  >
+                    <DownloadCloud className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>📥 Restaurar desde Copia de Seguridad (.json)</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Mensajes de Éxito o Error */}
           {successMsg && (
@@ -245,139 +293,218 @@ export function AuthView() {
             </div>
           )}
 
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {mode === 'register' && (
-              <>
-                {/* Nombre de Ganadero */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Nombre del Ganadero / Administrador <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Ej. Carlos Mendoza"
-                      value={formData.name}
-                      onChange={handleChange}
-                      autoCapitalize="words"
-                      autoCorrect="off"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
-                      required
-                    />
-                  </div>
+          {/* VISTA 1: RECUPERACIÓN / BLANQUEO DE CLAVE */}
+          {mode === 'forgot' ? (
+            <div className="space-y-4">
+              <div className="text-center space-y-1 pb-1">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 mb-1 border border-sky-300 dark:border-sky-800">
+                  <KeyRound className="w-6 h-6" />
                 </div>
-
-                {/* Nombre del Predio / Finca / Hacienda */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Nombre del Predio / Finca / Hacienda <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      name="farmName"
-                      placeholder="Ej. Hacienda La Esperanza"
-                      value={formData.farmName}
-                      onChange={handleChange}
-                      autoCapitalize="words"
-                      autoCorrect="off"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Correo / Usuario */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Correo Electrónico o Usuario <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  name="email"
-                  placeholder="ejemplo@miganaderia.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
-                  required
-                />
+                <h2 className="text-base font-black text-slate-900 dark:text-white">
+                  Recuperación & Blanqueo de Clave
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Ingresa tu correo electrónico registrado. El sistema generará una clave temporal segura, actualizará la base de datos y te la enviará por correo.
+                </p>
               </div>
-            </div>
 
-            {/* Contraseña con botón de Ver/Ocultar Clave */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Contraseña <span className="text-rose-500">*</span>
+              {recoveredData ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border-2 border-sky-300 dark:border-sky-700/70 text-center space-y-2.5">
+                    <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wider block">
+                      🔑 Clave Temporal Generada
+                    </span>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-2xl font-black font-mono tracking-wider text-sky-950 dark:text-sky-100 bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-sky-300 dark:border-sky-600 shadow-sm select-all">
+                        {recoveredData.tempPassword}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyTempKey(recoveredData.tempPassword)}
+                        className="p-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition active:scale-95 cursor-pointer min-h-[42px]"
+                        title="Copiar Clave"
+                      >
+                        {copiedKey ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+                        <span>{copiedKey ? '¡Copiada!' : 'Copiar'}</span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-sky-800 dark:text-sky-300/90">
+                      {recoveredData.emailSent 
+                        ? `📨 Se despachó un correo de confirmación a ${recoveredData.email}.` 
+                        : `Usa esta clave temporal para ingresar ahora mismo.`}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, email: recoveredData.email, password: recoveredData.tempPassword }));
+                      setMode('login');
+                      setError(null);
+                      setSuccessMsg('¡Clave cargada! Pulsa "Ingresar a Mi Finca" para acceder.');
+                    }}
+                    className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition min-h-[48px] cursor-pointer"
+                  >
+                    <span>Ingresar con esta Clave Ahora</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
+                      className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-bold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Volver al inicio de sesión</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Correo Electrónico Registrado <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        name="email"
+                        placeholder="ejemplo@miganaderia.com"
+                        value={formData.email}
+                        onChange={handleChange}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck="false"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-sky-500 min-h-[46px]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 active:scale-[0.98] disabled:opacity-50 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-600/30 transition min-h-[48px] cursor-pointer"
+                  >
+                    {loading ? (
+                      <span>Generando y enviando clave...</span>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Generar & Enviar Clave Temporal</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
+                      className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-bold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Volver al inicio de sesión</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : (
+            /* VISTA 2: FORMULARIO LOGIN / REGISTRO */
+            <form onSubmit={handleSubmit} className="space-y-4">
+              
+              {mode === 'register' && (
+                <>
+                  {/* Nombre de Ganadero */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Nombre del Ganadero / Administrador <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        name="name"
+                        placeholder="Ej. Carlos Mendoza"
+                        value={formData.name}
+                        onChange={handleChange}
+                        autoCapitalize="words"
+                        autoCorrect="off"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Nombre del Predio / Finca / Hacienda */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Nombre del Predio / Finca / Hacienda <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <MapPin className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        name="farmName"
+                        placeholder="Ej. Hacienda La Esperanza"
+                        value={formData.farmName}
+                        onChange={handleChange}
+                        autoCapitalize="words"
+                        autoCorrect="off"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Correo / Usuario */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Correo Electrónico o Usuario <span className="text-rose-500">*</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  <span>{showPassword ? 'Ocultar clave' : 'Ver clave'}</span>
-                </button>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    name="email"
+                    placeholder="ejemplo@miganaderia.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
+                    required
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
 
-            {/* Confirmar Contraseña (solo al registrarse) */}
-            {mode === 'register' && (
+              {/* Contraseña con botón de Ver/Ocultar Clave */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Confirmar Contraseña <span className="text-rose-500">*</span>
+                    Contraseña <span className="text-rose-500">*</span>
                   </label>
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() => setShowPassword(!showPassword)}
                     className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    <span>{showConfirmPassword ? 'Ocultar' : 'Ver'}</span>
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showPassword ? 'Ocultar clave' : 'Ver clave'}</span>
                   </button>
                 </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
                     placeholder="••••••••"
-                    value={formData.confirmPassword}
+                    value={formData.password}
                     onChange={handleChange}
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -387,37 +514,98 @@ export function AuthView() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+
+                {/* Enlace de recuperación de contraseña solo en login */}
+                {mode === 'login' && (
+                  <div className="flex items-center justify-end mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('forgot');
+                        setError(null);
+                        setSuccessMsg(null);
+                        setRecoveredData(null);
+                      }}
+                      className="text-[11.5px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>¿Olvidaste tu contraseña? Recuperar clave</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* Botón Principal de Envío */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition min-h-[48px] mt-2 cursor-pointer"
-            >
-              {loading ? (
-                <span>Conectando con la Nube...</span>
-              ) : mode === 'login' ? (
-                <>
-                  <span>Ingresar a Mi Finca</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Crear / Vincular Mi Finca</span>
-                </>
+              {/* Confirmar Contraseña (solo al registrarse) */}
+              {mode === 'register' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Confirmar Contraseña <span className="text-rose-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showConfirmPassword ? 'Ocultar' : 'Ver'}</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
               )}
-            </button>
 
-          </form>
+              {/* Botón Principal de Envío */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition min-h-[48px] mt-2 cursor-pointer"
+              >
+                {loading ? (
+                  <span>Conectando con la Nube...</span>
+                ) : mode === 'login' ? (
+                  <>
+                    <span>Ingresar a Mi Finca</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Crear / Vincular Mi Finca</span>
+                  </>
+                )}
+              </button>
+
+            </form>
+          )}
+
 
           {/* Opciones Adicionales: Cargar Respaldo / Restaurar */}
           <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">

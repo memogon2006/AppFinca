@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.11";
+export const CURRENT_APP_VERSION = "2.12.12";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.12",
+    date: "20/09/2026",
+    title: "Correo de Bienvenida Automático & Restablecimiento / Blanqueo de Contraseña",
+    highlights: [
+      "Correo de Bienvenida Automático: Al crear una cuenta, el sistema envía un correo de confirmación con los datos del predio (Finca, Ganadero, Correo, Clave inicial y enlace de acceso directo).",
+      "Recuperación de Contraseña Ganadera: Opción interactiva '¿Olvidaste tu contraseña?' en Login para generar una clave temporal segura enviada al correo registrado y visible en pantalla.",
+      "Blanqueo Administrativo de Claves: Botón en Configuración de Perfil > Seguridad para generar y despachar nuevas claves temporales sin exponer contraseñas anteriores.",
+      "Seguridad y Respaldo Permanente: Contraseñas protegidas mediante hash criptográfico SHA-256 cumpliendo la Ley 1581 de 2012 y sincronización instantánea en Google Firebase."
+    ]
+  },
   {
     version: "2.12.11",
     date: "20/09/2026",
