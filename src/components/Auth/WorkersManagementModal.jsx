@@ -213,7 +213,7 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
     if (window.confirm(`⚠️ ¿Estás completamente seguro de ELIMINAR la cuenta de "${worker.name}" (${worker.email})?\n\nEsta acción borrará su acceso de forma permanente e irreversible.`)) {
       try {
         setLoading(true);
-        await deleteWorker(worker.id, worker.email);
+        await deleteWorker(worker.id, worker.email, worker.name);
         await loadWorkersData();
         await loadLogsData();
       } catch (err) {

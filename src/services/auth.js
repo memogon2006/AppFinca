@@ -219,20 +219,20 @@ export async function registerUser({ name, farmName, email, password }) {
  * Inicia sesión verificando credenciales en Local y en la Nube
  */
 export async function loginUser({ email, password }) {
-  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanInput = (email || '').trim().toLowerCase();
   const cleanPassword = (password || '').trim();
 
-  if (!cleanEmail || !cleanPassword) {
+  if (!cleanInput || !cleanPassword) {
     throw new Error('Por favor ingresa tu correo/usuario y contraseña.');
   }
 
   // 1. Buscar en la Nube Firebase (soporta correo directo o usuario sin @)
-  let user = await cloudFindUser(cleanEmail);
-  if (!user && !cleanEmail.includes('@')) {
-    user = await cloudFindUser(`${cleanEmail}@finca.local`);
+  let user = await cloudFindUser(cleanInput);
+  if (!user && !cleanInput.includes('@')) {
+    user = await cloudFindUser(`${cleanInput}@finca.local`);
   }
-  if (!user && cleanEmail.endsWith('@finca.local')) {
-    user = await cloudFindUser(cleanEmail.replace('@finca.local', ''));
+  if (!user && cleanInput.endsWith('@finca.local')) {
+    user = await cloudFindUser(cleanInput.replace('@finca.local', ''));
   }
 
   if (user) {
@@ -245,17 +245,16 @@ export async function loginUser({ email, password }) {
     // Si no está en la nube o no hay conexión, buscar en base local Dexie
     try {
       const allUsers = await db.users.toArray();
-      const alias = cleanEmail.replace('@finca.local', '');
+      const alias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
       user = allUsers.find(u => {
-        const uEmail = (u.email || '').toLowerCase();
-        const uUser = (u.username || '').toLowerCase();
-        const uName = (u.name || '').toLowerCase();
-        return uEmail === cleanEmail || 
+        if (u.isDeleted) return false;
+        const uEmail = (u.email || '').toLowerCase().trim();
+        const uUser = (u.username || '').toLowerCase().trim();
+        return uEmail === cleanInput || 
                uEmail === `${alias}@finca.local` || 
                uEmail === alias ||
                uUser === alias ||
-               uUser === cleanEmail ||
-               uName === cleanEmail;
+               uUser === cleanInput;
       });
     } catch (localErr) {
       console.warn('Nota: error leyendo usuarios locales:', localErr);
@@ -266,9 +265,15 @@ export async function loginUser({ email, password }) {
     throw new Error('No se encontró ninguna cuenta con este usuario o correo. Por favor verifica tus credenciales.');
   }
 
-  // 2. Validar si la cuenta de trabajador está deshabilitada
-  if (user.role === 'worker' && user.isActive === false) {
-    throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio. Comunícate con tu patrón.');
+  // 2. Validar si la cuenta de trabajador está deshabilitada o fue eliminada
+  if (user.role === 'worker') {
+    if (user.isActive === false) {
+      throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio. Comunícate con tu patrón.');
+    }
+    if (user.isDeleted) {
+      await db.users.delete(user.id).catch(() => null);
+      throw new Error('⚠️ Esta cuenta de trabajador ha sido eliminada por el administrador.');
+    }
   }
 
   const inputHash = await hashPassword(cleanPassword);
@@ -741,7 +746,7 @@ export async function getFarmWorkers(ownerId, ownerEmail = null) {
   // 1. Obtener todos los trabajadores locales que pertenecen estrictamente a este propietario
   const allUsers = await db.users.toArray();
   const localWorkers = allUsers.filter(u => {
-    if (u.role !== 'worker') return false;
+    if (u.role !== 'worker' || u.isDeleted) return false;
     const uOwnerId = String(u.ownerId || '').trim();
     const uOwnerEmail = (u.ownerEmail || '').trim().toLowerCase();
     return (cleanOwnerId && uOwnerId === cleanOwnerId) ||
@@ -751,7 +756,7 @@ export async function getFarmWorkers(ownerId, ownerEmail = null) {
   });
 
   // 2. Si obtuvimos la lista remota de la nube con éxito
-  if (fetchedRemote) {
+  if (fetchedRemote && remoteWorkers.length > 0) {
     // Guardar trabajadores remotos en Dexie
     for (const rw of remoteWorkers) {
       if (rw && rw.id) await db.users.put(rw).catch(() => null);
@@ -775,8 +780,20 @@ export async function getFarmWorkers(ownerId, ownerEmail = null) {
     return remoteWorkers;
   }
 
-  // 3. Si no hay lista remota (modo offline), retornar trabajadores locales válidos
-  return localWorkers;
+  // Deduplicar localWorkers por clave única y limpiar duplicados en Dexie
+  const seen = new Set();
+  const uniqueLocal = [];
+  for (const w of localWorkers) {
+    const key = String(w.email || w.username || w.id).toLowerCase();
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      uniqueLocal.push(w);
+    } else if (w.id) {
+      await db.users.delete(w.id).catch(() => null);
+    }
+  }
+
+  return uniqueLocal;
 }
 
 /**
@@ -826,7 +843,7 @@ export async function updateWorkerPassword(workerId, workerEmail, ownerId, newPa
 /**
  * Elimina definitivamente una cuenta de trabajador
  */
-export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminName = 'Administrador') {
+export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminName = 'Administrador', workerName = null) {
   if (!workerEmail && !workerId) throw new Error('Correo/usuario no especificado.');
 
   // 1. Eliminar de Firebase
@@ -837,20 +854,33 @@ export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminN
     await db.users.delete(workerId).catch(() => null);
   }
 
-  // 3. Barrido profundo en Dexie db.users para borrar todas las filas de este trabajador
+  // 3. Barrido profundo en Dexie db.users para borrar todas las filas y variantes de este trabajador
   const cleanEmail = (workerEmail || '').trim().toLowerCase();
-  const cleanAlias = cleanEmail.replace('@finca.local', '');
+  const cleanAlias = cleanEmail.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
+  const cleanName = (workerName || '').trim().toLowerCase();
+
   try {
     const allUsers = await db.users.toArray();
     for (const u of allUsers) {
+      if (u.role !== 'worker') continue;
       const uEmail = (u.email || '').trim().toLowerCase();
       const uUser = (u.username || '').trim().toLowerCase();
       const uId = String(u.id || '').trim();
-      if (
+      const uName = (u.name || '').trim().toLowerCase();
+
+      const matches = 
         (workerId && uId === workerId) ||
         (cleanEmail && uEmail === cleanEmail) ||
-        (cleanAlias && (uEmail === cleanAlias || uEmail === `${cleanAlias}@finca.local` || uUser === cleanAlias))
-      ) {
+        (cleanAlias && (
+          uEmail === cleanAlias || 
+          uEmail === `${cleanAlias}@finca.local` || 
+          uUser === cleanAlias || 
+          uId === cleanAlias ||
+          uEmail.startsWith(`${cleanAlias}@`)
+        )) ||
+        (cleanName && uName === cleanName);
+
+      if (matches) {
         await db.users.delete(u.id).catch(() => null);
       }
     }
@@ -864,8 +894,16 @@ export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminN
     if (currentRaw) {
       const current = JSON.parse(currentRaw);
       const curEmail = (current.email || '').toLowerCase();
+      const curUser = (current.username || '').toLowerCase();
       const curId = String(current.id || '');
-      if (curId === workerId || curEmail === cleanEmail || curEmail === cleanAlias || curEmail === `${cleanAlias}@finca.local`) {
+      const curName = (current.name || '').toLowerCase();
+
+      if (
+        (workerId && curId === workerId) || 
+        (cleanEmail && curEmail === cleanEmail) || 
+        (cleanAlias && (curEmail === cleanAlias || curEmail === `${cleanAlias}@finca.local` || curUser === cleanAlias)) ||
+        (cleanName && curName === cleanName)
+      ) {
         localStorage.removeItem(STORAGE_KEY);
       }
     }

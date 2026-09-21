@@ -198,9 +198,9 @@ export function AuthProvider({ children }) {
     return await updateWorkerPassword(workerId, workerEmail, currentUser.id, newPassword, currentUser.name);
   };
 
-  const handleDeleteWorker = async (workerId, workerEmail) => {
+  const handleDeleteWorker = async (workerId, workerEmail, workerName = null) => {
     if (!currentUser) return false;
-    return await deleteWorkerAccount(workerId, workerEmail, currentUser.id, currentUser.name);
+    return await deleteWorkerAccount(workerId, workerEmail, currentUser.id, currentUser.name, workerName);
   };
 
   const isWorker = currentUser?.role === 'worker';

@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.1";
+export const CURRENT_APP_VERSION = "2.14.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.2",
+    date: "21/09/2026",
+    title: "Blindaje de Eliminación y Bloqueo de Acceso para Vaqueros Eliminados",
+    highlights: [
+      "Bloqueo Absoluto de Ingreso: Los trabajadores eliminados son rechazados de inmediato en la pantalla de inicio de sesión, impidiendo cualquier acceso con usuarios eliminados.",
+      "Purga Total por Nombre, Usuario y Correo: Eliminación simultánea de todas las variantes del trabajador en la base local Dexie y en la nube.",
+      "Eliminación de Coincidencia por Nombre de Pantalla: El inicio de sesión valida estrictamente el correo o nombre de usuario exacto, evitando accesos accidentales por nombres de visualización.",
+      "Deduplicación Automática en Base de Datos: Limpieza inmediata de registros duplicados o huérfanos al abrir el panel de trabajadores."
+    ]
+  },
   {
     version: "2.14.1",
     date: "21/09/2026",

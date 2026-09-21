@@ -1,5 +1,5 @@
 {
-  "version": "2.14.1",
-  "buildTime": 1790010000000,
-  "description": "Eliminación definitiva de cuentas y creación instantánea de trabajadores sin duplicidad ni cuentas fantasma."
+  "version": "2.14.2",
+  "buildTime": 1790020000000,
+  "description": "Blindaje de eliminación y bloqueo absoluto de acceso para cuentas de trabajadores eliminadas."
 }
