@@ -101,7 +101,7 @@ export async function logActivity({ action, description, tagNumber = '', operato
 }
 
 // Obtener registros de la bitácora de auditoría
-export async function getActivityLogs(userId, limit = 50) {
+export async function getActivityLogs(userId, limit = 100) {
   try {
     if (!db.activityLogs) return [];
     const logs = await db.activityLogs
@@ -111,6 +111,37 @@ export async function getActivityLogs(userId, limit = 50) {
   } catch (err) {
     console.warn('Error obteniendo bitácora:', err);
     return [];
+  }
+}
+
+// Eliminar un registro individual de la bitácora
+export async function deleteActivityLog(logId) {
+  try {
+    if (!db.activityLogs || !logId) return false;
+    await db.activityLogs.delete(logId);
+    return true;
+  } catch (err) {
+    console.warn('Error eliminando registro de bitácora:', err);
+    return false;
+  }
+}
+
+// Vaciar / Limpiar todos los registros de la bitácora del usuario activo
+export async function clearActivityLogs(userId) {
+  try {
+    if (!db.activityLogs) return false;
+    if (userId) {
+      const userLogs = await db.activityLogs.filter(l => l.userId === userId || !l.userId).toArray();
+      for (const log of userLogs) {
+        if (log.id) await db.activityLogs.delete(log.id);
+      }
+    } else {
+      await db.activityLogs.clear();
+    }
+    return true;
+  } catch (err) {
+    console.warn('Error limpiando bitácora:', err);
+    return false;
   }
 }
 

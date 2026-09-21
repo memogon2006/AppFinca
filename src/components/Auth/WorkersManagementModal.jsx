@@ -26,7 +26,8 @@ import {
   Syringe,
   Activity
 } from 'lucide-react';
-import { getActivityLogs } from '../../services/db';
+import { getActivityLogs, deleteActivityLog, clearActivityLogs } from '../../services/db';
+import { cloudPushData } from '../../services/cloudSync';
 
 export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const { 
@@ -43,6 +44,7 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
   const [searchLog, setSearchLog] = useState('');
 
   // Formulario de creación
@@ -240,6 +242,49 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
       case 'worker_password_updated': return <KeyRound className="w-4 h-4 text-indigo-500" />;
       case 'worker_deleted': return <Trash2 className="w-4 h-4 text-rose-500" />;
       default: return <Activity className="w-4 h-4 text-slate-400" />;
+    }
+  };
+
+  // Vaciar completamente la bitácora de auditoría
+  const handleClearAllLogs = async () => {
+    if (logs.length === 0) {
+      alert('ℹ️ La bitácora de auditoría ya se encuentra vacía.');
+      return;
+    }
+
+    const confirm = window.confirm(
+      `🗑️ ¿Deseas vaciar todo el historial de la bitácora (${logs.length} movimientos)?\n\nEsta acción eliminará de forma permanente los registros de auditoría en este dispositivo y en la nube.`
+    );
+    if (!confirm) return;
+
+    try {
+      setClearingLogs(true);
+      await clearActivityLogs(currentUser?.id);
+      if (currentUser?.id) {
+        await cloudPushData(currentUser.id).catch(() => null);
+      }
+      setLogs([]);
+      alert('✅ ¡Historial de la bitácora vaciado exitosamente!');
+    } catch (err) {
+      alert(`Error al vaciar bitácora: ${err.message}`);
+    } finally {
+      setClearingLogs(false);
+    }
+  };
+
+  // Eliminar un registro individual de la bitácora
+  const handleDeleteSingleLog = async (log) => {
+    if (!log?.id) return;
+    if (window.confirm(`¿Deseas eliminar este registro de la bitácora?\n\n"${log.description || 'Movimiento'}"`)) {
+      try {
+        await deleteActivityLog(log.id);
+        setLogs(prev => prev.filter(l => l.id !== log.id));
+        if (currentUser?.id) {
+          await cloudPushData(currentUser.id).catch(() => null);
+        }
+      } catch (err) {
+        alert(`Error al eliminar registro: ${err.message}`);
+      }
     }
   };
 
@@ -650,8 +695,8 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
         {/* TAB 2: BITÁCORA DE AUDITORÍA */}
         {activeTab === 'logs' && (
           <div className="space-y-3">
-            {/* Buscador de bitácora */}
-            <div className="flex items-center justify-between gap-2">
+            {/* Buscador y Controles de bitácora */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
               <div className="relative flex-1">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -659,20 +704,37 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
                   placeholder="Buscar por operario, arete o acción..."
                   value={searchLog}
                   onChange={(e) => setSearchLog(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                  className="w-full pl-8 pr-3 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
                 />
               </div>
 
-              <button
-                type="button"
-                onClick={loadLogsData}
-                disabled={logsLoading}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5"
-                title="Actualizar bitácora"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${logsLoading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Refrescar</span>
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0 justify-end">
+                <button
+                  type="button"
+                  onClick={loadLogsData}
+                  disabled={logsLoading}
+                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                  title="Actualizar bitácora"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${logsLoading ? 'animate-spin' : ''}`} />
+                  <span>Refrescar</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleClearAllLogs}
+                  disabled={clearingLogs || logs.length === 0}
+                  className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm ${
+                    logs.length > 0
+                      ? 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 cursor-pointer active:scale-95'
+                      : 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                  }`}
+                  title="Vaciar todo el historial de la bitácora"
+                >
+                  <Trash2 className={`w-3.5 h-3.5 text-rose-500 ${clearingLogs ? 'animate-spin' : ''}`} />
+                  <span>{clearingLogs ? 'Borrando...' : 'Vaciar Bitácora'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Lista de Eventos */}
@@ -683,41 +745,55 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
               </div>
             ) : filteredLogs.length === 0 ? (
               <div className="p-8 text-center rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-500">
-                No hay movimientos registrados en la bitácora aún.
+                {searchLog.trim() 
+                  ? 'No se encontraron movimientos que coincidan con la búsqueda.' 
+                  : 'No hay movimientos registrados en la bitácora de auditoría.'}
               </div>
             ) : (
               <div className="max-h-[380px] overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100 dark:divide-slate-800/60">
                 {filteredLogs.map((log, idx) => (
-                  <div key={log.id || idx} className="pt-2 first:pt-0 flex items-start gap-2.5 text-xs">
-                    <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 mt-0.5">
-                      {getLogIcon(log.action)}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-bold text-slate-900 dark:text-white truncate">
-                          {log.operatorName || 'Administrador'}
-                          {log.operatorRole === 'worker' && (
-                            <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                              Vaquero
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          {log.timestamp ? new Date(log.timestamp).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : ''}
-                        </span>
+                  <div key={log.id || idx} className="pt-2 first:pt-0 flex items-start justify-between gap-2.5 text-xs group">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 mt-0.5">
+                        {getLogIcon(log.action)}
                       </div>
 
-                      <p className="text-slate-600 dark:text-slate-300 text-[11px] mt-0.5">
-                        {log.description}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-bold text-slate-900 dark:text-white truncate">
+                            {log.operatorName || 'Administrador'}
+                            {log.operatorRole === 'worker' && (
+                              <span className="ml-1.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                Vaquero
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-[10px] text-slate-400 shrink-0">
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                          </span>
+                        </div>
 
-                      {log.tagNumber && (
-                        <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                          Chapa #{log.tagNumber}
-                        </span>
-                      )}
+                        <p className="text-slate-600 dark:text-slate-300 text-[11px] mt-0.5">
+                          {log.description}
+                        </p>
+
+                        {log.tagNumber && (
+                          <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            Chapa #{log.tagNumber}
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Botón para borrar registro individual */}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSingleLog(log)}
+                      className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer shrink-0 opacity-70 hover:opacity-100 active:scale-95"
+                      title="Eliminar este movimiento de la bitácora"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>

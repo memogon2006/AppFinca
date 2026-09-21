@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.13.2";
+export const CURRENT_APP_VERSION = "2.13.3";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.3",
+    date: "21/09/2026",
+    title: "Vaciado & Limpieza Selectiva de Bitácora de Auditoría",
+    highlights: [
+      "Vaciado Completo de Bitácora en 1 Clic: El administrador puede limpiar todo el historial de movimientos operativos y eventos de trabajadores cuando lo requiera.",
+      "Eliminación Selectiva de Movimientos: Opción para suprimir registros individuales de la bitácora con confirmación previa.",
+      "Sincronización Inmediata en la Nube: La limpieza de la bitácora se refleja instantáneamente en Google Firebase y en todos los dispositivos conectados."
+    ]
+  },
   {
     version: "2.13.2",
     date: "21/09/2026",
