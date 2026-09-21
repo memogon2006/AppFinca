@@ -337,8 +337,8 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Mi Perfil Ganadero & Configuración"
-      subtitle={`Usuario: ${currentUser.email} • Finca: ${currentUser.farmName}`}
+      title={isWorker ? "🤠 Mi Perfil de Vaquero de Campo" : "Mi Perfil Ganadero & Configuración"}
+      subtitle={isWorker ? `Vaquero: ${currentUser?.name || currentUser?.username} • Finca: ${currentUser?.farmName}` : `Usuario: ${currentUser?.email} • Finca: ${currentUser?.farmName}`}
       maxWidth="max-w-2xl"
       zIndex={zIndex}
     >
@@ -356,7 +356,7 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
             }`}
           >
             <User className="w-4 h-4" />
-            <span>Datos Finca</span>
+            <span>{isWorker ? 'Mi Perfil' : 'Datos Finca'}</span>
           </button>
 
           <button
@@ -369,7 +369,7 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
             }`}
           >
             <KeyRound className="w-4 h-4" />
-            <span>Contraseña</span>
+            <span>{isWorker ? 'Mi Clave / PIN' : 'Contraseña'}</span>
           </button>
 
           <button
@@ -401,7 +401,7 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
           )}
         </div>
 
-        {/* PESTAÑA 1: DATOS DE PROPIETARIO Y FINCA */}
+        {/* PESTAÑA 1: DATOS DE PROPIETARIO O TRABAJADOR */}
         {activeTab === 'profile' && (
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             
@@ -434,11 +434,30 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
               </div>
             )}
 
-            {/* Banner informativo para trabajadores */}
+            {/* Ficha informativa para trabajadores */}
             {isWorker && (
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
-                <span className="text-base">🤠</span>
-                <span><strong>Modo Trabajador de Campo:</strong> Estás conectado a la finca <em>{currentUser?.farmName}</em>. Los datos maestros y financieros son gestionados por el administrador.</span>
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 space-y-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-black text-lg shadow-sm shrink-0">
+                    🤠
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-amber-950 dark:text-amber-200">
+                      {currentUser?.name || 'Vaquero de Campo'}
+                    </h4>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                      <span>Rol: Mayordomo / Vaquero Operativo</span>
+                      <span>•</span>
+                      <span>Usuario: @{currentUser?.username || currentUser?.email}</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
+                  <p><strong>🌱 Finca Asignada:</strong> {currentUser?.farmName}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    Tienes acceso completo a registrar pesajes, revisiones veterinarias, partos y vacunas. Los precios de compra y utilidades financieras están protegidos por el administrador.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -453,64 +472,69 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
               </div>
             )}
 
-            {/* Nombre de Propietario */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Nombre de Propietario / Administrador <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Ej. Carlos Mendoza"
-                  value={profileData.name}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:border-emerald-500 min-h-[44px]"
-                  required
-                />
-              </div>
-            </div>
+            {/* Campos de edición (Solo Administrador) */}
+            {!isWorker && (
+              <>
+                {/* Nombre de Propietario */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Nombre de Propietario / Administrador <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Ej. Carlos Mendoza"
+                      value={profileData.name}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:border-emerald-500 min-h-[44px]"
+                      required
+                    />
+                  </div>
+                </div>
 
-            {/* Nombre del Predio / Finca / Hacienda */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Nombre del Predio / Finca / Hacienda <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Ej. Hacienda La Esperanza"
-                  value={profileData.farmName}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, farmName: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:outline-none focus:border-emerald-500 min-h-[44px]"
-                  required
-                />
-              </div>
-              <span className="text-[11px] text-slate-400 mt-1 block">
-                Este nombre aparecerá en la barra superior, reportes y descargas de Excel.
-              </span>
-            </div>
+                {/* Nombre del Predio / Finca / Hacienda */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Nombre del Predio / Finca / Hacienda <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <MapPin className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Ej. Hacienda La Esperanza"
+                      value={profileData.farmName}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, farmName: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm font-bold focus:outline-none focus:border-emerald-500 min-h-[44px]"
+                      required
+                    />
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Este nombre aparecerá en la barra superior, reportes y descargas de Excel.
+                  </span>
+                </div>
 
-            {/* Correo / Usuario */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Correo Electrónico o Nombre de Usuario <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="ejemplo@miganaderia.com"
-                  value={profileData.email}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[44px]"
-                  required
-                />
-              </div>
-            </div>
+                {/* Correo / Usuario */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Correo Electrónico o Nombre de Usuario <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="ejemplo@miganaderia.com"
+                      value={profileData.email}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[44px]"
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* CONFIGURACIÓN EXCLUSIVA DE SONIDO DEL SISTEMA */}
             <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-3">
@@ -680,29 +704,31 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
               </button>
             </div>
 
-            {/* Zona de Gestión de Inventario: Limpiar a Ceros */}
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-              <div className="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
-                    <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
-                    Limpiar Inventario de Mi Finca (Comenzar en Ceros)
-                  </h4>
-                  <p className="text-[11px] text-rose-700 dark:text-rose-300/80 mt-0.5 leading-relaxed">
-                    Borra los datos de prueba o inventario actual para empezar desde ceros. Requiere doble confirmación con palabra clave.
-                  </p>
+            {/* Zona de Gestión de Inventario: Limpiar a Ceros (Solo Administrador) */}
+            {!isWorker && (
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                      <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+                      Limpiar Inventario de Mi Finca (Comenzar en Ceros)
+                    </h4>
+                    <p className="text-[11px] text-rose-700 dark:text-rose-300/80 mt-0.5 leading-relaxed">
+                      Borra los datos de prueba o inventario actual para empezar desde ceros. Requiere doble confirmación con palabra clave.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearInventory}
+                    disabled={loadingClearInventory}
+                    className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold whitespace-nowrap shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{loadingClearInventory ? 'Limpiando...' : 'Limpiar a Ceros'}</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleClearInventory}
-                  disabled={loadingClearInventory}
-                  className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold whitespace-nowrap shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{loadingClearInventory ? 'Limpiando...' : 'Limpiar a Ceros'}</span>
-                </button>
               </div>
-            </div>
+            )}
 
           </form>
         )}
@@ -800,29 +826,31 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
               </button>
             </div>
 
-            {/* Zona Administrativa: Blanqueo / Reenvío de Clave por Correo */}
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-              <div className="p-4 rounded-2xl bg-sky-50/90 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
-                    <Send className="w-4 h-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
-                    Blanqueo & Clave Temporal por Correo
-                  </h4>
-                  <p className="text-[11px] text-sky-800 dark:text-sky-300/80 mt-0.5 leading-relaxed">
-                    Genera una clave temporal nueva y la despacha automáticamente a tu correo registrado (<strong>{currentUser.email}</strong>).
-                  </p>
+            {/* Zona Administrativa: Blanqueo / Reenvío de Clave por Correo (Solo Administrador) */}
+            {!isWorker && (
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="p-4 rounded-2xl bg-sky-50/90 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
+                      <Send className="w-4 h-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                      Blanqueo & Clave Temporal por Correo
+                    </h4>
+                    <p className="text-[11px] text-sky-800 dark:text-sky-300/80 mt-0.5 leading-relaxed">
+                      Genera una clave temporal nueva y la despacha automáticamente a tu correo registrado (<strong>{currentUser?.email}</strong>).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAdminResend}
+                    disabled={loadingAdminReset}
+                    className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-bold whitespace-nowrap shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0 min-h-[38px]"
+                  >
+                    <Send className={`w-3.5 h-3.5 ${loadingAdminReset ? 'animate-spin' : ''}`} />
+                    <span>{loadingAdminReset ? 'Enviando...' : 'Generar y Enviar al Correo'}</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAdminResend}
-                  disabled={loadingAdminReset}
-                  className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-bold whitespace-nowrap shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0 min-h-[38px]"
-                >
-                  <Send className={`w-3.5 h-3.5 ${loadingAdminReset ? 'animate-spin' : ''}`} />
-                  <span>{loadingAdminReset ? 'Enviando...' : 'Generar y Enviar al Correo'}</span>
-                </button>
               </div>
-            </div>
+            )}
 
           </form>
         )}

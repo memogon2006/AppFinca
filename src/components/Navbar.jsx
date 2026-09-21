@@ -305,17 +305,23 @@ export function Navbar({
                   {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
                 </button>
 
-                {/* Perfil LG Ajustes */}
+                {/* Perfil Ajustes */}
                 <div 
                   onClick={onOpenProfile}
                   title="Mi Perfil y Ajustes"
-                  className="flex items-center gap-1 px-2 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer min-h-[32px]"
+                  className={`flex items-center gap-1 px-2 py-1 rounded-xl border cursor-pointer min-h-[32px] ${
+                    isWorker
+                      ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200'
+                      : 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200'
+                  }`}
                 >
-                  <div className="w-5 h-5 rounded-lg bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-sm shrink-0">
-                    {getInitials(currentUser?.name)}
+                  <div className={`w-5 h-5 rounded-lg text-white font-black text-[10px] flex items-center justify-center shadow-sm shrink-0 ${
+                    isWorker ? 'bg-amber-600' : 'bg-emerald-600'
+                  }`}>
+                    {isWorker ? '🤠' : getInitials(currentUser?.name)}
                   </div>
                   <span className="text-[11px] font-black truncate max-w-[55px]">
-                    {currentUser?.name ? currentUser.name.split(' ')[0] : 'Perfil'}
+                    {currentUser?.name ? currentUser.name.split(' ')[0] : (isWorker ? 'Vaquero' : 'Perfil')}
                   </span>
                 </div>
 
@@ -331,29 +337,44 @@ export function Navbar({
               </div>
             </div>
 
-            {/* Fila 2 Móvil: + Registrar Bovino, Excel, Nube */}
-            <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/70">
+            {/* Fila 2 Móvil: + Registrar Bovino, Vaqueros, Excel, WhatsApp, Nube */}
+            <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/70 overflow-x-auto">
               <button
                 onClick={onOpenNewAnimal}
-                className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black text-xs flex items-center justify-center gap-1 shadow-sm min-h-[34px] cursor-pointer whitespace-nowrap"
+                className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black text-xs flex items-center justify-center gap-1 shadow-sm min-h-[34px] cursor-pointer whitespace-nowrap shrink-0"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span>+ Bovino</span>
               </button>
 
-              <button
-                onClick={onOpenExportImport}
-                title="Exportar a Excel / Respaldo"
-                className="flex-1 py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
-              >
-                <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Excel</span>
-              </button>
+              {/* Botón Vaqueros (Solo Administrador) */}
+              {!isWorker && (
+                <button
+                  onClick={onOpenWorkers}
+                  title="Gestión de Mayordomos y Vaqueros"
+                  className="py-1.5 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
+                >
+                  <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Vaqueros</span>
+                </button>
+              )}
+
+              {/* Botón Excel (Solo Administrador) */}
+              {!isWorker && (
+                <button
+                  onClick={onOpenExportImport}
+                  title="Exportar a Excel / Respaldo"
+                  className="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Excel</span>
+                </button>
+              )}
 
               <button
                 onClick={onOpenWhatsAppReport}
                 title="Enviar Reporte por WhatsApp"
-                className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
+                className="py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap shrink-0"
               >
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>WhatsApp</span>
@@ -363,14 +384,14 @@ export function Navbar({
                 onClick={onManualSync}
                 disabled={isSyncing}
                 title={isSyncing ? 'Sincronizando con la nube...' : 'Sincronizar datos con la nube'}
-                className="flex-1 py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap"
+                className="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 min-h-[34px] cursor-pointer whitespace-nowrap shrink-0"
               >
                 {isSyncing ? (
                   <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
                 ) : (
                   <Cloud className="w-3.5 h-3.5 text-sky-500" />
                 )}
-                <span>{isSyncing ? 'Sync...' : 'Nube'}</span>
+                <span>Nube</span>
               </button>
             </div>
 
