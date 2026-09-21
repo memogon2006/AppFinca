@@ -143,14 +143,6 @@ export default function App() {
     };
   }, [userId]);
 
-  // Garantizar que al ingresar o cambiar de sesión siempre se abra el Tablero (Dashboard) por defecto
-  useEffect(() => {
-    if (userId) {
-      setCurrentView('dashboard');
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    }
-  }, [userId]);
-
   // Scroll automático al tope superior cada vez que se cambia de pestaña / vista
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });

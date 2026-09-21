@@ -394,30 +394,34 @@ export async function deleteUserAccount(userId, password) {
 
   const userEmail = (user.email || '').trim().toLowerCase();
 
-  // 1. Eliminar todos los pesajes del usuario
+  // 1. Eliminar todos los pesajes del usuario y huérfanos
   if (db.weighings) {
     await db.weighings.where('userId').equals(userId).delete().catch(() => null);
-    const orphanWeights = await db.weighings.filter(w => !w.userId).toArray().catch(() => []);
+    const orphanWeights = await db.weighings.filter(w => !w.userId || w.userId === userId).toArray().catch(() => []);
     for (const w of orphanWeights) {
-      await db.weighings.delete(w.id).catch(() => null);
+      if (w.id) await db.weighings.delete(w.id).catch(() => null);
     }
   }
 
-  // 2. Eliminar todo el inventario de ganado del usuario
+  // 2. Eliminar todo el inventario de ganado del usuario y huérfanos
   if (db.cattle) {
     await db.cattle.where('userId').equals(userId).delete().catch(() => null);
-    const orphanCattle = await db.cattle.filter(c => !c.userId).toArray().catch(() => []);
+    const orphanCattle = await db.cattle.filter(c => !c.userId || c.userId === userId).toArray().catch(() => []);
     for (const c of orphanCattle) {
-      await db.cattle.delete(c.id).catch(() => null);
+      if (c.id) await db.cattle.delete(c.id).catch(() => null);
     }
   }
 
-  // 3. Eliminar registros en tablas adicionales si existen
-  const extraTables = ['expenses', 'vaccinations', 'audits', 'palpations', 'paddocks', 'milkRecords', 'milkDeliveries', 'transactions'];
+  // 3. Eliminar registros en todas las tablas adicionales
+  const extraTables = ['expenses', 'vaccinations', 'audits', 'palpations', 'paddocks', 'milkRecords', 'milkDeliveries', 'transactions', 'settings'];
   for (const table of extraTables) {
     if (db[table]) {
       try {
-        await db[table].where('userId').equals(userId).delete();
+        await db[table].where('userId').equals(userId).delete().catch(() => null);
+        const orphans = await db[table].filter(item => !item.userId || item.userId === userId).toArray().catch(() => []);
+        for (const item of orphans) {
+          if (item.id) await db[table].delete(item.id).catch(() => null);
+        }
       } catch (e) {}
     }
   }
@@ -426,7 +430,7 @@ export async function deleteUserAccount(userId, password) {
   await db.users.delete(userId).catch(() => null);
   const remainingUsers = await db.users.toArray().catch(() => []);
   for (const u of remainingUsers) {
-    if ((u.email || '').trim().toLowerCase() === userEmail) {
+    if ((u.email || '').trim().toLowerCase() === userEmail || u.id === userId) {
       await db.users.delete(u.id).catch(() => null);
     }
   }
@@ -434,8 +438,13 @@ export async function deleteUserAccount(userId, password) {
   // 5. Eliminar datos en la nube (libera /users/<safeEmail>.json y /userData/<userId>.json)
   await cloudDeleteUserData(userId, userEmail);
 
-  // 6. Limpiar sesión
+  // 6. Limpiar sesión activa y almacenamiento local
   logoutUser();
+  try {
+    sessionStorage.clear();
+    localStorage.removeItem('ganado_current_user_session');
+    localStorage.removeItem('ganado_session_token');
+  } catch (e) {}
 
   return { success: true };
 }

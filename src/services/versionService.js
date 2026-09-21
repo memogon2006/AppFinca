@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.12.14";
+export const CURRENT_APP_VERSION = "2.12.15";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.15",
+    date: "20/09/2026",
+    title: "Eliminación Total y Permanente de Cuentas & Purga Profunda",
+    highlights: [
+      "Eliminación Total en Cascada: Al borrar una cuenta, se eliminan todos los animales, pesajes, vacunaciones, palpaciones, finanzas y registros en Dexie (IndexedDB) y en Google Firebase.",
+      "Barrido Profundo en la Nube: Purga exhaustiva de todos los nodos de usuarios y datos asociados en Firebase Realtime Database.",
+      "Liberación Inmediata de Correo: El correo queda 100% libre para ser reutilizado en cualquier momento sin bloqueos ni errores de duplicidad.",
+      "Reinicio Limpio de Sesión: Limpieza completa de memoria local, sesiones activas y recarga transparente."
+    ]
+  },
   {
     version: "2.12.14",
     date: "20/09/2026",

@@ -218,7 +218,8 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
       setLoadingDelete(true);
       await deleteAccount(deleteData.password);
       onClose();
-      alert('Tu cuenta y todos sus registros asociados han sido eliminados permanentemente.');
+      alert('✅ Tu cuenta y todos sus registros han sido eliminados de forma completa y permanente.');
+      window.location.replace(window.location.origin + window.location.pathname);
     } catch (err) {
       setDeleteMsg({ type: 'error', text: err.message });
       setLoadingDelete(false);

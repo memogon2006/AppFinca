@@ -183,19 +183,44 @@ export async function cloudPullData(userId) {
 }
 
 /**
- * Elimina completamente todos los registros del usuario en Firebase
+ * Elimina completamente todos los registros del usuario en Firebase de forma permanente
  */
 export async function cloudDeleteUserData(userId, email) {
   try {
     const cleanEmail = (email || '').trim().toLowerCase();
     const safeEmail = toSafeEmailKey(cleanEmail);
 
+    // 1. Eliminar nodo directo de usuario en Firebase (/users/<safeEmail>.json)
     if (safeEmail) {
       await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, { method: 'DELETE' }).catch(() => null);
     }
+
+    // 2. Eliminar nodo de datos de finca (/userData/<userId>.json)
     if (userId) {
       await fetch(`${FIREBASE_URL}/userData/${userId}.json`, { method: 'DELETE' }).catch(() => null);
     }
+
+    // 3. Barrido profundo exhaustivo en /users.json para borrar cualquier nodo que coincida con el correo o userId
+    try {
+      const res = await fetch(`${FIREBASE_URL}/users.json?_t=${Date.now()}`);
+      if (res.ok) {
+        const allUsers = await res.json();
+        if (allUsers && typeof allUsers === 'object') {
+          for (const [key, userObj] of Object.entries(allUsers)) {
+            if (
+              userObj && 
+              ((userObj.email && userObj.email.trim().toLowerCase() === cleanEmail) || 
+               (userId && userObj.id === userId))
+            ) {
+              await fetch(`${FIREBASE_URL}/users/${key}.json`, { method: 'DELETE' }).catch(() => null);
+            }
+          }
+        }
+      }
+    } catch (scanErr) {
+      console.warn('⚠️ Error en barrido profundo de eliminación en Firebase:', scanErr);
+    }
+
     return true;
   } catch (err) {
     console.warn('⚠️ Error en cloudDeleteUserData Firebase:', err);
