@@ -228,20 +228,6 @@ export async function cloudDeleteUserData(userId, email) {
   }
 }
 
-/**
- * Sincronización automática de todas las cuentas locales existentes hacia Firebase
- */
-export async function syncAllLocalAccountsToCloud() {
-  try {
-    const allUsers = await db.users.toArray();
-    for (const u of allUsers) {
-      await cloudSaveUser(u);
-      await cloudPushData(u.id);
-    }
-  } catch (e) {
-    console.warn('⚠️ Error en auto-sync de cuentas locales Firebase:', e);
-  }
-}
 
 /**
  * Sincronización bidireccional automática (Pull + Push)

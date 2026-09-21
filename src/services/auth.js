@@ -133,18 +133,18 @@ export async function registerUser({ name, farmName, email, password }) {
   if (!cleanEmail) throw new Error('Por favor ingresa un correo o nombre de usuario.');
   if (!cleanPassword || cleanPassword.length < 4) throw new Error('La contraseña debe tener al menos 4 caracteres.');
 
-  // 1. Validar si ya existe localmente (1 sola cuenta por correo)
-  const allUsers = await db.users.toArray();
-  let existing = allUsers.find(u => (u.email || '').toLowerCase() === cleanEmail);
-
-  if (existing) {
+  // 1. Validar si ya existe en la Nube Firebase (1 sola cuenta por correo)
+  const cloudUser = await cloudFindUser(cleanEmail);
+  if (cloudUser) {
     throw new Error(`El correo "${cleanEmail}" ya se encuentra registrado. Solo se permite una sola cuenta por correo. Por favor dirígete a la pestaña "Iniciar Sesión" para ingresar.`);
   }
 
-  // 2. Validar si ya existe en la Nube Firebase (1 sola cuenta por correo)
-  const cloudUser = await cloudFindUser(cleanEmail);
-  if (cloudUser) {
-    throw new Error(`El correo "${cleanEmail}" ya está registrado en la nube. Solo se permite una sola cuenta por correo. Por favor pulsa la pestaña "Iniciar Sesión" para ingresar.`);
+  // 2. Si no existe en la nube, purgar cualquier residuo huérfano local de cuentas eliminadas
+  const allUsers = await db.users.toArray();
+  for (const u of allUsers) {
+    if ((u.email || '').trim().toLowerCase() === cleanEmail) {
+      await db.users.delete(u.id).catch(() => null);
+    }
   }
 
   const passwordHash = await hashPassword(cleanPassword);
@@ -157,6 +157,7 @@ export async function registerUser({ name, farmName, email, password }) {
     farmName: cleanFarm,
     email: cleanEmail,
     passwordHash,
+    mustChangePassword: false,
     createdAt: new Date().toISOString(),
   };
 
@@ -197,6 +198,7 @@ export async function registerUser({ name, farmName, email, password }) {
     farmName: newUser.farmName,
     email: newUser.email,
     createdAt: newUser.createdAt,
+    mustChangePassword: false,
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
@@ -214,18 +216,19 @@ export async function loginUser({ email, password }) {
     throw new Error('Por favor ingresa tu correo/usuario y contraseña.');
   }
 
-  const allUsers = await db.users.toArray();
-  let user = allUsers.find(u => (u.email || '').toLowerCase() === cleanEmail);
+  // 1. Buscar en la Nube Firebase (fuente de la verdad)
+  let user = await cloudFindUser(cleanEmail);
 
-  if (!user) {
-    user = await cloudFindUser(cleanEmail);
-    if (user) {
-      await db.users.put(user);
-    }
+  if (user) {
+    await db.users.put(user);
+  } else {
+    // Si no está en la nube, buscar en local por si está sin internet (offline)
+    const allUsers = await db.users.toArray();
+    user = allUsers.find(u => (u.email || '').toLowerCase() === cleanEmail);
   }
 
   if (!user) {
-    throw new Error('No se encontró ninguna cuenta con este correo en la nube ni en este dispositivo. Por favor verifica tu correo o pulsa "Crear Cuenta" para registrarte.');
+    throw new Error('No se encontró ninguna cuenta con este correo. Por favor verifica tu correo o pulsa "Crear Cuenta" para registrarte.');
   }
 
   const inputHash = await hashPassword(cleanPassword);

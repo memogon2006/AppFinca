@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, initializeDatabase, deleteDemoData, isDemoAnimal } from './services/db';
 import { useAuth } from './context/AuthContext';
-import { cloudPushData, syncCloudAndLocal, syncAllLocalAccountsToCloud } from './services/cloudSync';
+import { cloudPushData, syncCloudAndLocal } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/Dashboard/DashboardView';
@@ -109,13 +109,11 @@ export default function App() {
     }
   }, []);
 
-  // Inicializar base de datos y auto-sincronizar cuentas existentes
+  // Inicializar base de datos
   useEffect(() => {
     async function init() {
       await initializeDatabase();
       setIsInitialized(true);
-      // Auto-sincronizar todas las cuentas locales existentes a la nube
-      syncAllLocalAccountsToCloud().catch(() => null);
     }
     init();
   }, []);
