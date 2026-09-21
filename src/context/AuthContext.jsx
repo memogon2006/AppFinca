@@ -36,8 +36,31 @@ export function AuthProvider({ children }) {
     const cleanEmail = (session.email || session.username || session.name || '').trim().toLowerCase();
     const cleanId = String(session.id || '').trim();
 
-    // 1. Bloqueo inmediato de cuentas eliminadas
-    if (cleanEmail === 'memo' || cleanEmail === 'memo@finca.local' || cleanEmail.startsWith('memo@')) {
+    // 1. Bloqueo inmediato de cuentas eliminadas (memo, pedro.vaquero, etc.)
+    const blockedTokens = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro'];
+    const sessionEmail = (session.email || '').trim().toLowerCase();
+    const sessionUser = (session.username || '').trim().toLowerCase();
+    const sessionName = (session.name || '').trim().toLowerCase();
+    const sessionId = String(session.id || '').trim().toLowerCase();
+
+    const isBlockedAccount = blockedTokens.some(token => 
+      cleanEmail === token ||
+      cleanEmail === `${token}@finca.local` ||
+      cleanEmail.startsWith(`${token}@`) ||
+      cleanEmail.includes(token) ||
+      sessionEmail === token ||
+      sessionEmail === `${token}@finca.local` ||
+      sessionEmail.startsWith(`${token}@`) ||
+      sessionEmail.includes(token) ||
+      sessionUser === token ||
+      sessionUser.includes(token) ||
+      sessionName === token ||
+      sessionName.includes(token) ||
+      sessionId === token
+    );
+
+    if (isBlockedAccount) {
+      console.warn('⚠️ Cuenta bloqueada o eliminada detectada en sesión activa.');
       logoutUser();
       localStorage.removeItem('ganado_current_user_session');
       setCurrentUser(null);

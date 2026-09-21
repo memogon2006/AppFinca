@@ -1,5 +1,5 @@
 {
-  "version": "2.14.4",
-  "buildTime": 1790040000000,
-  "description": "Invalidación y expulsión inmediata de sesiones de trabajadores eliminados."
+  "version": "2.14.5",
+  "buildTime": 1790050000000,
+  "description": "Bloqueo total y purga permanente de la cuenta pedro.vaquero e invalidación forzada de sesión."
 }

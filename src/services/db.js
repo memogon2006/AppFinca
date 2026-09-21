@@ -206,17 +206,18 @@ export async function initializeDatabase() {
   try {
     if (db.users) {
       const allUsers = await db.users.toArray();
+      const blockedTokens = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro'];
       for (const u of allUsers) {
         const uEmail = (u.email || '').toLowerCase().trim();
         const uUser = (u.username || '').toLowerCase().trim();
         const uId = String(u.id || '').toLowerCase().trim();
-        if (
-          uEmail === 'memo' ||
-          uEmail === 'memo@finca.local' ||
-          uEmail.startsWith('memo@') ||
-          uUser === 'memo' ||
-          uId === 'memo'
-        ) {
+        const uName = (u.name || '').toLowerCase().trim();
+
+        const isBlocked = 
+          blockedTokens.some(t => uEmail.includes(t) || uUser.includes(t) || uId.includes(t)) ||
+          (u.role === 'worker' && blockedTokens.some(t => uName.includes(t)));
+
+        if (isBlocked) {
           await db.users.delete(u.id).catch(() => null);
         }
       }

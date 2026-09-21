@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.4";
+export const CURRENT_APP_VERSION = "2.14.5";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.5",
+    date: "21/09/2026",
+    title: "Bloqueo Total y Purga Permanente de la Cuenta 'pedro.vaquero'",
+    highlights: [
+      "Bloqueo Absoluto de 'pedro.vaquero': Bloqueo estricto e irrevocable de cualquier intento de inicio de sesión con el usuario o correo de pedro.vaquero.",
+      "Expulsión Forzada en Recarga: Detección proactiva de tokens bloqueados en la sesión activa; al recargar la página se purga el almacenamiento local y se cierra la sesión al instante.",
+      "Purga Definitiva en Base de Datos: Limpieza automática en IndexedDB y memoria local en cada inicio de la aplicación para eliminar cualquier residuo de cuentas revocadas."
+    ]
+  },
   {
     version: "2.14.4",
     date: "21/09/2026",

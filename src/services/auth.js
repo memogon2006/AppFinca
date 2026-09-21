@@ -228,19 +228,36 @@ export async function loginUser({ email, password }) {
 
   // Bloqueo explícito y purga permanente de cuentas eliminadas
   const rawAlias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
-  if (rawAlias === 'memo' || cleanInput === 'memo' || cleanInput === 'memo@finca.local' || cleanInput.startsWith('memo@')) {
+  const blockedList = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro'];
+  if (
+    blockedList.includes(rawAlias) || 
+    blockedList.includes(cleanInput) || 
+    blockedList.some(b => cleanInput === b || cleanInput === `${b}@finca.local` || cleanInput.startsWith(`${b}@`))
+  ) {
     try {
       const allUsers = await db.users.toArray();
       for (const u of allUsers) {
         const uEmail = (u.email || '').toLowerCase().trim();
         const uUser = (u.username || '').toLowerCase().trim();
         const uId = String(u.id || '').toLowerCase().trim();
-        if (uEmail === 'memo' || uEmail === 'memo@finca.local' || uUser === 'memo' || uEmail.startsWith('memo@') || uId === 'memo') {
+        const uName = (u.name || '').toLowerCase().trim();
+        if (
+          blockedList.some(b => 
+            uEmail === b || 
+            uEmail === `${b}@finca.local` || 
+            uUser === b || 
+            uId === b || 
+            uEmail.startsWith(`${b}@`) ||
+            (u.role === 'worker' && uName === b)
+          )
+        ) {
           await db.users.delete(u.id).catch(() => null);
         }
       }
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('ganado_current_user_session');
     } catch (e) {}
-    throw new Error('⚠️ La cuenta de usuario "memo" ha sido eliminada permanentemente del sistema.');
+    throw new Error(`⚠️ La cuenta "${cleanInput}" ha sido eliminada permanentemente del sistema.`);
   }
 
   // 1. Buscar en la Nube Firebase (soporta correo directo o usuario sin @)
