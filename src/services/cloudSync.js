@@ -248,14 +248,6 @@ export async function cloudDeleteUserData(userId, email) {
 export async function syncCloudAndLocal(userId) {
   if (!userId) return;
   try {
-    const localUser = await db.users.get(userId);
-    if (localUser && localUser.email && navigator.onLine) {
-      const remoteUser = await cloudFindUser(localUser.email);
-      if (!remoteUser) {
-        // Si la cuenta no existe en la nube, no descargar ni continuar
-        return;
-      }
-    }
     // Solo descargar y reconciliar (las subidas solo ocurren cuando el usuario crea/edita/borra en este dispositivo)
     await cloudPullData(userId);
   } catch (e) {

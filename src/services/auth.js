@@ -232,6 +232,31 @@ export async function loginUser({ email, password }) {
     user = await cloudFindUser(`${cleanEmail}@finca.local`);
   }
 
+  // Si no se encuentra y no tiene @, buscar en toda la base de usuarios por alias o nombre
+  if (!user && navigator.onLine) {
+    try {
+      const res = await fetch('https://ganadera-plataforma-default-rtdb.firebaseio.com/users.json?_t=' + Date.now());
+      if (res.ok) {
+        const allUsers = await res.json();
+        if (allUsers && typeof allUsers === 'object') {
+          for (const u of Object.values(allUsers)) {
+            if (u && (
+              (u.email && u.email.toLowerCase() === cleanEmail) ||
+              (u.email && u.email.toLowerCase().startsWith(`${cleanEmail}@`)) ||
+              (u.name && u.name.toLowerCase() === cleanEmail) ||
+              (u.username && u.username.toLowerCase() === cleanEmail)
+            )) {
+              user = u;
+              break;
+            }
+          }
+        }
+      }
+    } catch (scanErr) {
+      console.warn('Error escaneando usuarios:', scanErr);
+    }
+  }
+
   if (user) {
     await db.users.put(user);
   } else {
@@ -239,7 +264,11 @@ export async function loginUser({ email, password }) {
     const allUsers = await db.users.toArray();
     user = allUsers.find(u => {
       const uEmail = (u.email || '').toLowerCase();
-      return uEmail === cleanEmail || (!cleanEmail.includes('@') && uEmail === `${cleanEmail}@finca.local`);
+      const uName = (u.name || '').toLowerCase();
+      return uEmail === cleanEmail || 
+             (!cleanEmail.includes('@') && uEmail === `${cleanEmail}@finca.local`) || 
+             uEmail.startsWith(`${cleanEmail}@`) ||
+             uName === cleanEmail;
     });
   }
 

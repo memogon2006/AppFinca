@@ -47,9 +47,10 @@ export default function App() {
 
   // Monitor de conexión en tiempo real & Auto-Sync al recuperar señal
   const { isOnline } = useOnlineStatus(() => {
-    if (currentUser?.id) {
+    const targetSyncId = effectiveUserId || currentUser?.id;
+    if (targetSyncId) {
       setIsSyncing(true);
-      syncCloudAndLocal(currentUser.id)
+      syncCloudAndLocal(targetSyncId)
         .then(() => {
           setIsSyncing(false);
           showToast('📡 ¡Señal recuperada! Datos sincronizados con la nube ☁️', 'success');
@@ -1180,6 +1181,7 @@ export default function App() {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         onOpenWorkers={() => setIsWorkersModalOpen(true)}
+        activeCattleCount={activeCattleCount}
         zIndex="z-[60]"
       />
 

@@ -39,7 +39,7 @@ import {
 } from '../../services/soundService';
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 
-export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]' }) {
+export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount = 0, zIndex = 'z-[60]' }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout, isWorker } = useAuth();
 
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'version' | 'delete'
@@ -436,26 +436,56 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]'
 
             {/* Ficha informativa para trabajadores */}
             {isWorker && (
-              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 space-y-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center font-black text-lg shadow-sm shrink-0">
-                    🤠
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
+                      🤠
+                    </div>
+                    <div>
+                      <h4 className="text-sm sm:text-base font-black text-amber-950 dark:text-amber-200">
+                        {currentUser?.name || 'Vaquero de Campo'}
+                      </h4>
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                        <span>Mayordomo / Vaquero Operativo</span>
+                        <span>•</span>
+                        <span>@{currentUser?.username || currentUser?.email}</span>
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-black text-amber-950 dark:text-amber-200">
-                      {currentUser?.name || 'Vaquero de Campo'}
-                    </h4>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                      <span>Rol: Mayordomo / Vaquero Operativo</span>
-                      <span>•</span>
-                      <span>Usuario: @{currentUser?.username || currentUser?.email}</span>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-[11px] border border-emerald-300 dark:border-emerald-700/60 flex items-center gap-1 shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Conectado</span>
+                  </span>
+                </div>
+
+                {/* Métricas del hato compartido */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-amber-800/60 text-center">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">🌱 Finca Asignada</span>
+                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase truncate block">
+                      {currentUser?.farmName || 'Mi Finca'}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-amber-800/60 text-center">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block">🐄 Ganado en Finca</span>
+                    <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 block">
+                      {activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}
                     </span>
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
-                  <p><strong>🌱 Finca Asignada:</strong> {currentUser?.farmName}</p>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                    Tienes acceso completo a registrar pesajes, revisiones veterinarias, partos y vacunas. Los precios de compra y utilidades financieras están protegidos por el administrador.
+
+                {/* Detalles de conexión con el patrón */}
+                <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-amber-200 dark:border-amber-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-200 font-bold">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Conectado con la cuenta del Administrador:</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 pl-5">
+                    <strong>Patrón / Propietario:</strong> {currentUser?.ownerEmail || 'Administrador del Predio'}
+                  </p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 pl-5">
+                    Tienes acceso para registrar pesajes en báscula, partos, palpaciones y vacunas. Los balances de compra, venta y utilidades son confidenciales del dueño.
                   </p>
                 </div>
               </div>

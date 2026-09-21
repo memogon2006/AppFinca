@@ -28,9 +28,13 @@ export function AuthProvider({ children }) {
   // Valida si la cuenta del usuario o trabajador aún existe y está activa en Firebase Cloud
   const validateSessionWithCloud = async () => {
     const session = getCurrentUser();
-    if (session && session.email) {
+    if (session && (session.email || session.username)) {
       try {
-        const remoteUser = await cloudFindUser(session.email);
+        const cleanEmail = (session.email || session.username || '').trim().toLowerCase();
+        let remoteUser = await cloudFindUser(cleanEmail);
+        if (!remoteUser && !cleanEmail.includes('@')) {
+          remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
+        }
         
         // 1. Si no se encuentra en la nube (porque fue eliminada en Firebase Console o por el administrador)
         if (remoteUser === null && navigator.onLine) {
@@ -42,15 +46,40 @@ export function AuthProvider({ children }) {
         }
 
         // 2. Si es cuenta de trabajador y fue deshabilitada por el administrador
-        if (remoteUser && session.role === 'worker' && remoteUser.isActive === false && navigator.onLine) {
+        if (remoteUser && (remoteUser.role === 'worker' || session.role === 'worker') && remoteUser.isActive === false && navigator.onLine) {
           console.warn('⚠️ La cuenta de trabajador fue deshabilitada por el patrón.');
           logoutUser();
           setCurrentUser(null);
           alert('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
           return null;
         }
+
+        // 3. Sincronizar y actualizar todos los datos de sesión con la versión más fresca de la nube
+        if (remoteUser) {
+          const merged = {
+            ...session,
+            ...remoteUser,
+            id: remoteUser.id || session.id,
+            name: remoteUser.name || session.name,
+            farmName: remoteUser.farmName || session.farmName,
+            role: remoteUser.role || session.role || 'admin',
+            ownerId: remoteUser.ownerId || session.ownerId || null,
+            ownerEmail: remoteUser.ownerEmail || session.ownerEmail || null,
+            isActive: remoteUser.isActive !== false,
+          };
+          localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));
+          await db.users.put(merged);
+
+          // Si es trabajador, forzar descarga inmediata de los animales y registros de la finca del patrón
+          const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
+          if (targetDataId) {
+            await cloudPullData(targetDataId);
+          }
+
+          return merged;
+        }
       } catch (err) {
-        // En caso de modo offline (sin conexión), se mantiene la sesión local
+        console.warn('Error validando sesión con la nube:', err);
       }
     }
     return session;
