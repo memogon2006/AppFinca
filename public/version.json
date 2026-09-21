@@ -1,5 +1,5 @@
 {
-  "version": "2.12.12",
-  "buildTime": 1789955000000,
-  "description": "Correo de Bienvenida Automático y Sistema de Restablecimiento / Blanqueo de Contraseña Ganadera."
+  "version": "2.12.13",
+  "buildTime": 1789956000000,
+  "description": "Cambio Obligatorio de Contraseña tras Restablecimiento y Mejoras de Seguridad en Cuentas Ganaderas."
 }
