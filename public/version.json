@@ -1,5 +1,5 @@
 {
-  "version": "2.14.2",
-  "buildTime": 1790020000000,
-  "description": "Blindaje de eliminación y bloqueo absoluto de acceso para cuentas de trabajadores eliminadas."
+  "version": "2.14.3",
+  "buildTime": 1790030000000,
+  "description": "Purga permanente y bloqueo absoluto de la cuenta memo."
 }

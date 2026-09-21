@@ -226,6 +226,23 @@ export async function loginUser({ email, password }) {
     throw new Error('Por favor ingresa tu correo/usuario y contraseña.');
   }
 
+  // Bloqueo explícito y purga permanente de cuentas eliminadas
+  const rawAlias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
+  if (rawAlias === 'memo' || cleanInput === 'memo' || cleanInput === 'memo@finca.local' || cleanInput.startsWith('memo@')) {
+    try {
+      const allUsers = await db.users.toArray();
+      for (const u of allUsers) {
+        const uEmail = (u.email || '').toLowerCase().trim();
+        const uUser = (u.username || '').toLowerCase().trim();
+        const uId = String(u.id || '').toLowerCase().trim();
+        if (uEmail === 'memo' || uEmail === 'memo@finca.local' || uUser === 'memo' || uEmail.startsWith('memo@') || uId === 'memo') {
+          await db.users.delete(u.id).catch(() => null);
+        }
+      }
+    } catch (e) {}
+    throw new Error('⚠️ La cuenta de usuario "memo" ha sido eliminada permanentemente del sistema.');
+  }
+
   // 1. Buscar en la Nube Firebase (soporta correo directo o usuario sin @)
   let user = await cloudFindUser(cleanInput);
   if (!user && !cleanInput.includes('@')) {

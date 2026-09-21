@@ -201,6 +201,30 @@ export async function requestPersistentStorage() {
 // Inicialización de la base de datos segura
 export async function initializeDatabase() {
   await requestPersistentStorage();
+
+  // Purga proactiva de cuentas eliminadas residuales en IndexedDB
+  try {
+    if (db.users) {
+      const allUsers = await db.users.toArray();
+      for (const u of allUsers) {
+        const uEmail = (u.email || '').toLowerCase().trim();
+        const uUser = (u.username || '').toLowerCase().trim();
+        const uId = String(u.id || '').toLowerCase().trim();
+        if (
+          uEmail === 'memo' ||
+          uEmail === 'memo@finca.local' ||
+          uEmail.startsWith('memo@') ||
+          uUser === 'memo' ||
+          uId === 'memo'
+        ) {
+          await db.users.delete(u.id).catch(() => null);
+        }
+      }
+    }
+  } catch (purgeErr) {
+    console.warn('Nota: limpieza de cuentas huérfanas en init:', purgeErr);
+  }
+
   try {
     if (typeof localStorage !== 'undefined' && db.calendarNotes) {
       const rawLegacy = localStorage.getItem('ganado_farm_calendar_notes');

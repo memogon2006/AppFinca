@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.2";
+export const CURRENT_APP_VERSION = "2.14.3";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.3",
+    date: "21/09/2026",
+    title: "Purga Permanente y Definitiva de la Cuenta 'memo'",
+    highlights: [
+      "Eliminación Forzada y Total de 'memo': Limpieza y purga automática al inicio de la aplicación en IndexedDB, eliminando cualquier cuenta asociada al usuario 'memo'.",
+      "Bloqueo Instantáneo en Login: El inicio de sesión con el usuario 'memo' queda 100% bloqueado y rechazado de inmediato.",
+      "Cierre Inmediato de Sesión Residual: Cualquier sesión activa residual de 'memo' se invalida y cierra automáticamente."
+    ]
+  },
   {
     version: "2.14.2",
     date: "21/09/2026",

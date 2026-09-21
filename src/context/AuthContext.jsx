@@ -29,9 +29,14 @@ export function AuthProvider({ children }) {
   // Valida si la cuenta del usuario o trabajador aún existe y está activa en Firebase Cloud
   const validateSessionWithCloud = async () => {
     const session = getCurrentUser();
-    if (session && (session.email || session.username)) {
+    if (session && (session.email || session.username || session.name)) {
+      const cleanEmail = (session.email || session.username || session.name || '').trim().toLowerCase();
+      if (cleanEmail === 'memo' || cleanEmail === 'memo@finca.local' || cleanEmail.startsWith('memo@')) {
+        logoutUser();
+        setCurrentUser(null);
+        return null;
+      }
       try {
-        const cleanEmail = (session.email || session.username || '').trim().toLowerCase();
         let remoteUser = await cloudFindUser(cleanEmail);
         if (!remoteUser && !cleanEmail.includes('@')) {
           remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
