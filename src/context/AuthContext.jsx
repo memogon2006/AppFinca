@@ -185,7 +185,7 @@ export function AuthProvider({ children }) {
 
   const handleGetWorkers = async () => {
     if (!currentUser) return [];
-    return await getFarmWorkers(currentUser.id);
+    return await getFarmWorkers(currentUser.id, currentUser.email);
   };
 
   const handleToggleWorker = async (workerId, workerEmail, isActive) => {

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.13.7";
+export const CURRENT_APP_VERSION = "2.13.8";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.8",
+    date: "21/09/2026",
+    title: "Reconciliación Universal de Trabajadores y Mayordomos",
+    highlights: [
+      "Visibilidad Total de Vaqueros: Listado garantizado de trabajadores activos tanto desde almacenamiento local como desde la nube mediante vinculación flexible por ID y correo.",
+      "Persistencia Blindada de Cuentas de Campo: Las cuentas de mayordomos y vaqueros se mantienen siempre visibles y operativas para el patrón en su panel de administración.",
+      "Sincronización Transversal: Detección automática de personal de campo sin importar variaciones de identificadores locales."
+    ]
+  },
   {
     version: "2.13.7",
     date: "21/09/2026",

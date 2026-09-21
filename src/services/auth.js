@@ -728,21 +728,48 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
 /**
  * Obtiene la lista de trabajadores de la finca
  */
-export async function getFarmWorkers(ownerId) {
-  if (!ownerId) return [];
+export async function getFarmWorkers(ownerId, ownerEmail = null) {
+  if (!ownerId && !ownerEmail) return [];
+  let results = [];
   try {
-    const remoteWorkers = await cloudGetFarmWorkers(ownerId);
-    if (remoteWorkers && remoteWorkers.length > 0) {
-      for (const w of remoteWorkers) {
-        if (w && w.id) await db.users.put(w);
+    if (ownerId) {
+      const remoteWorkers = await cloudGetFarmWorkers(ownerId);
+      if (remoteWorkers && remoteWorkers.length > 0) {
+        for (const w of remoteWorkers) {
+          if (w && w.id) await db.users.put(w).catch(() => null);
+        }
+        results = remoteWorkers;
       }
-      return remoteWorkers;
     }
   } catch (e) {
     console.warn('Error leyendo trabajadores de la nube:', e);
   }
-  const local = await db.users.filter(u => u.ownerId === ownerId && u.role === 'worker').toArray();
-  return local;
+
+  try {
+    const cleanOwnerEmail = (ownerEmail || '').trim().toLowerCase();
+    const local = await db.users.filter(u => {
+      if (u.role !== 'worker') return false;
+      if (ownerId && u.ownerId === ownerId) return true;
+      if (cleanOwnerEmail && (u.ownerEmail === cleanOwnerEmail || u.ownerId === cleanOwnerEmail)) return true;
+      if (ownerId && u.ownerEmail === ownerId) return true;
+      if (!u.ownerId || u.ownerId === 'default') return true;
+      return false;
+    }).toArray();
+
+    const seen = new Set();
+    const combined = [];
+    for (const w of [...results, ...local]) {
+      const key = String(w.id || w.email || w.username);
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        combined.push(w);
+      }
+    }
+    return combined;
+  } catch (err) {
+    console.warn('Error combinando trabajadores locales:', err);
+    return results;
+  }
 }
 
 /**
