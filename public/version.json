@@ -1,5 +1,5 @@
 {
-  "version": "2.13.5",
-  "buildTime": 1789970000000,
-  "description": "Auditoría total y detallada de acciones operativas para trabajadores y administrador."
+  "version": "2.13.6",
+  "buildTime": 1789975000000,
+  "description": "Optimización de esquema de almacenamiento, soporte de alta escala y corrección de índices."
 }

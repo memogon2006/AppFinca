@@ -57,7 +57,7 @@ db.version(6).stores({
 });
 
 db.version(7).stores({
-  users: 'id, &email, username, farmName, name, createdAt',
+  users: 'id, email, username, farmName, name, createdAt',
   cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
   weighings: '++id, cattleId, date, weight, userId',
   expenses: '++id, cattleId, date, category, userId',
@@ -68,7 +68,7 @@ db.version(7).stores({
 });
 
 db.version(8).stores({
-  users: 'id, &email, username, farmName, name, role, ownerId, createdAt',
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
   cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
   weighings: '++id, cattleId, date, weight, userId',
   expenses: '++id, cattleId, date, category, userId',
@@ -76,6 +76,18 @@ db.version(8).stores({
   audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
   palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
   activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  settings: 'key, userId'
+});
+
+db.version(9).stores({
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: 'id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
   settings: 'key, userId'
 });
 

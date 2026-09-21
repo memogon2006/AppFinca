@@ -258,18 +258,26 @@ export async function loginUser({ email, password }) {
   }
 
   if (user) {
-    await db.users.put(user);
+    try {
+      await db.users.put(user);
+    } catch (dbErr) {
+      console.warn('Nota: no se pudo actualizar caché local de usuario:', dbErr);
+    }
   } else {
     // Si no está en la nube, buscar en local por si está sin internet (offline)
-    const allUsers = await db.users.toArray();
-    user = allUsers.find(u => {
-      const uEmail = (u.email || '').toLowerCase();
-      const uName = (u.name || '').toLowerCase();
-      return uEmail === cleanEmail || 
-             (!cleanEmail.includes('@') && uEmail === `${cleanEmail}@finca.local`) || 
-             uEmail.startsWith(`${cleanEmail}@`) ||
-             uName === cleanEmail;
-    });
+    try {
+      const allUsers = await db.users.toArray();
+      user = allUsers.find(u => {
+        const uEmail = (u.email || '').toLowerCase();
+        const uName = (u.name || '').toLowerCase();
+        return uEmail === cleanEmail || 
+               (!cleanEmail.includes('@') && uEmail === `${cleanEmail}@finca.local`) || 
+               uEmail.startsWith(`${cleanEmail}@`) ||
+               uName === cleanEmail;
+      });
+    } catch (localErr) {
+      console.warn('Nota: error leyendo usuarios locales:', localErr);
+    }
   }
 
   if (!user) {

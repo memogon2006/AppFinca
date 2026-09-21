@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.13.5";
+export const CURRENT_APP_VERSION = "2.13.6";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.6",
+    date: "21/09/2026",
+    title: "Optimización de Esquema de Almacenamiento & Soporte de Alta Escala",
+    highlights: [
+      "Corrección de Restricción de Índices en Base de Datos: Eliminación de restricciones de unicidad conflictivas en el motor IndexedDB local, permitiendo inicios de sesión y registros instantáneos sin bloqueos.",
+      "Capacidad de Crecimiento para Grandes Hatos: Base de datos local y en la nube optimizada para manejar decenas de miles de cabezas de ganado y sincronización multi-usuario.",
+      "Resiliencia de Inicio de Sesión: Mecanismo de contingencia offline/online para garantizar acceso inmediato al predio desde cualquier dispositivo."
+    ]
+  },
   {
     version: "2.13.5",
     date: "21/09/2026",
