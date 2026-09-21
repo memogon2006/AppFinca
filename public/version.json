@@ -1,5 +1,5 @@
 {
-  "version": "2.13.8",
-  "buildTime": 1789985000000,
-  "description": "Reconciliación universal y visibilidad garantizada de trabajadores y mayordomos."
+  "version": "2.13.9",
+  "buildTime": 1789990000000,
+  "description": "Corrección definitiva de esquema de base de datos y restauración de respaldos."
 }

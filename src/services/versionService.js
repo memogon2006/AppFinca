@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.13.8";
+export const CURRENT_APP_VERSION = "2.13.9";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.9",
+    date: "21/09/2026",
+    title: "Corrección Definitiva de Esquema de Base de Datos y Restauración de Respaldos",
+    highlights: [
+      "Solución al UpgradeError de Claves Primarias: Corrección de claves primarias en el motor IndexedDB Dexie para permitir la apertura y restauración inmediata de archivos JSON de respaldo sin errores.",
+      "Sincronización Inmediata al Importar: Carga y transmisión instantánea a la nube tras restaurar cualquier copia de seguridad.",
+      "Integridad de Datos Garantizada: Tablas locales optimizadas y listas para operar a gran escala."
+    ]
+  },
   {
     version: "2.13.8",
     date: "21/09/2026",

@@ -468,6 +468,9 @@ export function ExportImportModal({ isOpen, onClose, onDataChanged, zIndex = 'z-
         setLoading(true);
         const result = await importBackupData(evt.target.result, userId);
         if (result.success) {
+          if (userId) {
+            await cloudPushData(userId).catch(() => null);
+          }
           setMessage({ type: 'success', text: result.message });
           if (onDataChanged) onDataChanged();
         } else {
