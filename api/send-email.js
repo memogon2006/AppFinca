@@ -200,24 +200,67 @@ export default async function handler(req, res) {
     };
   }
 
+  // 1. Intentar enviar con Resend API si existe clave configurada
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      const resendResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'INVENTARIO BOVINO APP <onboarding@resend.dev>',
+          to: [to],
+          subject: finalSubject,
+          html: htmlContent,
+        }),
+      });
+
+      if (resendResponse.ok) {
+        const data = await resendResponse.json();
+        return res.status(200).json({
+          success: true,
+          provider: 'resend',
+          id: data.id,
+          message: `Correo enviado exitosamente a ${to}`
+        });
+      }
+    } catch (e) {
+      console.warn('Error enviando con Resend:', e);
+    }
+  }
+
+  // 2. Fallback mediante Relay FormSubmit
   try {
-    // Intentar despachar mediante relay FormSubmit
-    await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(to), {
+    const fsResponse = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(to), {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Origin': 'https://finca-ganadera-gamma.vercel.app',
+        'Referer': 'https://finca-ganadera-gamma.vercel.app/',
+        'User-Agent': 'Mozilla/5.0 (compatible; InventarioBovino/1.0)',
       },
       body: JSON.stringify(relayData),
-    }).catch(() => null);
+    });
+
+    const fsData = await fsResponse.json().catch(() => ({}));
+    const needsActivation = fsData.message && fsData.message.includes('needs Activation');
 
     return res.status(200).json({ 
       success: true, 
-      message: `Mensaje despachado exitosamente a ${to}` 
+      provider: 'formsubmit',
+      needsActivation: !!needsActivation,
+      message: needsActivation
+        ? `Revisa tu correo ${to} (y la carpeta de Spam) y pulsa "Activate Form" para confirmar la recepción.`
+        : `Mensaje despachado exitosamente a ${to}` 
     });
   } catch (err) {
     console.error('Error enviando email:', err);
     return res.status(500).json({ error: err.message });
   }
 }
+
 

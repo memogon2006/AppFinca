@@ -24,10 +24,11 @@ export async function sendWelcomeEmail({ name, farmName, email, password }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }).catch(() => null);
+    });
 
     if (res && res.ok) {
-      return { success: true, method: 'serverless' };
+      const data = await res.json().catch(() => ({}));
+      return { success: true, method: 'serverless', ...data };
     }
   } catch (e) {
     console.warn('Error enviando correo por serverless:', e);
@@ -35,11 +36,14 @@ export async function sendWelcomeEmail({ name, farmName, email, password }) {
 
   // 2. Fallback mediante Relay de Notificación Webhook
   try {
-    await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(email.trim()), {
+    const fsRes = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(email.trim()), {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Origin': 'https://finca-ganadera-gamma.vercel.app',
+        'Referer': 'https://finca-ganadera-gamma.vercel.app/',
+        'User-Agent': 'Mozilla/5.0 (compatible; InventarioBovino/1.0)',
       },
       body: JSON.stringify({
         _subject: payload.subject,
@@ -50,9 +54,17 @@ export async function sendWelcomeEmail({ name, farmName, email, password }) {
         '🌐 Enlace de Acceso': payload.loginUrl,
         _template: 'table',
       }),
-    }).catch(() => null);
+    });
 
-    return { success: true, method: 'relay' };
+    const fsData = await fsRes.json().catch(() => ({}));
+    const needsActivation = fsData.message && fsData.message.includes('needs Activation');
+
+    return { 
+      success: true, 
+      method: 'relay',
+      needsActivation: !!needsActivation,
+      message: fsData.message 
+    };
   } catch (e) {
     console.warn('Error en relay de correo:', e);
     return { success: false, error: e.message };
@@ -80,10 +92,11 @@ export async function sendPasswordResetEmail({ name, farmName, email, tempPasswo
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }).catch(() => null);
+    });
 
     if (res && res.ok) {
-      return { success: true, method: 'serverless' };
+      const data = await res.json().catch(() => ({}));
+      return { success: true, method: 'serverless', ...data };
     }
   } catch (e) {
     console.warn('Error enviando correo por serverless:', e);
@@ -91,11 +104,14 @@ export async function sendPasswordResetEmail({ name, farmName, email, tempPasswo
 
   // 2. Fallback mediante Relay de Notificación Webhook
   try {
-    await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(email.trim()), {
+    const fsRes = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(email.trim()), {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Origin': 'https://finca-ganadera-gamma.vercel.app',
+        'Referer': 'https://finca-ganadera-gamma.vercel.app/',
+        'User-Agent': 'Mozilla/5.0 (compatible; InventarioBovino/1.0)',
       },
       body: JSON.stringify({
         _subject: payload.subject,
@@ -107,12 +123,21 @@ export async function sendPasswordResetEmail({ name, farmName, email, tempPasswo
         '🌐 Enlace de Acceso': payload.loginUrl,
         _template: 'table',
       }),
-    }).catch(() => null);
+    });
 
-    return { success: true, method: 'relay' };
+    const fsData = await fsRes.json().catch(() => ({}));
+    const needsActivation = fsData.message && fsData.message.includes('needs Activation');
+
+    return { 
+      success: true, 
+      method: 'relay',
+      needsActivation: !!needsActivation,
+      message: fsData.message 
+    };
   } catch (e) {
     console.warn('Error en relay de correo:', e);
     return { success: false, error: e.message };
   }
 }
+
 
