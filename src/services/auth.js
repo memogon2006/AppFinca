@@ -350,33 +350,54 @@ export async function deleteUserAccount(userId, password) {
     throw new Error('Contraseña incorrecta. Confirma tu contraseña para proceder con la eliminación.');
   }
 
-  const userEmail = user.email;
+  const userEmail = (user.email || '').trim().toLowerCase();
 
   // 1. Eliminar todos los pesajes del usuario
-  await db.weighings.where('userId').equals(userId).delete();
-  const orphanWeights = await db.weighings.filter(w => !w.userId).toArray();
-  for (const w of orphanWeights) {
-    await db.weighings.delete(w.id);
+  if (db.weighings) {
+    await db.weighings.where('userId').equals(userId).delete().catch(() => null);
+    const orphanWeights = await db.weighings.filter(w => !w.userId).toArray().catch(() => []);
+    for (const w of orphanWeights) {
+      await db.weighings.delete(w.id).catch(() => null);
+    }
   }
 
   // 2. Eliminar todo el inventario de ganado del usuario
-  await db.cattle.where('userId').equals(userId).delete();
-  const orphanCattle = await db.cattle.filter(c => !c.userId).toArray();
-  for (const c of orphanCattle) {
-    await db.cattle.delete(c.id);
+  if (db.cattle) {
+    await db.cattle.where('userId').equals(userId).delete().catch(() => null);
+    const orphanCattle = await db.cattle.filter(c => !c.userId).toArray().catch(() => []);
+    for (const c of orphanCattle) {
+      await db.cattle.delete(c.id).catch(() => null);
+    }
   }
 
-  // 3. Eliminar usuario de base de datos local
-  await db.users.delete(userId);
+  // 3. Eliminar registros en tablas adicionales si existen
+  const extraTables = ['expenses', 'vaccinations', 'audits', 'palpations', 'paddocks', 'milkRecords', 'milkDeliveries', 'transactions'];
+  for (const table of extraTables) {
+    if (db[table]) {
+      try {
+        await db[table].where('userId').equals(userId).delete();
+      } catch (e) {}
+    }
+  }
 
-  // 4. Eliminar datos en la nube
+  // 4. Eliminar usuario de base de datos local y liberar el correo de inmediato
+  await db.users.delete(userId).catch(() => null);
+  const remainingUsers = await db.users.toArray().catch(() => []);
+  for (const u of remainingUsers) {
+    if ((u.email || '').trim().toLowerCase() === userEmail) {
+      await db.users.delete(u.id).catch(() => null);
+    }
+  }
+
+  // 5. Eliminar datos en la nube (libera /users/<safeEmail>.json y /userData/<userId>.json)
   await cloudDeleteUserData(userId, userEmail);
 
-  // 5. Limpiar sesión
+  // 6. Limpiar sesión
   logoutUser();
 
   return { success: true };
 }
+
 
 /**
  * Genera una clave temporal segura y fácil de recordar para ganaderos (ej. Ganado-4829, Finca-7310)
