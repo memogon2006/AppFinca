@@ -2,6 +2,7 @@ import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
 import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export function CattleCard({ 
   animal, 
@@ -14,6 +15,7 @@ export function CattleCard({
   onDelete,
   onOpenGlossary
 }) {
+  const { isWorker } = useAuth();
   const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
   const financials = calculateFinancials(animal);
@@ -36,6 +38,7 @@ export function CattleCard({
 
   const handleDelete = (e) => {
     e.stopPropagation();
+    if (isWorker) return;
     if (window.confirm(`⚠️ ¿Estás seguro de que deseas eliminar permanentemente al bovino ${animal.tagNumber} (${animal.name || 'Sin nombre'})?\n\nEsta acción borrará también su historial de pesajes.`)) {
       onDelete(animal.id);
     }
@@ -43,6 +46,10 @@ export function CattleCard({
 
   const handleDeath = (e) => {
     e.stopPropagation();
+    if (animal.status === 'Muerto') {
+      alert('ℹ️ Este animal ya se encuentra registrado como muerto en el censo.');
+      return;
+    }
     if (onOpenDeath) {
       onOpenDeath(animal);
     }
@@ -60,9 +67,11 @@ export function CattleCard({
     ? `${animal.entryWeight} kg` 
     : (isBornInFarm ? '0 kg (Nacido)' : 'Sin peso inicial');
 
-  const entryPriceFormatted = animal.entryPrice && parseFloat(animal.entryPrice) > 0 
-    ? formatCurrency(animal.entryPrice) 
-    : (isBornInFarm ? '$0 (Nacido)' : '$0');
+  const entryPriceFormatted = isWorker
+    ? '—'
+    : (animal.entryPrice && parseFloat(animal.entryPrice) > 0 
+      ? formatCurrency(animal.entryPrice) 
+      : (isBornInFarm ? '$0 (Nacido)' : '$0'));
 
   // Cálculos de liquidación en compañía si aplica
   const part = animal.partnershipDetails || (isCompanySale ? {
@@ -118,13 +127,15 @@ export function CattleCard({
               </button>
             )}
 
-            <button
-              onClick={handleDelete}
-              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
-              title="Eliminar bovino permanentemente"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {!isWorker && (
+              <button
+                onClick={handleDelete}
+                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                title="Eliminar bovino permanentemente"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -254,7 +265,7 @@ export function CattleCard({
       {/* BLOQUE DE INFORMACIÓN: DATOS DE COMPRA / ENTRADA Y RENDIMIENTO */}
       <div className="space-y-2 pt-2.5 border-t border-slate-200 dark:border-slate-800">
         
-        {/* CASO A: SI EL ANIMAL YA ESTÁ VENDIDO -> MOSTRAR DETALLE DE VENTA Y SI ES EN COMPAÑÍA */}
+        {/* CASO A: SI EL ANIMAL YA ESTÁ VENDIDO -> MOSTRAR DETALLE DE VENTA */}
         {animal.status === 'Vendido' ? (
           <div className="space-y-2">
             {/* Banner de Salida / Venta */}
@@ -272,33 +283,41 @@ export function CattleCard({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Venta Bruta ({animal.exitWeight || 0} kg):</span>
-                  <p className="font-black text-slate-900 dark:text-white text-xs sm:text-sm">
-                    {formatCurrency(animal.exitPrice || 0)}
-                  </p>
-                </div>
+              {!isWorker ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Venta Bruta ({animal.exitWeight || 0} kg):</span>
+                      <p className="font-black text-slate-900 dark:text-white text-xs sm:text-sm">
+                        {formatCurrency(animal.exitPrice || 0)}
+                      </p>
+                    </div>
 
-                <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                    {isCompanySale ? '🏢 Parte Finca (50%):' : 'Utilidad Neta:'}
-                  </span>
-                  <p className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
-                    {isCompanySale ? formatCurrency(part?.farmShare || 0) : formatCurrency(financials.netProfit)}
-                  </p>
-                </div>
-              </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                        {isCompanySale ? '🏢 Parte Finca (50%):' : 'Utilidad Neta:'}
+                      </span>
+                      <p className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
+                        {isCompanySale ? formatCurrency(part?.farmShare || 0) : formatCurrency(financials.netProfit)}
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Si es en compañía, mostrar pago al socio */}
-              {isCompanySale && part && (
-                <div className="mt-2 pt-1.5 border-t border-teal-200/60 dark:border-teal-800/60 flex items-center justify-between text-[11px]">
-                  <span className="text-teal-900 dark:text-teal-200 font-medium">
-                    👤 Pago a Dueño del Animal (Capital + 50%):
-                  </span>
-                  <span className="font-extrabold text-blue-600 dark:text-blue-400">
-                    {formatCurrency(animal.partnershipDetails.partnerTotalReturn)}
-                  </span>
+                  {/* Si es en compañía, mostrar pago al socio */}
+                  {isCompanySale && part && (
+                    <div className="mt-2 pt-1.5 border-t border-teal-200/60 dark:border-teal-800/60 flex items-center justify-between text-[11px]">
+                      <span className="text-teal-900 dark:text-teal-200 font-medium">
+                        👤 Pago a Dueño del Animal (Capital + 50%):
+                      </span>
+                      <span className="font-extrabold text-blue-600 dark:text-blue-400">
+                        {formatCurrency(animal.partnershipDetails.partnerTotalReturn)}
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+                  Salida registrada con peso final de <strong>{animal.exitWeight || 0} kg</strong>.
                 </div>
               )}
             </div>
@@ -344,7 +363,7 @@ export function CattleCard({
               </div>
             </div>
 
-            {/* 2. PESO ACTUAL (CON FECHA ÚLTIMO PESAJE) & UTILIDAD */}
+            {/* 2. PESO ACTUAL (CON FECHA ÚLTIMO PESAJE) & RENDIMIENTO */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className={`p-2 rounded-xl border flex flex-col justify-between ${
                 isReadyForSale 
@@ -374,37 +393,53 @@ export function CattleCard({
                 )}
               </div>
 
-              <div className="p-2 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1">
-                    <DollarSign className="w-3 h-3 text-blue-600 dark:text-blue-400" /> 
-                    {animal.status === 'Muerto' ? 'Pérdida:' : animal.status === 'Vendido' ? 'Utilidad Real:' : 'Utilidad Proy.:'}
-                  </span>
-                  <p className={`text-xs sm:text-sm font-black mt-0.5 ${financials.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                    {formatCurrency(financials.netProfit)}
-                  </p>
-                </div>
-
-                <div className="mt-1 flex flex-col gap-0.5">
-                  <span 
-                    onClick={(e) => {
-                      if (onOpenGlossary) {
-                        e.stopPropagation();
-                        onOpenGlossary();
-                      }
-                    }}
-                    title="ROI: Retorno sobre la Inversión (% ganancia neta sobre dinero invertido)"
-                    className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold hover:text-blue-600 dark:hover:text-blue-300 transition"
-                  >
-                    ROI: {financials.roi}% ℹ️
-                  </span>
-                  {financials.pricePerKgUsed > 0 && (
-                    <span className="text-[9px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100/70 dark:bg-blue-900/40 px-1 py-0.5 rounded text-center truncate">
-                      {formatCurrency(financials.pricePerKgUsed)}/kg {animal.status === 'Vendido' ? '(Venta)' : '(Base)'}
+              {!isWorker ? (
+                <div className="p-2 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1">
+                      <DollarSign className="w-3 h-3 text-blue-600 dark:text-blue-400" /> 
+                      {animal.status === 'Muerto' ? 'Pérdida:' : animal.status === 'Vendido' ? 'Utilidad Real:' : 'Utilidad Proy.:'}
                     </span>
-                  )}
+                    <p className={`text-xs sm:text-sm font-black mt-0.5 ${financials.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {formatCurrency(financials.netProfit)}
+                    </p>
+                  </div>
+
+                  <div className="mt-1 flex flex-col gap-0.5">
+                    <span 
+                      onClick={(e) => {
+                        if (onOpenGlossary) {
+                          e.stopPropagation();
+                          onOpenGlossary();
+                        }
+                      }}
+                      title="ROI: Retorno sobre la Inversión (% ganancia neta sobre dinero invertido)"
+                      className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold hover:text-blue-600 dark:hover:text-blue-300 transition"
+                    >
+                      ROI: {financials.roi}% ℹ️
+                    </span>
+                    {financials.pricePerKgUsed > 0 && (
+                      <span className="text-[9px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100/70 dark:bg-blue-900/40 px-1 py-0.5 rounded text-center truncate">
+                        {formatCurrency(financials.pricePerKgUsed)}/kg {animal.status === 'Vendido' ? '(Venta)' : '(Base)'}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-slate-400" /> Categoría:
+                    </span>
+                    <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-0.5 truncate">
+                      {animal.category || 'Bovino'}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 truncate">
+                    Lote: {animal.entryBatch || animal.paddock || 'General'}
+                  </span>
+                </div>
+              )}
             </div>
           </>
         )}

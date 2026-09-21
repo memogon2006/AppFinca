@@ -1,5 +1,15 @@
-import { db } from './db';
-import { cloudSaveUser, cloudFindUser, cloudPushData, cloudPullData, cloudDeleteUserData } from './cloudSync';
+import { db, logActivity } from './db';
+import { 
+  cloudSaveUser, 
+  cloudFindUser, 
+  cloudPushData, 
+  cloudPullData, 
+  cloudDeleteUserData,
+  cloudSaveWorker,
+  cloudGetFarmWorkers,
+  cloudUpdateWorker,
+  cloudDeleteWorker
+} from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
@@ -216,19 +226,30 @@ export async function loginUser({ email, password }) {
     throw new Error('Por favor ingresa tu correo/usuario y contraseña.');
   }
 
-  // 1. Buscar en la Nube Firebase (fuente de la verdad)
+  // 1. Buscar en la Nube Firebase (soporta correo directo o usuario sin @)
   let user = await cloudFindUser(cleanEmail);
+  if (!user && !cleanEmail.includes('@')) {
+    user = await cloudFindUser(`${cleanEmail}@finca.local`);
+  }
 
   if (user) {
     await db.users.put(user);
   } else {
     // Si no está en la nube, buscar en local por si está sin internet (offline)
     const allUsers = await db.users.toArray();
-    user = allUsers.find(u => (u.email || '').toLowerCase() === cleanEmail);
+    user = allUsers.find(u => {
+      const uEmail = (u.email || '').toLowerCase();
+      return uEmail === cleanEmail || (!cleanEmail.includes('@') && uEmail === `${cleanEmail}@finca.local`);
+    });
   }
 
   if (!user) {
-    throw new Error('No se encontró ninguna cuenta con este correo. Por favor verifica tu correo o pulsa "Crear Cuenta" para registrarte.');
+    throw new Error('No se encontró ninguna cuenta con este usuario o correo. Por favor verifica tus credenciales.');
+  }
+
+  // 2. Validar si la cuenta de trabajador está deshabilitada
+  if (user.role === 'worker' && user.isActive === false) {
+    throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio. Comunícate con tu patrón.');
   }
 
   const inputHash = await hashPassword(cleanPassword);
@@ -236,13 +257,19 @@ export async function loginUser({ email, password }) {
     throw new Error('Contraseña incorrecta. Activa "Ver clave" para verificar que no haya errores de digitación.');
   }
 
-  await cloudPullData(user.id);
+  // 3. Sincronización de datos pecuarios según el rol
+  const dataOwnerId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+  await cloudPullData(dataOwnerId);
 
   const sessionUser = {
     id: user.id,
     name: user.name,
     farmName: user.farmName,
     email: user.email,
+    role: user.role || 'admin',
+    ownerId: user.ownerId || null,
+    ownerEmail: user.ownerEmail || null,
+    isActive: user.isActive !== false,
     createdAt: user.createdAt,
     mustChangePassword: !!user.mustChangePassword,
   };
@@ -603,5 +630,144 @@ export async function adminResendCredentials(userId) {
     emailSent: emailRes?.success || false,
     message: `Se ha generado una nueva clave temporal (${tempPassword}) y se ha despachado al correo ${updated.email}.`
   };
+}
+
+/**
+ * Crea una nueva cuenta de trabajador/vaquero asociada a la finca del administrador
+ */
+export async function createWorkerAccount({ name, username, password, ownerUser }) {
+  const cleanName = (name || '').trim();
+  let cleanUsername = (username || '').trim().toLowerCase();
+  const cleanPassword = (password || '').trim();
+
+  if (!ownerUser || !ownerUser.id) throw new Error('No se encontró la sesión del administrador.');
+  if (!cleanName) throw new Error('Por favor ingresa el nombre del trabajador o mayordomo.');
+  if (!cleanUsername) throw new Error('Por favor ingresa un usuario o correo para el trabajador.');
+  if (!cleanPassword || cleanPassword.length < 4) throw new Error('La clave o PIN debe tener al menos 4 caracteres.');
+
+  // Si el usuario no tiene formato de correo, estandarizar para identificación segura
+  if (!cleanUsername.includes('@')) {
+    cleanUsername = `${cleanUsername.replace(/[^a-z0-9_.-]/g, '')}@finca.local`;
+  }
+
+  // Verificar si ya existe en Firebase
+  const existingCloud = await cloudFindUser(cleanUsername);
+  if (existingCloud) {
+    throw new Error(`El usuario o correo "${cleanUsername}" ya se encuentra registrado. Por favor utiliza otro diferente.`);
+  }
+
+  const passwordHash = await hashPassword(cleanPassword);
+  const workerId = 'usr_wrk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+  const newWorker = {
+    id: workerId,
+    name: cleanName,
+    farmName: ownerUser.farmName,
+    email: cleanUsername,
+    passwordHash,
+    role: 'worker',
+    ownerId: ownerUser.id,
+    ownerEmail: ownerUser.email,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // Guardar en Dexie y en Firebase
+  await db.users.put(newWorker);
+  await cloudSaveWorker(ownerUser.id, newWorker);
+
+  await logActivity({
+    action: 'worker_created',
+    description: `Creó la cuenta de trabajador para ${cleanName} (${cleanUsername})`,
+    operatorName: ownerUser.name,
+    operatorRole: 'admin',
+    userId: ownerUser.id,
+  });
+
+  return newWorker;
+}
+
+/**
+ * Obtiene la lista de trabajadores de la finca
+ */
+export async function getFarmWorkers(ownerId) {
+  if (!ownerId) return [];
+  try {
+    const remoteWorkers = await cloudGetFarmWorkers(ownerId);
+    if (remoteWorkers && remoteWorkers.length > 0) {
+      for (const w of remoteWorkers) {
+        if (w && w.id) await db.users.put(w);
+      }
+      return remoteWorkers;
+    }
+  } catch (e) {
+    console.warn('Error leyendo trabajadores de la nube:', e);
+  }
+  const local = await db.users.filter(u => u.ownerId === ownerId && u.role === 'worker').toArray();
+  return local;
+}
+
+/**
+ * Habilita o deshabilita la cuenta del trabajador en tiempo real
+ */
+export async function toggleWorkerStatus(workerId, workerEmail, ownerId, isActive, adminName = 'Administrador') {
+  if (!workerEmail) throw new Error('Correo/usuario de trabajador no especificado.');
+  const updates = { isActive: !!isActive };
+  await cloudUpdateWorker(ownerId, workerId, workerEmail, updates);
+  const local = await db.users.get(workerId);
+  if (local) {
+    await db.users.put({ ...local, ...updates });
+  }
+  await logActivity({
+    action: isActive ? 'worker_enabled' : 'worker_disabled',
+    description: `${isActive ? 'Habilitó' : 'Deshabilitó'} el acceso a la cuenta de ${local?.name || workerEmail}`,
+    operatorName: adminName,
+    operatorRole: 'admin',
+    userId: ownerId,
+  });
+  return true;
+}
+
+/**
+ * Cambia o resetea el PIN/contraseña de un trabajador
+ */
+export async function updateWorkerPassword(workerId, workerEmail, ownerId, newPassword, adminName = 'Administrador') {
+  const cleanPassword = (newPassword || '').trim();
+  if (!cleanPassword || cleanPassword.length < 4) throw new Error('La clave o PIN debe tener al menos 4 caracteres.');
+  const passwordHash = await hashPassword(cleanPassword);
+  const updates = { passwordHash, mustChangePassword: false };
+  await cloudUpdateWorker(ownerId, workerId, workerEmail, updates);
+  const local = await db.users.get(workerId);
+  if (local) {
+    await db.users.put({ ...local, ...updates });
+  }
+  await logActivity({
+    action: 'worker_password_updated',
+    description: `Actualizó la contraseña/PIN de ${local?.name || workerEmail}`,
+    operatorName: adminName,
+    operatorRole: 'admin',
+    userId: ownerId,
+  });
+  return true;
+}
+
+/**
+ * Elimina definitivamente una cuenta de trabajador
+ */
+export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminName = 'Administrador') {
+  if (!workerEmail) throw new Error('Correo/usuario no especificado.');
+  await cloudDeleteWorker(ownerId, workerId, workerEmail);
+  if (workerId) {
+    await db.users.delete(workerId).catch(() => null);
+  }
+  await logActivity({
+    action: 'worker_deleted',
+    description: `Eliminó permanentemente la cuenta de trabajador (${workerEmail})`,
+    operatorName: adminName,
+    operatorRole: 'admin',
+    userId: ownerId,
+  });
+  return true;
 }
 

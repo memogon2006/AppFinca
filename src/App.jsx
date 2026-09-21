@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, initializeDatabase, deleteDemoData, isDemoAnimal } from './services/db';
+import { db, initializeDatabase, deleteDemoData, isDemoAnimal, logActivity } from './services/db';
 import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
@@ -20,6 +20,7 @@ import { DeathModal } from './components/Cattle/DeathModal';
 import { WeightLogModal } from './components/Weights/WeightLogModal';
 import { ExportImportModal } from './components/Common/ExportImportModal';
 import { ProfileModal } from './components/Auth/ProfileModal';
+import { WorkersManagementModal } from './components/Auth/WorkersManagementModal';
 import { GlossaryModal } from './components/Common/GlossaryModal';
 import { PartnershipSettlementModal } from './components/Finances/PartnershipSettlementModal';
 import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
@@ -36,12 +37,13 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
-  const { currentUser, isAuthenticated, loading: authLoading } = useAuth();
+  const { currentUser, isAuthenticated, loading: authLoading, isWorker, effectiveUserId } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimeoutRef = useRef(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isWorkersModalOpen, setIsWorkersModalOpen] = useState(false);
 
   // Monitor de conexión en tiempo real & Auto-Sync al recuperar señal
   const { isOnline } = useOnlineStatus(() => {
@@ -118,7 +120,14 @@ export default function App() {
     init();
   }, []);
 
-  const userId = currentUser?.id;
+  const userId = effectiveUserId || currentUser?.id;
+
+  // Redirigir a vista permitida si un trabajador intenta acceder a finanzas
+  useEffect(() => {
+    if (isWorker && currentView === 'finances') {
+      setCurrentView('dashboard');
+    }
+  }, [isWorker, currentView]);
 
   // Sincronización automática con la nube multi-dispositivo en tiempo real
   useEffect(() => {
@@ -903,6 +912,7 @@ export default function App() {
         onOpenNewAnimal={handleOpenNew}
         onOpenExportImport={() => setIsExportModalOpen(true)}
         onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
+        onOpenWorkers={() => setIsWorkersModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
@@ -1163,6 +1173,13 @@ export default function App() {
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+        onOpenWorkers={() => setIsWorkersModalOpen(true)}
+        zIndex="z-[60]"
+      />
+
+      <WorkersManagementModal
+        isOpen={isWorkersModalOpen}
+        onClose={() => setIsWorkersModalOpen(false)}
         zIndex="z-[60]"
       />
 

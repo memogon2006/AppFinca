@@ -19,7 +19,8 @@ import {
   MessageCircle,
   Wifi,
   WifiOff,
-  Stethoscope
+  Stethoscope,
+  Users
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,7 @@ export function Navbar({
   onOpenNewAnimal, 
   onOpenExportImport, 
   onOpenWhatsAppReport,
+  onOpenWorkers,
   onOpenProfile, 
   onManualSync,
   isSyncing = false,
@@ -37,7 +39,7 @@ export function Navbar({
   activeCattleCount = 0 
 }) {
   const { isDark, toggleTheme } = useTheme();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isWorker } = useAuth();
 
   const navItems = [
     { id: 'dashboard', label: 'Tablero', shortLabel: 'Tablero', icon: LayoutDashboard },
@@ -48,6 +50,8 @@ export function Navbar({
     { id: 'quickWeigh', label: 'Báscula', shortLabel: 'Báscula', icon: Zap },
     { id: 'finances', label: 'Ventas', shortLabel: 'Ventas', icon: DollarSign },
   ];
+
+  const displayedNavItems = isWorker ? navItems.filter(item => item.id !== 'finances') : navItems;
 
   const handleLogout = () => {
     if (window.confirm(`¿Deseas cerrar la sesión de ${currentUser?.name || 'tu cuenta'}?`)) {
@@ -123,7 +127,7 @@ export function Navbar({
 
             {/* CENTRO: Navegación Principal (Pantallas Grandes >= xl) */}
             <nav className="hidden xl:flex items-center gap-0.5 2xl:gap-1 bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner shrink-0">
-              {navItems.map((item) => {
+              {displayedNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentView === item.id;
                 return (
@@ -158,15 +162,29 @@ export function Navbar({
                 <span className="2xl:hidden">+ Bovino</span>
               </button>
 
-              {/* Botón Excel / Copia */}
-              <button
-                onClick={onOpenExportImport}
-                title="Exportar a Excel / Respaldo"
-                className="flex items-center gap-1 px-1.5 2xl:px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold min-h-[32px] cursor-pointer transition whitespace-nowrap"
-              >
-                <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Excel</span>
-              </button>
+              {/* Botón Equipo de Trabajo / Vaqueros (Solo Administrador) */}
+              {!isWorker && (
+                <button
+                  onClick={onOpenWorkers}
+                  title="Gestión de Mayordomos y Vaqueros"
+                  className="flex items-center gap-1 px-1.5 2xl:px-2 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-bold min-h-[32px] cursor-pointer transition whitespace-nowrap shadow-sm"
+                >
+                  <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span className="hidden 2xl:inline">Vaqueros</span>
+                </button>
+              )}
+
+              {/* Botón Excel / Copia (Solo Administrador) */}
+              {!isWorker && (
+                <button
+                  onClick={onOpenExportImport}
+                  title="Exportar a Excel / Respaldo"
+                  className="flex items-center gap-1 px-1.5 2xl:px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold min-h-[32px] cursor-pointer transition whitespace-nowrap"
+                >
+                  <DownloadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Excel</span>
+                </button>
+              )}
 
               {/* Botón WhatsApp Reportes */}
               <button
@@ -205,17 +223,25 @@ export function Navbar({
               <div 
                 onClick={onOpenProfile}
                 title="Mi Perfil, Nombre de Finca y Seguridad"
-                className="flex items-center gap-1 px-1.5 2xl:px-2 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200 cursor-pointer transition group min-h-[32px] whitespace-nowrap shrink-0"
+                className={`flex items-center gap-1 px-1.5 2xl:px-2 py-1 rounded-xl border cursor-pointer transition group min-h-[32px] whitespace-nowrap shrink-0 ${
+                  isWorker
+                    ? 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200'
+                    : 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border-emerald-200 dark:border-emerald-700/50 text-emerald-900 dark:text-emerald-200'
+                }`}
               >
-                <div className="w-5 h-5 rounded-lg bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition">
-                  {getInitials(currentUser?.name)}
+                <div className={`w-5 h-5 rounded-lg text-white font-black text-[10px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition ${
+                  isWorker ? 'bg-amber-600' : 'bg-emerald-600'
+                }`}>
+                  {isWorker ? '🤠' : getInitials(currentUser?.name)}
                 </div>
                 <div className="flex flex-col text-left leading-tight pr-0.5">
                   <span className="text-[11px] font-black truncate max-w-[55px] 2xl:max-w-[75px] text-slate-800 dark:text-slate-100">
                     {currentUser?.name ? currentUser.name.split(' ')[0] : 'Perfil'}
                   </span>
-                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
-                    <Settings className="w-2 h-2" /> Ajustes
+                  <span className={`text-[9px] font-semibold flex items-center gap-0.5 ${
+                    isWorker ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    {isWorker ? 'Modo Campo' : <><Settings className="w-2 h-2" /> Ajustes</>}
                   </span>
                 </div>
               </div>
@@ -352,7 +378,7 @@ export function Navbar({
 
           {/* Sub-bar Navigation for Medium Screens (md -> xl) */}
           <div className="hidden md:flex xl:hidden items-center gap-1.5 py-2.5 overflow-x-auto no-scrollbar border-t border-slate-200 dark:border-slate-800">
-            {navItems.map((item) => {
+            {displayedNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
               return (
@@ -377,8 +403,11 @@ export function Navbar({
 
       {/* Mobile Bottom Navigation Bar (< md) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,6px)] shadow-lg">
-        <div className="grid grid-cols-7 h-15 sm:h-16 items-center px-0.5">
-          {navItems.map((item) => {
+        <div 
+          className="grid h-15 sm:h-16 items-center px-0.5"
+          style={{ gridTemplateColumns: `repeat(${displayedNavItems.length}, minmax(0, 1fr))` }}
+        >
+          {displayedNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
             return (

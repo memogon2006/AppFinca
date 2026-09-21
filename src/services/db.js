@@ -67,6 +67,53 @@ db.version(7).stores({
   settings: 'key, userId'
 });
 
+db.version(8).stores({
+  users: 'id, &email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  settings: 'key, userId'
+});
+
+// Registrar una acción en la bitácora de auditoría
+export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
+  try {
+    if (!db.activityLogs) return null;
+    const entry = {
+      action,
+      description,
+      tagNumber: String(tagNumber || ''),
+      operatorName: String(operatorName || 'Administrador'),
+      operatorRole: String(operatorRole || 'admin'),
+      timestamp: new Date().toISOString(),
+      userId: String(userId || 'default'),
+    };
+    const id = await db.activityLogs.add(entry);
+    return { ...entry, id };
+  } catch (err) {
+    console.warn('Error registrando actividad en bitácora:', err);
+    return null;
+  }
+}
+
+// Obtener registros de la bitácora de auditoría
+export async function getActivityLogs(userId, limit = 50) {
+  try {
+    if (!db.activityLogs) return [];
+    const logs = await db.activityLogs
+      .filter(l => l.userId === userId || !l.userId)
+      .toArray();
+    return logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, limit);
+  } catch (err) {
+    console.warn('Error obteniendo bitácora:', err);
+    return [];
+  }
+}
+
 // Solicitar al navegador almacenamiento permanente protegido
 export async function requestPersistentStorage() {
   if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
@@ -93,6 +140,7 @@ export async function clearAllData(userId) {
   if (db.vaccinations) tables.push(db.vaccinations);
   if (db.audits) tables.push(db.audits);
   if (db.palpations) tables.push(db.palpations);
+  if (db.activityLogs) tables.push(db.activityLogs);
   await db.transaction('rw', tables, async () => {
     await db.cattle.where('userId').equals(userId).delete();
     await db.weighings.where('userId').equals(userId).delete();
@@ -105,6 +153,9 @@ export async function clearAllData(userId) {
     }
     if (db.palpations) {
       await db.palpations.where('userId').equals(userId).delete();
+    }
+    if (db.activityLogs) {
+      await db.activityLogs.where('userId').equals(userId).delete();
     }
   });
 }

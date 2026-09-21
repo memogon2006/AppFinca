@@ -22,7 +22,8 @@ import {
   VolumeX,
   Play,
   Check,
-  Send
+  Send,
+  Users
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
@@ -38,8 +39,8 @@ import {
 } from '../../services/soundService';
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 
-export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
-  const { currentUser, updateProfile, changePassword, deleteAccount, logout } = useAuth();
+export function ProfileModal({ isOpen, onClose, onOpenWorkers, zIndex = 'z-[60]' }) {
+  const { currentUser, updateProfile, changePassword, deleteAccount, logout, isWorker } = useAuth();
 
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'version' | 'delete'
   const [demoCount, setDemoCount] = useState(0);
@@ -384,24 +385,63 @@ export function ProfileModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
             <span>Versión</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('delete')}
-            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
-              activeTab === 'delete'
-                ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-            }`}
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Eliminar Cuenta</span>
-          </button>
+          {!isWorker && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('delete')}
+              className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
+                activeTab === 'delete'
+                  ? 'bg-rose-600 text-white shadow-sm'
+                  : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+              }`}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Eliminar Cuenta</span>
+            </button>
+          )}
         </div>
 
         {/* PESTAÑA 1: DATOS DE PROPIETARIO Y FINCA */}
         {activeTab === 'profile' && (
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             
+            {/* Banner de acceso a gestión de trabajadores para el administrador */}
+            {!isWorker && (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-slate-100 dark:to-slate-800/50 border border-amber-500/30 flex items-center justify-between gap-3 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center font-black text-base shadow-sm shrink-0">
+                    🤠
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                      Equipo de Trabajo en Corral (Vaqueros)
+                    </h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      Crea cuentas, controla accesos y audita movimientos en tiempo real.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenWorkers) onOpenWorkers();
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs shadow-sm transition shrink-0 cursor-pointer"
+                >
+                  Gestionar →
+                </button>
+              </div>
+            )}
+
+            {/* Banner informativo para trabajadores */}
+            {isWorker && (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
+                <span className="text-base">🤠</span>
+                <span><strong>Modo Trabajador de Campo:</strong> Estás conectado a la finca <em>{currentUser?.farmName}</em>. Los datos maestros y financieros son gestionados por el administrador.</span>
+              </div>
+            )}
+
             {profileMsg && (
               <div className={`p-3.5 rounded-2xl flex items-center gap-2.5 text-xs font-medium ${
                 profileMsg.type === 'success'

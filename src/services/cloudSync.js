@@ -82,6 +82,7 @@ export async function cloudPushData(userId) {
     const milkRecords = db.milkRecords ? await db.milkRecords.filter(m => m.userId === userId || !m.userId).toArray() : [];
     const milkDeliveries = db.milkDeliveries ? await db.milkDeliveries.filter(m => m.userId === userId || !m.userId).toArray() : [];
     const transactions = db.transactions ? await db.transactions.filter(t => t.userId === userId || !t.userId).toArray() : [];
+    const activityLogs = db.activityLogs ? await db.activityLogs.filter(a => a.userId === userId || !a.userId).toArray() : [];
 
     const payload = {
       userId,
@@ -95,6 +96,7 @@ export async function cloudPushData(userId) {
       milkRecords,
       milkDeliveries,
       transactions,
+      activityLogs,
       syncedAt: new Date().toISOString(),
     };
 
@@ -174,14 +176,15 @@ export async function cloudPullData(userId) {
           'paddocks',
           'milkRecords',
           'milkDeliveries',
-          'transactions'
+          'transactions',
+          'activityLogs'
         ];
 
         for (const col of collections) {
-          // Reconciliar siempre para asegurar que eliminaciones remotas se reflejen en local
-          await reconcileCollection(col, remoteData[col], userId);
+          if (remoteData[col] !== undefined) {
+            await reconcileCollection(col, remoteData[col], userId);
+          }
         }
-
         return true;
       }
     }
@@ -259,3 +262,102 @@ export async function syncCloudAndLocal(userId) {
     console.warn('⚠️ Error en syncCloudAndLocal Firebase:', e);
   }
 }
+
+/**
+ * Guarda o registra una cuenta de trabajador en Firebase tanto en /users como en /userData/<ownerId>/workers
+ */
+export async function cloudSaveWorker(ownerId, workerUser) {
+  if (!ownerId || !workerUser || !workerUser.email) return false;
+  const safeEmail = toSafeEmailKey(workerUser.email);
+  try {
+    // 1. Guardar en /users/<safeEmail>.json para autenticación directa
+    await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(workerUser),
+    });
+
+    // 2. Guardar en /userData/<ownerId>/workers/<workerId>.json para listado del administrador
+    if (workerUser.id) {
+      await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerUser.id}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workerUser),
+      });
+    }
+    return true;
+  } catch (e) {
+    console.warn('⚠️ Error en cloudSaveWorker:', e);
+    return false;
+  }
+}
+
+/**
+ * Obtiene todos los trabajadores asignados a la finca del propietario desde Firebase
+ */
+export async function cloudGetFarmWorkers(ownerId) {
+  if (!ownerId) return [];
+  try {
+    const res = await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers.json?_t=${Date.now()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (!data) return [];
+      if (Array.isArray(data)) return data.filter(Boolean);
+      if (typeof data === 'object') return Object.values(data).filter(Boolean);
+    }
+  } catch (e) {
+    console.warn('⚠️ Error en cloudGetFarmWorkers:', e);
+  }
+  return [];
+}
+
+/**
+ * Actualiza el estado (activo/inactivo) o contraseña del trabajador en Firebase
+ */
+export async function cloudUpdateWorker(ownerId, workerId, workerEmail, updates) {
+  if (!workerEmail) return false;
+  const safeEmail = toSafeEmailKey(workerEmail);
+  try {
+    // Actualizar en /users/<safeEmail>
+    await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...updates, updatedAt: new Date().toISOString() }),
+    });
+
+    // Actualizar en /userData/<ownerId>/workers/<workerId>
+    if (ownerId && workerId) {
+      await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerId}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...updates, updatedAt: new Date().toISOString() }),
+      });
+    }
+    return true;
+  } catch (e) {
+    console.warn('⚠️ Error en cloudUpdateWorker:', e);
+    return false;
+  }
+}
+
+/**
+ * Elimina permanentemente la cuenta de un trabajador de Firebase
+ */
+export async function cloudDeleteWorker(ownerId, workerId, workerEmail) {
+  if (!workerEmail) return false;
+  const safeEmail = toSafeEmailKey(workerEmail);
+  try {
+    // 1. Eliminar acceso de usuario
+    await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, { method: 'DELETE' });
+
+    // 2. Eliminar del listado del propietario
+    if (ownerId && workerId) {
+      await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerId}.json`, { method: 'DELETE' });
+    }
+    return true;
+  } catch (e) {
+    console.warn('⚠️ Error en cloudDeleteWorker:', e);
+    return false;
+  }
+}
+

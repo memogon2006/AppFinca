@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.12.18";
+export const CURRENT_APP_VERSION = "2.13.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.0",
+    date: "21/09/2026",
+    title: "Gestión de Mayordomos y Vaqueros (Modo Campo, Roles & Auditoría)",
+    highlights: [
+      "Creación Directa de Cuentas por el Administrador: El propietario de la finca crea y entrega las credenciales (usuario y PIN/clave) a sus mayordomos y vaqueros.",
+      "Control de Acceso en Tiempo Real: El administrador puede habilitar o deshabilitar temporalmente el acceso del vaquero con un solo clic, o eliminar su cuenta de forma definitiva.",
+      "Privacidad y Protección Financiera: Cuando el trabajador inicia sesión, la plataforma oculta automáticamente precios de compra, ventas, utilidades, liquidaciones y bloquea eliminaciones.",
+      "Bitácora de Auditoría en Vivo: Registro automático y detallado de todas las acciones operativas realizadas por los trabajadores (pesajes, partos, vacunas) con nombre y fecha exacta.",
+      "Sincronización en Tiempo Real: Las labores registradas en la manga o potrero suben de inmediato a la cuenta del patrón en Google Firebase."
+    ]
+  },
   {
     version: "2.12.18",
     date: "20/09/2026",

@@ -14,12 +14,26 @@ import {
   Filter 
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
+import { useAuth } from '../../context/AuthContext';
 
 export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDeleteAnimal, onOpenPartnershipModal }) {
+  const { isWorker } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [saleStartDate, setSaleStartDate] = useState('');
   const [saleEndDate, setSaleEndDate] = useState('');
   const [saleTypeFilter, setSaleTypeFilter] = useState('');
+
+  if (isWorker) {
+    return (
+      <div className="p-12 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm">
+        <div className="text-4xl">🔒</div>
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Módulo Financiero Restringido</h3>
+        <p className="text-xs text-slate-500 max-w-md mx-auto">
+          Los reportes de ventas, costos, liquidaciones y utilidades de la finca están reservados exclusivamente para el administrador.
+        </p>
+      </div>
+    );
+  }
 
   const allSoldCattle = useMemo(() => cattle.filter(c => c.status === 'Vendido'), [cattle]);
   const activeCattle = useMemo(() => cattle.filter(c => c.status === 'Activo'), [cattle]);

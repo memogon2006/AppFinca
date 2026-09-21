@@ -9,7 +9,12 @@ import {
   deleteUserAccount,
   requestPasswordReset,
   forceSetNewPassword,
-  purgeLocalUserData
+  purgeLocalUserData,
+  createWorkerAccount,
+  getFarmWorkers,
+  toggleWorkerStatus,
+  updateWorkerPassword,
+  deleteWorkerAccount
 } from '../services/auth';
 import { cloudFindUser } from '../services/cloudSync';
 import { triggerFeedback } from '../services/soundService';
@@ -20,17 +25,28 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Valida si la cuenta del usuario aún existe en Firebase Cloud
+  // Valida si la cuenta del usuario o trabajador aún existe y está activa en Firebase Cloud
   const validateSessionWithCloud = async () => {
     const session = getCurrentUser();
     if (session && session.email) {
       try {
         const remoteUser = await cloudFindUser(session.email);
-        // Si no se encuentra en la nube (porque fue eliminada en Firebase Console o desde otro equipo)
+        
+        // 1. Si no se encuentra en la nube (porque fue eliminada en Firebase Console o por el administrador)
         if (remoteUser === null && navigator.onLine) {
-          console.warn('⚠️ La cuenta fue eliminada en la nube. Purgando datos locales...');
+          console.warn('⚠️ La cuenta fue eliminada en la nube. Purgando sesión...');
           await purgeLocalUserData(session.id, session.email);
+          logoutUser();
           setCurrentUser(null);
+          return null;
+        }
+
+        // 2. Si es cuenta de trabajador y fue deshabilitada por el administrador
+        if (remoteUser && session.role === 'worker' && remoteUser.isActive === false && navigator.onLine) {
+          console.warn('⚠️ La cuenta de trabajador fue deshabilitada por el patrón.');
+          logoutUser();
+          setCurrentUser(null);
+          alert('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
           return null;
         }
       } catch (err) {
@@ -124,6 +140,36 @@ export function AuthProvider({ children }) {
     triggerFeedback('login');
   };
 
+  // Métodos de gestión de trabajadores para el Administrador
+  const handleCreateWorker = async ({ name, username, password }) => {
+    if (!currentUser) throw new Error('No hay sesión activa.');
+    return await createWorkerAccount({ name, username, password, ownerUser: currentUser });
+  };
+
+  const handleGetWorkers = async () => {
+    if (!currentUser) return [];
+    return await getFarmWorkers(currentUser.id);
+  };
+
+  const handleToggleWorker = async (workerId, workerEmail, isActive) => {
+    if (!currentUser) return false;
+    return await toggleWorkerStatus(workerId, workerEmail, currentUser.id, isActive, currentUser.name);
+  };
+
+  const handleUpdateWorkerPassword = async (workerId, workerEmail, newPassword) => {
+    if (!currentUser) return false;
+    return await updateWorkerPassword(workerId, workerEmail, currentUser.id, newPassword, currentUser.name);
+  };
+
+  const handleDeleteWorker = async (workerId, workerEmail) => {
+    if (!currentUser) return false;
+    return await deleteWorkerAccount(workerId, workerEmail, currentUser.id, currentUser.name);
+  };
+
+  const isWorker = currentUser?.role === 'worker';
+  const isAdmin = !isWorker;
+  const effectiveUserId = isWorker ? (currentUser.ownerId || currentUser.id) : (currentUser?.id || 'default');
+
   return (
     <AuthContext.Provider
       value={{
@@ -138,6 +184,14 @@ export function AuthProvider({ children }) {
         forceSetNewPassword: handleForceSetNewPassword,
         deleteAccount: handleDeleteAccount,
         requestResetPassword: requestPasswordReset,
+        createWorker: handleCreateWorker,
+        getWorkers: handleGetWorkers,
+        toggleWorker: handleToggleWorker,
+        updateWorkerPassword: handleUpdateWorkerPassword,
+        deleteWorker: handleDeleteWorker,
+        isWorker,
+        isAdmin,
+        effectiveUserId,
         isAuthenticated: !!currentUser,
       }}
     >

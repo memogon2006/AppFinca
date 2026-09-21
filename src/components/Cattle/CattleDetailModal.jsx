@@ -44,6 +44,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
+import { useAuth } from '../../context/AuthContext';
 
 export function CattleDetailModal({ 
   isOpen, 
@@ -62,6 +63,7 @@ export function CattleDetailModal({
   onDeleteWeight,
   isDark = false 
 }) {
+  const { isWorker } = useAuth();
   if (!animal) return null;
 
   const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'financials' | 'sanitary' | 'general'
@@ -192,13 +194,15 @@ export function CattleDetailModal({
                   <span>+ Pesaje</span>
                 </button>
 
-                <button
-                  onClick={() => onOpenSell(animal)}
-                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center gap-1.5 transition shadow-sm min-h-[36px] cursor-pointer"
-                >
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <span>Vender</span>
-                </button>
+                {!isWorker && (
+                  <button
+                    onClick={() => onOpenSell(animal)}
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center gap-1.5 transition shadow-sm min-h-[36px] cursor-pointer"
+                  >
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Vender</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => onOpenDeath(animal)}
@@ -219,18 +223,20 @@ export function CattleDetailModal({
               <span>Editar</span>
             </button>
 
-            <button
-              onClick={() => {
-                if (window.confirm(`¿Seguro que deseas eliminar permanentemente al animal ${animal.tagNumber}?`)) {
-                  onDelete(animal.id);
-                  onClose();
-                }
-              }}
-              className="p-2 rounded-xl bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-500/30 transition min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer font-bold"
-              title="Eliminar animal permanentemente"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {!isWorker && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`¿Seguro que deseas eliminar permanentemente al animal ${animal.tagNumber}?`)) {
+                    onDelete(animal.id);
+                    onClose();
+                  }
+                }}
+                className="p-2 rounded-xl bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-500/30 transition min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer font-bold"
+                title="Eliminar animal permanentemente"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -241,9 +247,11 @@ export function CattleDetailModal({
             <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5">
               {animal.entryWeight && parseFloat(animal.entryWeight) > 0 ? `${animal.entryWeight} kg` : (animal.origin === 'Nacido en finca' || animal.entryType === 'Nacimiento' ? '0 kg (Nacido)' : 'Sin peso')}
             </p>
-            <span className="text-[10px] sm:text-[11px] text-slate-700 dark:text-slate-200 font-extrabold block truncate">
-              {animal.entryPrice && parseFloat(animal.entryPrice) > 0 ? formatCurrency(animal.entryPrice) : '$0'}
-            </span>
+            {!isWorker && (
+              <span className="text-[10px] sm:text-[11px] text-slate-700 dark:text-slate-200 font-extrabold block truncate">
+                {animal.entryPrice && parseFloat(animal.entryPrice) > 0 ? formatCurrency(animal.entryPrice) : '$0'}
+              </span>
+            )}
           </div>
 
           <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -286,22 +294,36 @@ export function CattleDetailModal({
             </span>
           </div>
 
-          <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <span className="text-[10px] sm:text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wide">
-              {financials.isSold ? 'Utilidad Real' : animal.status === 'Muerto' ? 'Pérdida Inversión' : 'Utilidad Proy.'}
-            </span>
-            <p className={`text-base sm:text-lg font-black mt-0.5 ${financials.netProfit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
-              {formatCurrency(financials.netProfit)}
-            </p>
-            <div className="flex items-center justify-between mt-1 text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-300 font-extrabold">
-              <span>ROI: {financials.roi}%</span>
-              {financials.pricePerKgUsed > 0 && (
-                <span className="font-black text-blue-700 dark:text-blue-300">
-                  {formatCurrency(financials.pricePerKgUsed)}/kg {financials.isSold ? '(Venta)' : '(Base)'}
-                </span>
-              )}
+          {!isWorker ? (
+            <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
+              <span className="text-[10px] sm:text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                {financials.isSold ? 'Utilidad Real' : animal.status === 'Muerto' ? 'Pérdida Inversión' : 'Utilidad Proy.'}
+              </span>
+              <p className={`text-base sm:text-lg font-black mt-0.5 ${financials.netProfit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                {formatCurrency(financials.netProfit)}
+              </p>
+              <div className="flex items-center justify-between mt-1 text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-300 font-extrabold">
+                <span>ROI: {financials.roi}%</span>
+                {financials.pricePerKgUsed > 0 && (
+                  <span className="font-black text-blue-700 dark:text-blue-300">
+                    {formatCurrency(financials.pricePerKgUsed)}/kg {financials.isSold ? '(Venta)' : '(Base)'}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
+              <span className="text-[10px] sm:text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                Categoría / Lote
+              </span>
+              <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5 truncate">
+                {animal.category || 'General'}
+              </p>
+              <span className="text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-300 font-bold block truncate">
+                Lote: {batchName}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Pestañas de Navegación */}
@@ -333,17 +355,19 @@ export function CattleDetailModal({
             </button>
           )}
 
-          <button
-            onClick={() => setActiveTab('financials')}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition min-h-[38px] cursor-pointer ${
-              activeTab === 'financials'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <DollarSign className="w-4 h-4" />
-            <span>Finanzas y Costos</span>
-          </button>
+          {!isWorker && (
+            <button
+              onClick={() => setActiveTab('financials')}
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition min-h-[38px] cursor-pointer ${
+                activeTab === 'financials'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <DollarSign className="w-4 h-4" />
+              <span>Finanzas y Costos</span>
+            </button>
+          )}
 
           <button
             onClick={() => setActiveTab('sanitary')}
@@ -1041,7 +1065,7 @@ export function CattleDetailModal({
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Precio Inicial / Compra</span>
                 <p className="font-black text-slate-950 dark:text-white text-sm">
-                  {animal.entryPrice && parseFloat(animal.entryPrice) > 0 ? formatCurrency(animal.entryPrice) : '$0'}
+                  {isWorker ? '—' : (animal.entryPrice && parseFloat(animal.entryPrice) > 0 ? formatCurrency(animal.entryPrice) : '$0')}
                 </p>
               </div>
               <div>
