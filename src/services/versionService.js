@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.12.13";
+export const CURRENT_APP_VERSION = "2.12.14";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.12.14",
+    date: "20/09/2026",
+    title: "Prueba de Actualización en Vivo & Rendimiento Ganadero",
+    highlights: [
+      "Prueba de Actualización en Vivo: Verificación exitosa del sistema de aviso flotante y botón 'Actualizar Ahora'.",
+      "Sincronización Instantánea: Limpieza profunda de archivos en caché y carga fresca de todas las novedades.",
+      "Seguridad & Rendimiento: Protección blindada en autenticación y gestión de lotes ganaderos."
+    ]
+  },
   {
     version: "2.12.13",
     date: "20/09/2026",
