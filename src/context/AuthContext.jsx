@@ -26,75 +26,133 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Valida si la cuenta del usuario o trabajador aún existe y está activa en Firebase Cloud
+  // Valida si la cuenta del usuario o trabajador aún existe y está activa en Firebase Cloud o en la base local
   const validateSessionWithCloud = async () => {
     const session = getCurrentUser();
-    if (session && (session.email || session.username || session.name)) {
-      const cleanEmail = (session.email || session.username || session.name || '').trim().toLowerCase();
-      if (cleanEmail === 'memo' || cleanEmail === 'memo@finca.local' || cleanEmail.startsWith('memo@')) {
-        logoutUser();
-        setCurrentUser(null);
-        return null;
-      }
-      try {
-        let remoteUser = await cloudFindUser(cleanEmail);
-        if (!remoteUser && !cleanEmail.includes('@')) {
-          remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
-        }
-        
-        // 1. Si no se puede verificar en la nube (offline o error temporal de conexión), preservar sesión y datos locales intactos
-        if (!remoteUser) {
-          return session;
-        }
+    if (!session || (!session.id && !session.email && !session.username)) {
+      return null;
+    }
 
-        // 2. Si es cuenta de trabajador y fue deshabilitada por el administrador
-        if (remoteUser && (remoteUser.role === 'worker' || session.role === 'worker') && remoteUser.isActive === false && navigator.onLine) {
-          console.warn('⚠️ La cuenta de trabajador fue deshabilitada por el patrón.');
+    const cleanEmail = (session.email || session.username || session.name || '').trim().toLowerCase();
+    const cleanId = String(session.id || '').trim();
+
+    // 1. Bloqueo inmediato de cuentas eliminadas
+    if (cleanEmail === 'memo' || cleanEmail === 'memo@finca.local' || cleanEmail.startsWith('memo@')) {
+      logoutUser();
+      localStorage.removeItem('ganado_current_user_session');
+      setCurrentUser(null);
+      return null;
+    }
+
+    // 2. Comprobar si el trabajador fue eliminado recientemente en este navegador
+    try {
+      const lastDeletedRaw = localStorage.getItem('ganado_last_deleted_worker');
+      if (lastDeletedRaw) {
+        const del = JSON.parse(lastDeletedRaw);
+        if (
+          (cleanId && del.id === cleanId) ||
+          (cleanEmail && del.email && del.email.toLowerCase() === cleanEmail) ||
+          (del.alias && cleanEmail.includes(del.alias)) ||
+          (del.name && (session.name || '').toLowerCase() === del.name.toLowerCase())
+        ) {
+          console.warn('⚠️ La cuenta de este trabajador fue eliminada.');
           logoutUser();
+          localStorage.removeItem('ganado_current_user_session');
+          setCurrentUser(null);
+          return null;
+        }
+      }
+    } catch (e) {}
+
+    // 3. Comprobar existencia en IndexedDB (db.users)
+    try {
+      if (db.users) {
+        const localUser = cleanId ? await db.users.get(cleanId) : null;
+        if (session.role === 'worker') {
+          // Si es trabajador y NO existe en db.users (fue borrado por el administrador)
+          if (!localUser) {
+            const allUsers = await db.users.toArray();
+            const exists = allUsers.some(u => 
+              u.role === 'worker' && !u.isDeleted && (
+                (u.email || '').toLowerCase() === cleanEmail ||
+                (u.username || '').toLowerCase() === cleanEmail
+              )
+            );
+            if (!exists) {
+              console.warn('⚠️ El trabajador ya no existe en la base de datos local (fue eliminado).');
+              logoutUser();
+              localStorage.removeItem('ganado_current_user_session');
+              setCurrentUser(null);
+              return null;
+            }
+          } else if (localUser.isDeleted || localUser.isActive === false) {
+            console.warn('⚠️ La cuenta de trabajador está deshabilitada o eliminada.');
+            logoutUser();
+            localStorage.removeItem('ganado_current_user_session');
+            setCurrentUser(null);
+            if (localUser.isActive === false) {
+              alert('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
+            }
+            return null;
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Error verificando usuario local:', dbErr);
+    }
+
+    // 4. Validar con la Nube Firebase
+    try {
+      let remoteUser = await cloudFindUser(cleanEmail);
+      if (!remoteUser && !cleanEmail.includes('@')) {
+        remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
+      }
+
+      if (remoteUser) {
+        if ((remoteUser.role === 'worker' || session.role === 'worker') && remoteUser.isActive === false && navigator.onLine) {
+          logoutUser();
+          localStorage.removeItem('ganado_current_user_session');
           setCurrentUser(null);
           alert('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
           return null;
         }
 
-        // 3. Sincronizar y actualizar todos los datos de sesión con la versión más fresca de la nube
-        if (remoteUser) {
-          let farmName = remoteUser.farmName || session.farmName;
-          const ownerEmail = remoteUser.ownerEmail || session.ownerEmail;
-          if ((remoteUser.role === 'worker' || session.role === 'worker') && ownerEmail) {
-            try {
-              const ownerRecord = await cloudFindUser(ownerEmail);
-              if (ownerRecord && ownerRecord.farmName) {
-                farmName = ownerRecord.farmName;
-              }
-            } catch (e) {}
-          }
-
-          const merged = {
-            ...session,
-            ...remoteUser,
-            id: remoteUser.id || session.id,
-            name: remoteUser.name || session.name,
-            farmName,
-            role: remoteUser.role || session.role || 'admin',
-            ownerId: remoteUser.ownerId || session.ownerId || null,
-            ownerEmail: ownerEmail || null,
-            isActive: remoteUser.isActive !== false,
-          };
-          localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));
-          await db.users.put(merged);
-
-          // Si es trabajador, forzar descarga inmediata de los animales y registros de la finca del patrón
-          const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
-          if (targetDataId) {
-            await cloudPullData(targetDataId);
-          }
-
-          return merged;
+        let farmName = remoteUser.farmName || session.farmName;
+        const ownerEmail = remoteUser.ownerEmail || session.ownerEmail;
+        if ((remoteUser.role === 'worker' || session.role === 'worker') && ownerEmail) {
+          try {
+            const ownerRecord = await cloudFindUser(ownerEmail);
+            if (ownerRecord && ownerRecord.farmName) {
+              farmName = ownerRecord.farmName;
+            }
+          } catch (e) {}
         }
-      } catch (err) {
-        console.warn('Error validando sesión con la nube:', err);
+
+        const merged = {
+          ...session,
+          ...remoteUser,
+          id: remoteUser.id || session.id,
+          name: remoteUser.name || session.name,
+          farmName,
+          role: remoteUser.role || session.role || 'admin',
+          ownerId: remoteUser.ownerId || session.ownerId || null,
+          ownerEmail: ownerEmail || null,
+          isActive: remoteUser.isActive !== false,
+        };
+        localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));
+        await db.users.put(merged).catch(() => null);
+
+        const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
+        if (targetDataId) {
+          await cloudPullData(targetDataId).catch(() => null);
+        }
+
+        return merged;
       }
+    } catch (err) {
+      console.warn('Error validando sesión con la nube:', err);
     }
+
     return session;
   };
 

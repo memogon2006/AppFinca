@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.3";
+export const CURRENT_APP_VERSION = "2.14.4";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.4",
+    date: "21/09/2026",
+    title: "Invalidación y Expulsión Inmediata de Sesiones de Trabajadores Eliminados",
+    highlights: [
+      "Expulsión Inmediata al Recargar: Si una cuenta de trabajador fue eliminada, al recargar la página se valida contra IndexedDB y el usuario es expulsado de inmediato sin preservar la sesión en localStorage.",
+      "Sincronización Local de Estado de Eliminación: Registro automático de trabajadores eliminados en memoria para cerrar cualquier pestaña o sesión activa restante.",
+      "Purga Total Garantizada: Verificación estricta en cada arranque de la app para evitar sesiones zombis o huérfanas."
+    ]
+  },
   {
     version: "2.14.3",
     date: "21/09/2026",

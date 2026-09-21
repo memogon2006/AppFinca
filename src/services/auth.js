@@ -905,8 +905,16 @@ export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminN
     console.warn('Error en barrido local de eliminación de trabajador:', err);
   }
 
-  // 4. Si la sesión activa en este dispositivo coincide con el trabajador eliminado, cerrarla
+  // 4. Si la sesión activa en este dispositivo coincide con el trabajador eliminado, cerrarla y registrar la eliminación
   try {
+    localStorage.setItem('ganado_last_deleted_worker', JSON.stringify({
+      id: workerId,
+      email: cleanEmail,
+      alias: cleanAlias,
+      name: cleanName,
+      timestamp: Date.now()
+    }));
+
     const currentRaw = localStorage.getItem(STORAGE_KEY);
     if (currentRaw) {
       const current = JSON.parse(currentRaw);

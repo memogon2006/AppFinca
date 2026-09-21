@@ -1,5 +1,5 @@
 {
-  "version": "2.14.3",
-  "buildTime": 1790030000000,
-  "description": "Purga permanente y bloqueo absoluto de la cuenta memo."
+  "version": "2.14.4",
+  "buildTime": 1790040000000,
+  "description": "Invalidación y expulsión inmediata de sesiones de trabajadores eliminados."
 }
