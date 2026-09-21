@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.13.6";
+export const CURRENT_APP_VERSION = "2.13.7";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.7",
+    date: "21/09/2026",
+    title: "Protección Total de Datos Locales & Resiliencia de Sincronización",
+    highlights: [
+      "Blindaje Contra Purga Accidental: Protección permanente para que la base de datos local nunca se elimine automáticamente ante fallos o políticas de red en la nube.",
+      "Reconciliación Segura: Prevención de borrado en colecciones locales ante respuestas vacías o no autorizadas del servidor.",
+      "Sincronización Transparente de Vaquero: Descarga inmediata de animales y potreros del propietario una vez establecida la conexión."
+    ]
+  },
   {
     version: "2.13.6",
     date: "21/09/2026",

@@ -130,9 +130,11 @@ function normalizeRemoteList(val) {
  * (Añade, actualiza y elimina automáticamente para reflejar cambios de otros dispositivos)
  */
 async function reconcileCollection(tableName, rawRemoteData, userId) {
-  if (!db[tableName]) return;
+  if (!db[tableName] || rawRemoteData === undefined || rawRemoteData === null) return;
 
   const remoteList = normalizeRemoteList(rawRemoteData);
+  if (remoteList.length === 0) return;
+
   const remoteIds = new Set(remoteList.map(item => String(item.id)));
 
   // 1. Guardar o actualizar todos los registros recibidos de la nube

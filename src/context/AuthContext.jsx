@@ -37,13 +37,9 @@ export function AuthProvider({ children }) {
           remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
         }
         
-        // 1. Si no se encuentra en la nube (porque fue eliminada en Firebase Console o por el administrador)
-        if (remoteUser === null && navigator.onLine) {
-          console.warn('⚠️ La cuenta fue eliminada en la nube. Purgando sesión...');
-          await purgeLocalUserData(session.id, session.email);
-          logoutUser();
-          setCurrentUser(null);
-          return null;
+        // 1. Si no se puede verificar en la nube (offline o error temporal de conexión), preservar sesión y datos locales intactos
+        if (!remoteUser) {
+          return session;
         }
 
         // 2. Si es cuenta de trabajador y fue deshabilitada por el administrador

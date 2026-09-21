@@ -1,5 +1,5 @@
 {
-  "version": "2.13.6",
-  "buildTime": 1789975000000,
-  "description": "Optimización de esquema de almacenamiento, soporte de alta escala y corrección de índices."
+  "version": "2.13.7",
+  "buildTime": 1789980000000,
+  "description": "Protección total de datos locales y resiliencia de sincronización en tiempo real."
 }
