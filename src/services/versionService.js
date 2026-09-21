@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.5";
+export const CURRENT_APP_VERSION = "2.14.6";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.6",
+    date: "21/09/2026",
+    title: "Registro Global en la Nube de Cuentas Eliminadas y Bloqueo Definitivo de 'mariogomez'",
+    highlights: [
+      "Registro Global en Firebase de Cuentas Eliminadas: Todas las cuentas eliminadas por el administrador se inscriben en el registro en la nube de cuentas revocadas, bloqueando el acceso en todos los dispositivos y navegadores.",
+      "Bloqueo y Purga Total de 'mariogomez' y 'pedro.vaquero': Eliminación irrevocable en la nube y en base de datos local Dexie con expulsión forzada al recargar la página.",
+      "Sincronización Bidireccional de Lista de Trabajadores: Reconciliación en tiempo real del panel de trabajadores contra la nube Firebase, eliminando duplicados y registros fantasmas."
+    ]
+  },
   {
     version: "2.14.5",
     date: "21/09/2026",

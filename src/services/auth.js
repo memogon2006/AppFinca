@@ -8,7 +8,9 @@ import {
   cloudSaveWorker,
   cloudGetFarmWorkers,
   cloudUpdateWorker,
-  cloudDeleteWorker
+  cloudDeleteWorker,
+  cloudGetDeletedWorkers,
+  cloudIsWorkerDeleted
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 
@@ -228,8 +230,11 @@ export async function loginUser({ email, password }) {
 
   // Bloqueo explícito y purga permanente de cuentas eliminadas
   const rawAlias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
-  const blockedList = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro'];
+  const blockedList = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro', 'mariogomez', 'mario.gomez', 'mario_gomez', 'mario'];
+  const isDeletedRemote = await cloudIsWorkerDeleted(cleanInput);
+
   if (
+    isDeletedRemote ||
     blockedList.includes(rawAlias) || 
     blockedList.includes(cleanInput) || 
     blockedList.some(b => cleanInput === b || cleanInput === `${b}@finca.local` || cleanInput.startsWith(`${b}@`))
@@ -242,6 +247,7 @@ export async function loginUser({ email, password }) {
         const uId = String(u.id || '').toLowerCase().trim();
         const uName = (u.name || '').toLowerCase().trim();
         if (
+          isDeletedRemote ||
           blockedList.some(b => 
             uEmail === b || 
             uEmail === `${b}@finca.local` || 
@@ -269,6 +275,19 @@ export async function loginUser({ email, password }) {
     user = await cloudFindUser(cleanInput.replace('@finca.local', ''));
   }
 
+  if (user && user.isDeleted) {
+    // Si la nube indica que fue eliminado
+    try {
+      const allUsers = await db.users.toArray();
+      for (const u of allUsers) {
+        if ((u.email || '').toLowerCase() === cleanInput || (u.username || '').toLowerCase() === rawAlias) {
+          await db.users.delete(u.id).catch(() => null);
+        }
+      }
+    } catch (e) {}
+    throw new Error(`⚠️ La cuenta de trabajador "${cleanInput}" ha sido eliminada por el administrador.`);
+  }
+
   if (user) {
     try {
       await db.users.put(user);
@@ -290,7 +309,17 @@ export async function loginUser({ email, password }) {
                uUser === alias ||
                uUser === cleanInput;
       });
+
+      // Si el usuario encontrado localmente es un trabajador pero el dispositivo está online y no se encontró en Firebase
+      if (user && user.role === 'worker' && navigator.onLine) {
+        // Significa que fue eliminado en la nube desde otro dispositivo
+        await db.users.delete(user.id).catch(() => null);
+        throw new Error(`⚠️ La cuenta de trabajador "${cleanInput}" ha sido eliminada por el administrador.`);
+      }
     } catch (localErr) {
+      if (localErr.message && localErr.message.includes('eliminada')) {
+        throw localErr;
+      }
       console.warn('Nota: error leyendo usuarios locales:', localErr);
     }
   }
@@ -766,12 +795,10 @@ export async function getFarmWorkers(ownerId, ownerEmail = null) {
   let remoteWorkers = [];
   let fetchedRemote = false;
   try {
-    if (cleanOwnerId) {
-      const res = await cloudGetFarmWorkers(cleanOwnerId);
-      if (Array.isArray(res)) {
-        remoteWorkers = res;
-        fetchedRemote = true;
-      }
+    const res = await cloudGetFarmWorkers(cleanOwnerId, cleanOwnerEmail);
+    if (Array.isArray(res)) {
+      remoteWorkers = res;
+      fetchedRemote = true;
     }
   } catch (e) {
     console.warn('Error leyendo trabajadores de la nube:', e);
@@ -789,8 +816,8 @@ export async function getFarmWorkers(ownerId, ownerEmail = null) {
            (cleanOwnerId && uOwnerEmail === cleanOwnerId);
   });
 
-  // 2. Si obtuvimos la lista remota de la nube con éxito
-  if (fetchedRemote && remoteWorkers.length > 0) {
+  // 2. Si obtuvimos la lista remota de la nube con éxito (incluso si la lista está vacía)
+  if (fetchedRemote) {
     // Guardar trabajadores remotos en Dexie
     for (const rw of remoteWorkers) {
       if (rw && rw.id) await db.users.put(rw).catch(() => null);
@@ -877,11 +904,11 @@ export async function updateWorkerPassword(workerId, workerEmail, ownerId, newPa
 /**
  * Elimina definitivamente una cuenta de trabajador
  */
-export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminName = 'Administrador', workerName = null) {
+export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminName = 'Administrador', workerName = null, ownerEmail = null) {
   if (!workerEmail && !workerId) throw new Error('Correo/usuario no especificado.');
 
-  // 1. Eliminar de Firebase
-  await cloudDeleteWorker(ownerId, workerId, workerEmail);
+  // 1. Eliminar de Firebase y registrar en deletedWorkers
+  await cloudDeleteWorker(ownerId, workerId, workerEmail, ownerEmail);
 
   // 2. Eliminar de Dexie por ID primario
   if (workerId) {

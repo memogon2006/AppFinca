@@ -206,7 +206,7 @@ export async function initializeDatabase() {
   try {
     if (db.users) {
       const allUsers = await db.users.toArray();
-      const blockedTokens = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro'];
+      const blockedTokens = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro', 'mariogomez', 'mario.gomez', 'mario_gomez', 'mario'];
       for (const u of allUsers) {
         const uEmail = (u.email || '').toLowerCase().trim();
         const uUser = (u.username || '').toLowerCase().trim();

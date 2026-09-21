@@ -43,11 +43,18 @@ export async function cloudSaveUser(user) {
 }
 
 /**
- * Busca un usuario en Firebase Realtime Database por correo
+ * Busca un usuario en Firebase Realtime Database por correo o usuario
  */
 export async function cloudFindUser(email) {
   if (!email) return null;
   const cleanEmail = (email || '').trim().toLowerCase();
+
+  // Si está marcado como eliminado, nunca retornarlo como usuario válido
+  const isDeleted = await cloudIsWorkerDeleted(cleanEmail);
+  if (isDeleted) {
+    return { isDeleted: true, email: cleanEmail, role: 'worker' };
+  }
+
   const safeEmail = toSafeEmailKey(cleanEmail);
 
   // 1. Búsqueda directa por clave segura
@@ -299,6 +306,71 @@ export async function syncCloudAndLocal(userId) {
 }
 
 /**
+ * Obtiene el registro de trabajadores eliminados desde Firebase
+ */
+export async function cloudGetDeletedWorkers() {
+  try {
+    const res = await fetch(`${FIREBASE_URL}/deletedWorkers.json?_t=${Date.now()}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data && typeof data === 'object' ? data : {};
+    }
+  } catch (e) {
+    console.warn('⚠️ Error en cloudGetDeletedWorkers:', e);
+  }
+  return {};
+}
+
+/**
+ * Verifica si un trabajador o usuario está registrado como eliminado
+ */
+export async function cloudIsWorkerDeleted(emailOrUsername) {
+  if (!emailOrUsername) return false;
+  const clean = String(emailOrUsername).trim().toLowerCase();
+  const rawAlias = clean.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
+  const withDomain = clean.includes('@') ? clean : `${rawAlias}@finca.local`;
+
+  // Comprobar lista fija de usuarios eliminados
+  const hardcodedBlocked = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro', 'mariogomez', 'mario.gomez', 'mario_gomez', 'mario'];
+  if (
+    hardcodedBlocked.includes(clean) || 
+    hardcodedBlocked.includes(rawAlias) || 
+    hardcodedBlocked.some(b => clean.startsWith(`${b}@`) || clean === `${b}@finca.local`)
+  ) {
+    return true;
+  }
+
+  try {
+    const safeDirect = toSafeEmailKey(clean);
+    const safeDomain = toSafeEmailKey(withDomain);
+    const safeAlias = toSafeEmailKey(rawAlias);
+
+    const [resDirect, resDomain, resAlias] = await Promise.all([
+      safeDirect ? fetch(`${FIREBASE_URL}/deletedWorkers/${safeDirect}.json?_t=${Date.now()}`).catch(() => null) : null,
+      safeDomain && safeDomain !== safeDirect ? fetch(`${FIREBASE_URL}/deletedWorkers/${safeDomain}.json?_t=${Date.now()}`).catch(() => null) : null,
+      safeAlias && safeAlias !== safeDirect ? fetch(`${FIREBASE_URL}/deletedWorkers/${safeAlias}.json?_t=${Date.now()}`).catch(() => null) : null,
+    ]);
+
+    if (resDirect && resDirect.ok) {
+      const d = await resDirect.json();
+      if (d) return true;
+    }
+    if (resDomain && resDomain.ok) {
+      const d = await resDomain.json();
+      if (d) return true;
+    }
+    if (resAlias && resAlias.ok) {
+      const d = await resAlias.json();
+      if (d) return true;
+    }
+  } catch (e) {
+    console.warn('⚠️ Error comprobando deletedWorkers:', e);
+  }
+
+  return false;
+}
+
+/**
  * Guarda o registra una cuenta de trabajador en Firebase tanto en /users como en /userData/<ownerId>/workers
  */
 export async function cloudSaveWorker(ownerId, workerUser) {
@@ -309,6 +381,14 @@ export async function cloudSaveWorker(ownerId, workerUser) {
   const safeAlias = toSafeEmailKey(rawAlias);
 
   try {
+    // 0. Quitar de la lista de eliminados en Firebase si se vuelve a crear
+    if (safeEmail) {
+      await fetch(`${FIREBASE_URL}/deletedWorkers/${safeEmail}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+    if (safeAlias && safeAlias !== safeEmail) {
+      await fetch(`${FIREBASE_URL}/deletedWorkers/${safeAlias}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+
     // 1. Guardar en /users/<safeEmail>.json para autenticación directa con correo
     await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
       method: 'PUT',
@@ -355,20 +435,60 @@ export async function cloudSaveWorker(ownerId, workerUser) {
 /**
  * Obtiene todos los trabajadores asignados a la finca del propietario desde Firebase
  */
-export async function cloudGetFarmWorkers(ownerId) {
-  if (!ownerId) return [];
+export async function cloudGetFarmWorkers(ownerId, ownerEmail = null) {
+  if (!ownerId && !ownerEmail) return [];
+  const safeOwnerEmail = ownerEmail ? toSafeEmailKey(ownerEmail) : null;
+  const workersMap = new Map();
+
   try {
-    const res = await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers.json?_t=${Date.now()}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (!data) return [];
-      if (Array.isArray(data)) return data.filter(Boolean);
-      if (typeof data === 'object') return Object.values(data).filter(Boolean);
+    // 1. Consultar por ownerId
+    if (ownerId) {
+      const res = await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers.json?_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        const list = normalizeRemoteList(data);
+        for (const w of list) {
+          if (w && w.id) workersMap.set(String(w.id), w);
+        }
+      }
+    }
+
+    // 2. Consultar por safeOwnerEmail si es diferente
+    if (safeOwnerEmail && safeOwnerEmail !== ownerId) {
+      const res = await fetch(`${FIREBASE_URL}/userData/${safeOwnerEmail}/workers.json?_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        const list = normalizeRemoteList(data);
+        for (const w of list) {
+          if (w && w.id) workersMap.set(String(w.id), w);
+        }
+      }
     }
   } catch (e) {
     console.warn('⚠️ Error en cloudGetFarmWorkers:', e);
   }
-  return [];
+
+  // Filtrar contra la lista de eliminados
+  const deletedMap = await cloudGetDeletedWorkers().catch(() => ({}));
+  const deletedKeys = new Set(
+    Object.entries(deletedMap).flatMap(([k, v]) => [
+      k.toLowerCase(),
+      (v?.email || '').toLowerCase(),
+      (v?.username || '').toLowerCase(),
+      (v?.id || '')
+    ]).filter(Boolean)
+  );
+
+  return Array.from(workersMap.values()).filter(w => {
+    if (!w || !w.id) return false;
+    const wId = String(w.id).toLowerCase();
+    const wEmail = (w.email || '').toLowerCase();
+    const wUser = (w.username || '').toLowerCase();
+    if (deletedKeys.has(wId) || deletedKeys.has(wEmail) || deletedKeys.has(wUser)) {
+      return false;
+    }
+    return true;
+  });
 }
 
 /**
@@ -420,15 +540,39 @@ export async function cloudUpdateWorker(ownerId, workerId, workerEmail, updates)
 /**
  * Elimina permanentemente la cuenta de un trabajador de Firebase
  */
-export async function cloudDeleteWorker(ownerId, workerId, workerEmail) {
+export async function cloudDeleteWorker(ownerId, workerId, workerEmail, ownerEmail = null) {
   if (!workerEmail && !workerId) return false;
   const cleanEmail = (workerEmail || '').trim().toLowerCase();
   const safeEmail = toSafeEmailKey(cleanEmail);
-  const rawAlias = cleanEmail.replace('@finca.local', '');
+  const rawAlias = cleanEmail.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
   const safeAlias = toSafeEmailKey(rawAlias);
+  const safeOwnerEmail = ownerEmail ? toSafeEmailKey(ownerEmail) : null;
 
   try {
-    // 1. Eliminar acceso de usuario en todas las variantes de clave
+    const deletedInfo = {
+      id: workerId || '',
+      email: cleanEmail,
+      username: rawAlias,
+      deletedAt: new Date().toISOString(),
+    };
+
+    // 1. Marcar como eliminado en /deletedWorkers
+    if (safeEmail) {
+      await fetch(`${FIREBASE_URL}/deletedWorkers/${safeEmail}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deletedInfo),
+      }).catch(() => null);
+    }
+    if (safeAlias && safeAlias !== safeEmail) {
+      await fetch(`${FIREBASE_URL}/deletedWorkers/${safeAlias}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deletedInfo),
+      }).catch(() => null);
+    }
+
+    // 2. Eliminar acceso de usuario en todas las variantes de clave en /users/
     if (safeEmail) {
       await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, { method: 'DELETE' }).catch(() => null);
     }
@@ -440,10 +584,41 @@ export async function cloudDeleteWorker(ownerId, workerId, workerEmail) {
       await fetch(`${FIREBASE_URL}/users/${safeWithDomain}.json`, { method: 'DELETE' }).catch(() => null);
     }
 
-    // 2. Eliminar del listado del propietario
+    // 3. Eliminar del listado del propietario bajo ownerId
     if (ownerId && workerId) {
       await fetch(`${FIREBASE_URL}/userData/${ownerId}/workers/${workerId}.json`, { method: 'DELETE' }).catch(() => null);
     }
+
+    // 4. Eliminar del listado del propietario bajo safeOwnerEmail
+    if (safeOwnerEmail && workerId) {
+      await fetch(`${FIREBASE_URL}/userData/${safeOwnerEmail}/workers/${workerId}.json`, { method: 'DELETE' }).catch(() => null);
+    }
+
+    // 5. Barrido profundo en segundo plano por si existe en cualquier nodo de userData
+    try {
+      const res = await fetch(`${FIREBASE_URL}/userData.json?_t=${Date.now()}`);
+      if (res.ok) {
+        const userData = await res.json();
+        if (userData && typeof userData === 'object') {
+          for (const [userKey, data] of Object.entries(userData)) {
+            if (data && data.workers && typeof data.workers === 'object') {
+              for (const [wKey, wObj] of Object.entries(data.workers)) {
+                const wEm = (wObj?.email || '').toLowerCase();
+                const wUsr = (wObj?.username || '').toLowerCase();
+                if (
+                  (workerId && wKey === workerId) ||
+                  (workerId && wObj?.id === workerId) ||
+                  (cleanEmail && wEm === cleanEmail) ||
+                  (rawAlias && (wUsr === rawAlias || wEm === rawAlias))
+                ) {
+                  await fetch(`${FIREBASE_URL}/userData/${userKey}/workers/${wKey}.json`, { method: 'DELETE' }).catch(() => null);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
 
     return true;
   } catch (e) {

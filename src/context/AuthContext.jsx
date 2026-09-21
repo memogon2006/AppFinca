@@ -17,7 +17,7 @@ import {
   deleteWorkerAccount
 } from '../services/auth';
 import { db } from '../services/db';
-import { cloudFindUser, cloudPullData } from '../services/cloudSync';
+import { cloudFindUser, cloudPullData, cloudIsWorkerDeleted } from '../services/cloudSync';
 import { triggerFeedback } from '../services/soundService';
 
 const AuthContext = createContext();
@@ -35,14 +35,13 @@ export function AuthProvider({ children }) {
 
     const cleanEmail = (session.email || session.username || session.name || '').trim().toLowerCase();
     const cleanId = String(session.id || '').trim();
-
-    // 1. Bloqueo inmediato de cuentas eliminadas (memo, pedro.vaquero, etc.)
-    const blockedTokens = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro'];
     const sessionEmail = (session.email || '').trim().toLowerCase();
     const sessionUser = (session.username || '').trim().toLowerCase();
     const sessionName = (session.name || '').trim().toLowerCase();
     const sessionId = String(session.id || '').trim().toLowerCase();
 
+    // 1. Bloqueo inmediato de cuentas eliminadas conocidas
+    const blockedTokens = ['memo', 'pedro.vaquero', 'pedro_vaquero', 'pedro', 'mariogomez', 'mario.gomez', 'mario_gomez', 'mario'];
     const isBlockedAccount = blockedTokens.some(token => 
       cleanEmail === token ||
       cleanEmail === `${token}@finca.local` ||
@@ -63,11 +62,29 @@ export function AuthProvider({ children }) {
       console.warn('⚠️ Cuenta bloqueada o eliminada detectada en sesión activa.');
       logoutUser();
       localStorage.removeItem('ganado_current_user_session');
+      try {
+        if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
+      } catch (e) {}
       setCurrentUser(null);
       return null;
     }
 
-    // 2. Comprobar si el trabajador fue eliminado recientemente en este navegador
+    // 2. Comprobar contra el registro de trabajadores eliminados en la nube
+    if (session.role === 'worker') {
+      try {
+        const isRemoteDel = await cloudIsWorkerDeleted(sessionEmail || sessionUser || cleanEmail);
+        if (isRemoteDel) {
+          console.warn('⚠️ La cuenta de este trabajador fue eliminada en la nube.');
+          logoutUser();
+          localStorage.removeItem('ganado_current_user_session');
+          if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
+          setCurrentUser(null);
+          return null;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Comprobar si el trabajador fue eliminado recientemente en este navegador
     try {
       const lastDeletedRaw = localStorage.getItem('ganado_last_deleted_worker');
       if (lastDeletedRaw) {
@@ -81,13 +98,14 @@ export function AuthProvider({ children }) {
           console.warn('⚠️ La cuenta de este trabajador fue eliminada.');
           logoutUser();
           localStorage.removeItem('ganado_current_user_session');
+          if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
           setCurrentUser(null);
           return null;
         }
       }
     } catch (e) {}
 
-    // 3. Comprobar existencia en IndexedDB (db.users)
+    // 4. Comprobar existencia en IndexedDB (db.users)
     try {
       if (db.users) {
         const localUser = cleanId ? await db.users.get(cleanId) : null;
@@ -124,11 +142,19 @@ export function AuthProvider({ children }) {
       console.warn('Error verificando usuario local:', dbErr);
     }
 
-    // 4. Validar con la Nube Firebase
+    // 5. Validar con la Nube Firebase
     try {
       let remoteUser = await cloudFindUser(cleanEmail);
       if (!remoteUser && !cleanEmail.includes('@')) {
         remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
+      }
+
+      if (remoteUser && remoteUser.isDeleted) {
+        logoutUser();
+        localStorage.removeItem('ganado_current_user_session');
+        if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
+        setCurrentUser(null);
+        return null;
       }
 
       if (remoteUser) {
@@ -171,6 +197,14 @@ export function AuthProvider({ children }) {
         }
 
         return merged;
+      } else if (session.role === 'worker' && navigator.onLine) {
+        // Si es trabajador y está online pero no existe en Firebase, fue eliminado
+        console.warn('⚠️ El trabajador ya no existe en la nube Firebase (fue eliminado).');
+        logoutUser();
+        localStorage.removeItem('ganado_current_user_session');
+        if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
+        setCurrentUser(null);
+        return null;
       }
     } catch (err) {
       console.warn('Error validando sesión con la nube:', err);
@@ -286,7 +320,7 @@ export function AuthProvider({ children }) {
 
   const handleDeleteWorker = async (workerId, workerEmail, workerName = null) => {
     if (!currentUser) return false;
-    return await deleteWorkerAccount(workerId, workerEmail, currentUser.id, currentUser.name, workerName);
+    return await deleteWorkerAccount(workerId, workerEmail, currentUser.id, currentUser.name, workerName, currentUser.email);
   };
 
   const isWorker = currentUser?.role === 'worker';
