@@ -83,7 +83,9 @@ db.version(8).stores({
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {
     if (!db.activityLogs) return null;
+    const logId = 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     const entry = {
+      id: logId,
       action,
       description,
       tagNumber: String(tagNumber || ''),
@@ -92,8 +94,8 @@ export async function logActivity({ action, description, tagNumber = '', operato
       timestamp: new Date().toISOString(),
       userId: String(userId || 'default'),
     };
-    const id = await db.activityLogs.add(entry);
-    return { ...entry, id };
+    await db.activityLogs.put(entry);
+    return entry;
   } catch (err) {
     console.warn('Error registrando actividad en bitácora:', err);
     return null;

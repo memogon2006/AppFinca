@@ -30,7 +30,7 @@ import {
   Save,
   Clock
 } from 'lucide-react';
-import { db } from '../../services/db';
+import { db, logActivity } from '../../services/db';
 import { triggerFeedback } from '../../services/soundService';
 import { formatNumber } from '../../services/calculations';
 
@@ -671,6 +671,16 @@ export function InventoryChecklistModal({
       if (db.audits) {
         await db.audits.add(auditRecord);
       }
+
+      // Registrar acción en bitácora de auditoría
+      await logActivity({
+        action: 'audit_checklist',
+        description: `Realizó arqueo de inventario (${auditRecord.scopeValue}): ${metrics.verifiedCount} verificados de ${metrics.expectedTotal} esperados${metrics.pendingCount > 0 ? ` (${metrics.pendingCount} faltantes)` : ''}${metrics.extraCount > 0 ? ` (${metrics.extraCount} extra)` : ''}${totalWeighedCount > 0 ? ` (${totalWeighedCount} pesados)` : ''}`,
+        tagNumber: `${metrics.verifiedCount}/${metrics.expectedTotal}`,
+        operatorName: inspectorName || currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId: currentUser?.id || 'default',
+      }).catch(err => console.warn('Error registrando auditoría en bitácora:', err));
       if (currentUser?.id) {
         localStorage.setItem(`ganado_latest_audit_${currentUser.id}`, JSON.stringify(auditRecord));
         

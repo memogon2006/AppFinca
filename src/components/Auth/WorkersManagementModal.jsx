@@ -24,7 +24,15 @@ import {
   Scale,
   Baby,
   Syringe,
-  Activity
+  Activity,
+  PlusCircle,
+  FileEdit,
+  FolderPlus,
+  Stethoscope,
+  TrendingUp,
+  RotateCcw,
+  Skull,
+  ClipboardCheck
 } from 'lucide-react';
 import { getActivityLogs, deleteActivityLog, clearActivityLogs } from '../../services/db';
 import { cloudPushData } from '../../services/cloudSync';
@@ -233,9 +241,24 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   // Icono según acción en bitácora
   const getLogIcon = (action) => {
     switch (action) {
+      case 'animal_created': return <PlusCircle className="w-4 h-4 text-emerald-500" />;
+      case 'animal_updated': return <FileEdit className="w-4 h-4 text-blue-500" />;
+      case 'animal_deleted': return <Trash2 className="w-4 h-4 text-rose-500" />;
+      case 'batch_created': return <FolderPlus className="w-4 h-4 text-emerald-600" />;
       case 'weighing': return <Scale className="w-4 h-4 text-amber-500" />;
+      case 'weighing_batch': return <Scale className="w-4 h-4 text-amber-600" />;
+      case 'weight_deleted': return <Trash2 className="w-4 h-4 text-amber-700" />;
+      case 'palpation': return <Stethoscope className="w-4 h-4 text-pink-500" />;
+      case 'palpation_batch': return <Stethoscope className="w-4 h-4 text-pink-600" />;
+      case 'vaccination': return <Syringe className="w-4 h-4 text-sky-500" />;
+      case 'vaccination_deleted': return <Trash2 className="w-4 h-4 text-sky-700" />;
+      case 'sale': return <TrendingUp className="w-4 h-4 text-purple-500" />;
+      case 'sale_batch': return <TrendingUp className="w-4 h-4 text-purple-600" />;
+      case 'sale_reverted': return <RotateCcw className="w-4 h-4 text-purple-400" />;
+      case 'death': return <Skull className="w-4 h-4 text-slate-600 dark:text-slate-400" />;
+      case 'death_reverted': return <RotateCcw className="w-4 h-4 text-emerald-500" />;
+      case 'audit_checklist': return <ClipboardCheck className="w-4 h-4 text-teal-500" />;
       case 'birth': return <Baby className="w-4 h-4 text-emerald-500" />;
-      case 'vaccination': return <Syringe className="w-4 h-4 text-blue-500" />;
       case 'worker_created': return <UserPlus className="w-4 h-4 text-emerald-500" />;
       case 'worker_enabled': return <UserCheck className="w-4 h-4 text-teal-500" />;
       case 'worker_disabled': return <UserX className="w-4 h-4 text-rose-500" />;

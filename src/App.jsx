@@ -333,6 +333,16 @@ export default function App() {
         setSelectedAnimal(updated);
       }
 
+      // Registrar acción en bitácora de auditoría
+      await logActivity({
+        action: 'animal_updated',
+        description: `Modificó datos del bovino Chapa #${animalData.tagNumber || 'S/N'}${animalData.color ? ` (Color: ${animalData.color})` : ''}${animalData.sex ? ` (Sexo: ${animalData.sex})` : ''}${animalData.entryBatch ? ` (Lote: ${animalData.entryBatch})` : ''}${animalData.entryWeight ? ` (Peso entrada: ${animalData.entryWeight} kg)` : ''}${animalData.category ? ` (Categoría: ${animalData.category})` : ''}`,
+        tagNumber: animalData.tagNumber,
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+
       setIsFormModalOpen(false);
       setEditingAnimal(null);
       cloudPushData(userId);
@@ -360,6 +370,16 @@ export default function App() {
           notes: 'Peso inicial de registro',
         });
       }
+
+      // Registrar acción en bitácora de auditoría
+      await logActivity({
+        action: 'animal_created',
+        description: `Ingresó bovino nuevo Chapa #${created.tagNumber || 'S/N'}${created.entryWeight ? ` (Peso inicial: ${created.entryWeight} kg)` : ''}${created.color ? `, Color: ${created.color}` : ''}${created.sex ? `, Sexo: ${created.sex}` : ''}${created.category ? `, Categoría: ${created.category}` : ''}${created.entryBatch ? `, Lote: ${created.entryBatch}` : ''}${created.origin ? `, Procedencia: ${created.origin}` : ''}`,
+        tagNumber: created.tagNumber,
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
 
       setIsFormModalOpen(false);
       setEditingAnimal(null);
@@ -398,6 +418,18 @@ export default function App() {
       }
     }
 
+    // Registrar acción en bitácora de auditoría
+    const batchTags = batchAnimals.slice(0, 5).map(a => '#' + a.tagNumber).join(', ');
+    const extraCount = batchAnimals.length > 5 ? ` y ${batchAnimals.length - 5} más` : '';
+    await logActivity({
+      action: 'batch_created',
+      description: `Ingresó lote de ${batchAnimals.length} bovinos nuevos (Chapas: ${batchTags}${extraCount})${batchAnimals[0]?.entryBatch ? ` en Lote: ${batchAnimals[0].entryBatch}` : ''}${batchAnimals[0]?.sex ? ` (Sexo: ${batchAnimals[0].sex})` : ''}${batchAnimals[0]?.entryWeight ? ` (Peso: ${batchAnimals[0].entryWeight} kg)` : ''}`,
+      tagNumber: batchAnimals.length === 1 ? batchAnimals[0].tagNumber : `${batchAnimals[0]?.tagNumber || ''}-${batchAnimals[batchAnimals.length - 1]?.tagNumber || ''}`,
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     setIsBatchEntryModalOpen(false);
     cloudPushData(userId);
     triggerFeedback('batch');
@@ -432,6 +464,16 @@ export default function App() {
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setSelectedAnimal(prev => ({ ...prev, currentWeight: newWeight }));
     }
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'weighing',
+      description: `Registró pesaje de ${weight} kg para el bovino Chapa #${animal?.tagNumber || targetId}${conditionScore ? ` (Condición: ${conditionScore}/5)` : ''}${notes ? ` (Nota: "${notes}")` : ''}`,
+      tagNumber: animal?.tagNumber || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
 
     setIsWeightModalOpen(false);
     setWeighingAnimal(null);
@@ -479,6 +521,16 @@ export default function App() {
       }
     }
 
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'weight_deleted',
+      description: `Eliminó registro de pesaje de ${targetWeighing?.weight || weight || ''} kg del bovino Chapa #${animal?.tagNumber || cattleId}${date ? ` (Fecha: ${date})` : ''}`,
+      tagNumber: animal?.tagNumber || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     cloudPushData(userId);
     triggerFeedback('warning');
     showToast('Registro de pesaje eliminado y peso actual recalculado ⚖️');
@@ -506,6 +558,16 @@ export default function App() {
       setSelectedAnimal(prev => ({ ...prev, ...saleUpdates }));
     }
 
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'sale',
+      description: `Liquidó venta de bovino Chapa #${animal?.tagNumber || targetId}${exitWeight ? ` (Peso salida: ${exitWeight} kg)` : ''}${exitPrice ? ` (Valor: $${parseFloat(exitPrice).toLocaleString('es-CO')})` : ''}${saleBuyer ? ` (Comprador: ${saleBuyer})` : ''}${exitType ? ` (Modalidad: ${exitType})` : ''}`,
+      tagNumber: animal?.tagNumber || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     setIsSellModalOpen(false);
     setSellingAnimal(null);
     cloudPushData(userId);
@@ -532,6 +594,16 @@ export default function App() {
         partnershipDetails: item.partnershipDetails || null,
       });
     }
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'sale_batch',
+      description: `Liquidó venta grupal de ${batchList.length} bovinos en compañía (Comprador: ${batchList[0]?.saleBuyer || 'Venta grupal'}, Modalidad: ${batchList[0]?.exitType || 'En Compañía'})`,
+      tagNumber: `${batchList.length} bovinos`,
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
 
     cloudPushData(userId);
     triggerFeedback('batch');
@@ -571,6 +643,16 @@ export default function App() {
       setSelectedAnimal(prev => ({ ...prev, ...deathUpdates }));
     }
 
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'death',
+      description: `Reportó baja por muerte del bovino Chapa #${animal?.tagNumber || targetId} (Causa: ${deathReason || 'Enfermedad'}${deathDate ? `, Fecha: ${deathDate}` : ''}${deathNotes ? `, Notas: "${deathNotes}"` : ''})`,
+      tagNumber: animal?.tagNumber || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     setIsDeathModalOpen(false);
     setDeathAnimal(null);
     cloudPushData(userId);
@@ -594,6 +676,16 @@ export default function App() {
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setSelectedAnimal(prev => ({ ...prev, ...revertUpdates }));
     }
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'death_reverted',
+      description: `Reactivó en inventario activo el bovino Chapa #${animal?.tagNumber || targetId} (Anuló reporte de muerte)`,
+      tagNumber: animal?.tagNumber || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
 
     cloudPushData(userId);
     showToast(`Bovino reactivado en el inventario ☁️`);
@@ -619,6 +711,16 @@ export default function App() {
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setSelectedAnimal(prev => ({ ...prev, ...revertUpdates }));
     }
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'sale_reverted',
+      description: `Anuló venta y reincorporó al inventario activo el bovino Chapa #${animal?.tagNumber || targetId}`,
+      tagNumber: animal?.tagNumber || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
 
     cloudPushData(userId);
     showToast(`Venta anulada. El animal volvió al inventario activo ☁️`);
@@ -649,6 +751,16 @@ export default function App() {
       });
     }
 
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'weighing_batch',
+      description: `Registró pesajes masivos en báscula para ${batch.length} bovinos (Fecha: ${batch[0]?.date || new Date().toISOString().split('T')[0]})`,
+      tagNumber: `${batch.length} bovinos`,
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     cloudPushData(userId);
     showToast(`Se guardaron y sincronizaron ${batch.length} pesajes ☁️`);
   };
@@ -666,6 +778,16 @@ export default function App() {
       setSelectedAnimal(null);
     }
 
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'animal_deleted',
+      description: `Eliminó del inventario el bovino Chapa #${animal?.tagNumber || tag}${animal?.color ? ` (Color: ${animal.color})` : ''}${animal?.sex ? ` (Sexo: ${animal.sex})` : ''}${animal?.entryBatch ? ` (Lote: ${animal.entryBatch})` : ''}${animal?.currentWeight ? ` (Peso: ${animal.currentWeight} kg)` : ''}`,
+      tagNumber: animal?.tagNumber || tag,
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     cloudPushData(userId);
     showToast(`Bovino ${tag} eliminado del inventario 🗑️`, 'danger');
   };
@@ -679,6 +801,17 @@ export default function App() {
     if (db.vaccinations) {
       await db.vaccinations.put(vacRecord);
     }
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'vaccination',
+      description: `Registró vacunación/sanidad: ${vaccinationData.vaccineType || 'Vacuna'} (${vaccinationData.batchName ? `Lote: ${vaccinationData.batchName}` : `Chapa #${vaccinationData.tagNumber || 'General'}`}${vaccinationData.officialCycle ? `, Ciclo: ${vaccinationData.officialCycle}` : ''}${vaccinationData.ruvNumber ? `, RUV: ${vaccinationData.ruvNumber}` : ''})`,
+      tagNumber: vaccinationData.tagNumber || vaccinationData.batchName || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     cloudPushData(userId);
     triggerFeedback('success');
     showToast(`Registro sanitario de ${vaccinationData.vaccineType} guardado exitosamente 💉`);
@@ -687,6 +820,17 @@ export default function App() {
   const handleDeleteVaccination = async (vacId) => {
     if (!userId || !db.vaccinations) return;
     await db.vaccinations.delete(vacId);
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'vaccination_deleted',
+      description: `Eliminó registro de vacunación / plan sanitario`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
     cloudPushData(userId);
     triggerFeedback('warning');
     showToast('Registro de vacunación eliminado 🗑️');
@@ -750,6 +894,16 @@ export default function App() {
         createdAt: new Date().toISOString()
       });
     }
+
+    // Registrar acción en bitácora de auditoría
+    await logActivity({
+      action: 'palpation',
+      description: `Registró palpación ginecológica en hembra Chapa #${tagNumber || animal.tagNumber}: Diagnóstico "${diagnosis}"${diagnosis === 'Preñada' && pregnancyDays ? ` (~${pregnancyDays} días de gestación, FPP: ${expectedCalvingDate || 'Por calcular'})` : ''}${veterinarian ? ` (Palpador: ${veterinarian})` : ''}${findings && findings.length > 0 ? ` (Hallazgos: ${findings.join(', ')})` : ''}`,
+      tagNumber: tagNumber || animal.tagNumber || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
 
     cloudPushData(userId);
     showToast(`Diagnóstico de ${animal.tagNumber} (${diagnosis}) guardado y sincronizado 🩺☁️`);
@@ -815,6 +969,18 @@ export default function App() {
         });
       }
     }
+
+    // Registrar acción en bitácora de auditoría
+    const pregnantCount = batchPalpations.filter(p => p.diagnosis === 'Preñada').length;
+    const emptyCount = batchPalpations.filter(p => p.diagnosis === 'Vacía').length;
+    await logActivity({
+      action: 'palpation_batch',
+      description: `Registró jornada de palpación ginecológica para ${batchPalpations.length} hembras (${pregnantCount} Preñadas, ${emptyCount} Vacías)`,
+      tagNumber: `${batchPalpations.length} hembras`,
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
 
     cloudPushData(userId);
     showToast(`¡Jornada de ${batchPalpations.length} diagnósticos guardada y sincronizada en la nube! 🩺☁️`, 'success');

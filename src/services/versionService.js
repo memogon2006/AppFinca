@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.13.4";
+export const CURRENT_APP_VERSION = "2.13.5";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.13.5",
+    date: "21/09/2026",
+    title: "Auditoría Total & Detallada de Acciones (Ingresos, Ediciones, Bajas y Pesajes)",
+    highlights: [
+      "Detalle Exhaustivo en Bitácora: Registro pormenorizado de cada acción realizada por trabajadores y administrador con chapas, pesos, colores, lotes, procedencias y diagnósticos.",
+      "Trazabilidad Completa del Ciclo Bovino: Auditoría automática en ingresos individuales y por lotes, pesajes en báscula, eliminaciones, bajas por muerte, reactivaciones, ventas y vacunas.",
+      "Auditoría en Arqueos de Manga: Resumen automático de conteos de ganado, animales faltantes y novedades detectadas durante el checklist de inventario.",
+      "Sincronización en la Nube con Identificadores Únicos: Historial protegido contra colisiones entre múltiples celulares y dispositivos."
+    ]
+  },
   {
     version: "2.13.4",
     date: "21/09/2026",
