@@ -267,15 +267,15 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       return;
     }
 
-    // Validar costos si se ingresaron (solo administradores)
+    // Validar costos si no es costo cero ($0) (solo administradores)
     if (!isWorker && costMode !== 'zeroCost') {
-      if (costMode === 'pricePerKg' && pricePerKg !== '' && parseFloat(pricePerKg) < 0) {
-        setErrors('El precio por kilo no puede ser negativo.');
+      if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
+        setErrors('Por favor ingresa un precio pactado por kilo ($/kg) válido.');
         return;
       }
 
-      if (costMode === 'fixedPrice' && fixedPricePerHead !== '' && parseFloat(fixedPricePerHead) < 0) {
-        setErrors('El valor por animal no puede ser negativo.');
+      if (costMode === 'fixedPrice' && (!fixedPricePerHead || parseFloat(fixedPricePerHead) <= 0)) {
+        setErrors('Por favor ingresa el valor promedio por animal ($/cab).');
         return;
       }
     }
@@ -752,7 +752,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 {costMode === 'pricePerKg' && (
                   <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60" onClick={(e) => e.stopPropagation()}>
                     <label className="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-1">
-                      Precio por Kilo (COP/kg) <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">(Recomendable)</span>
+                      Precio por Kilo (COP/kg) <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
@@ -760,10 +760,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                         type="number"
                         value={pricePerKg}
                         onChange={(e) => setPricePerKg(e.target.value)}
-                        placeholder="Ej. 8500, 9200 (Recomendable)"
+                        placeholder="Ej. 8500, 9200"
                         min="0"
                         step="50"
                         className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-emerald-500"
+                        required={costMode === 'pricePerKg'}
                       />
                     </div>
                   </div>
@@ -801,7 +802,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 {costMode === 'fixedPrice' && (
                   <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60" onClick={(e) => e.stopPropagation()}>
                     <label className="block text-xs font-bold text-emerald-900 dark:text-emerald-200 mb-1">
-                      Valor Fijo por Animal (COP) <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">(Recomendable)</span>
+                      Valor Fijo por Animal (COP) <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
@@ -809,10 +810,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                         type="number"
                         value={fixedPricePerHead}
                         onChange={(e) => setFixedPricePerHead(e.target.value)}
-                        placeholder="Ej. 2500000 (Recomendable)"
+                        placeholder="Ej. 2500000"
                         min="0"
                         step="50000"
                         className="w-full pl-8 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 text-slate-900 dark:text-white font-extrabold text-sm focus:outline-none focus:border-emerald-500"
+                        required={costMode === 'fixedPrice'}
                       />
                     </div>
                   </div>

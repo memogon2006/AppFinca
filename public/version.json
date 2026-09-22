@@ -1,5 +1,5 @@
 {
-  "version": "2.14.10",
-  "buildTime": 1790090000000,
-  "description": "Valor inicial opcional pero recomendable en registro individual y de lote."
+  "version": "2.14.11",
+  "buildTime": 1790095000000,
+  "description": "Obligatoriedad de precios en cálculo de lote y valor inicial recomendable en registro individual."
 }

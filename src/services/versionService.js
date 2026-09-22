@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.10";
+export const CURRENT_APP_VERSION = "2.14.11";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.11",
+    date: "21/09/2026",
+    title: "Ajuste de Obligatoriedad de Precios en Lote y Valor Inicial Recomendable Individual",
+    highlights: [
+      "Cálculo Obligatorio en Opciones 1 y 2 de Lote: Si se elige 'Por Kilos' o 'Valor Fijo por Animal' en el ingreso masivo, el precio correspondiente es estrictamente obligatorio (*).",
+      "Opción 3 para Registro sin Costo ($0 COP): La tercera opción '$0 COP (Sin Costo Inicial)' es la vía exclusiva para ingresar animales de lote sin requerir precio alguno.",
+      "Registro Individual Recomendable: En el formulario de registro individual de bovino (CattleFormModal), el 'Valor Inicial / Compra ($)' permanece como campo no obligatorio pero altamente recomendable."
+    ]
+  },
   {
     version: "2.14.10",
     date: "21/09/2026",
