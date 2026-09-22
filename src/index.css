@@ -3,25 +3,34 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-forest-ink: #07503f;
+    --color-vivid-lime: #e8fe85;
+    --color-bone: #f1efdf;
+    --color-pure-white: #ffffff;
+    --color-ash-gray: #efefef;
+    --color-charcoal: #212529;
+    --color-graphite: #353535;
+    --color-pewter: #6d6d6d;
+    --color-sky-card: #b2cee7;
+    --color-peach-card: #fceace;
+    --color-sage-card: #e6ecd5;
+    --color-moss: #c3cda7;
+  }
+
   html {
-    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
   body {
-    @apply bg-slate-100 text-slate-800 font-sans min-h-screen antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200;
+    @apply bg-[#f1efdf] text-[#212529] font-sans min-h-screen antialiased selection:bg-[#07503f] selection:text-[#e8fe85] transition-colors duration-200;
     font-feature-settings: 'tnum' 1, 'lnum' 1, 'cv02' 1, 'cv03' 1, 'cv04' 1;
     font-variant-numeric: tabular-nums lining-nums;
-    background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px), radial-gradient(rgba(16, 185, 129, 0.04) 1px, #f1f5f9 1px);
-    background-size: 32px 32px;
-    background-position: 0 0, 16px 16px;
   }
 
   .dark body,
   body.dark {
-    @apply bg-slate-950 text-slate-100;
-    background-image: radial-gradient(rgba(16, 185, 129, 0.06) 1px, transparent 1px), radial-gradient(rgba(16, 185, 129, 0.03) 1px, #090d16 1px);
-    background-size: 40px 40px;
-    background-position: 0 0, 20px 20px;
+    @apply bg-[#031813] text-[#f1efdf];
   }
 
   /* Números tabulares alineados en tablas, inputs y controles */
@@ -38,23 +47,125 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-200 dark:bg-slate-900;
+  background-color: #e6ecd5;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background-color: #031410;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-400 dark:bg-slate-700 rounded;
+  background-color: #c3cda7;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-500 dark:bg-slate-600;
+  background-color: #07503f;
+}
+
+/* Arva Design System Utilities */
+.arva-serif {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.arva-pill {
+  border-radius: 100px;
+}
+
+.arva-pill-nav {
+  border-radius: 110px;
+}
+
+.arva-input {
+  border-radius: 33px;
+  background-color: #ffffff;
+  border: 1px solid #c3cda7;
+  padding: 10px 20px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+.arva-input:focus {
+  outline: none;
+  border-color: #07503f;
+  box-shadow: 0 0 0 2px rgba(7, 80, 63, 0.15);
+}
+
+.arva-btn-forest {
+  background-color: #07503f;
+  color: #ffffff;
+  border-radius: 100px;
+  padding: 10px 24px;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.025em;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.arva-btn-forest:hover {
+  background-color: #0b6852;
+  transform: translateY(-1px);
+}
+
+.arva-btn-lime {
+  background-color: #e8fe85;
+  color: #07503f;
+  border-radius: 100px;
+  padding: 10px 24px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.arva-btn-lime:hover {
+  background-color: #f1ff9e;
+  transform: translateY(-1px);
+}
+
+.arva-btn-outline {
+  background-color: transparent;
+  color: #212529;
+  border: 1px solid #353535;
+  border-radius: 100px;
+  padding: 10px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.arva-btn-outline:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+  border-color: #07503f;
+  color: #07503f;
 }
 
 .custom-card {
-  @apply bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl shadow-sm dark:shadow-lg dark:backdrop-blur-md transition-all duration-200;
+  background-color: #ffffff;
+  border: 1px solid #e6ecd5;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+.dark .custom-card {
+  background-color: #07251d;
+  border-color: #0d382c;
 }
 
 .custom-card-hover {
-  @apply hover:border-emerald-500/50 hover:shadow-md dark:hover:shadow-emerald-950/40 hover:-translate-y-0.5;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.custom-card-hover:hover {
+  border-color: #07503f;
+  transform: translateY(-2px);
 }
 
 .tabular-nums {
@@ -82,7 +193,7 @@
   display: inline-flex;
   white-space: nowrap;
   width: max-content;
-  animation: marquee-ticker 14s linear infinite;
+  animation: marquee-ticker 18s linear infinite;
   will-change: transform;
 }
 
@@ -90,4 +201,3 @@
 .animate-marquee-ticker:hover {
   animation-play-state: paused;
 }
-

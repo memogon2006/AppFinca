@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.15";
+export const CURRENT_APP_VERSION = "2.14.16";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.16",
+    date: "22/09/2026",
+    title: "Transformación Visual: Sistema de Diseño Arva Pastoral Editorial",
+    highlights: [
+      "Paleta Pastoral Editorial: Lienzo crema (#f1efdf), verde bosque profundo Forest Ink (#07503f) y franja reflectiva Vivid Lime (#e8fe85).",
+      "Superficies Pastel Acolchadas: Tarjetas de indicadores con tonos Salvia (#e6ecd5), Cielo (#b2cee7), Durazno (#fceace) y Ceniza (#efefef) con bordes suaves Musgo (#c3cda7).",
+      "Tipografía Editorial: Integración de fuentes serif clásicas (Cormorant Garamond) para títulos y sans-serif neutral (Inter) para datos de alta legibilidad.",
+      "Botones y Controles Píldora: Radios curvados completos (100px) en botones de acción y cápsulas de navegación."
+    ]
+  },
   {
     version: "2.14.15",
     date: "22/09/2026",
