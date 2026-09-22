@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.17";
+export const CURRENT_APP_VERSION = "2.14.18";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.18",
+    date: "22/09/2026",
+    title: "🚀 Actualización de Prueba: Validación de Aviso de Novedades Exclusivo Adentro",
+    highlights: [
+      "Prueba de Notificación Interna: Esta actualización verifica que el aviso emergente se muestre únicamente cuando el ganadero está adentro de su finca.",
+      "Pantalla de Login Inalterada: La pantalla de acceso permanece limpia y sin interrupciones.",
+      "Actualización en 1 Clic: Al presionar el botón de actualizar, el sistema recarga instantáneamente con todas las funciones al día."
+    ]
+  },
   {
     version: "2.14.17",
     date: "22/09/2026",
