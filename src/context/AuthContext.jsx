@@ -23,8 +23,10 @@ import { triggerFeedback } from '../services/soundService';
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(() => {
+    return getCurrentUser();
+  });
+  const [loading, setLoading] = useState(false);
 
   // Valida si la cuenta del usuario o trabajador aún existe y está activa en Firebase Cloud o en la base local
   const validateSessionWithCloud = async () => {
@@ -125,7 +127,7 @@ export function AuthProvider({ children }) {
 
         const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
         if (targetDataId) {
-          await cloudPullData(targetDataId).catch(() => null);
+          cloudPullData(targetDataId).catch(() => null);
         }
 
         return merged;
@@ -141,10 +143,13 @@ export function AuthProvider({ children }) {
     let mounted = true;
 
     async function initAuth() {
-      const user = await validateSessionWithCloud();
-      if (mounted) {
-        setCurrentUser(user);
-        setLoading(false);
+      try {
+        const user = await validateSessionWithCloud();
+        if (mounted && user !== undefined) {
+          setCurrentUser(user);
+        }
+      } catch (e) {
+        console.warn('Error en validación de fondo:', e);
       }
     }
 

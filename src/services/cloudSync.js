@@ -183,7 +183,7 @@ function normalizeRemoteList(val) {
 
 /**
  * Reconcilia y sincroniza una tabla local con la versión remota de Firebase
- * (Añade, actualiza y elimina automáticamente para reflejar cambios de otros dispositivos)
+ * Utiliza operaciones batch de alto rendimiento (bulkPut / bulkDelete)
  */
 async function reconcileCollection(tableName, rawRemoteData, userId) {
   if (!db[tableName] || rawRemoteData === undefined || rawRemoteData === null) return;
@@ -193,21 +193,29 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
 
   const remoteIds = new Set(remoteList.map(item => String(item.id)));
 
-  // 1. Guardar o actualizar todos los registros recibidos de la nube
-  for (const item of remoteList) {
-    if (item && item.id) {
-      await db[tableName].put({ ...item, userId });
+  // 1. Guardar o actualizar todos los registros recibidos en una sola operación batch ultrarrápida
+  const validItems = remoteList.filter(item => item && item.id).map(item => ({ ...item, userId }));
+  if (validItems.length > 0) {
+    try {
+      await db[tableName].bulkPut(validItems);
+    } catch (bulkErr) {
+      // Fallback individual si algún registro tiene formato irregular
+      for (const item of validItems) {
+        await db[tableName].put(item).catch(() => null);
+      }
     }
   }
 
-  // 2. Eliminar registros locales que ya no existen en la nube (fueron borrados en otro celular/computador)
+  // 2. Eliminar registros locales obsoletos en una sola operación batch
   try {
     const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_');
     const localItems = await db[tableName].filter(isTarget).toArray();
-    for (const localItem of localItems) {
-      if (localItem.id && !remoteIds.has(String(localItem.id))) {
-        await db[tableName].delete(localItem.id).catch(() => null);
-      }
+    const idsToDelete = localItems
+      .filter(localItem => localItem.id && !remoteIds.has(String(localItem.id)))
+      .map(localItem => localItem.id);
+
+    if (idsToDelete.length > 0) {
+      await db[tableName].bulkDelete(idsToDelete).catch(() => null);
     }
   } catch (err) {
     console.warn(`Error reconciliando colección ${tableName}:`, err);

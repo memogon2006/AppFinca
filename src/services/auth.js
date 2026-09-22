@@ -218,7 +218,7 @@ export async function registerUser({ name, farmName, email, password }) {
 }
 
 /**
- * Inicia sesión verificando credenciales en Local y en la Nube
+ * Inicia sesión verificando credenciales en Local y en la Nube de forma ultrarrápida
  */
 export async function loginUser({ email, password }) {
   const cleanInput = (email || '').trim().toLowerCase();
@@ -228,9 +228,63 @@ export async function loginUser({ email, password }) {
     throw new Error('Por favor ingresa tu correo/usuario y contraseña.');
   }
 
-  // Bloqueo explícito de cuentas eliminadas en la nube
+  const inputHash = await hashPassword(cleanPassword);
   const rawAlias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
-  const isDeletedRemote = await cloudIsWorkerDeleted(cleanInput);
+
+  // 1. RUTA RÁPIDA LOCAL: Buscar en la base de datos local Dexie (toma < 10ms)
+  let localUser = null;
+  try {
+    const allUsers = await db.users.toArray().catch(() => []);
+    localUser = allUsers.find(u => {
+      if (u.isDeleted) return false;
+      const uEmail = (u.email || '').toLowerCase().trim();
+      const uUser = (u.username || '').toLowerCase().trim();
+      return uEmail === cleanInput || 
+             uEmail === `${rawAlias}@finca.local` || 
+             uEmail === rawAlias ||
+             uUser === rawAlias ||
+             uUser === cleanInput;
+    });
+  } catch (e) {
+    console.warn('Nota: consulta local de usuario:', e);
+  }
+
+  // Si el usuario existe localmente y la contraseña coincide
+  if (localUser && localUser.passwordHash === inputHash) {
+    if (localUser.role === 'worker' && localUser.isActive === false) {
+      throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
+    }
+
+    const sessionUser = {
+      id: localUser.id,
+      name: localUser.name,
+      farmName: localUser.farmName,
+      email: localUser.email,
+      username: localUser.username || localUser.email?.replace('@finca.local', '') || '',
+      role: localUser.role || 'admin',
+      ownerId: localUser.ownerId || null,
+      ownerEmail: localUser.ownerEmail || null,
+      isActive: localUser.isActive !== false,
+      createdAt: localUser.createdAt,
+      mustChangePassword: !!localUser.mustChangePassword,
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
+
+    // Sincronización en segundo plano sin retrasar el ingreso
+    const dataOwnerId = sessionUser.role === 'worker' ? (sessionUser.ownerId || sessionUser.id) : sessionUser.id;
+    if (dataOwnerId && navigator.onLine) {
+      cloudPullData(dataOwnerId).catch(() => null);
+    }
+
+    return sessionUser;
+  }
+
+  // 2. RUTA EN LA NUBE (Primer inicio de sesión en un dispositivo nuevo o credenciales actualizadas)
+  const [remoteUser, isDeletedRemote] = await Promise.all([
+    cloudFindUser(cleanInput).catch(() => null),
+    cloudIsWorkerDeleted(cleanInput).catch(() => false)
+  ]);
 
   if (isDeletedRemote) {
     try {
@@ -243,22 +297,13 @@ export async function loginUser({ email, password }) {
         }
       }
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('ganado_current_user_session');
     } catch (e) {}
     throw new Error(`⚠️ La cuenta "${cleanInput}" ha sido eliminada por el administrador.`);
   }
 
-  // 1. Buscar en la Nube Firebase (soporta correo directo o usuario sin @)
-  let user = await cloudFindUser(cleanInput);
-  if (!user && !cleanInput.includes('@')) {
-    user = await cloudFindUser(`${cleanInput}@finca.local`);
-  }
-  if (!user && cleanInput.endsWith('@finca.local')) {
-    user = await cloudFindUser(cleanInput.replace('@finca.local', ''));
-  }
+  let user = remoteUser;
 
   if (user && user.isDeleted) {
-    // Si la nube indica que fue eliminado
     try {
       const allUsers = await db.users.toArray();
       for (const u of allUsers) {
@@ -267,75 +312,27 @@ export async function loginUser({ email, password }) {
         }
       }
     } catch (e) {}
-    throw new Error(`⚠️ La cuenta de trabajador "${cleanInput}" ha sido eliminada por el administrador.`);
+    throw new Error(`⚠️ La cuenta "${cleanInput}" ha sido eliminada por el administrador.`);
   }
 
   if (user) {
-    try {
-      await db.users.put(user);
-    } catch (dbErr) {
-      console.warn('Nota: no se pudo actualizar caché local de usuario:', dbErr);
-    }
-  } else {
-    // Si no está en la nube o no hay conexión, buscar en base local Dexie
-    try {
-      const allUsers = await db.users.toArray();
-      const alias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
-      user = allUsers.find(u => {
-        if (u.isDeleted) return false;
-        const uEmail = (u.email || '').toLowerCase().trim();
-        const uUser = (u.username || '').toLowerCase().trim();
-        return uEmail === cleanInput || 
-               uEmail === `${alias}@finca.local` || 
-               uEmail === alias ||
-               uUser === alias ||
-               uUser === cleanInput;
-      });
-
-      // Si el usuario fue encontrado localmente pero el dispositivo está online y NO se encontró en Firebase
-      if (user && navigator.onLine) {
-        if (user.role === 'worker') {
-          // Significa que fue eliminado en la nube desde otro dispositivo
-          await db.users.delete(user.id).catch(() => null);
-          throw new Error(`⚠️ La cuenta de trabajador "${cleanInput}" ha sido eliminada por el administrador.`);
-        } else if (cleanInput.includes('@')) {
-          // Cuenta principal cuyo correo fue cambiado o eliminado en la nube
-          await db.users.delete(user.id).catch(() => null);
-          user = null;
-          throw new Error(`⚠️ El correo "${cleanInput}" ya no está asociado a ninguna cuenta activa. Si cambiaste tu correo recientemente, inicia sesión con tu nuevo correo.`);
-        }
-      }
-    } catch (localErr) {
-      if (localErr.message && (localErr.message.includes('eliminada') || localErr.message.includes('no está asociado'))) {
-        throw localErr;
-      }
-      console.warn('Nota: error leyendo usuarios locales:', localErr);
-    }
+    await db.users.put(user).catch(() => null);
+  } else if (localUser) {
+    user = localUser;
   }
 
   if (!user) {
     throw new Error('No se encontró ninguna cuenta con este usuario o correo. Por favor verifica tus credenciales.');
   }
 
-  // 2. Validar si la cuenta de trabajador está deshabilitada o fue eliminada
-  if (user.role === 'worker') {
-    if (user.isActive === false) {
-      throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio. Comunícate con tu patrón.');
-    }
-    if (user.isDeleted) {
-      await db.users.delete(user.id).catch(() => null);
-      throw new Error('⚠️ Esta cuenta de trabajador ha sido eliminada por el administrador.');
-    }
+  // Validar si la cuenta de trabajador está deshabilitada
+  if (user.role === 'worker' && user.isActive === false) {
+    throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
   }
 
-  const inputHash = await hashPassword(cleanPassword);
   if (user.passwordHash !== inputHash) {
     throw new Error('Contraseña incorrecta. Activa "Ver clave" para verificar que no haya errores de digitación.');
   }
-
-  // 3. Sincronización de datos pecuarios según el rol
-  const dataOwnerId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
-  await cloudPullData(dataOwnerId).catch(() => null);
 
   const sessionUser = {
     id: user.id,
@@ -352,6 +349,13 @@ export async function loginUser({ email, password }) {
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
+
+  // Descargar datos en segundo plano
+  const dataOwnerId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+  if (dataOwnerId) {
+    cloudPullData(dataOwnerId).catch(() => null);
+  }
+
   return sessionUser;
 }
 
