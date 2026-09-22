@@ -10,6 +10,7 @@ import {
   calculateFinancials, 
   calculateReproduction 
 } from '../../services/calculations';
+import { COMMON_BREEDS } from '../../types/cattle';
 import { 
   LayoutGrid, 
   List, 
@@ -75,7 +76,7 @@ export function CattleListView({
     origin: '',
     performanceFilter: '',
     owner: '',
-    entryBatch: '',
+    breed: '',
     entryDateStart: '',
     entryDateEnd: '',
     saleDateStart: '',
@@ -88,10 +89,15 @@ export function CattleListView({
     return Array.from(set);
   }, [cattle]);
 
-  // Lista única de Ingreso #
-  const entryBatchesList = useMemo(() => {
-    const set = new Set(cattle.map(c => c.entryBatch || c.paddock).filter(Boolean));
-    return Array.from(set);
+  // Lista única de Razas y Cruces (existentes en la finca + razas comunes)
+  const breedsList = useMemo(() => {
+    const set = new Set();
+    cattle.forEach(c => {
+      const b = (c.breed || '').trim();
+      if (b) set.add(b);
+    });
+    COMMON_BREEDS.forEach(b => set.add(b));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
   }, [cattle]);
 
   const filteredCattle = useMemo(() => {
@@ -142,10 +148,11 @@ export function CattleListView({
       if (filters.isBreedingOnly && !animal.isBreedingOnly) return false;
       if (filters.owner && animal.owner !== filters.owner) return false;
       
-      // Filtro específico por Ingreso #
-      if (filters.entryBatch) {
-        const batch = animal.entryBatch || animal.paddock || '';
-        if (batch !== filters.entryBatch) return false;
+      // Filtro específico por Raza o Cruce
+      if (filters.breed) {
+        const animalBreed = (animal.breed || '').trim().toLowerCase();
+        const selectedBreed = filters.breed.trim().toLowerCase();
+        if (animalBreed !== selectedBreed) return false;
       }
 
       if (filters.search) {
@@ -273,12 +280,12 @@ export function CattleListView({
   return (
     <div className="space-y-5">
       
-      {/* Barra de Filtros con Ingreso # */}
+      {/* Barra de Filtros con Raza o Cruce */}
       <CattleFilters 
         filters={filters} 
         setFilters={setFilters} 
         owners={ownersList} 
-        entryBatches={entryBatchesList}
+        breeds={breedsList}
       />
 
       {/* Barra de Herramientas y Resumen Unificada */}

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.19";
+export const CURRENT_APP_VERSION = "2.14.20";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.20",
+    date: "22/09/2026",
+    title: "🧬 Filtro de Raza y Cruce en Inventario de Ganado",
+    highlights: [
+      "Filtro de Raza o Cruce: Reemplazo del selector de ingreso # por un menú desplegable dinámico para filtrar con precisión por raza o cruce (Brahman, Gyr, Nelore, Angus, Holstein, Girolando, Mestizos, etc.).",
+      "Inventario Completo y Razas Ganaderas: Integra de forma automática todas las razas registradas en el predio junto con el catálogo de razas comerciales y puras.",
+      "Compatibilidad Total de Filtros: Funciona armónicamente junto a los filtros de procedencia/origen, sexo, tipo de producción, estado reproductivo, dueños y fechas."
+    ]
+  },
   {
     version: "2.14.19",
     date: "22/09/2026",

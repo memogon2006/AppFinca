@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, X, RefreshCw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { PRODUCTION_TYPES } from '../../types/cattle';
 
-export function CattleFilters({ filters, setFilters, owners = [], entryBatches = [] }) {
+export function CattleFilters({ filters, setFilters, owners = [], breeds = [], entryBatches = [] }) {
   const [showDateFilters, setShowDateFilters] = useState(false);
 
   const handleClear = () => {
@@ -18,6 +18,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
       isBreedingOnly: false,
       performanceFilter: '',
       owner: '',
+      breed: '',
       entryBatch: '',
       entryDateStart: '',
       entryDateEnd: '',
@@ -29,7 +30,7 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
 
   const isFiltered = filters.search || filters.sex || filters.productionType || 
     filters.status !== 'Activo' || filters.origin || filters.saleType || filters.reproductiveStatus || 
-    filters.milkingStatus || filters.isBreedingOnly || filters.performanceFilter || filters.owner || filters.entryBatch ||
+    filters.milkingStatus || filters.isBreedingOnly || filters.performanceFilter || filters.owner || filters.breed ||
     filters.entryDateStart || filters.entryDateEnd || filters.saleDateStart || filters.saleDateEnd;
 
   const hasActiveDates = filters.entryDateStart || filters.entryDateEnd || filters.saleDateStart || filters.saleDateEnd;
@@ -261,15 +262,15 @@ export function CattleFilters({ filters, setFilters, owners = [], entryBatches =
           <option value="Traslado">🔄 Traslado Interno</option>
         </select>
 
-        {/* FILTRO: Ingreso # */}
+        {/* FILTRO: Raza o Cruce */}
         <select
-          value={filters.entryBatch || ''}
-          onChange={(e) => setFilters(prev => ({ ...prev, entryBatch: e.target.value }))}
+          value={filters.breed || ''}
+          onChange={(e) => setFilters(prev => ({ ...prev, breed: e.target.value }))}
           className="px-2.5 sm:px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-emerald-400 dark:border-emerald-600/50 text-xs font-bold text-emerald-800 dark:text-emerald-300 focus:outline-none focus:border-emerald-500 min-h-[40px]"
         >
-          <option value="">🏷️ Todo Ingreso #</option>
-          {entryBatches.map(b => (
-            <option key={b} value={b}>Ingreso: {b}</option>
+          <option value="">🧬 Toda Raza / Cruce</option>
+          {breeds.map(b => (
+            <option key={b} value={b}>{b}</option>
           ))}
         </select>
 
