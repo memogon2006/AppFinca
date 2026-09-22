@@ -7,20 +7,14 @@ export function UpdateNotificationBanner() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [justUpdated, setJustUpdated] = useState(false);
   const hasAnnouncedUpdateRef = useRef(false);
 
-  // 1. Detectar si la aplicación se acaba de actualizar a esta nueva versión en este navegador
+  // 1. Registrar versión instalada sin mostrar popup invasivo
   useEffect(() => {
     try {
-      const lastSeen = localStorage.getItem('last_seen_app_version');
-      if (!lastSeen || isVersionGreater(CURRENT_APP_VERSION, lastSeen)) {
-        localStorage.setItem('last_seen_app_version', CURRENT_APP_VERSION);
-        setJustUpdated(true);
-        triggerFeedback('success');
-      }
+      localStorage.setItem('last_seen_app_version', CURRENT_APP_VERSION);
     } catch (e) {
-      console.warn('Error verificando versión previa instalada:', e);
+      console.warn('Error registrando versión instalada:', e);
     }
   }, []);
 
@@ -37,7 +31,6 @@ export function UpdateNotificationBanner() {
         if (mounted) {
           if (res && res.hasUpdate && isVersionGreater(res.latestVersion, res.currentVersion)) {
             setUpdateInfo(res);
-            setJustUpdated(false); // Ocultar mensaje de bienvenida si hay una nueva versión posterior
             if (!hasAnnouncedUpdateRef.current) {
               hasAnnouncedUpdateRef.current = true;
               triggerFeedback('update');
@@ -96,17 +89,13 @@ export function UpdateNotificationBanner() {
     setDismissed(true);
   };
 
-  const handleDismissJustUpdated = () => {
-    setJustUpdated(false);
-  };
-
   const handleUpdateClick = async () => {
     triggerFeedback('update');
     setUpdating(true);
     await applyAppUpdate();
   };
 
-  // CASO 1: HAY UNA NUEVA VERSIÓN DISPONIBLE EN LA NUBE
+  // CASO: HAY UNA NUEVA VERSIÓN DISPONIBLE EN LA NUBE
   if (updateInfo && updateInfo.hasUpdate && isVersionGreater(updateInfo.latestVersion, updateInfo.currentVersion) && !dismissed) {
     return (
       <div className="fixed top-2 sm:top-4 left-0 right-0 z-[99999] px-3 sm:px-4 flex justify-center pointer-events-none">
@@ -167,65 +156,6 @@ export function UpdateNotificationBanner() {
             >
               <RefreshCw className={`w-4 h-4 ${updating ? 'animate-spin' : ''}`} />
               <span>{updating ? 'Instalando Novedades...' : '⚡ Actualizar Ahora en 1 Clic'}</span>
-            </button>
-          </div>
-
-        </div>
-      </div>
-    );
-  }
-
-  // CASO 2: BIENVENIDA TRAS INSTALAR LA NUEVA VERSIÓN
-  if (justUpdated) {
-    return (
-      <div className="fixed top-2 sm:top-4 left-0 right-0 z-[99999] px-3 sm:px-4 flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-lg rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-900 via-slate-900 to-teal-950 text-white border-2 border-emerald-400 shadow-2xl p-4 sm:p-5 backdrop-blur-xl animate-fade-in ring-4 ring-emerald-500/30">
-          
-          <div className="flex items-start justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400 animate-pulse" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm sm:text-base font-black text-white tracking-tight">
-                    🎉 ¡Actualizado con Éxito!
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 font-black text-[11px] uppercase shadow-sm">
-                    v{CURRENT_APP_VERSION}
-                  </span>
-                </div>
-                <p className="text-[11px] text-emerald-200/90 font-medium">
-                  Tu sistema ganadero cuenta con las últimas funciones activas.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleDismissJustUpdated}
-              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 transition cursor-pointer shrink-0 active:scale-95"
-              title="Cerrar aviso"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="mt-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3 space-y-1.5 text-xs text-emerald-100">
-            <div className="flex items-center gap-2 font-bold text-white">
-              <Users className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Modo Mayordomo / Vaquero Activo</span>
-            </div>
-            <p className="text-[11px] text-emerald-200/90 leading-relaxed">
-              Ahora puedes crear y gestionar cuentas para tus trabajadores desde tu perfil, asignándoles claves directas con acceso exclusivo de campo y privacidad financiera total.
-            </p>
-          </div>
-
-          <div className="mt-3 flex justify-end">
-            <button
-              onClick={handleDismissJustUpdated}
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer shadow-md"
-            >
-              ¡Entendido, Continuar!
             </button>
           </div>
 

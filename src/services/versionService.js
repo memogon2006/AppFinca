@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.14";
+export const CURRENT_APP_VERSION = "2.14.15";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.15",
+    date: "22/09/2026",
+    title: "Eliminación de Popup de Actualización y Validación Estricta de Correos Renombrados",
+    highlights: [
+      "Eliminación de Popup Invasivo: Se retiró definitivamente el cartel emergente de bienvenida '¡Actualizado con Éxito!', permitiendo ingresar directamente al sistema sin interrupciones.",
+      "Bloqueo de Correos Anteriores: Si una cuenta actualiza su correo en la nube, el sistema bloquea inmediatamente cualquier intento de ingreso con el correo anterior y purga los datos locales obsoletos.",
+      "Consistencia Multi-Dispositivo: Acceso exclusivo con el correo vigente en tiempo real."
+    ]
+  },
   {
     version: "2.14.14",
     date: "22/09/2026",

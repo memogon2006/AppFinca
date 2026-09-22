@@ -1,5 +1,5 @@
 {
-  "version": "2.14.14",
-  "buildTime": 1790151000000,
-  "description": "Optimización y corrección de cambio de correo/usuario en Mi Perfil."
+  "version": "2.14.15",
+  "buildTime": 1790152000000,
+  "description": "Eliminación de popup de actualización y validación estricta de correos renombrados."
 }

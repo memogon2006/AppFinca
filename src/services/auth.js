@@ -292,14 +292,21 @@ export async function loginUser({ email, password }) {
                uUser === cleanInput;
       });
 
-      // Si el usuario encontrado localmente es un trabajador pero el dispositivo está online y no se encontró en Firebase
-      if (user && user.role === 'worker' && navigator.onLine) {
-        // Significa que fue eliminado en la nube desde otro dispositivo
-        await db.users.delete(user.id).catch(() => null);
-        throw new Error(`⚠️ La cuenta de trabajador "${cleanInput}" ha sido eliminada por el administrador.`);
+      // Si el usuario fue encontrado localmente pero el dispositivo está online y NO se encontró en Firebase
+      if (user && navigator.onLine) {
+        if (user.role === 'worker') {
+          // Significa que fue eliminado en la nube desde otro dispositivo
+          await db.users.delete(user.id).catch(() => null);
+          throw new Error(`⚠️ La cuenta de trabajador "${cleanInput}" ha sido eliminada por el administrador.`);
+        } else if (cleanInput.includes('@')) {
+          // Cuenta principal cuyo correo fue cambiado o eliminado en la nube
+          await db.users.delete(user.id).catch(() => null);
+          user = null;
+          throw new Error(`⚠️ El correo "${cleanInput}" ya no está asociado a ninguna cuenta activa. Si cambiaste tu correo recientemente, inicia sesión con tu nuevo correo.`);
+        }
       }
     } catch (localErr) {
-      if (localErr.message && localErr.message.includes('eliminada')) {
+      if (localErr.message && (localErr.message.includes('eliminada') || localErr.message.includes('no está asociado'))) {
         throw localErr;
       }
       console.warn('Nota: error leyendo usuarios locales:', localErr);
@@ -378,10 +385,11 @@ export async function updateUserProfile(userId, { name, farmName, email }) {
       throw new Error('Este correo electrónico ya está registrado en otra cuenta en la nube.');
     }
 
-    // 2. Purgar cualquier residuo huérfano local en el navegador con este correo
+    // 2. Purgar cualquier residuo huérfano local en el navegador con el correo nuevo O el viejo
     const allUsers = await db.users.toArray();
     for (const u of allUsers) {
-      if (u.id !== userId && (u.email || '').trim().toLowerCase() === cleanEmail) {
+      const uEmail = (u.email || '').trim().toLowerCase();
+      if (u.id !== userId && (uEmail === cleanEmail || uEmail === oldEmail)) {
         await db.users.delete(u.id).catch(() => null);
       }
     }
