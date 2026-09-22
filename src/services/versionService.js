@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.16";
+export const CURRENT_APP_VERSION = "2.14.17";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.17",
+    date: "22/09/2026",
+    title: "Actualización Automática y Silenciosa en Pantalla de Acceso",
+    highlights: [
+      "Eliminación de Avisos en Pantalla de Login: La pantalla de acceso ahora actualiza silenciosamente en segundo plano o al recargar sin mostrar banners ni popups.",
+      "Avisos Exclusivos Dentro del Sistema: Los avisos de novedades solo se visualizan una vez el ganadero ha iniciado sesión dentro de su panel principal.",
+      "Carga Limpia y Sin Interrupciones: Experiencia fluida al entrar a la finca desde cualquier dispositivo."
+    ]
+  },
   {
     version: "2.14.16",
     date: "22/09/2026",

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
+import { checkAppUpdate, isVersionGreater } from '../../services/versionService';
 
 export function AuthView() {
   const { login, register, setSessionUser, requestResetPassword } = useAuth();
@@ -40,6 +41,24 @@ export function AuthView() {
   const [successMsg, setSuccessMsg] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+
+  // Auto-actualización silenciosa y transparente en segundo plano (sin popups ni alertas en el login)
+  useEffect(() => {
+    async function silentBackgroundUpdate() {
+      try {
+        const res = await checkAppUpdate();
+        if (res && res.hasUpdate && isVersionGreater(res.latestVersion, res.currentVersion)) {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) {
+              await r.update();
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    silentBackgroundUpdate();
+  }, []);
 
   // Toggle para ver / ocultar contraseñas
   const [showPassword, setShowPassword] = useState(false);
