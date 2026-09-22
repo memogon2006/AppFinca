@@ -55,7 +55,7 @@ export function DashboardView({
   onDeleteVaccination,
   onOpenPartnershipModal
 }) {
-  const { currentUser, isWorker } = useAuth();
+  const { isWorker } = useAuth();
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
 
@@ -123,133 +123,118 @@ export function DashboardView({
   return (
     <div className="space-y-6">
       
-      {/* Arva Vivid Lime Marquee Strip (#e8fe85) */}
-      <div className="w-full bg-[#e8fe85] text-[#07503f] font-bold text-xs py-2 px-4 rounded-full border border-[#c3cda7] overflow-hidden flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-          <span className="px-2 py-0.5 rounded-full bg-[#07503f] text-white font-extrabold text-[10px] uppercase">
-            ARVA PASTORAL
-          </span>
-          <span className="font-semibold text-xs text-[#07503f]">
-            🌿 Monitoreo de Ganancia Diaria de Peso (GDP) • Control Reproductivo & Sanitario • Gestión de Lotes y Pastoreo
-          </span>
-        </div>
-        <span className="hidden md:inline-block font-serif arva-serif text-[#07503f] text-xs italic font-bold">
-          {currentUser?.farmName || 'Finca Ganadera'}
-        </span>
-      </div>
-
-      {/* Banner de Bienvenida - Arva Forest Ink (#07503f) */}
-      <div className="relative overflow-hidden rounded-[24px] bg-[#07503f] text-white p-6 sm:p-8 border border-[#0d4f40] shadow-sm">
+      {/* Banner de Bienvenida */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white p-6 sm:p-8 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[#e8fe85] text-xs font-bold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs font-bold">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Gestión de Finca Ganadera</span>
             </div>
-            <h1 className="arva-serif font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-normal leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Control de Inventario, Pesos & Rentabilidad
             </h1>
-            <p className="text-white/85 text-xs sm:text-sm leading-relaxed">
+            <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed">
               Monitorea en tiempo real inventarios, ganancias de peso (GDP), estado de preñez, litros de leche y la rentabilidad neta de tus lotes.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-3">
             {onOpenCensusModal && (
               <button
                 onClick={onOpenCensusModal}
-                className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition cursor-pointer shadow-xs"
+                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-emerald-400/30 transition backdrop-blur-sm cursor-pointer shadow-sm"
                 title="Ver y exportar censo poblacional oficial ICA / FEDEGAN"
               >
-                <FileText className="w-4 h-4 text-[#e8fe85]" />
-                <span>📄 Censo ICA</span>
+                <FileText className="w-4 h-4 text-emerald-300" />
+                <span>📄 Censo ICA / RUV</span>
               </button>
             )}
 
             {onOpenVaccinationModal && (
               <button
                 onClick={onOpenVaccinationModal}
-                className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-white/30 transition cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 border border-emerald-400/40 transition cursor-pointer"
                 title="Registrar vacunación o plan sanitario oficial"
               >
-                <Syringe className="w-4 h-4 text-[#e8fe85]" />
-                <span>+ Vacunación</span>
+                <Syringe className="w-4 h-4 text-emerald-200" />
+                <span>+ Registrar Vacunación</span>
               </button>
             )}
 
             {!isWorker && onOpenPartnershipModal && (
               <button
                 onClick={onOpenPartnershipModal}
-                className="px-4 py-2 rounded-full bg-[#fceace] hover:bg-[#fff0db] text-[#07503f] font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-[#ecd09f] transition cursor-pointer active:scale-95 shadow-xs"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer active:scale-95"
                 title="Venta o liquidación de ganado: por lote completo o animal individual (venta directa o en compañía)"
               >
-                <DollarSign className="w-4 h-4 text-[#07503f]" />
-                <span>💰 Liquidar Lote</span>
+                <DollarSign className="w-4 h-4 text-slate-950" />
+                <span>💰 Venta / Liquidar Lote</span>
               </button>
             )}
 
             {onOpenGlossary && (
               <button
                 onClick={onOpenGlossary}
-                className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white/90 font-semibold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-200 font-bold text-xs sm:text-sm flex items-center gap-2 border border-emerald-400/30 transition backdrop-blur-sm cursor-pointer"
                 title="Ver significado de GDP, ROI, Biomasa y Fórmulas"
               >
-                <BookOpen className="w-4 h-4 text-[#e8fe85]" />
-                <span>💡 Guía</span>
+                <BookOpen className="w-4 h-4 text-emerald-300" />
+                <span>💡 Guía de Métricas</span>
               </button>
             )}
 
             {onOpenChecklist && (
               <button
                 onClick={onOpenChecklist}
-                className="px-4 py-2 rounded-full bg-[#e8fe85] hover:bg-[#f1ff9e] text-[#07503f] font-extrabold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer"
                 title="Arqueo y Censo Físico de Campo (Checklist en Manga / Corral)"
               >
-                <ClipboardCheck className="w-4 h-4 text-[#07503f]" />
-                <span>📋 Arqueo</span>
+                <ClipboardCheck className="w-4 h-4 text-slate-950" />
+                <span>📋 Arqueo / Checklist</span>
               </button>
             )}
 
             {onOpenWhatsAppReport && (
               <button
                 onClick={onOpenWhatsAppReport}
-                className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-white/20 transition cursor-pointer shadow-xs"
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-400/40 transition backdrop-blur-sm cursor-pointer shadow-sm"
                 title="Generar y Enviar Reporte por WhatsApp con filtro por Dueño/Marca"
               >
-                <MessageCircle className="w-4 h-4 text-[#e8fe85]" />
-                <span>WhatsApp</span>
+                <MessageCircle className="w-4 h-4 text-emerald-300" />
+                <span>📲 Reporte WhatsApp</span>
               </button>
             )}
             
             <button
               onClick={() => onNavigate('palpation')}
-              className="px-4 py-2 rounded-full bg-[#b2cee7] hover:bg-[#c2d9ee] text-[#07503f] font-bold text-xs sm:text-sm flex items-center gap-2 transition cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-950/40 border border-purple-400/40 transition cursor-pointer"
               title="Iniciar jornada de palpación y diagnóstico reproductivo de hembras en corral"
             >
-              <Stethoscope className="w-4 h-4 text-[#07503f]" />
-              <span>🩺 Palpación</span>
+              <Stethoscope className="w-4 h-4 text-purple-200" />
+              <span>🩺 Palpación Rápida</span>
             </button>
 
             <button
               onClick={() => onNavigate('quickWeigh')}
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition backdrop-blur-sm cursor-pointer"
             >
-              <Zap className="w-4 h-4 text-[#e8fe85]" />
-              <span>⚡ Báscula</span>
+              <Zap className="w-4 h-4 text-amber-300" />
+              <span>⚡ Báscula Rápida</span>
             </button>
             {onOpenBatchEntry && (
               <button
                 onClick={onOpenBatchEntry}
-                className="px-4 py-2 rounded-full bg-[#e6ecd5] hover:bg-[#f0f5e1] text-[#07503f] font-extrabold text-xs sm:text-sm flex items-center gap-2 transition cursor-pointer border border-[#c3cda7]"
+                className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
                 title="Registrar un lote completo con cálculo por kilo o precio fijo"
               >
-                <PackagePlus className="w-4 h-4 text-[#07503f]" />
+                <PackagePlus className="w-4 h-4" />
                 <span>Ingresar Lote</span>
               </button>
             )}
             <button
               onClick={onOpenNewAnimal}
-              className="px-4 py-2 rounded-full bg-[#e8fe85] hover:bg-[#f1ff9e] text-[#07503f] font-black text-xs sm:text-sm flex items-center gap-2 transition cursor-pointer shadow-sm"
+              className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ Individual</span>
@@ -305,63 +290,55 @@ export function DashboardView({
 
       </div>
 
-      {/* Sub-KPIs de Manejo y Producción - Arva Quilted Pastel Surfaces */}
+      {/* Sub-KPIs de Manejo y Producción */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         
         <div 
           onClick={() => onNavigate('females')}
-          className="p-4 rounded-[20px] bg-[#fceace] dark:bg-[#2a221b] border border-[#ecd09f] dark:border-[#4a3a2b] hover:border-[#07503f] transition-all duration-200 cursor-pointer group shadow-xs hover:-translate-y-0.5"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-purple-300 dark:hover:border-purple-600/50 transition cursor-pointer group shadow-sm"
         >
-          <div className="flex items-center justify-between text-[#8c5208] dark:text-[#fceace] mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Gestación</span>
-            <div className="w-7 h-7 rounded-full bg-white/70 dark:bg-black/20 flex items-center justify-center">
-              <Baby className="w-4 h-4 group-hover:scale-110 transition text-[#8c5208] dark:text-[#fceace]" />
-            </div>
+          <div className="flex items-center justify-between text-purple-600 dark:text-purple-400 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider">Vacas en Gestación</span>
+            <Baby className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-[#07503f] dark:text-white tabular-nums">{pregnantCount}</p>
-          <span className="text-[11px] text-[#6d6d6d] dark:text-slate-400 font-medium">Preñadas confirmadas</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{pregnantCount}</p>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Preñadas confirmadas</span>
         </div>
 
         <div 
           onClick={() => onNavigate('females')}
-          className="p-4 rounded-[20px] bg-[#b2cee7] dark:bg-[#152535] border border-[#9abddc] dark:border-[#233d54] hover:border-[#07503f] transition-all duration-200 cursor-pointer group shadow-xs hover:-translate-y-0.5"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-600/50 transition cursor-pointer group shadow-sm"
         >
-          <div className="flex items-center justify-between text-[#1c4b72] dark:text-[#b2cee7] mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider">En Ordeño</span>
-            <div className="w-7 h-7 rounded-full bg-white/70 dark:bg-black/20 flex items-center justify-center">
-              <Milk className="w-4 h-4 group-hover:scale-110 transition text-[#1c4b72] dark:text-[#b2cee7]" />
-            </div>
+          <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider">En Ordeño / Leche</span>
+            <Milk className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-[#07503f] dark:text-white tabular-nums">{milkingCount}</p>
-          <span className="text-[11px] text-[#6d6d6d] dark:text-slate-400 font-medium">Hembras en producción</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{milkingCount}</p>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Hembras en producción</span>
         </div>
 
         <div 
           onClick={() => onNavigate('females')}
-          className="p-4 rounded-[20px] bg-[#e6ecd5] dark:bg-[#1a2b1e] border border-[#c3cda7] dark:border-[#2d4a34] hover:border-[#07503f] transition-all duration-200 cursor-pointer group shadow-xs hover:-translate-y-0.5"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition cursor-pointer group shadow-sm"
         >
-          <div className="flex items-center justify-between text-[#07503f] dark:text-[#e8fe85] mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Matrices Cría</span>
-            <div className="w-7 h-7 rounded-full bg-white/70 dark:bg-black/20 flex items-center justify-center">
-              <Users className="w-4 h-4 group-hover:scale-110 transition text-[#07503f] dark:text-[#e8fe85]" />
-            </div>
+          <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider">Matrices de Cría</span>
+            <Users className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-[#07503f] dark:text-white tabular-nums">{breedingOnlyCount}</p>
-          <span className="text-[11px] text-[#6d6d6d] dark:text-slate-400 font-medium">Vientres de cría</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{breedingOnlyCount}</p>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Vientres exclusivos cría</span>
         </div>
 
         <div 
           onClick={() => onNavigate('cattle')}
-          className="p-4 rounded-[20px] bg-[#ffffff] dark:bg-[#1b221f] border border-[#c3cda7] dark:border-[#2d3a33] hover:border-[#07503f] transition-all duration-200 cursor-pointer group shadow-xs hover:-translate-y-0.5"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-amber-300 dark:hover:border-amber-600/50 transition cursor-pointer group shadow-sm"
         >
-          <div className="flex items-center justify-between text-[#07503f] dark:text-[#e8fe85] mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Lote Ceba</span>
-            <div className="w-7 h-7 rounded-full bg-[#f1efdf] dark:bg-black/20 flex items-center justify-center">
-              <Activity className="w-4 h-4 group-hover:scale-110 transition text-[#07503f] dark:text-[#e8fe85]" />
-            </div>
+          <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider">Lote de Ceba</span>
+            <Activity className="w-4 h-4 group-hover:scale-110 transition" />
           </div>
-          <p className="text-2xl font-black text-[#07503f] dark:text-white tabular-nums">{fatteningCount}</p>
-          <span className="text-[11px] text-[#6d6d6d] dark:text-slate-400 font-medium">Bovinos en engorde</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{fatteningCount}</p>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Bovinos en engorde</span>
         </div>
 
       </div>
@@ -437,73 +414,73 @@ export function DashboardView({
         </div>
 
         {/* Resumen Financiero Rápido */}
-        <div className="lg:col-span-2 custom-card p-5 sm:p-6 space-y-4 rounded-[20px] border border-[#c3cda7] dark:border-[#2d3a33] bg-white dark:bg-[#07251d]">
-          <div className="flex items-center justify-between border-b border-[#e6ecd5] dark:border-[#133d30] pb-3">
-            <h3 className="arva-serif font-serif font-bold text-[#07503f] dark:text-white text-base sm:text-lg flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-[#07503f] dark:text-[#e8fe85]" />
+        <div className="lg:col-span-2 custom-card p-5 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Resumen Financiero del Inventario en Finca</span>
             </h3>
             <button
               onClick={() => onNavigate('finances')}
-              className="text-xs text-[#07503f] dark:text-[#e8fe85] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
             >
               Detalle Financiero <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-[16px] bg-[#e6ecd5]/50 dark:bg-black/20 border border-[#c3cda7]/60">
-              <p className="text-xs text-[#6d6d6d] dark:text-slate-400 font-bold uppercase tracking-wider">Inversión Activa</p>
-              <p className="text-lg sm:text-xl font-black text-[#07503f] dark:text-white mt-1 tabular-nums">{formatCurrency(totalInvestedActive)}</p>
-              <p className="text-[11px] text-[#6d6d6d] dark:text-slate-400 mt-0.5 font-medium">Compra inicial + costos</p>
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Inversión Activa en Ganado</p>
+              <p className="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(totalInvestedActive)}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Compra inicial + costos directos</p>
             </div>
 
-            <div className="p-4 rounded-[16px] bg-[#b2cee7]/40 dark:bg-black/20 border border-[#9abddc]/60">
-              <p className="text-xs text-[#1c4b72] dark:text-[#b2cee7] font-bold uppercase tracking-wider">Ventas Totales</p>
-              <p className="text-lg sm:text-xl font-black text-[#1c4b72] dark:text-white mt-1 tabular-nums">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Ventas Totales Realizadas</p>
+              <p className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
                 {formatCurrency(soldCattle.reduce((sum, c) => sum + (parseFloat(c.exitPrice) || 0), 0))}
               </p>
-              <p className="text-[11px] text-[#6d6d6d] dark:text-slate-400 mt-0.5 font-medium">{soldCattle.length} cabezas liquidadas</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{soldCattle.length} cabezas liquidadas</p>
             </div>
 
-            <div className="p-4 rounded-[16px] bg-[#fceace]/60 dark:bg-black/20 border border-[#ecd09f]/80">
-              <p className="text-xs text-[#8c5208] dark:text-[#fceace] font-bold uppercase tracking-wider">Utilidad Neta</p>
-              <p className="text-lg sm:text-xl font-black text-[#8c5208] dark:text-[#e8fe85] mt-1 tabular-nums">{formatCurrency(totalRealizedProfit)}</p>
-              <p className="text-[11px] text-[#6d6d6d] dark:text-slate-400 mt-0.5 font-medium">Ganancia libre de costos</p>
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Utilidad Neta Obtenida</p>
+              <p className="text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">{formatCurrency(totalRealizedProfit)}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Ganancia libre de costos</p>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-[16px] bg-[#e6ecd5] dark:bg-[#0b382c] border border-[#c3cda7] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-[#07503f] text-[#e8fe85] flex-shrink-0">
-                <TrendingUp className="w-4 h-4" />
+              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                <TrendingUp className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-[#07503f] dark:text-white">¿Listo para registrar un pesaje o venta?</p>
-                <p className="text-[11px] text-[#6d6d6d] dark:text-slate-300">Mantén los pesos actualizados para calcular las ganancias de peso diarias (GDP).</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">¿Listo para registrar un pesaje o venta?</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Mantén los pesos actualizados para calcular las ganancias de peso diarias (GDP).</p>
               </div>
             </div>
             <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
               {onOpenPartnershipModal && (
                 <button
                   onClick={onOpenPartnershipModal}
-                  className="px-4 py-1.5 rounded-full bg-[#fceace] hover:bg-[#fff0db] text-[#07503f] font-bold text-xs border border-[#ecd09f] transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm cursor-pointer"
                   title="Liquidar o vender ganado"
                 >
-                  💰 Liquidar
+                  💰 Liquidar / Venta
                 </button>
               )}
               {onOpenGlossary && (
                 <button
                   onClick={onOpenGlossary}
-                  className="px-4 py-1.5 rounded-full bg-white dark:bg-[#07251d] text-[#07503f] dark:text-slate-200 hover:bg-[#f1efdf] border border-[#c3cda7] font-semibold text-xs transition cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 font-semibold text-xs transition cursor-pointer"
                 >
                   💡 Glosario
                 </button>
               )}
               <button
                 onClick={() => onNavigate('quickWeigh')}
-                className="px-4 py-1.5 rounded-full bg-[#07503f] hover:bg-[#0b6852] text-white font-bold text-xs transition cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm cursor-pointer"
               >
                 Ir a Báscula
               </button>
