@@ -1,5 +1,5 @@
 {
-  "version": "2.14.13",
-  "buildTime": 1790150000000,
-  "description": "Cabeceras de seguridad HTTP activas y reglas de base de datos de control de acceso."
+  "version": "2.14.14",
+  "buildTime": 1790151000000,
+  "description": "Optimización y corrección de cambio de correo/usuario en Mi Perfil."
 }

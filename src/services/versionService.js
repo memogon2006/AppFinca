@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.13";
+export const CURRENT_APP_VERSION = "2.14.14";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.14",
+    date: "22/09/2026",
+    title: "Optimización y Corrección de Cambio de Correo/Usuario en Perfil",
+    highlights: [
+      "Depuración Automática de Registros Huérfanos: Al cambiar el correo o nombre de usuario en 'Mi Perfil Ganadero', el sistema verifica la disponibilidad real en la nube y limpia automáticamente registros locales residuales.",
+      "Solución de Conflicto de Correo: Permite a los ganaderos actualizar su cuenta a correos previamente ensayados en el mismo dispositivo sin bloquear el guardado.",
+      "Sincronización Inmediata: Actualización en tiempo real del nuevo perfil en la nube y en la sesión activa del dispositivo."
+    ]
+  },
   {
     version: "2.14.13",
     date: "22/09/2026",

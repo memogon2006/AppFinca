@@ -372,20 +372,23 @@ export async function updateUserProfile(userId, { name, farmName, email }) {
 
   const oldEmail = (user.email || '').toLowerCase();
   if (cleanEmail !== oldEmail) {
-    const allUsers = await db.users.toArray();
-    const existing = allUsers.find(u => u.id !== userId && (u.email || '').toLowerCase() === cleanEmail);
-    if (existing) {
-      throw new Error('Este correo o usuario ya está en uso por otra cuenta.');
-    }
-
+    // 1. Verificar si el nuevo correo ya existe en la nube registrado por otra cuenta
     const cloudUser = await cloudFindUser(cleanEmail);
-    if (cloudUser && cloudUser.id !== userId) {
+    if (cloudUser && cloudUser.id && cloudUser.id !== userId) {
       throw new Error('Este correo electrónico ya está registrado en otra cuenta en la nube.');
     }
 
-    // Limpiar registro anterior en Firebase
+    // 2. Purgar cualquier residuo huérfano local en el navegador con este correo
+    const allUsers = await db.users.toArray();
+    for (const u of allUsers) {
+      if (u.id !== userId && (u.email || '').trim().toLowerCase() === cleanEmail) {
+        await db.users.delete(u.id).catch(() => null);
+      }
+    }
+
+    // 3. Limpiar registro anterior en Firebase si cambió de correo
     if (oldEmail) {
-      await cloudDeleteUserData(null, oldEmail);
+      await cloudDeleteUserData(null, oldEmail).catch(() => null);
     }
   }
 
@@ -394,10 +397,12 @@ export async function updateUserProfile(userId, { name, farmName, email }) {
     name: cleanName,
     farmName: cleanFarm,
     email: cleanEmail,
+    updatedAt: new Date().toISOString(),
   };
 
   await db.users.put(updates);
   await cloudSaveUser(updates);
+  await cloudPushData(userId).catch(() => null);
 
   const current = getCurrentUser();
   if (current && current.id === userId) {
