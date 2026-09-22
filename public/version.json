@@ -1,5 +1,5 @@
 {
-  "version": "2.14.9",
-  "buildTime": 1790085000000,
-  "description": "Modalidad de ingreso sin costo ($0 COP) y reordenamiento de opciones de liquidación en lote."
+  "version": "2.14.10",
+  "buildTime": 1790090000000,
+  "description": "Valor inicial opcional pero recomendable en registro individual y de lote."
 }

@@ -635,14 +635,8 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     }
 
     if (!isWorker) {
-      if (formData.entryType !== 'Nacimiento') {
-        if (formData.entryPrice === '' || Number(formData.entryPrice) < 0) {
-          newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
-        }
-      } else {
-        if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
-          newErrors.entryPrice = 'El valor de cría no puede ser negativo.';
-        }
+      if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
+        newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
       }
     }
 
@@ -1887,14 +1881,14 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               <>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {formData.entryType === 'Nacimiento' ? 'Costo de Nacimiento ($)' : 'Valor Inicial / Compra ($)'} {formData.entryType !== 'Nacimiento' && <span className="text-rose-500">*</span>}
+                    {formData.entryType === 'Nacimiento' ? 'Costo de Nacimiento ($)' : 'Valor Inicial / Compra ($)'} <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">(Recomendable)</span>
                   </label>
                   <input
                     type="number"
                     name="entryPrice"
                     value={formData.entryPrice}
                     onChange={handleChange}
-                    placeholder={formData.entryType === 'Nacimiento' ? "Ej. 0 (Nacido en finca)" : "Ej. 2500000"}
+                    placeholder={formData.entryType === 'Nacimiento' ? "Ej. 0 (Opcional)" : "Ej. 2500000 (Recomendable)"}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
                   />
                   {errors.entryPrice && <p className="text-[11px] text-rose-500 mt-1">{errors.entryPrice}</p>}

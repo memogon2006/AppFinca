@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.9";
+export const CURRENT_APP_VERSION = "2.14.10";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.10",
+    date: "21/09/2026",
+    title: "Flexibilidad de Valor Inicial (Recomendable / No Obligatorio) en Ingreso Individual y por Lote",
+    highlights: [
+      "Valor Inicial Recomendable: En el registro de nuevo bovino individual (CattleFormModal) y en el ingreso de lote completo (BatchEntryModal), el costo o valor inicial ya no es obligatorio, indicándose claramente como '(Recomendable)'.",
+      "Registro sin Trabas: Si se deja en blanco el valor de entrada, el sistema lo asigna automáticamente como $0 sin bloquear el guardado.",
+      "Consistencia Visual: Indicadores claros y estandarizados en todos los formularios de ingreso ganadero."
+    ]
+  },
   {
     version: "2.14.9",
     date: "21/09/2026",
