@@ -86,9 +86,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
   // Filas de animales del lote
   const [rows, setRows] = useState([
-    { id: '1', tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
-    { id: '2', tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
-    { id: '3', tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
+    { id: '1', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+    { id: '2', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+    { id: '3', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
   ]);
 
   // Generador de serie rápida de aretes
@@ -98,6 +98,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     suffix: '',
     separator: '-',
     count: 5,
+    defaultSex: 'Macho',
     defaultColor: 'Castaño',
     defaultWeight: '',
   });
@@ -124,7 +125,15 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const handleAddRow = () => {
     setRows(prev => [
       ...prev,
-      { id: String(Date.now() + Math.random()), tagNumber: '', color: '', entryWeight: '', motherTag: '', motherId: '' }
+      { 
+        id: String(Date.now() + Math.random()), 
+        tagNumber: '', 
+        sex: batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho', 
+        color: '', 
+        entryWeight: '', 
+        motherTag: '', 
+        motherId: '' 
+      }
     ]);
   };
 
@@ -158,6 +167,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     const sep = seriesConfig.separator || '-';
     const color = seriesConfig.defaultColor.trim();
     const weight = seriesConfig.defaultWeight ? String(seriesConfig.defaultWeight) : '';
+    const rowSex = seriesConfig.defaultSex || (batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho');
 
     const newRows = [];
     for (let i = 0; i < count; i++) {
@@ -172,6 +182,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       newRows.push({
         id: String(Date.now() + i),
         tagNumber: tag,
+        sex: rowSex,
         color: color || '',
         entryWeight: weight,
         motherTag: '',
@@ -274,6 +285,18 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     const batchAnimalsPayload = validRows.map(r => {
       const weight = parseFloat(r.entryWeight) || null;
       const individualPurchasePrice = calculateRowCost(r.entryWeight);
+      const animalSex = r.sex || (batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho');
+
+      let animalCategory = batchInfo.category;
+      if (animalSex === 'Hembra') {
+        if (animalCategory === 'Novillo' || animalCategory === 'Toro' || animalCategory === 'Torete' || animalCategory === 'Buey') {
+          animalCategory = (batchInfo.productionType === 'Ceba' || isBorn) ? 'Novilla' : 'Vaca';
+        }
+      } else if (animalSex === 'Macho') {
+        if (animalCategory === 'Novilla' || animalCategory === 'Vaca') {
+          animalCategory = 'Novillo';
+        }
+      }
 
       let animalNotes = batchInfo.notes?.trim() || '';
       if (totalBatchExpensesNum > 0) {
@@ -287,9 +310,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         color: r.color.trim() || '',
         ironBrand: batchInfo.ironBrand.trim() || '',
         owner: batchInfo.owner.trim() || 'Hacienda Principal',
-        sex: batchInfo.sex,
+        sex: animalSex,
         productionType: batchInfo.productionType,
-        category: batchInfo.category,
+        category: animalCategory,
         breed: batchInfo.breed.trim() || '',
         status: 'Activo',
         entryBatch: batchInfo.entryBatch?.trim() || '',
@@ -307,8 +330,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         currentWeight: weight,
         entryPrice: individualPurchasePrice,
         additionalCosts: expensePerAnimal,
-        femaleStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'Ceba / Levante / Engorde' : 'Vacía') : 'No aplica',
-        reproductiveStatus: batchInfo.sex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'No aplica' : 'Vacía') : 'No aplica',
+        femaleStatus: animalSex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'Ceba / Levante / Engorde' : 'Vacía') : 'No aplica',
+        reproductiveStatus: animalSex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'No aplica' : 'Vacía') : 'No aplica',
         milkingStatus: 'No aplica',
         notes: animalNotes || (isBorn ? `Lote de crías nacidas en finca` : `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`),
       };
@@ -362,7 +385,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     }
   };
 
-  const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === batchInfo.sex);
+  const availableCategories = batchInfo.sex === 'Mixto' 
+    ? CATEGORIES 
+    : CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === batchInfo.sex);
   const isBornInBatch = batchInfo.entryType === 'Nacimiento';
   const isBatchRequired = !isBornInBatch && (batchInfo.productionType === 'Ceba' || batchInfo.entryType === 'Compañía');
 
@@ -606,10 +631,10 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
               />
             </div>
 
-            {/* Sexo */}
+            {/* Sexo Común / Predeterminado */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Sexo Común
+                Sexo Predeterminado del Lote
               </label>
               <select
                 value={batchInfo.sex}
@@ -618,15 +643,19 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   setBatchInfo(prev => ({
                     ...prev,
                     sex: val,
-                    productionType: val === 'Macho' ? 'Ceba' : (prev.productionType === 'Ceba' ? 'Cría' : prev.productionType),
-                    category: val === 'Macho' ? (prev.category === 'Vaca' || prev.category === 'Novilla' ? 'Novillo' : (prev.category || 'Novillo')) : (prev.category === 'Novillo' ? 'Novilla' : (prev.category || 'Vaca'))
+                    productionType: val === 'Macho' ? 'Ceba' : (val === 'Hembra' && prev.productionType === 'Ceba' ? 'Cría' : prev.productionType),
+                    category: val === 'Macho' ? (prev.category === 'Vaca' || prev.category === 'Novilla' ? 'Novillo' : (prev.category || 'Novillo')) : (val === 'Hembra' ? (prev.category === 'Novillo' ? 'Novilla' : (prev.category || 'Vaca')) : prev.category)
                   }));
+                  if (val === 'Macho' || val === 'Hembra') {
+                    setRows(prev => prev.map(r => ({ ...r, sex: val })));
+                    setSeriesConfig(prev => ({ ...prev, defaultSex: val }));
+                  }
                 }}
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[40px]"
               >
-                {SEX_OPTIONS.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
+                <option value="Macho">♂ Macho (Predeterminado para todos)</option>
+                <option value="Hembra">♀ Hembra (Predeterminado para todos)</option>
+                <option value="Mixto">⚤ Mixto (Machos y Hembras combinados)</option>
               </select>
             </div>
 
@@ -984,7 +1013,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Prefijo (Opcional):</label>
                   <input
@@ -1032,6 +1061,22 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 </div>
 
                 <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Sexo Serie:</label>
+                  <select
+                    value={seriesConfig.defaultSex || 'Macho'}
+                    onChange={(e) => setSeriesConfig(prev => ({ ...prev, defaultSex: e.target.value }))}
+                    className={`w-full px-2 py-1.5 rounded-lg border font-bold text-xs cursor-pointer ${
+                      (seriesConfig.defaultSex || 'Macho') === 'Hembra'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700'
+                        : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                    }`}
+                  >
+                    <option value="Macho">♂ Macho</option>
+                    <option value="Hembra">♀ Hembra</option>
+                  </select>
+                </div>
+
+                <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Color Común:</label>
                   <input
                     type="text"
@@ -1059,7 +1104,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   </div>
                 </div>
 
-                <div className="col-span-2 sm:col-span-1 flex items-end">
+                <div className="col-span-2 sm:col-span-1 lg:col-span-1 flex items-end">
                   <button
                     type="button"
                     onClick={handleGenerateSeries}
@@ -1074,21 +1119,22 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
           {/* TABLA DE FILAS DINÁMICAS */}
           <div className="overflow-x-auto max-h-80 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl">
-            <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[620px]">
+            <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[680px]">
               <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 uppercase font-extrabold text-[10px] sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700">
                 <tr>
-                  <th className="p-3 w-12 text-center">#</th>
-                  <th className="p-3">N° Arete / Chapa <span className="text-rose-500">*</span></th>
+                  <th className="p-3 w-10 text-center">#</th>
+                  <th className="p-3 min-w-[130px]">N° Arete / Chapa <span className="text-rose-500">*</span></th>
+                  <th className="p-3 min-w-[125px]">Sexo <span className="text-rose-500">*</span></th>
                   {batchInfo.entryType === 'Nacimiento' && (
-                    <th className="p-3">
+                    <th className="p-3 min-w-[145px]">
                       <span className="text-emerald-700 dark:text-emerald-300 font-black flex items-center gap-1">
                         <span>🐄 Vaca Madre (Chapa)</span>
                       </span>
                     </th>
                   )}
-                  <th className="p-3">Color / Pelaje <span className="text-rose-500">*</span></th>
-                  <th className="p-3">{batchInfo.entryType === 'Nacimiento' ? 'Peso Nacer (kg)' : 'Peso Entrada (kg)'}</th>
-                  <th className="p-3 text-right">{isWorker ? 'Categoría' : 'Costo Calculado (COP)'}</th>
+                  <th className="p-3 min-w-[130px]">Color / Pelaje <span className="text-rose-500">*</span></th>
+                  <th className="p-3 min-w-[110px]">{batchInfo.entryType === 'Nacimiento' ? 'Peso Nacer (kg)' : 'Peso Entrada (kg)'}</th>
+                  <th className="p-3 text-right min-w-[120px]">{isWorker ? 'Categoría' : 'Costo Calculado (COP)'}</th>
                   <th className="p-3 w-10 text-center"></th>
                 </tr>
               </thead>
@@ -1104,6 +1150,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                     cattleList
                   ) : [];
                   const isRowDuplicate = rowDuplicates.length > 0;
+                  const rowSexValue = row.sex || (batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho');
 
                   return (
                     <tr key={row.id} className={`transition ${isRowDuplicate ? 'bg-amber-50/60 dark:bg-amber-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}`}>
@@ -1135,6 +1182,22 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                             </span>
                           )}
                         </div>
+                      </td>
+
+                      {/* Sexo Individual del Animal */}
+                      <td className="p-2.5">
+                        <select
+                          value={rowSexValue}
+                          onChange={(e) => handleRowChange(row.id, 'sex', e.target.value)}
+                          className={`w-full px-2.5 py-1.5 rounded-lg border font-black text-xs cursor-pointer focus:outline-none transition shadow-sm ${
+                            rowSexValue === 'Hembra'
+                              ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700 focus:border-rose-500 focus:ring-1 focus:ring-rose-400'
+                              : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-400'
+                          }`}
+                        >
+                          <option value="Macho">♂ Macho</option>
+                          <option value="Hembra">♀ Hembra</option>
+                        </select>
                       </td>
 
                       {/* Vaca Madre (Solo en Nacimiento) */}
@@ -1177,11 +1240,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                       </td>
 
                       {/* Costo Calculado / Categoría */}
-                      {/* Costo Calculado / Categoría */}
                       <td className="p-2.5 text-right font-extrabold text-slate-900 dark:text-white">
                         {isWorker ? (
                           <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {batchInfo.category || (batchInfo.sex === 'Macho' ? 'Macho' : 'Hembra')}
+                            {rowSexValue === 'Hembra' 
+                              ? (batchInfo.category === 'Novillo' ? 'Novilla' : (batchInfo.category === 'Toro' || batchInfo.category === 'Torete' ? 'Vaca' : batchInfo.category))
+                              : (batchInfo.category === 'Novilla' || batchInfo.category === 'Vaca' ? 'Novillo' : batchInfo.category)}
                           </span>
                         ) : (
                           <>
@@ -1253,56 +1317,70 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
             </span>
           </div>
 
-          {isWorker ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                <span className="text-emerald-200 block text-[10px] font-semibold">Total Cabezas en el Lote:</span>
-                <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{totalAnimals} cabezas</p>
-                <span className="text-[10px] text-emerald-200/80 mt-0.5 block">{batchInfo.category} • {batchInfo.sex}</span>
-              </div>
+          {(() => {
+            const machosCount = validRows.filter(r => (r.sex || (batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho')) === 'Macho').length;
+            const hembrasCount = validRows.filter(r => (r.sex || (batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho')) === 'Hembra').length;
 
-              <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                <span className="text-emerald-200 block text-[10px] font-semibold">Kilos Totales Registrados:</span>
-                <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatNumber(totalKilos, 0)} kg</p>
-                <span className="text-[10px] text-emerald-200/80 mt-0.5 block font-bold">Promedio: {formatNumber(avgWeight, 1)} kg/cab</span>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                <span className="text-emerald-200 block text-[10px] font-semibold">Total Cabezas:</span>
-                <p className="text-lg sm:text-xl font-black text-white mt-0.5">{totalAnimals} cab</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                <span className="text-emerald-200 block text-[10px] font-semibold">Kilos Totales Báscula:</span>
-                <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatNumber(totalKilos, 0)} kg</p>
-                <span className="text-[10px] text-emerald-200/80 mt-0.5 block">Prom: {formatNumber(avgWeight, 1)} kg/cab</span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                <span className="text-emerald-200 block text-[10px] font-semibold">
-                  {costMode === 'pricePerKg' ? 'Compra por Kilo:' : 'Compra por Cabeza:'}
-                </span>
-                <p className="text-lg sm:text-xl font-black text-amber-300 mt-0.5">
-                  {costMode === 'pricePerKg' ? (pricePerKg ? `${formatCurrency(pricePerKg)}/kg` : '$0/kg') : formatCurrency(fixedPricePerHead || 0)}
-                </p>
-                {totalBatchExpensesNum > 0 && (
-                  <span className="text-[10px] text-blue-200 font-bold mt-0.5 block">
-                    + {formatCurrency(expensePerAnimal)}/cab gastos
+            return isWorker ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                  <span className="text-emerald-200 block text-[10px] font-semibold">Total Cabezas en el Lote:</span>
+                  <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{totalAnimals} cabezas</p>
+                  <span className="text-[10px] text-emerald-200/90 font-bold mt-0.5 block">
+                    {machosCount > 0 && hembrasCount > 0 
+                      ? `♂ ${machosCount} Machos • ♀ ${hembrasCount} Hembras`
+                      : `${batchInfo.category} • ${batchInfo.sex}`}
                   </span>
-                )}
-              </div>
+                </div>
 
-              <div className="p-3 rounded-xl bg-emerald-500/30 backdrop-blur-sm border border-emerald-400/40">
-                <span className="text-emerald-100 block text-[10px] font-semibold">Inversión Total con Gastos:</span>
-                <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatCurrency(totalInvestmentWithExpenses)}</p>
-                <span className="text-[10px] text-emerald-200 mt-0.5 block font-bold">
-                  Costo Real: {formatCurrency(avgTotalCostPerHead)}/cab
-                </span>
+                <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                  <span className="text-emerald-200 block text-[10px] font-semibold">Kilos Totales Registrados:</span>
+                  <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatNumber(totalKilos, 0)} kg</p>
+                  <span className="text-[10px] text-emerald-200/80 mt-0.5 block font-bold">Promedio: {formatNumber(avgWeight, 1)} kg/cab</span>
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                  <span className="text-emerald-200 block text-[10px] font-semibold">Total Cabezas:</span>
+                  <p className="text-lg sm:text-xl font-black text-white mt-0.5">{totalAnimals} cab</p>
+                  <span className="text-[10px] text-emerald-200/90 font-bold mt-0.5 block">
+                    {machosCount > 0 && hembrasCount > 0 
+                      ? `♂ ${machosCount}M • ♀ ${hembrasCount}H` 
+                      : (batchInfo.sex === 'Mixto' ? 'Lote Mixto' : batchInfo.sex)}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                  <span className="text-emerald-200 block text-[10px] font-semibold">Kilos Totales Báscula:</span>
+                  <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatNumber(totalKilos, 0)} kg</p>
+                  <span className="text-[10px] text-emerald-200/80 mt-0.5 block">Prom: {formatNumber(avgWeight, 1)} kg/cab</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                  <span className="text-emerald-200 block text-[10px] font-semibold">
+                    {costMode === 'pricePerKg' ? 'Compra por Kilo:' : 'Compra por Cabeza:'}
+                  </span>
+                  <p className="text-lg sm:text-xl font-black text-amber-300 mt-0.5">
+                    {costMode === 'pricePerKg' ? (pricePerKg ? `${formatCurrency(pricePerKg)}/kg` : '$0/kg') : formatCurrency(fixedPricePerHead || 0)}
+                  </p>
+                  {totalBatchExpensesNum > 0 && (
+                    <span className="text-[10px] text-blue-200 font-bold mt-0.5 block">
+                      + {formatCurrency(expensePerAnimal)}/cab gastos
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-3 rounded-xl bg-emerald-500/30 backdrop-blur-sm border border-emerald-400/40">
+                  <span className="text-emerald-100 block text-[10px] font-semibold">Inversión Total con Gastos:</span>
+                  <p className="text-lg sm:text-xl font-black text-white mt-0.5">{formatCurrency(totalInvestmentWithExpenses)}</p>
+                  <span className="text-[10px] text-emerald-200 mt-0.5 block font-bold">
+                    Costo Real: {formatCurrency(avgTotalCostPerHead)}/cab
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Mensajes de Error */}

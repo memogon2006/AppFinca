@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.7";
+export const CURRENT_APP_VERSION = "2.14.8";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.8",
+    date: "21/09/2026",
+    title: "Selección Individual de Sexo (Macho / Hembra) en Ingreso de Lote Completo",
+    highlights: [
+      "Sexo Personalizado por Bovino: En el modal de ingreso de lote, cada fila de la tabla cuenta con su propio selector de sexo (♂ Macho / ♀ Hembra) con colores distintivos de alto contraste.",
+      "Soporte para Lotes Mixtos: Nueva opción '⚤ Mixto' en los datos generales del lote para registrar machos y hembras simultáneamente.",
+      "Ajuste Automático de Categorías y Estados: Cada animal adapta su categoría y estado reproductivo según su sexo individual al ser guardado en el inventario.",
+      "Desglose en Resumen: El resumen del lote visualiza el conteo exacto de machos y hembras ingresados."
+    ]
+  },
   {
     version: "2.14.7",
     date: "21/09/2026",
