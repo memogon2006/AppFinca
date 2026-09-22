@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.12";
+export const CURRENT_APP_VERSION = "2.14.13";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.13",
+    date: "22/09/2026",
+    title: "Implementación de Cabeceras de Seguridad HTTP y Reglas de Base de Datos",
+    highlights: [
+      "Cabeceras de Seguridad HTTP (Punto 18): Protección activa contra clickjacking (X-Frame-Options), prevención de sniffing de contenido (X-Content-Type-Options: nosniff), HSTS forzado y políticas de permisos en el navegador.",
+      "Reglas de Seguridad y Validación de Base de Datos (Puntos 4, 7 y 8): Definición de reglas de control de acceso e inmutabilidad de identificadores de usuario (database.rules.json).",
+      "Experiencia Fluida y Transparente: Blindaje de seguridad sin alterar la interfaz gráfica ni interrumpir los flujos de trabajo en campo."
+    ]
+  },
   {
     version: "2.14.12",
     date: "21/09/2026",

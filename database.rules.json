@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "users": {
+      "$safeEmail": {
+        ".read": true,
+        ".write": "!data.exists() || data.child('id').val() == newData.child('id').val()",
+        ".validate": "newData.hasChildren(['id', 'email'])"
+      }
+    },
+    "data": {
+      "$userId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "workers": {
+      "$farmOwnerId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "deleted_workers": {
+      "$farmOwnerId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}
