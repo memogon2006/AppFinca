@@ -1,5 +1,5 @@
 {
-  "version": "2.14.15",
-  "buildTime": 1790152000000,
-  "description": "Eliminación de popup de actualización y validación estricta de correos renombrados."
+  "version": "2.14.16",
+  "buildTime": 1790154000000,
+  "description": "Rediseño visual de pantalla de acceso Split-Screen y recordar correo."
 }

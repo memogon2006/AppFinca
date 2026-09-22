@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.15";
+export const CURRENT_APP_VERSION = "2.14.16";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.16",
+    date: "22/09/2026",
+    title: "Rediseño Visual de Pantalla de Acceso (Split-Screen) y Recordar Correo",
+    highlights: [
+      "Diseño Split-Screen Moderno: Interfaz institucional con logotipo ganadero y resumen de beneficios clave (Modo sin Internet, GDP en vivo, Nube segura).",
+      "Experiencia de Acceso Ultralimpia: Eliminación de botones redundantes y jerarquía visual optimizada para iniciar sesión en un solo paso.",
+      "Función 'Recordar Correo': Opción para recordar el correo o usuario en el dispositivo sin tener que escribirlo cada vez.",
+      "Indicador de Nube Activa: Estado visual discreto de conexión y respaldo multi-dispositivo."
+    ]
+  },
   {
     version: "2.14.15",
     date: "22/09/2026",
