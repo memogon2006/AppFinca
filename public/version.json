@@ -1,5 +1,5 @@
 {
-  "version": "2.14.8",
-  "buildTime": 1790080000000,
-  "description": "Selección individual de sexo (Macho / Hembra) en ingreso de lote completo de ganado."
+  "version": "2.14.9",
+  "buildTime": 1790085000000,
+  "description": "Modalidad de ingreso sin costo ($0 COP) y reordenamiento de opciones de liquidación en lote."
 }

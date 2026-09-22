@@ -196,14 +196,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
   // Cálculo individual para cada fila
   const calculateRowCost = (rowWeight) => {
-    if (batchInfo.entryType === 'Nacimiento' && costMode === 'zeroCost') {
+    if (costMode === 'zeroCost') {
       return 0;
     }
     const weightNum = parseFloat(rowWeight) || 0;
     if (costMode === 'fixedPrice') {
       return parseFloat(fixedPricePerHead) || 0;
-    } else if (costMode === 'zeroCost') {
-      return 0;
     } else {
       const priceKg = parseFloat(pricePerKg) || 0;
       return Math.round(weightNum * priceKg);
@@ -269,8 +267,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       return;
     }
 
-    // Validar costos si no es costo cero por nacimiento (solo administradores)
-    if (!isWorker) {
+    // Validar costos si no es costo cero ($0) (solo administradores)
+    if (!isWorker && costMode !== 'zeroCost') {
       if (costMode === 'pricePerKg' && (!pricePerKg || parseFloat(pricePerKg) <= 0)) {
         setErrors('Por favor ingresa un precio pactado por kilo ($/kg) válido.');
         return;
@@ -333,7 +331,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         femaleStatus: animalSex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'Ceba / Levante / Engorde' : 'Vacía') : 'No aplica',
         reproductiveStatus: animalSex === 'Hembra' ? (batchInfo.productionType === 'Ceba' ? 'No aplica' : 'Vacía') : 'No aplica',
         milkingStatus: 'No aplica',
-        notes: animalNotes || (isBorn ? `Lote de crías nacidas en finca` : `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`),
+        notes: animalNotes || (isBorn ? `Lote de crías nacidas en finca` : (costMode === 'zeroCost' ? 'Ingreso por lote sin costo inicial ($0 COP)' : `Ingreso por lote en bloque (${costMode === 'pricePerKg' ? `$${pricePerKg}/kg` : `Promedio $${fixedPricePerHead}/cab`})`)),
       };
     });
 
@@ -441,8 +439,6 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                       }));
                       if (item.value === 'Nacimiento') {
                         setCostMode('zeroCost');
-                      } else if (costMode === 'zeroCost') {
-                        setCostMode('pricePerKg');
                       }
                     }}
                     className={`p-2.5 sm:p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer min-h-[56px] ${
@@ -723,51 +719,14 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
               </h4>
             </div>
 
-            <div className={`grid grid-cols-1 ${batchInfo.entryType === 'Nacimiento' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3 sm:gap-4`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
               
-              {/* Opción C: Costo Cero (Solo si es Nacimiento) */}
-              {batchInfo.entryType === 'Nacimiento' && (
-                <div 
-                  onClick={() => setCostMode('zeroCost')}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
-                    costMode === 'zeroCost'
-                      ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        <span>$0 COP (Nacimiento en Finca)</span>
-                      </span>
-                      <input 
-                        type="radio" 
-                        name="costMode" 
-                        checked={costMode === 'zeroCost'} 
-                        onChange={() => setCostMode('zeroCost')}
-                        className="accent-emerald-600 w-4 h-4 cursor-pointer" 
-                      />
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Asigna costo de compra $0 a cada cría. La rentabilidad se calculará a partir de los gastos de manejo posteriores.
-                    </p>
-                  </div>
-
-                  <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 mt-3">
-                    <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
-                      ✓ Sin costo de compra inicial
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Opción B: Por Kilos de Entrada * $/kg */}
+              {/* Opción 1 (Izquierda): Por Kilos de Entrada * $/kg */}
               <div 
                 onClick={() => setCostMode('pricePerKg')}
                 className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
                   costMode === 'pricePerKg'
-                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
+                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
                 }`}
               >
@@ -812,12 +771,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 )}
               </div>
 
-              {/* Opción A: Valor Promedio Fijo por Cabeza */}
+              {/* Opción 2 (Centro): Valor Promedio Fijo por Cabeza */}
               <div 
                 onClick={() => setCostMode('fixedPrice')}
                 className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
                   costMode === 'fixedPrice'
-                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
+                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
                 }`}
               >
@@ -861,6 +820,44 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   </div>
                 )}
               </div>
+
+              {/* Opción 3 (Derecha / Tercera de izq a derecha): $0 COP (Sin Costo Inicial) */}
+              <div 
+                onClick={() => setCostMode('zeroCost')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                  costMode === 'zeroCost'
+                    ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>$0 COP (Sin Costo Inicial)</span>
+                    </span>
+                    <input 
+                      type="radio" 
+                      name="costMode" 
+                      checked={costMode === 'zeroCost'} 
+                      onChange={() => setCostMode('zeroCost')}
+                      className="accent-emerald-600 w-4 h-4 cursor-pointer" 
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+                    {batchInfo.entryType === 'Nacimiento'
+                      ? 'Asigna costo de compra $0 a cada cría. La rentabilidad se calculará a partir de los gastos de manejo posteriores.'
+                      : 'Ingresa los animales sin costo de compra inicial ($0 COP). Ideal para inventario base o animales propios.'}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 mt-3">
+                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                    ✓ Sin costo de compra inicial ($0)
+                  </span>
+                </div>
+              </div>
+
             </div>
 
             {/* SECCIÓN ADICIONAL: GASTOS ASOCIADOS AL LOTE (FLETES, COMISIÓN, VACUNACIÓN) */}
@@ -1359,10 +1356,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
                 <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
                   <span className="text-emerald-200 block text-[10px] font-semibold">
-                    {costMode === 'pricePerKg' ? 'Compra por Kilo:' : 'Compra por Cabeza:'}
+                    {costMode === 'pricePerKg' ? 'Compra por Kilo:' : (costMode === 'fixedPrice' ? 'Compra por Cabeza:' : 'Costo de Entrada:')}
                   </span>
                   <p className="text-lg sm:text-xl font-black text-amber-300 mt-0.5">
-                    {costMode === 'pricePerKg' ? (pricePerKg ? `${formatCurrency(pricePerKg)}/kg` : '$0/kg') : formatCurrency(fixedPricePerHead || 0)}
+                    {costMode === 'pricePerKg' 
+                      ? (pricePerKg ? `${formatCurrency(pricePerKg)}/kg` : '$0/kg') 
+                      : (costMode === 'fixedPrice' ? formatCurrency(fixedPricePerHead || 0) : '$0 COP (Sin Costo)')}
                   </p>
                   {totalBatchExpensesNum > 0 && (
                     <span className="text-[10px] text-blue-200 font-bold mt-0.5 block">

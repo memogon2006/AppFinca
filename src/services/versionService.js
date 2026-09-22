@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.8";
+export const CURRENT_APP_VERSION = "2.14.9";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.9",
+    date: "21/09/2026",
+    title: "Modalidad de Ingreso sin Costo ($0 COP) y Reordenamiento de Opciones de Liquidación",
+    highlights: [
+      "Opción '$0 COP (Sin Costo Inicial)' Universal: Ahora disponible en cualquier tipo de origen de lote (Compra, Nacimiento, Traslado, Compañía) para registrar animales de inventario base o sin valor de compra.",
+      "Reordenamiento de Izquierda a Derecha: Las 3 opciones de liquidación se organizan de forma consistente: 1. Por Kilos (Izquierda), 2. Valor Fijo por Cabeza (Centro), 3. Sin Costo / $0 COP (Derecha / Tercera).",
+      "Liquidación Fluida: Selección directa sin validación forzada de precios cuando se elige costo cero."
+    ]
+  },
   {
     version: "2.14.8",
     date: "21/09/2026",
