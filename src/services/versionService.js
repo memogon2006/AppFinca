@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.11";
+export const CURRENT_APP_VERSION = "2.14.12";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.12",
+    date: "21/09/2026",
+    title: "Valor Obligatorio y Peso Opcional en Ingreso de Ganado en Compañía",
+    highlights: [
+      "Ganado en Compañía con Inversión Obligatoria: En el registro individual de bovinos (CattleFormModal), cuando el origen es 'Compañía', el campo 'Valor Inicial / Inversión ($)' pasa a ser estrictamente obligatorio (*).",
+      "Peso Inicial Opcional en Compañía: Para ingresos bajo modalidad de compañía, el 'Peso Inicial (kg)' se marca y valida como opcional '(Opcional en Compañía)', permitiendo registrar el aporte de capital sin exigir pesaje de entrada inmediato.",
+      "Validación y Señalización Visual Clara: Etiquetas, asteriscos y textos de ayuda adaptados dinámicamente según el tipo de procedencia del animal."
+    ]
+  },
   {
     version: "2.14.11",
     date: "21/09/2026",

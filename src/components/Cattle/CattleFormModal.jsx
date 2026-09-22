@@ -551,10 +551,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   };
 
   // Regla de Negocio: El peso inicial es obligatorio si es Macho o si es Hembra destinada a Levante y Ceba/Engorde.
-  // Si la hembra se usa para Vientre, Cría, Lechería o Vaca de Producción, el peso inicial NO es obligatorio.
+  // Si la hembra se usa para Vientre, Cría, Lechería o Vaca de Producción, o si el ganado es en Compañía, el peso inicial NO es obligatorio.
   const isFemale = formData.sex === 'Hembra';
   const isFatteningFemale = isFemale && (formData.productionType === 'Ceba' || formData.femaleStatuses?.includes('Ceba / Levante / Engorde') || formData.femaleStatus?.includes('Ceba'));
-  const isWeightRequired = formData.sex === 'Macho' || isFatteningFemale;
+  const isWeightRequired = formData.entryType !== 'Compañía' && (formData.sex === 'Macho' || isFatteningFemale);
 
   // Regla de Negocio: Ingreso # (Lote / Consecutivo)
   // Obligatorio únicamente para animales comprados destinados a Ceba / Engorde o en Compañía.
@@ -635,8 +635,14 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     }
 
     if (!isWorker) {
-      if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
-        newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
+      if (formData.entryType === 'Compañía') {
+        if (formData.entryPrice === '' || formData.entryPrice === null || Number(formData.entryPrice) <= 0) {
+          newErrors.entryPrice = 'El valor inicial o inversión es obligatorio para ganado en compañía.';
+        }
+      } else {
+        if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
+          newErrors.entryPrice = 'El valor o costo de entrada no puede ser negativo.';
+        }
       }
     }
 
@@ -1858,9 +1864,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 {formData.entryType === 'Nacimiento' ? 'Peso al Nacer (kg)' : 'Peso Inicial (kg)'} {isWeightRequired ? (
-                  <span className="text-rose-500">*</span>
+                  <span className="text-rose-500 font-bold">*</span>
                 ) : (
-                  <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">(Opcional en Cría)</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">
+                    {formData.entryType === 'Compañía' ? '(Opcional en Compañía)' : '(Opcional en Cría)'}
+                  </span>
                 )}
               </label>
               <input
@@ -1869,7 +1877,15 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 name="entryWeight"
                 value={formData.entryWeight}
                 onChange={handleChange}
-                placeholder={formData.entryType === 'Nacimiento' ? "Ej. 32 (Al nacer)" : isWeightRequired ? "Ej. 280 (Obligatorio)" : "Ej. 420 (Opcional)"}
+                placeholder={
+                  formData.entryType === 'Nacimiento' 
+                    ? "Ej. 32 (Al nacer)" 
+                    : formData.entryType === 'Compañía'
+                      ? "Ej. 280 (Opcional en Compañía)"
+                      : isWeightRequired 
+                        ? "Ej. 280 (Obligatorio)" 
+                        : "Ej. 420 (Opcional)"
+                }
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px] ${
                   errors.entryWeight ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'
                 }`}
@@ -1881,15 +1897,31 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               <>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {formData.entryType === 'Nacimiento' ? 'Costo de Nacimiento ($)' : 'Valor Inicial / Compra ($)'} <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">(Recomendable)</span>
+                    {formData.entryType === 'Nacimiento' 
+                      ? 'Costo de Nacimiento ($)' 
+                      : formData.entryType === 'Compañía' 
+                        ? 'Valor Inicial / Inversión ($)' 
+                        : 'Valor Inicial / Compra ($)'} {formData.entryType === 'Compañía' ? (
+                      <span className="text-rose-500 font-bold">*</span>
+                    ) : (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">(Recomendable)</span>
+                    )}
                   </label>
                   <input
                     type="number"
                     name="entryPrice"
                     value={formData.entryPrice}
                     onChange={handleChange}
-                    placeholder={formData.entryType === 'Nacimiento' ? "Ej. 0 (Opcional)" : "Ej. 2500000 (Recomendable)"}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                    placeholder={
+                      formData.entryType === 'Nacimiento' 
+                        ? "Ej. 0 (Opcional)" 
+                        : formData.entryType === 'Compañía' 
+                          ? "Ej. 2500000 (Obligatorio)" 
+                          : "Ej. 2500000 (Recomendable)"
+                    }
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px] ${
+                      errors.entryPrice ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'
+                    }`}
                   />
                   {errors.entryPrice && <p className="text-[11px] text-rose-500 mt-1">{errors.entryPrice}</p>}
                 </div>

@@ -1,5 +1,5 @@
 {
-  "version": "2.14.11",
-  "buildTime": 1790095000000,
-  "description": "Obligatoriedad de precios en cálculo de lote y valor inicial recomendable en registro individual."
+  "version": "2.14.12",
+  "buildTime": 1790095500000,
+  "description": "Valor inicial obligatorio y peso opcional para ingreso de ganado en compañía."
 }
