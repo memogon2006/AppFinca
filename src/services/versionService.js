@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.33";
+export const CURRENT_APP_VERSION = "2.14.34";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.34",
+    date: "22/09/2026",
+    title: "🗓️ Integración Total de Alarmas en el Calendario & Coherencia Financiera",
+    highlights: [
+      "Alarmas Conectadas al Calendario: El calendario general y el widget de finca ahora muestran automáticamente las fechas de revacunación, los avisos del día previo ('Aviso Mañana'), los partos estimados y los chequeos de palpación ginecológica.",
+      "Conexión Financiera Consolidada: Total integración entre ventas de ganado, liquidaciones en compañía y gastos fijos/variables de la finca para determinar la Utilidad Neta Real y cobertura mensual de costos."
+    ]
+  },
   {
     version: "2.14.33",
     date: "22/09/2026",

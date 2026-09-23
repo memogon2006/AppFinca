@@ -197,10 +197,32 @@ export function FarmCalendarModal({
           });
         }
       }
+
+      // 4.1 Chequeos Reproductivos (+45 días post-servicio)
+      if (c.sex === 'Hembra' && c.reproductiveStatus === 'En Servicio' && c.serviceDate) {
+        try {
+          const sParts = String(c.serviceDate).split('T')[0].split('-');
+          if (sParts.length === 3) {
+            const checkD = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10) + 45);
+            const y = checkD.getFullYear();
+            const m = String(checkD.getMonth() + 1).padStart(2, '0');
+            const d = String(checkD.getDate()).padStart(2, '0');
+            addEvent(`${y}-${m}-${d}`, {
+              type: 'reproductive_check',
+              title: `🩺 Chequeo / Palpación: ${c.tagNumber}`,
+              subtitle: `45 días tras servicio (${formatDate(c.serviceDate)}). Diagnóstico de preñez.`,
+              icon: Activity,
+              color: 'text-purple-600 dark:text-purple-400',
+              dotColor: 'bg-purple-500'
+            });
+          }
+        } catch (e) {}
+      }
     });
 
     // 5. Vacunaciones y Plan Sanitario Registrados
     vaccinations.forEach(v => {
+      // Dosis inicial aplicada
       if (v.date) {
         addEvent(v.date, {
           type: 'vaccination',
@@ -212,6 +234,44 @@ export function FarmCalendarModal({
           dotColor: 'bg-rose-500',
           category: 'vacunacion'
         });
+      }
+
+      // Dosis de Refuerzo / Revacunación Programada
+      if (v.requiresBooster && v.boosterDate) {
+        addEvent(v.boosterDate, {
+          type: 'booster',
+          id: 'booster-' + v.id,
+          title: `🔄 Revacunación: ${v.vaccineType}`,
+          subtitle: `${v.targetLabel || 'Hato'} • ${v.animalCount || 'X'} cab. (Refuerzo ${v.boosterDays || ''}d)${v.boosterNotes ? ` • "${v.boosterNotes}"` : ''}`,
+          icon: Syringe,
+          color: v.boosterCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400',
+          dotColor: v.boosterCompleted ? 'bg-emerald-500' : 'bg-amber-500',
+          completed: !!v.boosterCompleted,
+          isBooster: true
+        });
+
+        // Alerta día previo (Aviso de preparación)
+        if (!v.boosterCompleted) {
+          try {
+            const bParts = v.boosterDate.split('-');
+            if (bParts.length === 3) {
+              const eveD = new Date(parseInt(bParts[0], 10), parseInt(bParts[1], 10) - 1, parseInt(bParts[2], 10) - 1);
+              const y = eveD.getFullYear();
+              const m = String(eveD.getMonth() + 1).padStart(2, '0');
+              const d = String(eveD.getDate()).padStart(2, '0');
+              addEvent(`${y}-${m}-${d}`, {
+                type: 'booster_eve',
+                id: 'booster-eve-' + v.id,
+                title: `⏰ Aviso: Mañana Revacunación ${v.vaccineType}`,
+                subtitle: `Alistar jeringas y lote (${v.targetLabel || 'Hato'}) para revacunación mañana.`,
+                icon: Clock,
+                color: 'text-amber-500 dark:text-amber-400',
+                dotColor: 'bg-amber-400',
+                isBoosterEve: true
+              });
+            }
+          } catch (e) {}
+        }
       }
     });
 

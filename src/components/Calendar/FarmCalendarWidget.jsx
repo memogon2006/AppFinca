@@ -104,9 +104,25 @@ export function FarmCalendarWidget({
           });
         }
       }
+      if (c.sex === 'Hembra' && c.reproductiveStatus === 'En Servicio' && c.serviceDate) {
+        try {
+          const sParts = String(c.serviceDate).split('T')[0].split('-');
+          if (sParts.length === 3) {
+            const checkD = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10) + 45);
+            const y = checkD.getFullYear();
+            const m = String(checkD.getMonth() + 1).padStart(2, '0');
+            const d = String(checkD.getDate()).padStart(2, '0');
+            addEvent(`${y}-${m}-${d}`, {
+              type: 'reproductive_check',
+              title: `Palpación: ${c.tagNumber}`,
+              dotColor: 'bg-purple-500'
+            });
+          }
+        } catch (e) {}
+      }
     });
 
-    // Vaccinations
+    // Vaccinations & Boosters
     vaccinations.forEach(v => {
       if (v.date) {
         addEvent(v.date, {
@@ -114,6 +130,29 @@ export function FarmCalendarWidget({
           title: `Vacuna: ${v.vaccineType}`,
           dotColor: 'bg-rose-500'
         });
+      }
+      if (v.requiresBooster && v.boosterDate) {
+        addEvent(v.boosterDate, {
+          type: 'booster',
+          title: `Revacunación: ${v.vaccineType}`,
+          dotColor: v.boosterCompleted ? 'bg-emerald-500' : 'bg-amber-500'
+        });
+        if (!v.boosterCompleted) {
+          try {
+            const bParts = v.boosterDate.split('-');
+            if (bParts.length === 3) {
+              const eveD = new Date(parseInt(bParts[0], 10), parseInt(bParts[1], 10) - 1, parseInt(bParts[2], 10) - 1);
+              const y = eveD.getFullYear();
+              const m = String(eveD.getMonth() + 1).padStart(2, '0');
+              const d = String(eveD.getDate()).padStart(2, '0');
+              addEvent(`${y}-${m}-${d}`, {
+                type: 'booster_eve',
+                title: `Aviso Mañana: Revacunación ${v.vaccineType}`,
+                dotColor: 'bg-amber-400'
+              });
+            }
+          } catch (e) {}
+        }
       }
     });
 

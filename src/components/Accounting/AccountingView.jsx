@@ -204,7 +204,7 @@ export function AccountingView({
 
     periodSoldCattle.forEach(c => {
       const exitPrice = parseFloat(c.exitPrice) || 0;
-      const purchasePrice = parseFloat(c.purchasePrice) || 0;
+      const purchasePrice = parseFloat(c.entryPrice || c.purchasePrice) || 0;
       const exitWeight = parseFloat(c.exitWeight) || 0;
       
       grossRevenue += exitPrice;
