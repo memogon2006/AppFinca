@@ -240,6 +240,16 @@ export function Navbar({
                 </div>
               </div>
 
+              {/* Botón Salir */}
+              <button
+                onClick={handleLogout}
+                title="Cerrar Sesión"
+                className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1 min-h-[34px] cursor-pointer transition whitespace-nowrap shrink-0 shadow-sm"
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                <span className="hidden sm:inline">Salir</span>
+              </button>
+
             </div>
 
           </div>
@@ -543,7 +553,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.24 • Modo Campo Offline
+            Software Ganadero • v2.14.25 • Modo Campo Offline
           </div>
 
         </div>

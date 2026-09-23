@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.24";
+export const CURRENT_APP_VERSION = "2.14.25";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.25",
+    date: "22/09/2026",
+    title: "🚪 Reincorporación del Botón Salir en la Cabecera Superior",
+    highlights: [
+      "Acceso Directo a Cerrar Sesión: Botón 'Salir' restaurado en la esquina superior derecha junto al perfil para desconexión rápida.",
+      "Consistencia en Navegación: Posibilidad de salir tanto desde la barra superior directa como desde el pie del menú desplegable lateral."
+    ]
+  },
   {
     version: "2.14.24",
     date: "22/09/2026",
