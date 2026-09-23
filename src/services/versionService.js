@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.39";
+export const CURRENT_APP_VERSION = "2.14.40";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.40",
+    date: "22/09/2026",
+    title: "🏷️ Módulo de Lotes, Ingresos & Comparaciones",
+    highlights: [
+      "Renombrado Intuitivo del Módulo: Actualizado el acceso en el menú principal y encabezado como 'Lotes, Ingresos & Comparaciones'.",
+      "Experiencia Integral de Manejo: Centralización del control de potreros, ingresos de ganado y comparativas zootécnicas y financieras multidimensionales."
+    ]
+  },
   {
     version: "2.14.39",
     date: "22/09/2026",

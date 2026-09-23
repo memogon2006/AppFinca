@@ -72,7 +72,7 @@ export function Navbar({
   const navItems = [
     { id: 'dashboard', label: 'Tablero Principal', shortLabel: 'Tablero', icon: LayoutDashboard, desc: 'Métricas, resumen y alertas' },
     { id: 'cattle', label: 'Inventario de Ganado', shortLabel: 'Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
-    { id: 'batches', label: 'Lotes & Ingresos', shortLabel: 'Lotes', icon: Boxes, desc: 'Agrupación y control de potreros' },
+    { id: 'batches', label: 'Lotes, Ingresos & Comparaciones', shortLabel: 'Lotes & Comparar', icon: Boxes, desc: 'Agrupación y control de potreros' },
     { id: 'palpation', label: 'Palpación & Reprod.', shortLabel: 'Palpación', icon: Stethoscope, desc: 'Preñeces, tactos y estados' },
     { id: 'weights', label: 'Control de Pesos', shortLabel: 'Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
     { id: 'quickWeigh', label: 'Báscula Rápida', shortLabel: 'Báscula', icon: Zap, desc: 'Pesaje ágil en manga' },
@@ -100,7 +100,7 @@ export function Navbar({
       badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 border border-teal-300/40',
       items: [
         { id: 'cattle', label: 'Inventario de Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
-        { id: 'batches', label: 'Lotes & Ingresos', icon: Boxes, desc: 'Agrupación y control de potreros' },
+        { id: 'batches', label: 'Lotes, Ingresos & Comparaciones', icon: Boxes, desc: 'Agrupación y control de potreros' },
         { id: 'weights', label: 'Control de Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
       ]
     },
@@ -604,7 +604,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.39 • Modo Campo Offline
+            Software Ganadero • v2.14.40 • Modo Campo Offline
           </div>
 
         </div>

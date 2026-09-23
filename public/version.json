@@ -1,5 +1,5 @@
 {
-  "version": "2.14.39",
-  "buildTime": 1790237000000,
-  "description": "🧬 Comparador multidimensional de ganado por Lote, Raza, Dueño/Marca, Tipo de Producción y Categoría con multi-selección."
+  "version": "2.14.40",
+  "buildTime": 1790238000000,
+  "description": "🏷️ Módulo de Lotes, Ingresos & Comparaciones con comparador multidimensional."
 }

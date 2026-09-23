@@ -575,7 +575,7 @@ export function BatchAnalyticsView({
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
             <Boxes className="w-6 h-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>Análisis & Comparador de Ganado</span>
+            <span>Lotes, Ingresos & Comparaciones</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {isWorker 
