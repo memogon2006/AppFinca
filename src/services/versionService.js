@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.45";
+export const CURRENT_APP_VERSION = "2.14.46";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.46",
+    date: "23/09/2026",
+    title: "🛡️ Sincronización Offline Blindada & Reintentos Escalonados al Reconectar",
+    highlights: [
+      "Inmunidad Total para Datos Offline: Las creaciones, ediciones y eliminaciones hechas sin internet quedan 100% protegidas y nunca son sobreescritas por datos viejos al volver a conectarse.",
+      "Reintentos Automáticos Escalonados: Al reconectarse a WiFi o datos móviles, la aplicación reintenta de inmediato (0s, 1.5s y 4s) asegurando que el socket TCP envíe todos los cambios pendientes a Firebase.",
+      "Timeout Ampliado a 15-20 Segundos: Garantiza que inventarios grandes o conexiones lentas de campo suban sin cancelaciones prematuras.",
+      "Sincronización Multidispositivo Instantánea: Mantiene la actualización en vivo cada 4 segundos entre computadores."
+    ]
+  },
   {
     version: "2.14.45",
     date: "23/09/2026",

@@ -1744,6 +1744,7 @@ export default function App() {
         weighings={weighings}
         currentUser={currentUser}
         onDataChanged={() => {
+          markPendingSync(userId, 'audit_' + Date.now());
           cloudPushData(userId);
         }}
         zIndex="z-[60]"

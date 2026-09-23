@@ -3,9 +3,9 @@ import { db } from './db';
 const FIREBASE_URL = 'https://ganadera-plataforma-default-rtdb.firebaseio.com';
 
 /**
- * Petición fetch segura con abort timeout de 2.5s y bypass automático si no hay conexión
+ * Petición fetch segura con abort timeout de 15s y bypass automático si no hay conexión
  */
-async function safeFetch(url, options = {}, timeoutMs = 2500) {
+async function safeFetch(url, options = {}, timeoutMs = 15000) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return null;
   }
@@ -341,9 +341,9 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
   const pendingDeleteSet = new Set(pendingDeletes);
 
   // 1. Guardar o actualizar todos los registros recibidos en una sola operación batch ultrarrápida
-  // Excluir registros que hayan sido eliminados offline localmente
+  // Excluir registros eliminados localmente Y registros modificados/creados localmente pendientes de subida
   const validItems = remoteList
-    .filter(item => item && item.id && !pendingDeleteSet.has(String(item.id)))
+    .filter(item => item && item.id && !pendingDeleteSet.has(String(item.id)) && !pendingIds.has(String(item.id)))
     .map(item => ({ ...item, userId }));
 
   if (validItems.length > 0) {

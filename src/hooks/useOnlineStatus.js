@@ -16,6 +16,13 @@ export function useOnlineStatus(onReconnect = null) {
       setIsOnline(true);
       if (onReconnectRef.current) {
         onReconnectRef.current();
+        // Reintentos automáticos escalonados para cuando el socket TCP/DNS esté 100% listo
+        setTimeout(() => {
+          if (onReconnectRef.current) onReconnectRef.current();
+        }, 1500);
+        setTimeout(() => {
+          if (onReconnectRef.current) onReconnectRef.current();
+        }, 4000);
       }
       setWasOffline(false);
     };
