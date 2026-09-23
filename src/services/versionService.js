@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.35";
+export const CURRENT_APP_VERSION = "2.14.36";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.36",
+    date: "22/09/2026",
+    title: "🔒 Privacidad Financiera Total en Perfiles de Vaqueros / Trabajadores",
+    highlights: [
+      "Blindaje en Comparador de Lotes: Se ocultaron por completo los valores de compra total, precios por animal, valor de compra/kg y tarjetas de inversión cuando el usuario es un trabajador de campo.",
+      "Sanitización del Tablero Principal: Cero resúmenes financieros, balances ni accesos contables visibles para vaqueros, manteniendo un enfoque 100% zootécnico y operativo.",
+      "Privacidad en Inventario y Calendario: Indicadores de capital, precios de venta y valor del ganado reemplazados por recuentos de cabezas y lotes.",
+      "Manejo de Campo Seguro: Los vaqueros y mayordomos disponen de todas las herramientas operativas (pesajes, vacunas, partos, potreros) con absoluta confidencialidad financiera."
+    ]
+  },
   {
     version: "2.14.35",
     date: "22/09/2026",

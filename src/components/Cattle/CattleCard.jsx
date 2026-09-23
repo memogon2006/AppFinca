@@ -331,12 +331,21 @@ export function CattleCard({
                 <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">{entryWeightFormatted}</p>
               </div>
 
-              <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
-                  <ShoppingBag className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Costo Cría:' : 'Costo Entrada:'}
-                </span>
-                <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">{entryPriceFormatted}</p>
-              </div>
+              {!isWorker ? (
+                <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                    <ShoppingBag className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Costo Cría:' : 'Costo Entrada:'}
+                  </span>
+                  <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">{entryPriceFormatted}</p>
+                </div>
+              ) : (
+                <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                    <Layers className="w-3 h-3 text-slate-500" /> Lote / Ingreso:
+                  </span>
+                  <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5 truncate">{animal.entryBatch || animal.paddock || 'General'}</p>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -353,14 +362,25 @@ export function CattleCard({
                 </p>
               </div>
 
-              <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
-                  <ShoppingBag className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Costo Entrada (Cría):' : 'Precio Inicial / Compra:'}
-                </span>
-                <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">
-                  {entryPriceFormatted}
-                </p>
-              </div>
+              {!isWorker ? (
+                <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                    <ShoppingBag className="w-3 h-3 text-slate-500" /> {isBornInFarm ? 'Costo Entrada (Cría):' : 'Precio Inicial / Compra:'}
+                  </span>
+                  <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">
+                    {entryPriceFormatted}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight flex items-center gap-1">
+                    <Layers className="w-3 h-3 text-slate-500" /> Lote / Potrero:
+                  </span>
+                  <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5 truncate">
+                    {animal.entryBatch || animal.paddock || 'General'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* 2. PESO ACTUAL (CON FECHA ÚLTIMO PESAJE) & RENDIMIENTO */}

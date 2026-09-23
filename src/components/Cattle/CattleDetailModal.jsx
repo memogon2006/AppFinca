@@ -1062,12 +1062,21 @@ export function CattleDetailModal({
                   {animal.entryWeight && parseFloat(animal.entryWeight) > 0 ? `${animal.entryWeight} kg` : (animal.origin === 'Nacido en finca' || animal.entryType === 'Nacimiento' ? '0 kg (Nacido)' : 'Sin peso inicial')}
                 </p>
               </div>
-              <div>
-                <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Precio Inicial / Compra</span>
-                <p className="font-black text-slate-950 dark:text-white text-sm">
-                  {isWorker ? '—' : (animal.entryPrice && parseFloat(animal.entryPrice) > 0 ? formatCurrency(animal.entryPrice) : '$0')}
-                </p>
-              </div>
+              {!isWorker ? (
+                <div>
+                  <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Precio Inicial / Compra</span>
+                  <p className="font-black text-slate-950 dark:text-white text-sm">
+                    {animal.entryPrice && parseFloat(animal.entryPrice) > 0 ? formatCurrency(animal.entryPrice) : '$0'}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Lote / Potrero</span>
+                  <p className="font-black text-slate-950 dark:text-white text-sm">
+                    {animal.entryBatch || animal.paddock || 'General'}
+                  </p>
+                </div>
+              )}
               <div>
                 <span className="text-slate-600 dark:text-slate-300 block mb-1 font-black">Color / Señas</span>
                 <p className="font-black text-slate-950 dark:text-white text-sm">{animal.color || 'No especificadas'}</p>

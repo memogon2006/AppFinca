@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Search, X, RefreshCw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { PRODUCTION_TYPES } from '../../types/cattle';
+import { useAuth } from '../../context/AuthContext';
 
 export function CattleFilters({ filters, setFilters, owners = [], breeds = [], entryBatches = [] }) {
+  const { isWorker } = useAuth();
   const [showDateFilters, setShowDateFilters] = useState(false);
 
   const handleClear = () => {
@@ -332,7 +334,7 @@ export function CattleFilters({ filters, setFilters, owners = [], breeds = [], e
           <option value="gainDesc">Mayor Ganancia Peso</option>
           <option value="gdpDesc">Mayor GDP (kg/día)</option>
           <option value="entryDateDesc">Ingreso Más Reciente</option>
-          <option value="profitDesc">Mayor Utilidad</option>
+          {!isWorker && <option value="profitDesc">Mayor Utilidad</option>}
         </select>
       </div>
 

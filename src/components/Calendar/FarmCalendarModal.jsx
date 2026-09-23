@@ -23,10 +23,12 @@ import {
   AlertTriangle,
   FileText,
   Activity,
-  Info
+  Info,
+  TrendingUp
 } from 'lucide-react';
 import { formatDate, formatNumber, formatCurrency, BOVINE_GESTATION_DAYS, calculateReproduction } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
+import { useAuth } from '../../context/AuthContext';
 import {
   SANITARY_CYCLES_INFO,
   MONTH_NAMES,
@@ -50,6 +52,7 @@ export function FarmCalendarModal({
   onOpenVaccinationModal,
   zIndex = 'z-[60]'
 }) {
+  const { isWorker } = useAuth();
   if (!isOpen) return null;
 
   // Fecha actual en tiempo real
@@ -175,9 +178,11 @@ export function FarmCalendarModal({
       if (c.exitDate && c.status === 'Vendido') {
         addEvent(c.exitDate, {
           type: 'sale',
-          title: `Venta: ${c.tagNumber} (${c.exitWeight || 0} kg)`,
-          subtitle: `Comprador: ${c.saleBuyer || 'Vendido'} • ${formatCurrency(c.exitPrice || 0)}`,
-          icon: DollarSign,
+          title: `Salida / Venta: ${c.tagNumber} (${c.exitWeight || 0} kg)`,
+          subtitle: isWorker 
+            ? `Salida: ${c.category || 'Bovino'} • ${c.entryBatch || c.paddock || 'Lote'}` 
+            : `Comprador: ${c.saleBuyer || 'Vendido'} • ${formatCurrency(c.exitPrice || 0)}`,
+          icon: isWorker ? TrendingUp : DollarSign,
           color: 'text-amber-600 dark:text-amber-400',
           dotColor: 'bg-amber-500'
         });

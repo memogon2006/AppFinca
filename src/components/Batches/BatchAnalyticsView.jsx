@@ -535,20 +535,24 @@ export function BatchAnalyticsView({
             <span>Análisis & Comparador por Lote / Ingreso</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Control de valor compra total de los animales, precio por animal, valor del kilo ($/kg), kilos promedio y comparativa cara a cara entre lotes.
+            {isWorker 
+              ? 'Control de cabezas de ganado, kilos promedio, ganancia diaria de peso (GDP) y comparativa de rendimiento entre lotes.'
+              : 'Control de valor compra total de los animales, precio por animal, valor del kilo ($/kg), kilos promedio y comparativa cara a cara entre lotes.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-          <button
-            onClick={handleDownloadComparisonExcel}
-            disabled={exportingExcel}
-            className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-slate-700 shadow-sm transition cursor-pointer min-h-[40px] whitespace-nowrap"
-            title="Descargar Comparativa de Lotes con Gráfica en Excel"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{exportingExcel ? 'Generando Excel...' : '📊 Comparativa Excel'}</span>
-          </button>
+          {!isWorker && (
+            <button
+              onClick={handleDownloadComparisonExcel}
+              disabled={exportingExcel}
+              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-slate-700 shadow-sm transition cursor-pointer min-h-[40px] whitespace-nowrap"
+              title="Descargar Comparativa de Lotes con Gráfica en Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{exportingExcel ? 'Generando Excel...' : '📊 Comparativa Excel'}</span>
+            </button>
+          )}
 
           {onOpenExportImport && (
             <button
@@ -1202,23 +1206,27 @@ export function BatchAnalyticsView({
               <div>
                 <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <ArrowRightLeft className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>Comparador Rápido de Precios, Rendimiento & Tiempo</span>
+                  <span>{isWorker ? 'Comparador Rápido de Rendimiento & Tiempo entre Lotes' : 'Comparador Rápido de Precios, Rendimiento & Tiempo'}</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Selecciona los lotes a contrastar cara a cara en inversión de compra, ganancia de peso y días en predio.
+                  {isWorker 
+                    ? 'Selecciona los lotes a contrastar cara a cara en ganancia de peso, rendimiento GDP y días en predio.' 
+                    : 'Selecciona los lotes a contrastar cara a cara en inversión de compra, ganancia de peso y días en predio.'}
                 </p>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={handleDownloadComparisonExcel}
-                  disabled={exportingExcel}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
-                  title="Descargar este análisis y gráficas en Excel"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>{exportingExcel ? 'Descargando...' : '📊 Descargar Excel con Gráficas'}</span>
-                </button>
+                {!isWorker && (
+                  <button
+                    onClick={handleDownloadComparisonExcel}
+                    disabled={exportingExcel}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                    title="Descargar este análisis y gráficas en Excel"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    <span>{exportingExcel ? 'Descargando...' : '📊 Descargar Excel con Gráficas'}</span>
+                  </button>
+                )}
 
                 <button
                   onClick={selectAllForComparison}
@@ -1262,8 +1270,8 @@ export function BatchAnalyticsView({
           </div>
 
           {/* CUADRO SINTÉTICO DE MEJORES RENDIMIENTOS (MINI DESTACADOS) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {bestPurchaseBatch && (
+          <div className={`grid grid-cols-1 ${!isWorker ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+            {!isWorker && bestPurchaseBatch && (
               <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between">
                 <div>
                   <div className="text-[11px] font-black uppercase text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
@@ -1335,7 +1343,7 @@ export function BatchAnalyticsView({
             <div className="flex items-center justify-between">
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <Scale className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Tabla Comparativa de Precios, Rendimiento & Tiempo</span>
+                <span>{isWorker ? 'Tabla Comparativa de Rendimiento & Tiempo' : 'Tabla Comparativa de Precios, Rendimiento & Tiempo'}</span>
               </h3>
               <span className="text-xs text-slate-500 font-bold">
                 {selectedBatchesForComparison.length} {selectedBatchesForComparison.length === 1 ? 'lote' : 'lotes'}
@@ -1348,9 +1356,13 @@ export function BatchAnalyticsView({
                   <tr>
                     <th className="p-3 border-r border-slate-800">Lote / Ingreso</th>
                     <th className="p-3 border-r border-slate-800 text-center">Cabezas</th>
-                    <th className="p-3 border-r border-slate-800 text-right bg-amber-950/60 text-amber-200">Valor Compra Total ($)</th>
-                    <th className="p-3 border-r border-slate-800 text-right bg-amber-950/60 text-amber-200">Precio / Animal</th>
-                    <th className="p-3 border-r border-slate-800 text-right bg-emerald-950/60 text-emerald-200">Valor Kilo ($/kg)</th>
+                    {!isWorker && (
+                      <>
+                        <th className="p-3 border-r border-slate-800 text-right bg-amber-950/60 text-amber-200">Valor Compra Total ($)</th>
+                        <th className="p-3 border-r border-slate-800 text-right bg-amber-950/60 text-amber-200">Precio / Animal</th>
+                        <th className="p-3 border-r border-slate-800 text-right bg-emerald-950/60 text-emerald-200">Valor Kilo ($/kg)</th>
+                      </>
+                    )}
                     <th className="p-3 border-r border-slate-800 text-right">Kilos Entrada</th>
                     <th className="p-3 border-r border-slate-800 text-right font-black">Kilos Actual</th>
                     <th className="p-3 border-r border-slate-800 text-right bg-blue-950/60 text-blue-200">Ganancia (+kg)</th>
@@ -1382,20 +1394,24 @@ export function BatchAnalyticsView({
                         {b.soldCount > 0 && <span className="text-[10px] text-amber-700 dark:text-amber-400 block font-bold">({b.soldCount} v.)</span>}
                       </td>
 
-                      {/* Valor de Compra Total */}
-                      <td className="p-3 text-right font-black text-amber-950 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                        {formatCurrency(b.totalPurchaseCost)}
-                      </td>
+                      {!isWorker && (
+                        <>
+                          {/* Valor de Compra Total */}
+                          <td className="p-3 text-right font-black text-amber-950 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                            {formatCurrency(b.totalPurchaseCost)}
+                          </td>
 
-                      {/* Precio Promedio por Animal */}
-                      <td className="p-3 text-right font-extrabold text-slate-800 dark:text-slate-200 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                        {formatCurrency(b.avgPricePerHead)}
-                      </td>
+                          {/* Precio Promedio por Animal */}
+                          <td className="p-3 text-right font-extrabold text-slate-800 dark:text-slate-200 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                            {formatCurrency(b.avgPricePerHead)}
+                          </td>
 
-                      {/* Valor del Kilo Entrada ($/kg) */}
-                      <td className="p-3 text-right font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                        {formatCurrency(b.costPerEntryKg)}/kg
-                      </td>
+                          {/* Valor del Kilo Entrada ($/kg) */}
+                          <td className="p-3 text-right font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                            {formatCurrency(b.costPerEntryKg)}/kg
+                          </td>
+                        </>
+                      )}
 
                       {/* Kilos Entrada Promedio */}
                       <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-semibold whitespace-nowrap">
@@ -1483,22 +1499,24 @@ export function BatchAnalyticsView({
                 </div>
 
                 {/* Bloque 1: Precios & Valor de Compra */}
-                <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-1.5">
-                  <div className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-400 flex items-center justify-between">
-                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor de Compra & Precios:</span>
-                    <span className="font-black text-xs text-amber-950 dark:text-amber-300">{formatCurrency(b.totalPurchaseCost)}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
-                    <div>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Precio / Animal:</span>
-                      <span className="font-extrabold text-slate-800 dark:text-slate-200">{formatCurrency(b.avgPricePerHead)}</span>
+                {!isWorker && (
+                  <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-1.5">
+                    <div className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-400 flex items-center justify-between">
+                      <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor de Compra & Precios:</span>
+                      <span className="font-black text-xs text-amber-950 dark:text-amber-300">{formatCurrency(b.totalPurchaseCost)}</span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Valor del Kilo:</span>
-                      <span className="font-black text-emerald-700 dark:text-emerald-400">{formatCurrency(b.costPerEntryKg)}/kg</span>
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
+                      <div>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Precio / Animal:</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">{formatCurrency(b.avgPricePerHead)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Valor del Kilo:</span>
+                        <span className="font-black text-emerald-700 dark:text-emerald-400">{formatCurrency(b.costPerEntryKg)}/kg</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Bloque 2: Rendimientos & Peso */}
                 <div className="p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 space-y-1.5">

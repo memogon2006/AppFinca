@@ -177,10 +177,12 @@ export function DashboardView({
               <span>Gestión de Finca Ganadera</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Control de Inventario, Pesos & Rentabilidad
+              {isWorker ? 'Control de Inventario, Pesos & Manejo de Campo' : 'Control de Inventario, Pesos & Rentabilidad'}
             </h1>
             <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed">
-              Monitorea en tiempo real inventarios, ganancias de peso (GDP), estado de preñez, litros de leche y la rentabilidad neta de tus lotes.
+              {isWorker 
+                ? 'Monitorea en tiempo real inventarios, ganancias de peso (GDP), estado de preñez, pesajes y tareas de campo.'
+                : 'Monitorea en tiempo real inventarios, ganancias de peso (GDP), estado de preñez, litros de leche y la rentabilidad neta de tus lotes.'}
             </p>
           </div>
 

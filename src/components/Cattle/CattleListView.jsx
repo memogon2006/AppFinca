@@ -317,17 +317,31 @@ export function CattleListView({
             Biomasa: <strong className="text-emerald-600 dark:text-emerald-400 font-black">{formatNumber(summary.totalKg, 0)} kg</strong>
           </span>
 
-          <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap">
-            💰 Valor Total Ganado: <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatCurrency(summary.totalValue)}</strong>
-          </span>
+          {!isWorker ? (
+            <>
+              <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap">
+                💰 Valor Total Ganado: <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatCurrency(summary.totalValue)}</strong>
+              </span>
 
-          <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-blue-50/90 dark:bg-blue-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-blue-200 dark:border-blue-800 shadow-sm whitespace-nowrap">
-            🐂 Machos ({summary.maleCount}): <strong className="text-blue-700 dark:text-blue-400 font-black">{formatCurrency(summary.totalMaleValue)}</strong>
-          </span>
+              <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-blue-50/90 dark:bg-blue-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-blue-200 dark:border-blue-800 shadow-sm whitespace-nowrap">
+                🐂 Machos ({summary.maleCount}): <strong className="text-blue-700 dark:text-blue-400 font-black">{formatCurrency(summary.totalMaleValue)}</strong>
+              </span>
 
-          <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-pink-50/90 dark:bg-pink-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-pink-200 dark:border-pink-800 shadow-sm whitespace-nowrap">
-            🐄 Hembras ({summary.femaleCount}): <strong className="text-pink-700 dark:text-pink-400 font-black">{formatCurrency(summary.totalFemaleValue)}</strong>
-          </span>
+              <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-pink-50/90 dark:bg-pink-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-pink-200 dark:border-pink-800 shadow-sm whitespace-nowrap">
+                🐄 Hembras ({summary.femaleCount}): <strong className="text-pink-700 dark:text-pink-400 font-black">{formatCurrency(summary.totalFemaleValue)}</strong>
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-blue-50/90 dark:bg-blue-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-blue-200 dark:border-blue-800 shadow-sm whitespace-nowrap">
+                🐂 Machos: <strong className="text-blue-700 dark:text-blue-400 font-black">{summary.maleCount}</strong>
+              </span>
+
+              <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-pink-50/90 dark:bg-pink-950/50 text-slate-700 dark:text-slate-300 font-semibold border border-pink-200 dark:border-pink-800 shadow-sm whitespace-nowrap">
+                🐄 Hembras: <strong className="text-pink-700 dark:text-pink-400 font-black">{summary.femaleCount}</strong>
+              </span>
+            </>
+          )}
         </div>
 
         {/* Botones de Acción a la Derecha: Ingresar Lote, + Individual y Selector de Vista */}
