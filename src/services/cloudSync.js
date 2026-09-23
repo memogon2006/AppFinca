@@ -140,6 +140,119 @@ export async function cloudFindUser(email) {
   return null;
 }
 
+const PENDING_SYNC_KEY = 'ganadera_pending_sync_';
+const PENDING_DEL_KEY = 'ganadera_pending_del_';
+
+/**
+ * Registra IDs de elementos creados o editados localmente pendientes de sincronizar con Firebase
+ */
+export function markPendingSync(userId, ...itemIds) {
+  if (!userId || !itemIds || itemIds.length === 0) return;
+  try {
+    const key = `${PENDING_SYNC_KEY}${userId}`;
+    const raw = localStorage.getItem(key);
+    const set = new Set(raw ? JSON.parse(raw) : []);
+    itemIds.flat().filter(Boolean).forEach(id => set.add(String(id)));
+    localStorage.setItem(key, JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.warn('Error saving markPendingSync:', e);
+  }
+}
+
+/**
+ * Obtiene el conjunto de IDs locales pendientes de subida
+ */
+export function getPendingSyncIds(userId) {
+  if (!userId) return new Set();
+  try {
+    const key = `${PENDING_SYNC_KEY}${userId}`;
+    const raw = localStorage.getItem(key);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * Limpia los IDs locales sincronizados exitosamente
+ */
+export function clearPendingSync(userId, itemIds = null) {
+  if (!userId) return;
+  try {
+    const key = `${PENDING_SYNC_KEY}${userId}`;
+    if (!itemIds) {
+      localStorage.removeItem(key);
+    } else {
+      const raw = localStorage.getItem(key);
+      const set = new Set(raw ? JSON.parse(raw) : []);
+      const toRemove = new Set((Array.isArray(itemIds) ? itemIds : [itemIds]).map(String));
+      const remaining = Array.from(set).filter(id => !toRemove.has(id));
+      if (remaining.length > 0) {
+        localStorage.setItem(key, JSON.stringify(remaining));
+      } else {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    console.warn('Error in clearPendingSync:', e);
+  }
+}
+
+/**
+ * Registra elementos eliminados localmente de forma offline para no recrearlos al descargar de Firebase
+ */
+export function markPendingDelete(userId, tableName, ...itemIds) {
+  if (!userId || !tableName || !itemIds || itemIds.length === 0) return;
+  try {
+    const key = `${PENDING_DEL_KEY}${userId}`;
+    const raw = localStorage.getItem(key);
+    const list = raw ? JSON.parse(raw) : [];
+    const validIds = itemIds.flat().filter(Boolean).map(String);
+    for (const id of validIds) {
+      if (!list.some(item => item.tableName === tableName && String(item.id) === id)) {
+        list.push({ tableName, id });
+      }
+    }
+    localStorage.setItem(key, JSON.stringify(list));
+  } catch (e) {
+    console.warn('Error in markPendingDelete:', e);
+  }
+}
+
+/**
+ * Obtiene la lista de elementos eliminados localmente offline pendientes de propagar a Firebase
+ */
+export function getPendingDeletes(userId) {
+  if (!userId) return [];
+  try {
+    const key = `${PENDING_DEL_KEY}${userId}`;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Limpia la lista de eliminaciones pendientes
+ */
+export function clearPendingDeletes(userId) {
+  if (!userId) return;
+  try {
+    localStorage.removeItem(`${PENDING_DEL_KEY}${userId}`);
+  } catch (e) {
+    console.warn('Error in clearPendingDeletes:', e);
+  }
+}
+
+/**
+ * Indica si este dispositivo tiene creaciones, ediciones o eliminaciones locales pendientes de subir a la nube
+ */
+export function hasPendingSync(userId) {
+  if (!userId) return false;
+  return getPendingSyncIds(userId).size > 0 || getPendingDeletes(userId).length > 0;
+}
+
 /**
  * Sube a Firebase el inventario completo de ganado, pesajes, vacunaciones, palpaciones y finanzas
  */
@@ -189,7 +302,13 @@ export async function cloudPushData(userId) {
       body: JSON.stringify(payload),
     });
 
-    return !!(res && res.ok);
+    if (res && res.ok) {
+      // Limpiar cola de pendientes al confirmar que Firebase recibió los datos
+      clearPendingSync(userId);
+      clearPendingDeletes(userId);
+      return true;
+    }
+    return false;
   } catch (e) {
     console.warn('⚠️ Error en cloudPushData Firebase:', e);
     return false;
@@ -209,18 +328,24 @@ function normalizeRemoteList(val) {
 
 /**
  * Reconcilia y sincroniza una tabla local con la versión remota de Firebase
- * Utiliza operaciones batch de alto rendimiento (bulkPut / bulkDelete)
+ * Protege estrictamente cualquier registro pendiente creado offline localmente
  */
 async function reconcileCollection(tableName, rawRemoteData, userId) {
   if (!db[tableName] || rawRemoteData === undefined || rawRemoteData === null) return;
 
   const remoteList = normalizeRemoteList(rawRemoteData);
-  if (remoteList.length === 0) return;
-
-  const remoteIds = new Set(remoteList.map(item => String(item.id)));
+  const pendingIds = getPendingSyncIds(userId);
+  const pendingDeletes = getPendingDeletes(userId)
+    .filter(d => d.tableName === tableName)
+    .map(d => String(d.id));
+  const pendingDeleteSet = new Set(pendingDeletes);
 
   // 1. Guardar o actualizar todos los registros recibidos en una sola operación batch ultrarrápida
-  const validItems = remoteList.filter(item => item && item.id).map(item => ({ ...item, userId }));
+  // Excluir registros que hayan sido eliminados offline localmente
+  const validItems = remoteList
+    .filter(item => item && item.id && !pendingDeleteSet.has(String(item.id)))
+    .map(item => ({ ...item, userId }));
+
   if (validItems.length > 0) {
     try {
       await db[tableName].bulkPut(validItems);
@@ -233,11 +358,17 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
   }
 
   // 2. Eliminar registros locales obsoletos en una sola operación batch
+  // NUNCA eliminar registros que fueron creados o modificados localmente y están pendientes de subida
   try {
+    const remoteIds = new Set(remoteList.map(item => String(item.id)));
     const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
     const localItems = await db[tableName].filter(isTarget).toArray();
     const idsToDelete = localItems
-      .filter(localItem => localItem.id && !remoteIds.has(String(localItem.id)))
+      .filter(localItem => 
+        localItem.id && 
+        !remoteIds.has(String(localItem.id)) && 
+        !pendingIds.has(String(localItem.id))
+      )
       .map(localItem => localItem.id);
 
     if (idsToDelete.length > 0) {
@@ -341,17 +472,24 @@ export async function cloudDeleteUserData(userId, email) {
 
 
 /**
- * Sincronización bidireccional inteligente: PUSH PRIMERO, LUEGO PULL
- * Garantiza que cualquier registro creado offline (en el potrero sin señal) se suba a Firebase antes de reconciliar
+ * Sincronización bidireccional inteligente y segura para múltiples computadores simultáneos
+ * Si hay cambios locales offline pendientes: PULL de la nube (protegiendo lo offline) y luego PUSH de la unión.
+ * Si NO hay cambios pendientes en este equipo: SOLAMENTE PULL para recibir de inmediato lo hecho en otros equipos sin sobreescribir.
  */
 export async function syncCloudAndLocal(userId) {
   if (!userId) return;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
   try {
-    // 1. PUSH PRIMERO: Sube todas las creaciones y modificaciones locales a la nube
-    await cloudPushData(userId);
-    // 2. PULL DESPUÉS: Descarga cualquier cambio nuevo de la nube y reconcilia en Dexie
-    await cloudPullData(userId);
+    const hasPending = hasPendingSync(userId);
+    if (hasPending) {
+      // 1. Descargar cambios remotos (reconcilia y preserva pendientes locales)
+      await cloudPullData(userId);
+      // 2. Subir base de datos completa unificada a Firebase
+      await cloudPushData(userId);
+    } else {
+      // 3. Solo descargar cambios nuevos de otros equipos en tiempo real
+      await cloudPullData(userId);
+    }
   } catch (e) {
     console.warn('⚠️ Error en syncCloudAndLocal Firebase:', e);
   }

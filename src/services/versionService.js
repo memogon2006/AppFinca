@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.44";
+export const CURRENT_APP_VERSION = "2.14.45";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.45",
+    date: "23/09/2026",
+    title: "⚡ Sincronización Multidispositivo en Tiempo Real & Fusión Inteligente Offline",
+    highlights: [
+      "Sincronización Multidispositivo Instantánea: Los animales, pesajes, palpaciones y gastos creados en un computador aparecen automáticamente en el otro en tiempo real (cada 4s o al cambiar de pestaña) sin refrescar.",
+      "Protección contra Sobreescritura: Al abrir la plataforma en un segundo computador, este ya no sobreescribe Firebase con datos viejos; descarga inmediatamente las novedades del otro equipo.",
+      "Fusión Bidireccional Inteligente Offline: Los registros creados sin internet en el potrero se protegen y se fusionan limpiamente con lo que otros hayan hecho en la finca al reconectarse.",
+      "Eliminaciones Seguras: Los registros borrados en un computador se propagan inmediatamente a todos los demás dispositivos."
+    ]
+  },
   {
     version: "2.14.44",
     date: "23/09/2026",

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, initializeDatabase, deleteDemoData, isDemoAnimal, logActivity } from './services/db';
 import { useAuth } from './context/AuthContext';
-import { cloudPushData, syncCloudAndLocal } from './services/cloudSync';
+import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/Dashboard/DashboardView';
@@ -167,12 +167,12 @@ export default function App() {
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // 3. Sondeo en vivo cada 10 segundos para descargar cambios de otros dispositivos automáticamente
+    // 3. Sondeo en vivo cada 4 segundos para descargar cambios de otros dispositivos automáticamente
     const syncInterval = setInterval(() => {
       if (document.visibilityState === 'visible' && navigator.onLine) {
         sync();
       }
-    }, 10000);
+    }, 4000);
 
     return () => {
       window.removeEventListener('online', handleSyncTrigger);
@@ -336,6 +336,7 @@ export default function App() {
     if (animalData.id) {
       const updated = { ...animalData, userId };
       await db.cattle.put(updated);
+      markPendingSync(userId, updated.id);
 
       // Si el peso de entrada cambió, actualizar pesaje inicial si existe
       if (updated.entryWeight !== undefined && updated.entryWeight !== null) {
@@ -347,6 +348,7 @@ export default function App() {
               weight: parseFloat(updated.entryWeight) || 0,
               date: updated.entryDate || initialWeighing.date
             });
+            markPendingSync(userId, initialWeighing.id);
           }
         } catch (e) {
           console.warn('Error sincronizando pesaje inicial:', e);
@@ -382,6 +384,7 @@ export default function App() {
         createdAt: new Date().toISOString(),
       };
       await db.cattle.put(created);
+      markPendingSync(userId, newId);
 
       if (created.entryWeight && parseFloat(created.entryWeight) > 0) {
         const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -394,6 +397,7 @@ export default function App() {
           conditionScore: 3.5,
           notes: 'Peso inicial de registro',
         });
+        markPendingSync(userId, weighId);
       }
 
       // Registrar acción en bitácora de auditoría
@@ -418,6 +422,7 @@ export default function App() {
   const handleSaveBatchCattle = async (batchAnimals) => {
     if (!userId || !batchAnimals || batchAnimals.length === 0) return;
 
+    const createdIds = [];
     for (let i = 0; i < batchAnimals.length; i++) {
       const animalData = batchAnimals[i];
       const newId = 'c_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
@@ -428,6 +433,7 @@ export default function App() {
         createdAt: new Date().toISOString(),
       };
       await db.cattle.put(created);
+      createdIds.push(newId);
 
       if (created.entryWeight && parseFloat(created.entryWeight) > 0) {
         const weighId = 'w_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
@@ -440,8 +446,10 @@ export default function App() {
           conditionScore: 3.5,
           notes: 'Peso inicial de registro por lote',
         });
+        createdIds.push(weighId);
       }
     }
+    markPendingSync(userId, ...createdIds);
 
     // Registrar acción en bitácora de auditoría
     const batchTags = batchAnimals.slice(0, 5).map(a => '#' + a.tagNumber).join(', ');
@@ -490,6 +498,8 @@ export default function App() {
       setSelectedAnimal(prev => ({ ...prev, currentWeight: newWeight }));
     }
 
+    markPendingSync(userId, weighId, targetId);
+
     // Registrar acción en bitácora de auditoría
     await logActivity({
       action: 'weighing',
@@ -522,6 +532,7 @@ export default function App() {
 
     if (targetWeighing) {
       await db.weighings.delete(targetWeighing.id);
+      markPendingDelete(userId, 'weighings', targetWeighing.id);
     }
 
     const animal = await db.cattle.get(cattleId) || await db.cattle.get(Number(cattleId));
@@ -537,6 +548,7 @@ export default function App() {
       await db.cattle.update(animal.id, {
         currentWeight: newCurrentWeight > 0 ? newCurrentWeight : undefined,
       });
+      markPendingSync(userId, animal.id);
 
       if (selectedAnimal && String(selectedAnimal.id) === String(animal.id)) {
         setSelectedAnimal(prev => ({
@@ -578,6 +590,7 @@ export default function App() {
     };
 
     await db.cattle.update(targetId, saleUpdates);
+    markPendingSync(userId, targetId);
 
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setSelectedAnimal(prev => ({ ...prev, ...saleUpdates }));
@@ -603,6 +616,7 @@ export default function App() {
   const handleConfirmBatchSale = async (batchList) => {
     if (!userId || !batchList || batchList.length === 0) return;
 
+    const updatedIds = [];
     for (const item of batchList) {
       const animal = await db.cattle.get(item.id) || await db.cattle.get(Number(item.id));
       const targetId = animal ? animal.id : item.id;
@@ -618,7 +632,9 @@ export default function App() {
         currentWeight: parseFloat(item.exitWeight),
         partnershipDetails: item.partnershipDetails || null,
       });
+      updatedIds.push(targetId);
     }
+    markPendingSync(userId, ...updatedIds);
 
     // Registrar acción en bitácora de auditoría
     await logActivity({
@@ -663,6 +679,7 @@ export default function App() {
     };
 
     await db.cattle.update(targetId, deathUpdates);
+    markPendingSync(userId, targetId);
 
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setSelectedAnimal(prev => ({ ...prev, ...deathUpdates }));
@@ -697,6 +714,7 @@ export default function App() {
     };
 
     await db.cattle.update(targetId, revertUpdates);
+    markPendingSync(userId, targetId);
 
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setSelectedAnimal(prev => ({ ...prev, ...revertUpdates }));
@@ -732,6 +750,7 @@ export default function App() {
     };
 
     await db.cattle.update(targetId, revertUpdates);
+    markPendingSync(userId, targetId);
 
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setSelectedAnimal(prev => ({ ...prev, ...revertUpdates }));
@@ -753,6 +772,7 @@ export default function App() {
 
   const handleSaveBatchWeighings = async (batch) => {
     if (!userId) return;
+    const syncIds = [];
     for (const item of batch) {
       const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
       const animal = await db.cattle.get(item.cattleId) || await db.cattle.get(Number(item.cattleId));
@@ -774,7 +794,9 @@ export default function App() {
       await db.cattle.update(targetId, {
         currentWeight: metrics.currentWeight > 0 ? metrics.currentWeight : parseFloat(item.weight),
       });
+      syncIds.push(weighId, targetId);
     }
+    markPendingSync(userId, ...syncIds);
 
     // Registrar acción en bitácora de auditoría
     await logActivity({
@@ -796,7 +818,13 @@ export default function App() {
     const tag = animal?.tagNumber || 'Bovino';
 
     await db.cattle.delete(targetId);
+    markPendingDelete(userId, 'cattle', targetId);
+
+    const relatedWeighings = await db.weighings.where('cattleId').equals(String(targetId)).toArray();
     await db.weighings.where('cattleId').equals(String(targetId)).delete();
+    if (relatedWeighings.length > 0) {
+      markPendingDelete(userId, 'weighings', ...relatedWeighings.map(w => w.id));
+    }
 
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
       setIsDetailModalOpen(false);
@@ -825,12 +853,14 @@ export default function App() {
     };
     if (db.vaccinations) {
       await db.vaccinations.put(vacRecord);
+      markPendingSync(userId, vacRecord.id);
     }
 
     // Si tiene revacunación/refuerzo programado, agendar automáticamente en el calendario de la finca
     if (vacRecord.requiresBooster && vacRecord.boosterDate && db.calendarNotes) {
+      const noteId = 'note_booster_' + vacRecord.id;
       await db.calendarNotes.put({
-        id: 'note_booster_' + vacRecord.id,
+        id: noteId,
         date: vacRecord.boosterDate,
         title: `💉 Revacunación: ${vacRecord.vaccineType} (${vacRecord.targetLabel || 'Hato'})`,
         category: 'sanitary',
@@ -838,6 +868,7 @@ export default function App() {
         userId,
         createdAt: new Date().toISOString()
       }).catch(() => null);
+      markPendingSync(userId, noteId);
     }
 
     // Registrar acción en bitácora de auditoría
@@ -865,12 +896,14 @@ export default function App() {
       boosterCompleted: true,
       boosterCompletedAt: completedAt
     });
+    markPendingSync(userId, vacId);
 
     if (db.calendarNotes) {
       const noteId = 'note_booster_' + vacId;
       const note = await db.calendarNotes.get(noteId);
       if (note) {
         await db.calendarNotes.update(noteId, { completed: true });
+        markPendingSync(userId, noteId);
       }
     }
 
@@ -891,9 +924,12 @@ export default function App() {
   const handleDeleteVaccination = async (vacId) => {
     if (!userId || !db.vaccinations) return;
     await db.vaccinations.delete(vacId);
+    markPendingDelete(userId, 'vaccinations', vacId);
 
     if (db.calendarNotes) {
-      await db.calendarNotes.delete('note_booster_' + vacId).catch(() => null);
+      const noteId = 'note_booster_' + vacId;
+      await db.calendarNotes.delete(noteId).catch(() => null);
+      markPendingDelete(userId, 'calendarNotes', noteId);
     }
 
     // Registrar acción en bitácora de auditoría
@@ -947,6 +983,7 @@ export default function App() {
     };
 
     await db.cattle.update(animal.id, animalUpdates);
+    markPendingSync(userId, animal.id);
 
     if (db.palpations) {
       const palpId = 'palp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -968,6 +1005,7 @@ export default function App() {
         userId,
         createdAt: new Date().toISOString()
       });
+      markPendingSync(userId, palpId);
     }
 
     // Registrar acción en bitácora de auditoría
@@ -987,6 +1025,7 @@ export default function App() {
   const handleSaveBatchPalpations = async (batchPalpations) => {
     if (!userId || !batchPalpations || batchPalpations.length === 0) return;
 
+    const syncIds = [];
     for (const pData of batchPalpations) {
       const { animalId, tagNumber, date, diagnosis, pregnancyDays, serviceDate, expectedCalvingDate, findings, bodyCondition, veterinarian, method, notes, recheckDays } = pData;
       const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
@@ -1021,6 +1060,7 @@ export default function App() {
       };
 
       await db.cattle.update(animal.id, animalUpdates);
+      syncIds.push(animal.id);
 
       if (db.palpations) {
         const palpId = 'palp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -1042,8 +1082,10 @@ export default function App() {
           userId,
           createdAt: new Date().toISOString()
         });
+        syncIds.push(palpId);
       }
     }
+    markPendingSync(userId, ...syncIds);
 
     // Registrar acción en bitácora de auditoría
     const pregnantCount = batchPalpations.filter(p => p.diagnosis === 'Preñada').length;
@@ -1072,6 +1114,7 @@ export default function App() {
     };
     if (db.calendarNotes) {
       await db.calendarNotes.put(record);
+      markPendingSync(userId, noteId);
     }
 
     // Registrar acción en bitácora de auditoría
@@ -1095,6 +1138,7 @@ export default function App() {
     if (note) {
       const updated = { ...note, completed: !note.completed };
       await db.calendarNotes.put(updated);
+      markPendingSync(userId, updated.id);
       cloudPushData(userId);
       triggerFeedback('click');
     }
@@ -1103,7 +1147,9 @@ export default function App() {
   const handleDeleteCalendarNote = async (noteId) => {
     if (!userId || !db.calendarNotes) return;
     const note = await db.calendarNotes.get(noteId) || await db.calendarNotes.get(Number(noteId));
-    await db.calendarNotes.delete(note ? note.id : noteId);
+    const targetId = note ? note.id : noteId;
+    await db.calendarNotes.delete(targetId);
+    markPendingDelete(userId, 'calendarNotes', targetId);
 
     // Registrar acción en bitácora de auditoría
     await logActivity({
@@ -1133,6 +1179,7 @@ export default function App() {
 
     if (db.farmExpenses) {
       await db.farmExpenses.put(record);
+      markPendingSync(userId, expId);
     }
 
     await logActivity({
@@ -1152,7 +1199,9 @@ export default function App() {
   const handleDeleteFarmExpense = async (expId) => {
     if (!userId || !db.farmExpenses) return;
     const exp = await db.farmExpenses.get(expId) || await db.farmExpenses.get(Number(expId));
-    await db.farmExpenses.delete(exp ? exp.id : expId);
+    const targetId = exp ? exp.id : expId;
+    await db.farmExpenses.delete(targetId);
+    markPendingDelete(userId, 'farmExpenses', targetId);
 
     await logActivity({
       action: 'farm_expense_deleted',
@@ -1181,6 +1230,7 @@ export default function App() {
 
     if (db.farmIncomes) {
       await db.farmIncomes.put(record);
+      markPendingSync(userId, incId);
     }
 
     await logActivity({
@@ -1200,7 +1250,9 @@ export default function App() {
   const handleDeleteFarmIncome = async (incId) => {
     if (!userId || !db.farmIncomes) return;
     const inc = await db.farmIncomes.get(incId) || await db.farmIncomes.get(Number(incId));
-    await db.farmIncomes.delete(inc ? inc.id : incId);
+    const targetId = inc ? inc.id : incId;
+    await db.farmIncomes.delete(targetId);
+    markPendingDelete(userId, 'farmIncomes', targetId);
 
     await logActivity({
       action: 'farm_income_deleted',
