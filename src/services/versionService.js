@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.20";
+export const CURRENT_APP_VERSION = "2.14.21";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.21",
+    date: "22/09/2026",
+    title: "📱 Nuevo Panel Desplegable Lateral Izquierdo (Sidebar Drawer)",
+    highlights: [
+      "Menú Desplegable Lateral (☰): Acceso completo a todos los módulos de gestión, herramientas y acciones de campo desde un panel lateral elegante y fluido.",
+      "Barra Superior Limpia: Cabecera minimalista y despejada con acceso rápido a registrar bovino, reportes, sincronización nube y perfil.",
+      "Navegación Unificada: Acceso ágil a Vaqueros, Respaldo Excel, Reportes de WhatsApp, Control de Pesos, Lotes y Ajustes de Finca con un solo toque.",
+      "Accesibilidad y Teclado: Apertura/cierre instantáneo con botón hamburguesa, clic en fondo exterior o tecla Escape."
+    ]
+  },
   {
     version: "2.14.20",
     date: "22/09/2026",
