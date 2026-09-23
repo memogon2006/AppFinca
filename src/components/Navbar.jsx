@@ -162,36 +162,7 @@ export function Navbar({
               </div>
             </div>
 
-            {/* CENTRO: Barra de accesos rápidos para pantallas grandes (opcional y limpia) */}
-            <nav className="hidden lg:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner">
-              {displayedNavItems.slice(0, 5).map((item) => {
-                const Icon = item.icon;
-                const isActive = currentView === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavigate(item.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer whitespace-nowrap ${
-                      isActive
-                        ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/20'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700/60'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`} />
-                    <span>{item.shortLabel || item.label}</span>
-                  </button>
-                );
-              })}
-              {displayedNavItems.length > 5 && (
-                <button
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/60 transition cursor-pointer"
-                  title="Ver todos los módulos"
-                >
-                  <span>Más...</span>
-                </button>
-              )}
-            </nav>
+
 
             {/* LADO DERECHO: Acciones Directas y Perfil */}
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
@@ -570,7 +541,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.21 • Modo Campo Offline
+            Software Ganadero • v2.14.22 • Modo Campo Offline
           </div>
 
         </div>

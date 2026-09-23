@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.21";
+export const CURRENT_APP_VERSION = "2.14.22";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.22",
+    date: "22/09/2026",
+    title: "✨ Cabecera Superior Despejada y Navegación 100% en Panel Lateral",
+    highlights: [
+      "Barra Superior Ultralimpia: Eliminación completa de botones de módulos en la barra superior para una interfaz limpia, amplia y profesional.",
+      "Menú Hamburguesa (☰): Toda la navegación entre módulos (Tablero, Ganado, Lotes, Palpación, Pesos, Báscula, Ventas) se realiza exclusivamente desde el panel lateral desplegable.",
+      "Mayor Espacio Visual: Mayor amplitud de visualización en el tablero principal y listas de ganado sin elementos redundantes."
+    ]
+  },
   {
     version: "2.14.21",
     date: "22/09/2026",
