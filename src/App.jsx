@@ -13,6 +13,9 @@ import { FemalesView } from './components/Females/FemalesView';
 import { QuickPalpationView } from './components/Females/QuickPalpationView';
 import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { FinancesView } from './components/Finances/FinancesView';
+import { AccountingView } from './components/Accounting/AccountingView';
+import { ExpenseModal } from './components/Accounting/ExpenseModal';
+import { IncomeModal } from './components/Accounting/IncomeModal';
 import { CattleFormModal } from './components/Cattle/CattleFormModal';
 import { CattleDetailModal } from './components/Cattle/CattleDetailModal';
 import { SellModal } from './components/Cattle/SellModal';
@@ -89,6 +92,10 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   const [isPartnershipModalOpen, setIsPartnershipModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [editingIncome, setEditingIncome] = useState(null);
 
   // Mostrar notificación de confirmación de acción
   const showToast = (text, type = 'success') => {
@@ -233,6 +240,22 @@ export default function App() {
     () => {
       if (!userId && !currentUser?.id) return [];
       return db.calendarNotes ? db.calendarNotes.filter(n => !n.userId || allowedUserIds.has(n.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const farmExpenses = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.farmExpenses ? db.farmExpenses.filter(e => !e.userId || allowedUserIds.has(e.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const farmIncomes = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.farmIncomes ? db.farmIncomes.filter(i => !i.userId || allowedUserIds.has(i.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -1047,6 +1070,102 @@ export default function App() {
     showToast('Recordatorio eliminado del calendario 🗑️');
   };
 
+  const handleSaveFarmExpense = async (expenseData) => {
+    if (!userId) return;
+    const expId = expenseData.id || ('exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+    const record = {
+      ...expenseData,
+      id: expId,
+      userId,
+      createdAt: expenseData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (db.farmExpenses) {
+      await db.farmExpenses.put(record);
+    }
+
+    await logActivity({
+      action: 'farm_expense_saved',
+      description: `Registró gasto: "${expenseData.concept}" (${formatCurrency(expenseData.amount)}) - ${expenseData.category}`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('success');
+    showToast(`Gasto "${expenseData.concept}" guardado exitosamente 💵☁️`);
+  };
+
+  const handleDeleteFarmExpense = async (expId) => {
+    if (!userId || !db.farmExpenses) return;
+    const exp = await db.farmExpenses.get(expId) || await db.farmExpenses.get(Number(expId));
+    await db.farmExpenses.delete(exp ? exp.id : expId);
+
+    await logActivity({
+      action: 'farm_expense_deleted',
+      description: `Eliminó gasto: "${exp?.concept || 'Gasto'}"`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Gasto eliminado de la contabilidad 🗑️');
+  };
+
+  const handleSaveFarmIncome = async (incomeData) => {
+    if (!userId) return;
+    const incId = incomeData.id || ('inc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+    const record = {
+      ...incomeData,
+      id: incId,
+      userId,
+      createdAt: incomeData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (db.farmIncomes) {
+      await db.farmIncomes.put(record);
+    }
+
+    await logActivity({
+      action: 'farm_income_saved',
+      description: `Registró ingreso: "${incomeData.concept}" (${formatCurrency(incomeData.amount)})`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('success');
+    showToast(`Ingreso "${incomeData.concept}" guardado exitosamente 💰☁️`);
+  };
+
+  const handleDeleteFarmIncome = async (incId) => {
+    if (!userId || !db.farmIncomes) return;
+    const inc = await db.farmIncomes.get(incId) || await db.farmIncomes.get(Number(incId));
+    await db.farmIncomes.delete(inc ? inc.id : incId);
+
+    await logActivity({
+      action: 'farm_income_deleted',
+      description: `Eliminó ingreso: "${inc?.concept || 'Ingreso'}"`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Ingreso eliminado de la contabilidad 🗑️');
+  };
+
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
@@ -1321,6 +1440,33 @@ export default function App() {
           />
         )}
 
+        {currentView === 'accounting' && (
+          <AccountingView
+            cattle={cattle}
+            weighings={weighings}
+            farmExpenses={farmExpenses}
+            farmIncomes={farmIncomes}
+            onOpenAddExpense={() => {
+              setEditingExpense(null);
+              setIsExpenseModalOpen(true);
+            }}
+            onOpenEditExpense={(exp) => {
+              setEditingExpense(exp);
+              setIsExpenseModalOpen(true);
+            }}
+            onDeleteExpense={handleDeleteFarmExpense}
+            onOpenAddIncome={() => {
+              setEditingIncome(null);
+              setIsIncomeModalOpen(true);
+            }}
+            onOpenEditIncome={(inc) => {
+              setEditingIncome(inc);
+              setIsIncomeModalOpen(true);
+            }}
+            onDeleteIncome={handleDeleteFarmIncome}
+          />
+        )}
+
       </main>
 
       {/* MODALES */}
@@ -1493,6 +1639,29 @@ export default function App() {
       {/* 5. Modal de Cambio Obligatorio de Contraseña tras Restablecimiento */}
       <ForcePasswordChangeModal
         isOpen={Boolean(currentUser?.mustChangePassword)}
+      />
+
+      {/* 6. Modales de Contabilidad: Gastos e Ingresos */}
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => {
+          setIsExpenseModalOpen(false);
+          setEditingExpense(null);
+        }}
+        onSave={handleSaveFarmExpense}
+        expense={editingExpense}
+        zIndex="z-[60]"
+      />
+
+      <IncomeModal
+        isOpen={isIncomeModalOpen}
+        onClose={() => {
+          setIsIncomeModalOpen(false);
+          setEditingIncome(null);
+        }}
+        onSave={handleSaveFarmIncome}
+        income={editingIncome}
+        zIndex="z-[60]"
       />
 
     </div>

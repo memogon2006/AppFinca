@@ -137,6 +137,8 @@ export async function cloudPushData(userId) {
     const milkRecords = db.milkRecords ? await db.milkRecords.filter(isTarget).toArray() : [];
     const milkDeliveries = db.milkDeliveries ? await db.milkDeliveries.filter(isTarget).toArray() : [];
     const transactions = db.transactions ? await db.transactions.filter(isTarget).toArray() : [];
+    const farmExpenses = db.farmExpenses ? await db.farmExpenses.filter(isTarget).toArray() : [];
+    const farmIncomes = db.farmIncomes ? await db.farmIncomes.filter(isTarget).toArray() : [];
     const activityLogs = db.activityLogs ? await db.activityLogs.filter(isTarget).toArray() : [];
     const calendarNotes = db.calendarNotes ? await db.calendarNotes.filter(isTarget).toArray() : [];
 
@@ -145,6 +147,8 @@ export async function cloudPushData(userId) {
       cattle,
       weighings,
       expenses,
+      farmExpenses,
+      farmIncomes,
       vaccinations,
       audits,
       palpations,
@@ -238,6 +242,8 @@ export async function cloudPullData(userId) {
           'cattle',
           'weighings',
           'expenses',
+          'farmExpenses',
+          'farmIncomes',
           'vaccinations',
           'audits',
           'palpations',

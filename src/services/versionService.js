@@ -1,10 +1,25 @@
-export const CURRENT_APP_VERSION = "2.14.26";
+export const CURRENT_APP_VERSION = "2.14.27";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.27",
+    date: "22/09/2026",
+    title: "📊 Módulo Financiero & Contabilidad Ganadera Integral",
+    highlights: [
+      "Libro de Gastos & Costos de Finca: Registro detallado de gastos fijos (nómina/vaqueros, energía, agua, arriendo de potreros) y gastos variables (sal mineral, concentrado, vacunas, fletes, mantenimiento).",
+      "Libro de Otros Ingresos Ganaderos: Control de venta de leche, queso, arriendo de pasto, servicios de toro/monta, estiércol orgánico e ingresos varios.",
+      "Utilidad Neta Real & Semáforo Financiero: Ganancia líquida descontando el capital de compra de animales y todos los costos operativos de la finca (🟢 Superávit / 🟡 Equilibrio / 🔴 Déficit).",
+      "Costos Unitarios de Producción: Cálculo en vivo de Costo por Kilo de Carne Producido ($/kg), Costo por Litro de Leche ($/L) y Costo de Mantenimiento Diario por Cabeza ($/animal/día).",
+      "Indicador de Cobertura de Gastos: Determina automáticamente si las ganancias netas de las ventas de ganado cubrieron la totalidad de los gastos del mes.",
+      "Gráficos Interactivos & Tablas Dinámicas: Comparativa mensual de Ingresos vs Gastos vs Utilidad Neta (Recharts) y distribución porcentual de costos por categoría.",
+      "Reportes en Excel y WhatsApp: Exportación contable profesional en Excel (.xlsx) y resumen financiero para compartir por WhatsApp en 1 toque.",
+      "Privacidad Absoluta para Trabajadores: Módulo 100% confidencial y oculto para perfiles operativos de vaqueros y mayordomos."
+    ]
+  },
   {
     version: "2.14.26",
     date: "22/09/2026",

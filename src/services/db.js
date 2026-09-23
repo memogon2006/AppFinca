@@ -116,6 +116,21 @@ db.version(11).stores({
   settings: 'key, userId'
 });
 
+db.version(12).stores({
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  farmExpenses: '++id, date, type, category, concept, amount, isRecurring, recurrenceFrequency, paymentMethod, userId, createdAt',
+  farmIncomes: '++id, date, type, category, concept, amount, paymentMethod, userId, createdAt',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  calendarNotes: '++id, date, title, category, completed, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Registrar una acción en la bitácora de auditoría
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {
@@ -430,6 +445,12 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.calendarNotes) {
       calendarNotes = await db.calendarNotes.where('userId').equals(userId).toArray();
     }
+    if (db.farmExpenses) {
+      farmExpenses = await db.farmExpenses.where('userId').equals(userId).toArray();
+    }
+    if (db.farmIncomes) {
+      farmIncomes = await db.farmIncomes.where('userId').equals(userId).toArray();
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
@@ -439,10 +460,12 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.audits) audits = await db.audits.toArray();
     if (db.activityLogs) activityLogs = await db.activityLogs.toArray();
     if (db.calendarNotes) calendarNotes = await db.calendarNotes.toArray();
+    if (db.farmExpenses) farmExpenses = await db.farmExpenses.toArray();
+    if (db.farmIncomes) farmIncomes = await db.farmIncomes.toArray();
   }
 
   const backup = {
-    version: 5,
+    version: 6,
     appName: "INVENTARIO BOVINO APP",
     exportDate: new Date().toISOString(),
     farmName: userDetails.farmName || "Mi Finca Ganadera",
@@ -451,6 +474,8 @@ export async function exportBackupData(userId, userDetails = {}) {
     cattle,
     weighings,
     expenses,
+    farmExpenses: farmExpenses || [],
+    farmIncomes: farmIncomes || [],
     vaccinations,
     palpations,
     audits,
@@ -482,6 +507,8 @@ export async function importBackupData(jsonData, userId) {
     if (db.audits) tables.push(db.audits);
     if (db.activityLogs) tables.push(db.activityLogs);
     if (db.calendarNotes) tables.push(db.calendarNotes);
+    if (db.farmExpenses) tables.push(db.farmExpenses);
+    if (db.farmIncomes) tables.push(db.farmIncomes);
 
     await db.transaction('rw', tables, async () => {
       if (userId) {
@@ -493,6 +520,8 @@ export async function importBackupData(jsonData, userId) {
         if (db.audits) await db.audits.where('userId').equals(userId).delete();
         if (db.activityLogs) await db.activityLogs.where('userId').equals(userId).delete();
         if (db.calendarNotes) await db.calendarNotes.where('userId').equals(userId).delete();
+        if (db.farmExpenses) await db.farmExpenses.where('userId').equals(userId).delete();
+        if (db.farmIncomes) await db.farmIncomes.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
@@ -502,6 +531,8 @@ export async function importBackupData(jsonData, userId) {
         if (db.audits) await db.audits.clear();
         if (db.activityLogs) await db.activityLogs.clear();
         if (db.calendarNotes) await db.calendarNotes.clear();
+        if (db.farmExpenses) await db.farmExpenses.clear();
+        if (db.farmIncomes) await db.farmIncomes.clear();
       }
 
       if (data.cattle?.length) {
@@ -525,6 +556,20 @@ export async function importBackupData(jsonData, userId) {
           userId: userId || e.userId || 'default',
         }));
         await db.expenses.bulkPut(cleanedE);
+      }
+      if (data.farmExpenses?.length && db.farmExpenses) {
+        const cleanedFE = data.farmExpenses.map(e => ({
+          ...e,
+          userId: userId || e.userId || 'default',
+        }));
+        await db.farmExpenses.bulkPut(cleanedFE);
+      }
+      if (data.farmIncomes?.length && db.farmIncomes) {
+        const cleanedFI = data.farmIncomes.map(i => ({
+          ...i,
+          userId: userId || i.userId || 'default',
+        }));
+        await db.farmIncomes.bulkPut(cleanedFI);
       }
       if (data.vaccinations?.length && db.vaccinations) {
         const cleanedV = data.vaccinations.map(v => ({

@@ -23,7 +23,8 @@ import {
   WifiOff,
   Stethoscope,
   Users,
-  ChevronRight
+  ChevronRight,
+  Wallet
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,9 +77,10 @@ export function Navbar({
     { id: 'weights', label: 'Control de Pesos', shortLabel: 'Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
     { id: 'quickWeigh', label: 'Báscula Rápida', shortLabel: 'Báscula', icon: Zap, desc: 'Pesaje ágil en manga' },
     { id: 'finances', label: 'Ventas & Liquidación', shortLabel: 'Ventas', icon: DollarSign, desc: 'Ingresos, compras y ventas' },
+    { id: 'accounting', label: 'Contabilidad & Gastos', shortLabel: 'Contabilidad', icon: Wallet, desc: 'Costos fijos, insumos y balance real' },
   ];
 
-  const displayedNavItems = isWorker ? navItems.filter(item => item.id !== 'finances') : navItems;
+  const displayedNavItems = isWorker ? navItems.filter(item => item.id !== 'finances' && item.id !== 'accounting') : navItems;
 
   const handleLogout = () => {
     setIsSidebarOpen(false);
@@ -545,7 +547,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.26 • Modo Campo Offline
+            Software Ganadero • v2.14.27 • Modo Campo Offline
           </div>
 
         </div>
