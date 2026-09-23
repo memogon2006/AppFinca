@@ -1546,6 +1546,7 @@ export default function App() {
         {currentView === 'finances' && (
           <FinancesView
             cattle={cattle}
+            weighings={weighings}
             onSelectAnimal={handleSelectAnimal}
             onRevertSale={handleRevertSale}
             onDeleteAnimal={handleDeleteAnimal}

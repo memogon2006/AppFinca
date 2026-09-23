@@ -1,10 +1,23 @@
-export const CURRENT_APP_VERSION = "2.14.46";
+export const CURRENT_APP_VERSION = "2.14.47";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.47",
+    date: "23/09/2026",
+    title: "📊 Balance Financiero & Desglose Detallado por Propietario / Marca",
+    highlights: [
+      "Balance Individual al Clic: Al tocar cualquier tarjeta de dueño o marca en Finanzas se abre un panel interactivo con todo su historial zootécnico y financiero.",
+      "Precios de Compra por Animal: Lista detallada de cada bovino con su chapa, peso de entrada, precio de compra y costo por kg de compra.",
+      "Inventario Activo Valorizado: Valor total invertido en animales en finca y costo promedio de compra por cabeza activa.",
+      "Liquidación Detallada de Vendidos: Animales vendidos con fecha, comprador, peso de salida, precio de venta, costo histórico, utilidad neta y ROI por animal.",
+      "Promedios y Métricas Clave: Promedio costo animal vendido, promedio valor de venta, margen comercial y retorno neto.",
+      "Exportación y Comunicación: Descarga en Excel profesional con hojas separadas (Activos, Vendidos y Resumen) y generador de reporte para WhatsApp."
+    ]
+  },
   {
     version: "2.14.46",
     date: "23/09/2026",

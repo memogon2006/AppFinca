@@ -11,17 +11,20 @@ import {
   Search, 
   Calendar, 
   X, 
-  Filter 
+  Filter,
+  ArrowUpRight 
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
 import { useAuth } from '../../context/AuthContext';
+import { OwnerFinancialDetailModal } from './OwnerFinancialDetailModal';
 
-export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDeleteAnimal, onOpenPartnershipModal }) {
+export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRevertSale, onDeleteAnimal, onOpenPartnershipModal }) {
   const { isWorker } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [saleStartDate, setSaleStartDate] = useState('');
   const [saleEndDate, setSaleEndDate] = useState('');
   const [saleTypeFilter, setSaleTypeFilter] = useState('');
+  const [selectedOwnerForDetail, setSelectedOwnerForDetail] = useState(null);
 
   if (isWorker) {
     return (
@@ -104,8 +107,10 @@ export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDele
         owner,
         brand: c.ironBrand || 'N/A',
         totalHeads: 0,
+        activeHeads: 0,
         soldHeads: 0,
         totalInvested: 0,
+        activeInvested: 0,
         totalSales: 0,
         netProfit: 0,
       };
@@ -113,7 +118,10 @@ export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDele
     const fin = calculateFinancials(c);
     profitByOwner[owner].totalHeads++;
     profitByOwner[owner].totalInvested += fin.totalInvested;
-    if (c.status === 'Vendido') {
+    if (c.status === 'Activo') {
+      profitByOwner[owner].activeHeads++;
+      profitByOwner[owner].activeInvested += fin.totalInvested;
+    } else if (c.status === 'Vendido') {
       profitByOwner[owner].soldHeads++;
       profitByOwner[owner].totalSales += parseFloat(c.exitPrice) || 0;
       profitByOwner[owner].netProfit += fin.netProfit;
@@ -208,32 +216,57 @@ export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDele
 
       {/* Liquidación por Dueño / Marca */}
       <div className="custom-card p-5 space-y-4">
-        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          <span>Resumen de Liquidación y Rentabilidad por Propietario / Marca</span>
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <span>Resumen de Liquidación y Rentabilidad por Propietario / Marca</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Haz clic en cualquier tarjeta de dueño para ver su balance financiero completo, precios de compra, activos y ventas.
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/50 w-fit">
+            💡 Clic en cualquier tarjeta para ver detalle
+          </span>
+        </div>
 
         {Object.keys(profitByOwner).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.values(profitByOwner).map(ownerData => (
-              <div key={ownerData.owner} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div 
+                key={ownerData.owner} 
+                onClick={() => setSelectedOwnerForDetail(ownerData.owner)}
+                className="p-4 rounded-2xl bg-slate-50 hover:bg-white dark:bg-slate-950/80 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer space-y-3 group"
+                title={`Ver balance detallado de ${ownerData.owner}`}
+              >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">{ownerData.owner}</h4>
+                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex items-center gap-1.5">
+                      <span>{ownerData.owner}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-600 dark:text-emerald-400" />
+                    </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Marca: <strong>{ownerData.brand}</strong></p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
-                    {ownerData.soldHeads} / {ownerData.totalHeads} vendidos
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold">
+                      {ownerData.soldHeads} / {ownerData.totalHeads} vendidos
+                    </span>
+                    {ownerData.activeHeads > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-[10px] font-semibold">
+                        {ownerData.activeHeads} en finca
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
                   <div>
-                    <span className="text-slate-400">Inversión Total:</span>
+                    <span className="text-slate-400 text-[11px]">Inversión Total:</span>
                     <p className="font-bold text-slate-800 dark:text-slate-200">{formatCurrency(ownerData.totalInvested)}</p>
                   </div>
                   <div>
-                    <span className="text-slate-400">Ventas Cobradas:</span>
+                    <span className="text-slate-400 text-[11px]">Ventas Cobradas:</span>
                     <p className="font-bold text-blue-600 dark:text-blue-400">{formatCurrency(ownerData.totalSales)}</p>
                   </div>
                 </div>
@@ -243,6 +276,11 @@ export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDele
                   <span className={`text-base font-black ${ownerData.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {formatCurrency(ownerData.netProfit)}
                   </span>
+                </div>
+
+                <div className="pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">
+                  <span>📊 Ver balance, compras y ventas</span>
+                  <span>→</span>
                 </div>
               </div>
             ))}
@@ -464,6 +502,16 @@ export function FinancesView({ cattle = [], onSelectAnimal, onRevertSale, onDele
           </p>
         )}
       </div>
+
+      {/* Modal de Detalle Financiero Individual por Propietario */}
+      <OwnerFinancialDetailModal
+        isOpen={!!selectedOwnerForDetail}
+        onClose={() => setSelectedOwnerForDetail(null)}
+        ownerName={selectedOwnerForDetail}
+        cattle={cattle}
+        weighings={weighings}
+        onSelectAnimal={onSelectAnimal}
+      />
 
     </div>
   );
