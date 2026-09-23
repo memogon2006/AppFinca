@@ -251,7 +251,7 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
     if (!targetId) return;
     try {
       setSyncingFarm(true);
-      await cloudPullData(targetId);
+      await syncCloudAndLocal(targetId);
       setProfileMsg({
         type: 'success',
         text: `¡Datos y animales de la finca "${currentUser?.farmName || 'GANADERIA'}" sincronizados con éxito desde la nube!`

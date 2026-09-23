@@ -17,7 +17,7 @@ import {
   deleteWorkerAccount
 } from '../services/auth';
 import { db } from '../services/db';
-import { cloudFindUser, cloudPullData, cloudIsWorkerDeleted } from '../services/cloudSync';
+import { cloudFindUser, syncCloudAndLocal, cloudIsWorkerDeleted } from '../services/cloudSync';
 import { triggerFeedback } from '../services/soundService';
 
 const AuthContext = createContext();
@@ -129,7 +129,7 @@ export function AuthProvider({ children }) {
 
           const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
           if (targetDataId && navigator.onLine) {
-            cloudPullData(targetDataId).catch(() => null);
+            syncCloudAndLocal(targetDataId).catch(() => null);
           }
 
           return merged;

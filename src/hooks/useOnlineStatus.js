@@ -14,9 +14,10 @@ export function useOnlineStatus(onReconnect = null) {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      if (wasOffline && onReconnectRef.current) {
+      if (onReconnectRef.current) {
         onReconnectRef.current();
       }
+      setWasOffline(false);
     };
 
     const handleOffline = () => {
@@ -31,7 +32,7 @@ export function useOnlineStatus(onReconnect = null) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [wasOffline]);
+  }, []);
 
   return { isOnline, wasOffline };
 }

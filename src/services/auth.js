@@ -3,7 +3,8 @@ import {
   cloudSaveUser, 
   cloudFindUser, 
   cloudPushData, 
-  cloudPullData, 
+  cloudPullData,
+  syncCloudAndLocal,
   cloudDeleteUserData,
   cloudSaveWorker,
   cloudGetFarmWorkers,
@@ -274,7 +275,7 @@ export async function loginUser({ email, password }) {
     // Sincronización en segundo plano sin retrasar el ingreso
     const dataOwnerId = sessionUser.role === 'worker' ? (sessionUser.ownerId || sessionUser.id) : sessionUser.id;
     if (dataOwnerId && navigator.onLine) {
-      cloudPullData(dataOwnerId).catch(() => null);
+      syncCloudAndLocal(dataOwnerId).catch(() => null);
     }
 
     return sessionUser;
@@ -350,10 +351,10 @@ export async function loginUser({ email, password }) {
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
 
-  // Descargar datos en segundo plano
+  // Sincronizar datos en segundo plano
   const dataOwnerId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
-  if (dataOwnerId) {
-    cloudPullData(dataOwnerId).catch(() => null);
+  if (dataOwnerId && navigator.onLine) {
+    syncCloudAndLocal(dataOwnerId).catch(() => null);
   }
 
   return sessionUser;

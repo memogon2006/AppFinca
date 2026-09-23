@@ -53,9 +53,7 @@ export default function App() {
     const targetSyncId = effectiveUserId || currentUser?.id;
     if (targetSyncId) {
       setIsSyncing(true);
-      // 1. Primero subir a la nube cualquier creación o cambio hecho en modo offline en el potrero
-      cloudPushData(targetSyncId)
-        .then(() => syncCloudAndLocal(targetSyncId))
+      syncCloudAndLocal(targetSyncId)
         .then(() => {
           setIsSyncing(false);
           showToast('📡 ¡Señal recuperada! Datos sincronizados con la nube ☁️', 'success');

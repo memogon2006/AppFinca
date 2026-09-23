@@ -145,9 +145,10 @@ export async function cloudFindUser(email) {
  */
 export async function cloudPushData(userId) {
   if (!userId) return false;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
 
   try {
-    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_');
+    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
     const cattle = await db.cattle.filter(isTarget).toArray();
     const weighings = await db.weighings.filter(isTarget).toArray();
     const expenses = db.expenses ? await db.expenses.filter(isTarget).toArray() : [];
@@ -233,7 +234,7 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
 
   // 2. Eliminar registros locales obsoletos en una sola operación batch
   try {
-    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_');
+    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
     const localItems = await db[tableName].filter(isTarget).toArray();
     const idsToDelete = localItems
       .filter(localItem => localItem.id && !remoteIds.has(String(localItem.id)))
@@ -340,12 +341,16 @@ export async function cloudDeleteUserData(userId, email) {
 
 
 /**
- * Sincronización automática de descarga desde la nube
+ * Sincronización bidireccional inteligente: PUSH PRIMERO, LUEGO PULL
+ * Garantiza que cualquier registro creado offline (en el potrero sin señal) se suba a Firebase antes de reconciliar
  */
 export async function syncCloudAndLocal(userId) {
   if (!userId) return;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return;
   try {
-    // Solo descargar y reconciliar (las subidas solo ocurren cuando el usuario crea/edita/borra en este dispositivo)
+    // 1. PUSH PRIMERO: Sube todas las creaciones y modificaciones locales a la nube
+    await cloudPushData(userId);
+    // 2. PULL DESPUÉS: Descarga cualquier cambio nuevo de la nube y reconcilia en Dexie
     await cloudPullData(userId);
   } catch (e) {
     console.warn('⚠️ Error en syncCloudAndLocal Firebase:', e);
