@@ -292,3 +292,80 @@ export const INITIAL_EXPENSES = [
   { id: 'e4', isDemo: true, cattleId: '3', date: '2026-01-10', concept: 'Inseminación artificial + pajilla importada', amount: 180000, category: 'Reproducción' },
   { id: 'e5', isDemo: true, cattleId: '3', date: '2026-03-15', concept: 'Concentrado lácteo 16% proteína', amount: 70000, category: 'Alimentación' },
 ];
+
+export const INITIAL_VACCINATIONS = [
+  {
+    id: 'v1',
+    isDemo: true,
+    date: '2026-05-15',
+    vaccineType: 'Fiebre Aftosa + Rabia Silvestre',
+    targetType: 'all',
+    batchName: 'Todo el hato',
+    ruvNumber: 'RUV-2026-84920',
+    officialCycle: '1er Ciclo 2026 FEDEGAN-ICA',
+    notes: 'Jornada oficial de vacunación con vacunador del comité ganadero.',
+    createdAt: '2026-05-15T10:00:00.000Z'
+  },
+  {
+    id: 'v2',
+    isDemo: true,
+    date: '2026-06-10',
+    vaccineType: 'Carbón Sintomático & Edema Maligno (Triple)',
+    targetType: 'batch',
+    batchName: 'Ingreso #1',
+    ruvNumber: '',
+    officialCycle: 'Plan Preventivo de Finca',
+    notes: 'Revacunación de lote de ceba.',
+    createdAt: '2026-06-10T14:30:00.000Z'
+  }
+];
+
+export const INITIAL_PALPATIONS = [
+  {
+    id: 'p1',
+    isDemo: true,
+    cattleId: '3',
+    tagNumber: 'EP-205',
+    date: '2026-06-01',
+    diagnosis: 'Preñada',
+    pregnancyDays: 142,
+    expectedCalvingDate: '2026-10-20',
+    veterinarian: 'Dr. Alejandro Restrepo (MVZ)',
+    notes: 'Gestación viable cuerno derecho. Feto con buen desarrollo.',
+    createdAt: '2026-06-01T09:00:00.000Z'
+  },
+  {
+    id: 'p2',
+    isDemo: true,
+    cattleId: '4',
+    tagNumber: 'RG-042',
+    date: '2026-08-01',
+    diagnosis: 'Preñada',
+    pregnancyDays: 239,
+    expectedCalvingDate: '2026-09-14',
+    veterinarian: 'Dr. Alejandro Restrepo (MVZ)',
+    notes: 'Gestación avanzada. Trasladar a potrero de maternidad.',
+    createdAt: '2026-08-01T09:30:00.000Z'
+  }
+];
+
+export const INITIAL_CALENDAR_NOTES = [
+  {
+    id: 'cn1',
+    isDemo: true,
+    date: '2026-09-14',
+    title: 'Parto Estimado Vaca RG-042 (La Consentida)',
+    category: 'Reproducción',
+    completed: false,
+    createdAt: '2026-08-01T09:30:00.000Z'
+  },
+  {
+    id: 'cn2',
+    isDemo: true,
+    date: '2026-09-30',
+    title: 'Pesaje General de Control de Ceba y Báscula',
+    category: 'Manejo',
+    completed: false,
+    createdAt: '2026-09-01T08:00:00.000Z'
+  }
+];

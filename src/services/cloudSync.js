@@ -14,7 +14,7 @@ export function toSafeEmailKey(email) {
  * Guarda o actualiza el perfil del usuario en Firebase Realtime Database
  */
 export async function cloudSaveUser(user) {
-  if (!user || !user.email) return false;
+  if (!user || !user.email || user.isDemo || String(user.id).startsWith('demo_')) return false;
   const cleanEmail = (user.email || '').trim().toLowerCase();
   const safeEmail = toSafeEmailKey(cleanEmail);
 
@@ -123,7 +123,7 @@ export async function cloudFindUser(email) {
  * Sube a Firebase el inventario completo de ganado, pesajes, vacunaciones, palpaciones y finanzas
  */
 export async function cloudPushData(userId) {
-  if (!userId) return false;
+  if (!userId || String(userId).startsWith('demo_')) return false;
 
   try {
     const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_');
@@ -227,7 +227,7 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
  * Sincroniza bidireccionalmente cualquier cambio hecho en otro dispositivo en tiempo real
  */
 export async function cloudPullData(userId) {
-  if (!userId) return false;
+  if (!userId || String(userId).startsWith('demo_')) return false;
 
   try {
     const res = await fetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`);
@@ -315,7 +315,7 @@ export async function cloudDeleteUserData(userId, email) {
  * Sincronización automática de descarga desde la nube
  */
 export async function syncCloudAndLocal(userId) {
-  if (!userId) return;
+  if (!userId || String(userId).startsWith('demo_')) return;
   try {
     // Solo descargar y reconciliar (las subidas solo ocurren cuando el usuario crea/edita/borra en este dispositivo)
     await cloudPullData(userId);

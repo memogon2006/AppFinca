@@ -14,7 +14,8 @@ import {
   getFarmWorkers,
   toggleWorkerStatus,
   updateWorkerPassword,
-  deleteWorkerAccount
+  deleteWorkerAccount,
+  startDemoSession
 } from '../services/auth';
 import { db } from '../services/db';
 import { cloudFindUser, cloudPullData, cloudIsWorkerDeleted } from '../services/cloudSync';
@@ -33,6 +34,11 @@ export function AuthProvider({ children }) {
     const session = getCurrentUser();
     if (!session || (!session.id && !session.email && !session.username)) {
       return null;
+    }
+
+    // Si es sesión demo, no validar con Firebase
+    if (session.isDemo || String(session.id).startsWith('demo_')) {
+      return session;
     }
 
     const cleanEmail = (session.email || session.username || session.name || '').trim().toLowerCase();
@@ -143,6 +149,23 @@ export function AuthProvider({ children }) {
     let mounted = true;
 
     async function initAuth() {
+      // 1. Comprobar si se solicitó modo demo por URL (?demo=true)
+      if (typeof window !== 'undefined' && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('demo') === 'true') {
+          try {
+            const demoUser = await startDemoSession();
+            if (mounted) {
+              setCurrentUser(demoUser);
+              triggerFeedback('login');
+            }
+            return;
+          } catch (e) {
+            console.warn('Error iniciando demo por URL:', e);
+          }
+        }
+      }
+
       try {
         const user = await validateSessionWithCloud();
         if (mounted && user !== undefined) {
@@ -252,6 +275,13 @@ export function AuthProvider({ children }) {
     return await deleteWorkerAccount(workerId, workerEmail, currentUser.id, currentUser.name, workerName, currentUser.email);
   };
 
+  const handleStartDemo = async () => {
+    const user = await startDemoSession();
+    setCurrentUser(user);
+    triggerFeedback('login');
+    return user;
+  };
+
   const isWorker = currentUser?.role === 'worker';
   const isAdmin = !isWorker;
   const effectiveUserId = isWorker ? (currentUser.ownerId || currentUser.id) : (currentUser?.id || 'default');
@@ -264,6 +294,7 @@ export function AuthProvider({ children }) {
         login: handleLogin,
         register: handleRegister,
         logout: handleLogout,
+        startDemo: handleStartDemo,
         setSessionUser: handleSetSessionUser,
         updateProfile: handleUpdateProfile,
         changePassword: handleChangePassword,

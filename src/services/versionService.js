@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.20";
+export const CURRENT_APP_VERSION = "2.14.21";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.21",
+    date: "22/09/2026",
+    title: "🚀 Modo Demostración Interactiva & Enlace de Acceso Directo Demo",
+    highlights: [
+      "Acceso Directo por Enlace (?demo=true): Permite compartir la plataforma con clientes y ganaderos mediante un link directo para probar el sistema al instante sin registro ni contraseñas.",
+      "Botón de Demostración 1 Clic en Acceso: Nueva opción 'Probar Demostración Interactiva' en la pantalla principal para explorar el hato modelo con un solo toque.",
+      "Aislamiento y Seguridad Total (Sandbox): Todas las pruebas se ejecutan de forma local aislada, sin afectar las cuentas ni los datos reales de la nube.",
+      "Controles de Demostración: Barra superior con botón para 'Restablecer Datos Demo' y 'Salir del Demo' hacia la pantalla de inicio."
+    ]
+  },
   {
     version: "2.14.20",
     date: "22/09/2026",
