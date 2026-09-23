@@ -1340,6 +1340,14 @@ export default function App() {
             onOpenCensusModal={() => setIsCensusModalOpen(true)}
             onDeleteVaccination={handleDeleteVaccination}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
+            onOpenAddExpense={() => {
+              setEditingExpense(null);
+              setIsExpenseModalOpen(true);
+            }}
+            onOpenAddIncome={() => {
+              setEditingIncome(null);
+              setIsIncomeModalOpen(true);
+            }}
           />
         )}
 

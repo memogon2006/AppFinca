@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.27";
+export const CURRENT_APP_VERSION = "2.14.28";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.28",
+    date: "22/09/2026",
+    title: "⚡ Botones Rápidos de Registro de Ingreso y Gasto en el Tablero",
+    highlights: [
+      "Acceso Directo en Cabecera del Tablero: Incorporación de los botones '💵 Registro Ingreso' y '💸 Registro Gasto' junto a las acciones principales.",
+      "Registro Instantáneo sin Cambiar de Vista: Apertura inmediata de los formularios de ingreso y gasto con guardado y sincronización en la nube en 1 toque.",
+      "Optimización de Flujo Diario: Registro veloz de gastos de corral, insumos, fletes y venta de leche/queso desde la pantalla principal."
+    ]
+  },
   {
     version: "2.14.27",
     date: "22/09/2026",
