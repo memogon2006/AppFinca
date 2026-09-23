@@ -101,7 +101,6 @@ export function Navbar({
       items: [
         { id: 'cattle', label: 'Inventario de Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
         { id: 'batches', label: 'Lotes & Ingresos', icon: Boxes, desc: 'Agrupación y control de potreros' },
-        { id: 'palpation', label: 'Palpación & Reprod.', icon: Stethoscope, desc: 'Preñeces, tactos y estados' },
         { id: 'weights', label: 'Control de Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
       ]
     },
@@ -111,6 +110,7 @@ export function Navbar({
       badge: 'Campo',
       badgeClass: 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 border border-purple-300/40',
       items: [
+        { id: 'palpation', label: 'Palpación & Reprod.', icon: Stethoscope, desc: 'Preñeces, tactos y estados' },
         { id: 'quickWeigh', label: 'Báscula Rápida', icon: Zap, desc: 'Pesaje ágil en manga' },
       ]
     },
@@ -604,7 +604,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.29 • Modo Campo Offline
+            Software Ganadero • v2.14.30 • Modo Campo Offline
           </div>
 
         </div>

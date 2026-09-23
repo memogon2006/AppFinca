@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.29";
+export const CURRENT_APP_VERSION = "2.14.30";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.30",
+    date: "22/09/2026",
+    title: "🩺 Palpación y Reproducción en Trabajo de Corral & Manga",
+    highlights: [
+      "Reubicación Funcional: Integración del módulo de Palpación & Reproducción en la sección 'Trabajo en Corral & Manga' junto a Báscula Rápida.",
+      "Flujo de Corral Unificado: Acceso inmediato a todas las labores de manga y diagnóstico ginecológico en un solo bloque operativo."
+    ]
+  },
   {
     version: "2.14.29",
     date: "22/09/2026",
