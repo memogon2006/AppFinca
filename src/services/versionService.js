@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.41";
+export const CURRENT_APP_VERSION = "2.14.42";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.42",
+    date: "23/09/2026",
+    title: "🚀 Actualización de Prueba: Sincronización Offline PUSH-First Perfeccionada",
+    highlights: [
+      "Prueba de Actualización en Vivo: Verificación del sistema de aviso flotante y botón 'Actualizar Ahora' en tiempo real.",
+      "Sincronización PUSH-First 100% Blindada: Los animales, pesajes y gastos registrados en el potrero sin señal suben a Firebase de primero antes de reconciliar, garantizando cero pérdidas de datos.",
+      "Arranque Ultrarrápido Offline: Carga instantánea de la aplicación y base de datos local aún sin cobertura de red."
+    ]
+  },
   {
     version: "2.14.41",
     date: "22/09/2026",

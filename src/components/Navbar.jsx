@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { CURRENT_APP_VERSION } from '../services/versionService';
 
 export function Navbar({ 
   currentView, 
@@ -604,7 +605,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.41 • Modo Campo Offline
+            Software Ganadero • v{CURRENT_APP_VERSION} • Modo Campo Offline
           </div>
 
         </div>
