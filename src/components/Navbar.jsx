@@ -113,14 +113,17 @@ export function Navbar({
             
             {/* LADO IZQUIERDO: Botón Menú Hamburguesa + Logo & Nombre de Finca */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              {/* Botón Hamburguesa para desplegar el panel lateral */}
+              {/* Botón Menú Hamburguesa Destacado y Altamente Notorio */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                title="Abrir Menú Lateral"
-                aria-label="Abrir Menú Lateral"
-                className="p-2 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 hover:text-emerald-700 dark:text-slate-200 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer transition active:scale-95 shrink-0 shadow-sm group"
+                title="Abrir Menú Principal"
+                aria-label="Abrir Menú Principal"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white border-2 border-emerald-500 shadow-md shadow-emerald-950/20 cursor-pointer transition-all duration-150 active:scale-95 group shrink-0"
               >
-                <Menu className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <Menu className="w-5 h-5 text-emerald-400 dark:text-white stroke-[2.5] group-hover:scale-110 transition-transform shrink-0" />
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-300 dark:text-white select-none">
+                  Menú
+                </span>
               </button>
 
               {/* Logo y Nombre Finca */}
@@ -541,7 +544,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.22 • Modo Campo Offline
+            Software Ganadero • v2.14.23 • Modo Campo Offline
           </div>
 
         </div>

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.22";
+export const CURRENT_APP_VERSION = "2.14.23";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.23",
+    date: "22/09/2026",
+    title: "🔘 Botón de Menú Destacado y de Alta Visibilidad",
+    highlights: [
+      "Diseño Destacado y Notorio: Botón de menú con alto contraste, borde verde esmeralda y etiqueta de texto 'MENÚ' para máxima claridad.",
+      "Acceso Inmediato al Panel Lateral: Apertura instantánea del cajón de navegación con todos los módulos y herramientas ganaderas.",
+      "Optimizado para Campo y Sol Directo: Alta legibilidad tanto en modo claro como en modo oscuro."
+    ]
+  },
   {
     version: "2.14.22",
     date: "22/09/2026",
