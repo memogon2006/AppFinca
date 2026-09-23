@@ -35,25 +35,15 @@ export function AuthProvider({ children }) {
       return null;
     }
 
+    // 1. Si el dispositivo está sin internet (offline), retornar de inmediato la sesión local sin demoras
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return session;
+    }
+
     const cleanEmail = (session.email || session.username || session.name || '').trim().toLowerCase();
     const cleanId = String(session.id || '').trim();
     const sessionEmail = (session.email || '').trim().toLowerCase();
     const sessionUser = (session.username || '').trim().toLowerCase();
-
-    // 1. Comprobar contra el registro dinámico de trabajadores eliminados en la nube
-    if (session.role === 'worker') {
-      try {
-        const isRemoteDel = await cloudIsWorkerDeleted(sessionEmail || sessionUser || cleanEmail);
-        if (isRemoteDel) {
-          console.warn('⚠️ La cuenta de este trabajador fue eliminada en la nube.');
-          logoutUser();
-          localStorage.removeItem('ganado_current_user_session');
-          if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
-          setCurrentUser(null);
-          return null;
-        }
-      } catch (e) {}
-    }
 
     // 2. Comprobar si el trabajador fue marcado como eliminado localmente
     try {
@@ -76,67 +66,82 @@ export function AuthProvider({ children }) {
       console.warn('Error verificando usuario local:', dbErr);
     }
 
-    // 3. Validar con la Nube Firebase
-    try {
-      let remoteUser = await cloudFindUser(cleanEmail);
-      if (!remoteUser && !cleanEmail.includes('@')) {
-        remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
-      }
+    // 3. Validar con la Nube Firebase con timeout estricto de 2 segundos para no bloquear la app
+    const cloudCheckPromise = (async () => {
+      try {
+        if (session.role === 'worker') {
+          const isRemoteDel = await cloudIsWorkerDeleted(sessionEmail || sessionUser || cleanEmail);
+          if (isRemoteDel) {
+            logoutUser();
+            localStorage.removeItem('ganado_current_user_session');
+            if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
+            setCurrentUser(null);
+            return null;
+          }
+        }
 
-      if (remoteUser && remoteUser.isDeleted) {
-        logoutUser();
-        localStorage.removeItem('ganado_current_user_session');
-        if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
-        setCurrentUser(null);
-        return null;
-      }
+        let remoteUser = await cloudFindUser(cleanEmail);
+        if (!remoteUser && !cleanEmail.includes('@')) {
+          remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
+        }
 
-      if (remoteUser) {
-        if ((remoteUser.role === 'worker' || session.role === 'worker') && remoteUser.isActive === false && navigator.onLine) {
+        if (remoteUser && remoteUser.isDeleted) {
           logoutUser();
           localStorage.removeItem('ganado_current_user_session');
+          if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
           setCurrentUser(null);
-          alert('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
           return null;
         }
 
-        let farmName = remoteUser.farmName || session.farmName;
-        const ownerEmail = remoteUser.ownerEmail || session.ownerEmail;
-        if ((remoteUser.role === 'worker' || session.role === 'worker') && ownerEmail) {
-          try {
-            const ownerRecord = await cloudFindUser(ownerEmail);
-            if (ownerRecord && ownerRecord.farmName) {
-              farmName = ownerRecord.farmName;
-            }
-          } catch (e) {}
+        if (remoteUser) {
+          if ((remoteUser.role === 'worker' || session.role === 'worker') && remoteUser.isActive === false && navigator.onLine) {
+            logoutUser();
+            localStorage.removeItem('ganado_current_user_session');
+            setCurrentUser(null);
+            alert('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
+            return null;
+          }
+
+          let farmName = remoteUser.farmName || session.farmName;
+          const ownerEmail = remoteUser.ownerEmail || session.ownerEmail;
+          if ((remoteUser.role === 'worker' || session.role === 'worker') && ownerEmail) {
+            try {
+              const ownerRecord = await cloudFindUser(ownerEmail);
+              if (ownerRecord && ownerRecord.farmName) {
+                farmName = ownerRecord.farmName;
+              }
+            } catch (e) {}
+          }
+
+          const merged = {
+            ...session,
+            ...remoteUser,
+            id: remoteUser.id || session.id,
+            name: remoteUser.name || session.name,
+            farmName,
+            role: remoteUser.role || session.role || 'admin',
+            ownerId: remoteUser.ownerId || session.ownerId || null,
+            ownerEmail: ownerEmail || null,
+            isActive: remoteUser.isActive !== false,
+          };
+          localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));
+          await db.users.put(merged).catch(() => null);
+
+          const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
+          if (targetDataId && navigator.onLine) {
+            cloudPullData(targetDataId).catch(() => null);
+          }
+
+          return merged;
         }
-
-        const merged = {
-          ...session,
-          ...remoteUser,
-          id: remoteUser.id || session.id,
-          name: remoteUser.name || session.name,
-          farmName,
-          role: remoteUser.role || session.role || 'admin',
-          ownerId: remoteUser.ownerId || session.ownerId || null,
-          ownerEmail: ownerEmail || null,
-          isActive: remoteUser.isActive !== false,
-        };
-        localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));
-        await db.users.put(merged).catch(() => null);
-
-        const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
-        if (targetDataId) {
-          cloudPullData(targetDataId).catch(() => null);
-        }
-
-        return merged;
+      } catch (err) {
+        console.warn('Nota: validación remota en segundo plano omitida:', err);
       }
-    } catch (err) {
-      console.warn('Error validando sesión con la nube:', err);
-    }
+      return session;
+    })();
 
-    return session;
+    const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(session), 2000));
+    return await Promise.race([cloudCheckPromise, timeoutPromise]);
   };
 
   useEffect(() => {

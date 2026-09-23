@@ -36,13 +36,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim()).then(() => {
-      return self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: 'SW_UPDATED', version: '2.13.4' });
-        });
-      });
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
@@ -55,6 +49,7 @@ self.addEventListener('fetch', (event) => {
 
   // 1. Ignorar APIs externas y comprobación explícita de actualización
   if (
+    url.hostname.includes('firebaseio.com') ||
     url.hostname.includes('api.restful-api.dev') ||
     url.hostname.includes('api.whatsapp.com') ||
     url.searchParams.has('_nocache') ||
@@ -64,7 +59,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Fallback Offline
+  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Fallback Offline a Caché
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       fetch(request)
@@ -83,39 +78,21 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) return cachedResponse;
           const indexFallback = await caches.match('/index.html');
           if (indexFallback) return indexFallback;
-          return caches.match('/');
+          const rootFallback = await caches.match('/');
+          if (rootFallback) return rootFallback;
+          return new Response('Modo Sin Conexión', { headers: { 'Content-Type': 'text/html' } });
         })
     );
     return;
   }
 
-  // 3. Manejo de scripts y estilos (/assets/ o .js o .css) - Network First con Fallback Offline
-  if (url.pathname.includes('/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
-    event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
-          return networkResponse;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          return new Response('Offline resource unavailable', { status: 503 });
-        })
-    );
-    return;
-  }
-
-  // 4. Recursos estáticos generales (Imágenes, Fuentes, Iconos) - Cache First con Network Fallback
+  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First con Network Fallback y Revalidación
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
-        // En segundo plano revalidar
+        // En segundo plano revalidar si hay conexión
         fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
+          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
             const clone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
@@ -129,6 +106,10 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
         }
         return networkResponse;
+      }).catch(async () => {
+        const fallback = await caches.match(request);
+        if (fallback) return fallback;
+        return new Response('', { status: 503 });
       });
     })
   );

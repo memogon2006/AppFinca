@@ -3,6 +3,25 @@ import { db } from './db';
 const FIREBASE_URL = 'https://ganadera-plataforma-default-rtdb.firebaseio.com';
 
 /**
+ * Petición fetch segura con abort timeout de 2.5s y bypass automático si no hay conexión
+ */
+async function safeFetch(url, options = {}, timeoutMs = 2500) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return null;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
+/**
  * Normaliza y codifica el correo electrónico para ser una clave válida en Firebase Realtime Database
  */
 export function toSafeEmailKey(email) {
@@ -30,12 +49,12 @@ export async function cloudSaveUser(user) {
   };
 
   try {
-    const res = await fetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+    const res = await safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userPayload),
     });
-    return res.ok;
+    return !!(res && res.ok);
   } catch (err) {
     console.warn('⚠️ Error en cloudSaveUser Firebase:', err);
     return false;
@@ -47,13 +66,15 @@ export async function cloudSaveUser(user) {
  */
 export async function cloudFindUser(email) {
   if (!email) return null;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return null;
+
   const cleanEmail = (email || '').trim().toLowerCase();
   const safeEmail = toSafeEmailKey(cleanEmail);
 
   // 1. Búsqueda directa por clave segura
   try {
-    const res = await fetch(`${FIREBASE_URL}/users/${safeEmail}.json?_t=${Date.now()}`);
-    if (res.ok) {
+    const res = await safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json?_t=${Date.now()}`);
+    if (res && res.ok) {
       const data = await res.json();
       if (data && (data.id || data.email)) {
         const isDel = await cloudIsWorkerDeleted(data.email || cleanEmail);
@@ -71,8 +92,8 @@ export async function cloudFindUser(email) {
   if (!cleanEmail.includes('@')) {
     try {
       const safeWithDomain = toSafeEmailKey(`${cleanEmail}@finca.local`);
-      const res = await fetch(`${FIREBASE_URL}/users/${safeWithDomain}.json?_t=${Date.now()}`);
-      if (res.ok) {
+      const res = await safeFetch(`${FIREBASE_URL}/users/${safeWithDomain}.json?_t=${Date.now()}`);
+      if (res && res.ok) {
         const data = await res.json();
         if (data && (data.id || data.email)) {
           const isDel = await cloudIsWorkerDeleted(data.email || cleanEmail);
@@ -93,8 +114,8 @@ export async function cloudFindUser(email) {
       const alias = cleanEmail.replace('@finca.local', '');
       const safeAlias = toSafeEmailKey(alias);
       if (safeAlias && safeAlias !== safeEmail) {
-        const res = await fetch(`${FIREBASE_URL}/users/${safeAlias}.json?_t=${Date.now()}`);
-        if (res.ok) {
+        const res = await safeFetch(`${FIREBASE_URL}/users/${safeAlias}.json?_t=${Date.now()}`);
+        if (res && res.ok) {
           const data = await res.json();
           if (data && (data.id || data.email)) {
             const isDel = await cloudIsWorkerDeleted(data.email || cleanEmail);
@@ -161,13 +182,13 @@ export async function cloudPushData(userId) {
       syncedAt: new Date().toISOString(),
     };
 
-    const res = await fetch(`${FIREBASE_URL}/userData/${userId}.json`, {
+    const res = await safeFetch(`${FIREBASE_URL}/userData/${userId}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    return res.ok;
+    return !!(res && res.ok);
   } catch (e) {
     console.warn('⚠️ Error en cloudPushData Firebase:', e);
     return false;
@@ -232,10 +253,11 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
  */
 export async function cloudPullData(userId) {
   if (!userId) return false;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
 
   try {
-    const res = await fetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`);
-    if (res.ok) {
+    const res = await safeFetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`);
+    if (res && res.ok) {
       const remoteData = await res.json();
       if (remoteData && typeof remoteData === 'object') {
         const collections = [
