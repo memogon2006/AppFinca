@@ -111,56 +111,55 @@ export function Navbar({
         <div className="w-full mx-auto px-3 sm:px-4 lg:px-6 max-w-[1700px]">
           <div className="flex items-center justify-between h-15 sm:h-16 gap-2">
             
-            {/* LADO IZQUIERDO: Botón Menú Hamburguesa + Logo & Nombre de Finca */}
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              {/* Botón Menú Hamburguesa Destacado y Altamente Notorio */}
+            {/* LADO IZQUIERDO: Botón Menú Hamburguesa Destacado, Más Largo y Grande */}
+            <div className="flex items-center shrink-0">
               <button
                 onClick={() => setIsSidebarOpen(true)}
                 title="Abrir Menú Principal"
                 aria-label="Abrir Menú Principal"
-                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white border-2 border-emerald-500 shadow-md shadow-emerald-950/20 cursor-pointer transition-all duration-150 active:scale-95 group shrink-0"
+                className="flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white border-2 border-emerald-500 shadow-md shadow-emerald-950/20 cursor-pointer transition-all duration-150 active:scale-95 group shrink-0 min-w-[105px] sm:min-w-[130px]"
               >
-                <Menu className="w-5 h-5 text-emerald-400 dark:text-white stroke-[2.5] group-hover:scale-110 transition-transform shrink-0" />
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-300 dark:text-white select-none">
+                <Menu className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-emerald-400 dark:text-white stroke-[2.5] group-hover:scale-110 transition-transform shrink-0" />
+                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-300 dark:text-white select-none">
                   Menú
                 </span>
               </button>
+            </div>
 
-              {/* Logo y Nombre Finca */}
-              <div 
-                onClick={() => handleNavigate('dashboard')}
-                className="flex items-center gap-2 cursor-pointer group min-w-0"
-                title="Ir al Tablero Principal"
-              >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 border border-emerald-500/30 p-0.5 shadow-md flex items-center justify-center shrink-0 group-hover:scale-105 active:scale-95 transition overflow-hidden">
-                  <img src="/icon-192.png" alt="Logo" className="w-full h-full object-cover rounded-lg" />
-                </div>
+            {/* CENTRO: Logo, Nombre de Finca y Métricas Rápidas Centrados */}
+            <div 
+              onClick={() => handleNavigate('dashboard')}
+              className="flex-1 flex items-center justify-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0 px-2"
+              title="Ir al Tablero Principal"
+            >
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-900 border border-emerald-500/30 p-0.5 shadow-md flex items-center justify-center shrink-0 group-hover:scale-105 active:scale-95 transition overflow-hidden">
+                <img src="/icon-192.png" alt="Logo" className="w-full h-full object-cover rounded-lg" />
+              </div>
 
-                <div className="flex flex-col justify-center min-w-0">
-                  <h1 className="text-xs sm:text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[120px] sm:max-w-[200px] md:max-w-[280px] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition leading-tight">
-                    {currentUser?.farmName || 'INVENTARIO BOVINO'}
-                  </h1>
+              <div className="flex flex-col items-start sm:items-center justify-center min-w-0">
+                <h1 className="text-xs sm:text-sm md:text-base font-black tracking-tight text-slate-900 dark:text-white uppercase truncate max-w-[120px] sm:max-w-[260px] md:max-w-[380px] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition leading-tight">
+                  {currentUser?.farmName || 'INVENTARIO BOVINO'}
+                </h1>
 
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium mt-0.5">
-                    {/* Contador Activo */}
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/20 text-[10px] whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span>{activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}</span>
-                    </span>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5 font-medium mt-0.5">
+                  {/* Contador Activo */}
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-500/20 text-[10px] whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>{activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}</span>
+                  </span>
 
-                    {/* Estado de Conexión */}
-                    <span 
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md font-bold text-[10px] border transition-colors whitespace-nowrap ${
-                        isOnline
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                          : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
-                      }`}
-                      title={isOnline ? '🟢 Conectado a la nube.' : '📡 Modo Campo Offline.'}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                      <span className="hidden sm:inline">{isOnline ? 'En línea' : 'Modo Campo'}</span>
-                    </span>
-                  </div>
+                  {/* Estado de Conexión */}
+                  <span 
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md font-bold text-[10px] border transition-colors whitespace-nowrap ${
+                      isOnline
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                        : 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
+                    }`}
+                    title={isOnline ? '🟢 Conectado a la nube.' : '📡 Modo Campo Offline.'}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                    <span className="hidden sm:inline">{isOnline ? 'En línea' : 'Modo Campo'}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -544,7 +543,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.23 • Modo Campo Offline
+            Software Ganadero • v2.14.24 • Modo Campo Offline
           </div>
 
         </div>

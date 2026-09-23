@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.23";
+export const CURRENT_APP_VERSION = "2.14.24";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.24",
+    date: "22/09/2026",
+    title: "🎯 Nombre de Finca Centrado y Botón de Menú Ampliado",
+    highlights: [
+      "Identidad de la Finca Centrada: El logotipo, nombre de la finca y conteo de cabezas se encuentran perfectamente centrados en la cabecera superior.",
+      "Botón de Menú Más Amplio y Notorio: Botón de 'MENÚ' con mayor tamaño, dimensiones extendidas y presencia destacada en la esquina izquierda.",
+      "Equilibrio Visual Perfecto: Distribución armónica en 3 columnas (Menú a la izquierda, Finca al centro, Acciones rápidas a la derecha)."
+    ]
+  },
   {
     version: "2.14.23",
     date: "22/09/2026",
