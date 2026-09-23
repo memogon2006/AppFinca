@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.42";
+export const CURRENT_APP_VERSION = "2.14.44";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.44",
+    date: "23/09/2026",
+    title: "↩️ Restauración: Versión Ligera sin Blindajes Adicionales",
+    highlights: [
+      "Reversión Completa de Blindaje: Eliminación de políticas CSP adicionales y sanitizaciones accesorias, regresando al estado ligero y original.",
+      "Persistencia Offline y PUSH-First Intactas: Mantiene al 100% la solución de sincronización sin pérdida de datos en potrero.",
+      "Rendimiento Inmediato: Carga ultrarrápida sin sobrecargas."
+    ]
+  },
   {
     version: "2.14.42",
     date: "23/09/2026",
