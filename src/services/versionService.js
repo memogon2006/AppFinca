@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.36";
+export const CURRENT_APP_VERSION = "2.14.37";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.37",
+    date: "22/09/2026",
+    title: "💰 Restauración de Inversión Activa en Ganado en el Tablero Principal",
+    highlights: [
+      "KPI Superior de Inversión Activa: Restablecida la tarjeta de 'Inversión Activa' ($ total invertido en ganado en finca) en el tablero principal junto a Total Bovinos, Biomasa, GDP y Utilidad Neta Real.",
+      "Diseño Armónico de 5 KPIs: Distribución en 5 columnas en pantalla grande para el administrador y 4 columnas zootécnicas para el vaquero."
+    ]
+  },
   {
     version: "2.14.36",
     date: "22/09/2026",

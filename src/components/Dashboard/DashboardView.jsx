@@ -312,8 +312,8 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* 4 KPIs Clave Principales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPIs Clave Principales (5 para Administrador, 4 para Vaquero) */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${!isWorker ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3.5 sm:gap-4`}>
         
         <KpiCard
           title="Total Bovinos Activos"
@@ -330,6 +330,16 @@ export function DashboardView({
           icon={Scale}
           color="emerald"
         />
+
+        {!isWorker && (
+          <KpiCard
+            title="Inversión Activa"
+            value={formatCurrency(totalInvestedActive)}
+            subtitle={soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Ganado actualmente en finca'}
+            icon={DollarSign}
+            color="amber"
+          />
+        )}
 
         <KpiCard
           title="GDP Promedio Hato"
