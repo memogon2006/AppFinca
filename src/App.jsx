@@ -827,10 +827,23 @@ export default function App() {
       await db.vaccinations.put(vacRecord);
     }
 
+    // Si tiene revacunación/refuerzo programado, agendar automáticamente en el calendario de la finca
+    if (vacRecord.requiresBooster && vacRecord.boosterDate && db.calendarNotes) {
+      await db.calendarNotes.put({
+        id: 'note_booster_' + vacRecord.id,
+        date: vacRecord.boosterDate,
+        title: `💉 Revacunación: ${vacRecord.vaccineType} (${vacRecord.targetLabel || 'Hato'})`,
+        category: 'sanitary',
+        completed: false,
+        userId,
+        createdAt: new Date().toISOString()
+      }).catch(() => null);
+    }
+
     // Registrar acción en bitácora de auditoría
     await logActivity({
       action: 'vaccination',
-      description: `Registró vacunación/sanidad: ${vaccinationData.vaccineType || 'Vacuna'} (${vaccinationData.batchName ? `Lote: ${vaccinationData.batchName}` : `Chapa #${vaccinationData.tagNumber || 'General'}`}${vaccinationData.officialCycle ? `, Ciclo: ${vaccinationData.officialCycle}` : ''}${vaccinationData.ruvNumber ? `, RUV: ${vaccinationData.ruvNumber}` : ''})`,
+      description: `Registró vacunación/sanidad: ${vaccinationData.vaccineType || 'Vacuna'} (${vaccinationData.batchName ? `Lote: ${vaccinationData.batchName}` : `Chapa #${vaccinationData.tagNumber || 'General'}`}${vaccinationData.officialCycle ? `, Ciclo: ${vaccinationData.officialCycle}` : ''}${vaccinationData.ruvNumber ? `, RUV: ${vaccinationData.ruvNumber}` : ''}${vaccinationData.requiresBooster ? ` • Refuerzo en ${vaccinationData.boosterDays}d (${vaccinationData.boosterDate})` : ''})`,
       tagNumber: vaccinationData.tagNumber || vaccinationData.batchName || '',
       operatorName: currentUser?.name || currentUser?.username || 'Administrador',
       operatorRole: currentUser?.role || 'admin',
@@ -839,12 +852,49 @@ export default function App() {
 
     cloudPushData(userId);
     triggerFeedback('success');
-    showToast(`Registro sanitario de ${vaccinationData.vaccineType} guardado exitosamente 💉`);
+    showToast(`Registro sanitario de ${vaccinationData.vaccineType} guardado exitosamente 💉${vaccinationData.requiresBooster ? ' (Alarma de refuerzo configurada)' : ''}`);
+  };
+
+  const handleCompleteBooster = async (vacId) => {
+    if (!userId || !db.vaccinations) return;
+    const vac = await db.vaccinations.get(vacId);
+    if (!vac) return;
+
+    const completedAt = new Date().toISOString();
+    await db.vaccinations.update(vacId, {
+      boosterCompleted: true,
+      boosterCompletedAt: completedAt
+    });
+
+    if (db.calendarNotes) {
+      const noteId = 'note_booster_' + vacId;
+      const note = await db.calendarNotes.get(noteId);
+      if (note) {
+        await db.calendarNotes.update(noteId, { completed: true });
+      }
+    }
+
+    await logActivity({
+      action: 'booster_completed',
+      description: `Marcó revacunación/refuerzo como aplicada: ${vac.vaccineType || 'Vacuna'} (${vac.targetLabel || 'Hato'})`,
+      tagNumber: vac.targetLabel || '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('success');
+    showToast(`¡Revacunación de ${vac.vaccineType} marcada como completada! 🎉`);
   };
 
   const handleDeleteVaccination = async (vacId) => {
     if (!userId || !db.vaccinations) return;
     await db.vaccinations.delete(vacId);
+
+    if (db.calendarNotes) {
+      await db.calendarNotes.delete('note_booster_' + vacId).catch(() => null);
+    }
 
     // Registrar acción en bitácora de auditoría
     await logActivity({
@@ -1339,6 +1389,7 @@ export default function App() {
             onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
             onOpenCensusModal={() => setIsCensusModalOpen(true)}
             onDeleteVaccination={handleDeleteVaccination}
+            onCompleteBooster={handleCompleteBooster}
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
             onOpenAddExpense={() => {
               setEditingExpense(null);

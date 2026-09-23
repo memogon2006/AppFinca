@@ -17,7 +17,10 @@ import {
   CheckSquare,
   Square,
   Filter,
-  Plus
+  Plus,
+  Repeat,
+  Bell,
+  Clock
 } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
 import { formatCurrency, formatDate } from '../../services/calculations';
@@ -127,8 +130,33 @@ export function VaccinationRecordModal({
   const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
 
+  // Estado de Revacunación / Dosis de Refuerzo Programada
+  const [requiresBooster, setRequiresBooster] = useState(false);
+  const [boosterDays, setBoosterDays] = useState(21);
+  const [customBoosterDays, setCustomBoosterDays] = useState('');
+  const [boosterNotes, setBoosterNotes] = useState('');
+
   // Animales activos
   const activeCattle = useMemo(() => cattle.filter(c => c.status === 'Activo'), [cattle]);
+
+  // Cálculo reactivo de la fecha estimada de revacunación
+  const computedBoosterDate = useMemo(() => {
+    if (!requiresBooster || !date) return '';
+    try {
+      const parts = date.split('-');
+      if (parts.length !== 3) return '';
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      const daysToAdd = boosterDays === 'custom' ? (parseInt(customBoosterDays, 10) || 0) : parseInt(boosterDays, 10);
+      if (isNaN(daysToAdd) || daysToAdd <= 0) return '';
+      d.setDate(d.getDate() + daysToAdd);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    } catch (e) {
+      return '';
+    }
+  }, [requiresBooster, date, boosterDays, customBoosterDays]);
 
   // Lotes únicos activos
   const batches = useMemo(() => {
@@ -290,6 +318,9 @@ export function VaccinationRecordModal({
       selectedTags = single?.tagNumber ? [single.tagNumber] : [];
     }
 
+    const isBoosterActive = requiresBooster && !!computedBoosterDate;
+    const effectiveBoosterDays = boosterDays === 'custom' ? (parseInt(customBoosterDays, 10) || 0) : parseInt(boosterDays, 10);
+
     const vaccinationData = {
       id: 'vac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
       date,
@@ -309,6 +340,12 @@ export function VaccinationRecordModal({
       vaccinator: vaccinator.trim(),
       cost: parseFloat(cost) || 0,
       notes: notes.trim(),
+      requiresBooster: isBoosterActive,
+      boosterDays: isBoosterActive ? effectiveBoosterDays : null,
+      boosterDate: isBoosterActive ? computedBoosterDate : null,
+      boosterNotes: isBoosterActive ? boosterNotes.trim() : '',
+      boosterCompleted: false,
+      boosterCompletedAt: null,
       createdAt: new Date().toISOString()
     };
 
@@ -812,6 +849,164 @@ export function VaccinationRecordModal({
                 />
               </div>
             </div>
+          </div>
+
+          {/* 4. PROGRAMACIÓN DE REVACUNACIÓN / REFUERZO CON ALARMA INTELIGENTE */}
+          <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+            requiresBooster 
+              ? 'bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/40 dark:via-slate-900 border-amber-400 dark:border-amber-600/60 shadow-md ring-1 ring-amber-400/30' 
+              : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className={`p-2.5 rounded-2xl flex-shrink-0 transition ${
+                  requiresBooster 
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30' 
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}>
+                  <Repeat className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                      4. ¿Programar Revacunación / Dosis de Refuerzo?
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                      Alarma Día Antes y Día D
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Genera una alarma automática para recordar aplicar la siguiente dosis a todo el equipo de trabajo y al ganadero.
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                onClick={() => {
+                  setRequiresBooster(!requiresBooster);
+                  triggerFeedback('click');
+                }}
+                className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none self-end sm:self-center ${
+                  requiresBooster ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    requiresBooster ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Opciones cuando el refuerzo está activado */}
+            {requiresBooster && (
+              <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-700/40 space-y-4 animate-fade-in">
+                
+                {/* Selector de Intervalos Predefinidos */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Intervalo o Días para la Revacunación</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { days: 15, label: '15 días', desc: 'Tratamiento corto' },
+                      { days: 21, label: '21 días', desc: 'Clásica terneros (Carbón)' },
+                      { days: 30, label: '30 días (1 m)', desc: 'Refuerzo regular' },
+                      { days: 60, label: '60 días (2 m)', desc: 'Seguimiento' },
+                      { days: 90, label: '90 días (3 m)', desc: 'Desparasitación' },
+                      { days: 180, label: '180 días (6 m)', desc: 'Semestral' },
+                      { days: 365, label: '365 días (1 año)', desc: 'Anual' },
+                      { days: 'custom', label: 'Personalizado', desc: 'Otro número de días' },
+                    ].map(opt => {
+                      const isSel = boosterDays === opt.days;
+                      return (
+                        <button
+                          type="button"
+                          key={opt.days}
+                          onClick={() => {
+                            setBoosterDays(opt.days);
+                            triggerFeedback('click');
+                          }}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                            isSel
+                              ? 'bg-amber-500 text-slate-950 font-black border-amber-600 shadow-sm ring-2 ring-amber-400/40'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-300'
+                          }`}
+                        >
+                          <span className="text-xs font-black block">{opt.label}</span>
+                          <span className={`text-[10px] block truncate ${isSel ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
+                            {opt.desc}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Input de días si se escoge Personalizado */}
+                {boosterDays === 'custom' && (
+                  <div className="space-y-1 animate-fade-in">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Ingresa el número exacto de días para la revacunación:
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      placeholder="Ej. 14, 28, 45, 120..."
+                      value={customBoosterDays}
+                      onChange={(e) => setCustomBoosterDays(e.target.value)}
+                      className="w-full p-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                      required={boosterDays === 'custom'}
+                    />
+                  </div>
+                )}
+
+                {/* Previsualización dinámica de la fecha calculada y sistema de alarma */}
+                {computedBoosterDate && (
+                  <div className="p-3.5 rounded-2xl bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 animate-bounce" />
+                        <span className="text-xs font-black text-amber-950 dark:text-amber-200">
+                          Fecha de Revacunación Calculada:
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs shadow-sm">
+                        📅 {formatDate(computedBoosterDate)}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-amber-900 dark:text-amber-300 leading-relaxed font-medium">
+                      🔔 <strong>Alarmas automáticas que se emitirán:</strong>
+                      <br />
+                      • <strong>1 día antes:</strong> Alerta de aviso previo en el tablero para alistar insumos, agujas y apartar animales.
+                      <br />
+                      • <strong>El día programado ({formatDate(computedBoosterDate)}):</strong> Alarma prioritaria urgente para el ganadero y trabajadores en corral.
+                    </p>
+                  </div>
+                )}
+
+                {/* Observación para la revacunación */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                    Instrucciones / Notas para el día del refuerzo (Opcional):
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Aplicar 2da dosis a terneros destetos del potrero 2..."
+                    value={boosterNotes}
+                    onChange={(e) => setBoosterNotes(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+
+              </div>
+            )}
           </div>
 
           {/* Botones de Acción */}

@@ -184,8 +184,79 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
     });
   }
 
-  // Combinar: Duplicados y animales urgentes van primero
-  const combinedAlerts = [...duplicateAlerts, ...animalAlerts, ...sanitaryAlerts];
+  // 4. Alertas de Revacunaciones y Dosis de Refuerzo Programadas
+  const boosterAlerts = [];
+  const today = new Date();
+  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+  vaccinations.forEach(vac => {
+    if (!vac.requiresBooster || !vac.boosterDate || vac.boosterCompleted) return;
+
+    try {
+      const parts = vac.boosterDate.split('-');
+      if (parts.length !== 3) return;
+      const bDateMid = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)).getTime();
+      const diffDays = Math.round((bDateMid - todayMid) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        // ALARMA DÍA D: ¡HOY!
+        boosterAlerts.push({
+          id: `booster-today-${vac.id}`,
+          priority: 1,
+          type: 'booster_today',
+          badge: '🚨 ¡HOY!',
+          badgeClass: 'bg-rose-600 text-white animate-pulse',
+          title: `🚨 ¡HOY! Revacunación: ${vac.vaccineType}`,
+          desc: `Hoy se debe aplicar el refuerzo obligatorio a: ${vac.targetLabel || 'Hato'}. Registrado el ${formatDate(vac.date)}.${vac.boosterNotes ? ` Indicación: "${vac.boosterNotes}"` : ''}`,
+          icon: Syringe,
+          vac
+        });
+      } else if (diffDays === 1) {
+        // ALARMA DÍA ANTES: ¡MAÑANA!
+        boosterAlerts.push({
+          id: `booster-tomorrow-${vac.id}`,
+          priority: 1,
+          type: 'booster_tomorrow',
+          badge: '⏰ ¡MAÑANA!',
+          badgeClass: 'bg-amber-500 text-slate-950 font-black',
+          title: `⏰ ¡MAÑANA! Revacunación: ${vac.vaccineType}`,
+          desc: `Aviso previo: Mañana se debe aplicar la dosis de refuerzo a: ${vac.targetLabel || 'Hato'}. Alistar jeringas y lote en corral.${vac.boosterNotes ? ` Indicación: "${vac.boosterNotes}"` : ''}`,
+          icon: Clock,
+          vac
+        });
+      } else if (diffDays < 0) {
+        // ALARMA ATRASADA / VENCIDA
+        const daysLate = Math.abs(diffDays);
+        boosterAlerts.push({
+          id: `booster-overdue-${vac.id}`,
+          priority: 1,
+          type: 'urgent',
+          badge: `⚠️ ATRASADA (${daysLate}d)`,
+          badgeClass: 'bg-rose-700 text-white',
+          title: `⚠️ Revacunación Atrasada (${daysLate} días): ${vac.vaccineType}`,
+          desc: `Debió aplicarse el ${formatDate(vac.boosterDate)} para ${vac.targetLabel || 'Hato'}. Aplicar cuanto antes.${vac.boosterNotes ? ` Indicación: "${vac.boosterNotes}"` : ''}`,
+          icon: AlertCircle,
+          vac
+        });
+      } else if (diffDays >= 2 && diffDays <= 7) {
+        // PRÓXIMA (en los siguientes 2 a 7 días)
+        boosterAlerts.push({
+          id: `booster-upcoming-${vac.id}`,
+          priority: 2,
+          type: 'info',
+          badge: `En ${diffDays} días`,
+          badgeClass: 'bg-blue-600 text-white',
+          title: `💉 Próxima Revacunación en ${diffDays} días: ${vac.vaccineType}`,
+          desc: `Programada para el ${formatDate(vac.boosterDate)} (${vac.targetLabel || 'Hato'}).`,
+          icon: Syringe,
+          vac
+        });
+      }
+    } catch (e) {}
+  });
+
+  // Combinar: Alarmas urgentes de Revacunación, Duplicados y animales críticos van primero
+  const combinedAlerts = [...boosterAlerts, ...duplicateAlerts, ...animalAlerts, ...sanitaryAlerts];
 
   if (combinedAlerts.length === 0) {
     return (
@@ -203,6 +274,8 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
         const Icon = alert.icon;
         const colorStyles = {
           fat_ready: 'bg-gradient-to-r from-amber-500/20 to-orange-500/10 border-amber-400 dark:border-amber-500/50 text-amber-950 dark:text-amber-200',
+          booster_today: 'bg-gradient-to-r from-rose-500/20 via-red-500/10 to-transparent border-rose-400 dark:border-rose-500/60 text-rose-950 dark:text-rose-200 ring-1 ring-rose-500/30',
+          booster_tomorrow: 'bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-transparent border-amber-400 dark:border-amber-500/60 text-amber-950 dark:text-amber-200 ring-1 ring-amber-500/30',
           urgent: 'bg-rose-50 dark:bg-rose-500/15 border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300',
           warning: 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300',
           info: 'bg-blue-50 dark:bg-blue-500/15 border-blue-200 dark:border-blue-500/30 text-blue-900 dark:text-blue-300',
@@ -220,11 +293,15 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
                 <h5 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">{alert.title}</h5>
-                {alert.type === 'fat_ready' && (
+                {alert.badge ? (
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${alert.badgeClass || 'bg-emerald-500 text-slate-950'}`}>
+                    {alert.badge}
+                  </span>
+                ) : alert.type === 'fat_ready' ? (
                   <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 flex-shrink-0 animate-pulse">
                     ≥ 480 kg
                   </span>
-                )}
+                ) : null}
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">{alert.desc}</p>
             </div>

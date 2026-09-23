@@ -15,7 +15,9 @@ import {
   Plus,
   Trash2,
   Tag,
-  ChevronRight
+  ChevronRight,
+  Repeat,
+  Bell
 } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../services/calculations';
 
@@ -24,7 +26,8 @@ export function VaccinationCalendar({
   vaccinations = [],
   onOpenVaccinationModal,
   onOpenCensusModal,
-  onDeleteVaccination
+  onDeleteVaccination,
+  onCompleteBooster
 }) {
   const currentMonthIdx = new Date().getMonth(); // 0 = Ene, 11 = Dic
   const monthNumber = currentMonthIdx + 1;
@@ -251,6 +254,11 @@ export function VaccinationCalendar({
                           RUV: {vac.ruvNumber}
                         </span>
                       )}
+                      {vac.requiresBooster && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-[9px] uppercase tracking-wide">
+                          Refuerzo {vac.boosterDays || ''}d
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       📅 {formatDate(vac.date)} • <strong>{vac.animalCount || 'X'}</strong> cabezas ({vac.targetLabel || 'Hato'})
@@ -278,6 +286,138 @@ export function VaccinationCalendar({
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. SECCIÓN DE REVACUNACIONES Y REFUERZOS PROGRAMADOS CON ALARMAS */}
+      {vaccinations.some(v => v.requiresBooster && v.boosterDate) && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-300/80 dark:border-amber-600/40 space-y-3 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 dark:border-amber-700/40 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black shadow-sm">
+                <Repeat className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>Refuerzos & Revacunaciones Programadas</span>
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Alarmas automáticas emitidas el día previo y el día de la dosis para todo el equipo de trabajo.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-xl bg-amber-200 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200">
+                🔔 {vaccinations.filter(v => v.requiresBooster && v.boosterDate && !v.boosterCompleted).length} pendientes
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {vaccinations
+              .filter(v => v.requiresBooster && v.boosterDate)
+              .sort((a, b) => {
+                if (a.boosterCompleted && !b.boosterCompleted) return 1;
+                if (!a.boosterCompleted && b.boosterCompleted) return -1;
+                return new Date(a.boosterDate) - new Date(b.boosterDate);
+              })
+              .map((vac) => {
+                const today = new Date();
+                const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+                const parts = (vac.boosterDate || '').split('-');
+                let diffDays = null;
+                if (parts.length === 3) {
+                  const bDateMid = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)).getTime();
+                  diffDays = Math.round((bDateMid - todayMid) / (1000 * 60 * 60 * 24));
+                }
+
+                const isCompleted = !!vac.boosterCompleted;
+
+                return (
+                  <div
+                    key={'booster-' + vac.id}
+                    className={`p-3.5 rounded-2xl border transition relative flex flex-col justify-between space-y-3 ${
+                      isCompleted
+                        ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 opacity-80'
+                        : diffDays === 0
+                        ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 dark:border-rose-600 shadow-md ring-2 ring-rose-500/30'
+                        : diffDays === 1
+                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 dark:border-amber-600 shadow-sm ring-1 ring-amber-400/40'
+                        : diffDays < 0
+                        ? 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-700'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                          {vac.vaccineType}
+                        </span>
+
+                        {isCompleted ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px] uppercase">
+                            ✓ Completada
+                          </span>
+                        ) : diffDays === 0 ? (
+                          <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-black text-[10px] uppercase animate-pulse shadow-sm">
+                            🚨 ¡Aplicar Hoy!
+                          </span>
+                        ) : diffDays === 1 ? (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase shadow-sm">
+                            ⏰ ¡Mañana!
+                          </span>
+                        ) : diffDays < 0 ? (
+                          <span className="px-2 py-0.5 rounded-full bg-rose-700 text-white font-black text-[10px] uppercase">
+                            ⚠️ Atrasada ({Math.abs(diffDays)}d)
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-bold text-[10px]">
+                            📅 En {diffDays} días
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300 space-y-0.5">
+                        <p>
+                          <strong>Fecha Programada:</strong> <span className="font-extrabold text-slate-900 dark:text-white">{formatDate(vac.boosterDate)}</span> ({vac.boosterDays ? `${vac.boosterDays} días tras 1ra dosis` : 'Refuerzo'})
+                        </p>
+                        <p>
+                          <strong>Aplicada inicial:</strong> {formatDate(vac.date)} • <strong>Población:</strong> {vac.targetLabel || 'Hato'} ({vac.animalCount || 'X'} cabezas)
+                        </p>
+                        {vac.boosterNotes && (
+                          <p className="text-amber-900 dark:text-amber-300 italic bg-amber-100/60 dark:bg-amber-950/40 p-1.5 rounded-lg mt-1 border border-amber-200 dark:border-amber-800/60">
+                            📝 Indicación: "{vac.boosterNotes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Botón de acción para completar refuerzo */}
+                    <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-slate-400">
+                        {isCompleted ? `Aplicada el ${formatDate(vac.boosterCompletedAt || vac.boosterDate)}` : 'Alarma activa para Patrón & Vaqueros'}
+                      </span>
+
+                      {!isCompleted && onCompleteBooster && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`¿Confirmar que la revacunación/refuerzo de ${vac.vaccineType} ya fue aplicada a los animales?`)) {
+                              onCompleteBooster(vac.id);
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>✓ Marcar como Aplicada</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}

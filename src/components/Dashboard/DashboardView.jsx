@@ -57,6 +57,7 @@ export function DashboardView({
   onOpenVaccinationModal,
   onOpenCensusModal,
   onDeleteVaccination,
+  onCompleteBooster,
   onOpenPartnershipModal,
   onOpenAddExpense,
   onOpenAddIncome
@@ -672,6 +673,7 @@ export function DashboardView({
         onOpenVaccinationModal={onOpenVaccinationModal}
         onOpenCensusModal={onOpenCensusModal}
         onDeleteVaccination={onDeleteVaccination}
+        onCompleteBooster={onCompleteBooster}
       />
 
     </div>

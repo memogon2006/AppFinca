@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.31";
+export const CURRENT_APP_VERSION = "2.14.32";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.32",
+    date: "22/09/2026",
+    title: "💉 Sistema de Revacunación y Refuerzos Programados con Alarmas Inteligentes",
+    highlights: [
+      "Programación de Revacunaciones: Al registrar cualquier vacuna o plan sanitario se puede definir un intervalo de refuerzo (15d, 21d, 30d, 60d, 90d, 180d, 365d o personalizado).",
+      "Alarmas Anticipadas y el Día D: Notificaciones automáticas de aviso 1 día antes ('¡MAÑANA!') y el día exacto de la dosis ('¡HOY!') tanto para el Ganadero (Admin) como para los Vaqueros/Mayordomos.",
+      "Módulo de Refuerzos en el Tablero: Panel interactivo con estado de refuerzos pendientes, fechas calculadas y botón 'Marcar como Aplicada'.",
+      "Sincronización en la Nube y Calendario: Agendamiento automático en el calendario de la finca y sincronización en tiempo real multidispositivo."
+    ]
+  },
   {
     version: "2.14.31",
     date: "22/09/2026",
