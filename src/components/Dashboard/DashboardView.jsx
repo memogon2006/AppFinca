@@ -25,7 +25,8 @@ import {
   ClipboardCheck,
   Stethoscope,
   TrendingDown,
-  Wallet
+  Wallet,
+  Handshake
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
@@ -209,11 +210,22 @@ export function DashboardView({
             {!isWorker && onOpenPartnershipModal && (
               <button
                 onClick={onOpenPartnershipModal}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer active:scale-95"
-                title="Venta o liquidación de ganado: por lote completo o animal individual (venta directa o en compañía)"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer active:scale-95"
+                title="Liquidación de ganado por lote o individual (venta directa o en compañía con reparto de utilidades)"
+              >
+                <Handshake className="w-4 h-4 text-slate-950" />
+                <span>🤝 Liquidación</span>
+              </button>
+            )}
+
+            {!isWorker && onNavigate && (
+              <button
+                onClick={() => onNavigate('finances')}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-yellow-300 transition cursor-pointer active:scale-95"
+                title="Ir al módulo de Ventas y Liquidación de Ganado"
               >
                 <DollarSign className="w-4 h-4 text-slate-950" />
-                <span>💰 Venta / Liquidar Lote</span>
+                <span>💰 Venta de Ganado</span>
               </button>
             )}
 
@@ -636,8 +648,17 @@ export function DashboardView({
                     onClick={onOpenPartnershipModal}
                     className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer active:scale-95"
                   >
+                    <Handshake className="w-3.5 h-3.5" />
+                    <span>🤝 Liquidación</span>
+                  </button>
+                )}
+                {onNavigate && (
+                  <button
+                    onClick={() => onNavigate('finances')}
+                    className="px-3 py-1.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer active:scale-95"
+                  >
                     <DollarSign className="w-3.5 h-3.5" />
-                    <span>Vender / Liquidar</span>
+                    <span>💰 Ventas</span>
                   </button>
                 )}
               </div>

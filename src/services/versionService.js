@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.32";
+export const CURRENT_APP_VERSION = "2.14.33";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.33",
+    date: "22/09/2026",
+    title: "🤝 Botón de Liquidación Directo en Acciones Rápidas del Tablero",
+    highlights: [
+      "Acceso Directo a Liquidación: Botón destacado '🤝 Liquidación' en el banner superior y en el Centro Financiero para abrir inmediatamente la liquidación consolidada y en compañía.",
+      "Separación Visual Clara: Botón de '🤝 Liquidación' para liquidar utilidades/lotes y botón '💰 Venta de Ganado' para consultar el módulo completo de ventas."
+    ]
+  },
   {
     version: "2.14.32",
     date: "22/09/2026",
