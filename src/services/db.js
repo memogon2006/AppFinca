@@ -7,7 +7,6 @@ import {
   DEMO_WEIGHING_IDS,
   DEMO_EXPENSE_IDS 
 } from './sampleData';
-import { sanitizeString } from './sanitizeService';
 
 export { isDemoAnimal };
 
@@ -132,21 +131,20 @@ db.version(12).stores({
   settings: 'key, userId'
 });
 
-// Registrar una acción en la bitácora de auditoría con blindaje e inmutabilidad
+// Registrar una acción en la bitácora de auditoría
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {
     if (!db.activityLogs) return null;
     const logId = 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     const entry = {
       id: logId,
-      action: sanitizeString(action),
-      description: sanitizeString(description),
-      tagNumber: sanitizeString(tagNumber),
-      operatorName: sanitizeString(operatorName || 'Administrador'),
-      operatorRole: sanitizeString(operatorRole || 'admin'),
+      action,
+      description,
+      tagNumber: String(tagNumber || ''),
+      operatorName: String(operatorName || 'Administrador'),
+      operatorRole: String(operatorRole || 'admin'),
       timestamp: new Date().toISOString(),
-      userId: sanitizeString(userId || 'default'),
-      isImmutable: true,
+      userId: String(userId || 'default'),
     };
     await db.activityLogs.put(entry);
     return entry;

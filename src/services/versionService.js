@@ -1,21 +1,10 @@
-export const CURRENT_APP_VERSION = "2.14.43";
+export const CURRENT_APP_VERSION = "2.14.42";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
-  {
-    version: "2.14.43",
-    date: "23/09/2026",
-    title: "🛡️ Blindaje de Ciberseguridad Integral & Protección de Datos Pecuarios",
-    highlights: [
-      "Política de Seguridad de Contenido (CSP): Blindaje perimetral que bloquea inyecciones de código malicioso (XSS) y conexiones no autorizadas.",
-      "Sanitización Activa de Entradas: Filtrado automático de textos en notas, conceptos de gastos, chapas y registros de compra.",
-      "Inmutabilidad de Bitácora: Registro de movimientos operativos y pesajes con huella digital protegida contra modificaciones.",
-      "Blindaje y Aislamiento de Origen: Protección estricta de rutas y sesiones contra accesos indebidos."
-    ]
-  },
   {
     version: "2.14.42",
     date: "23/09/2026",

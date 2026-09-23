@@ -14,7 +14,6 @@ import {
   cloudIsWorkerDeleted
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
-import { sanitizeString } from './sanitizeService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
 
@@ -137,9 +136,9 @@ export function getCurrentUser() {
  * Registra un nuevo usuario/ganadería o enlaza la cuenta si ya existe con los mismos datos
  */
 export async function registerUser({ name, farmName, email, password }) {
-  const cleanEmail = sanitizeString(email || '').toLowerCase();
-  const cleanName = sanitizeString(name || '');
-  const cleanFarm = sanitizeString(farmName || '');
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanName = (name || '').trim();
+  const cleanFarm = (farmName || '').trim();
   const cleanPassword = (password || '').trim();
 
   if (!cleanName) throw new Error('Por favor ingresa tu nombre de ganadero o administrador.');
@@ -372,9 +371,9 @@ export function logoutUser() {
  * Actualiza el perfil del usuario (nombre de propietario, nombre de finca, correo)
  */
 export async function updateUserProfile(userId, { name, farmName, email }) {
-  const cleanName = sanitizeString(name || '');
-  const cleanFarm = sanitizeString(farmName || '');
-  const cleanEmail = sanitizeString(email || '').toLowerCase();
+  const cleanName = (name || '').trim();
+  const cleanFarm = (farmName || '').trim();
+  const cleanEmail = (email || '').trim().toLowerCase();
 
   if (!cleanName) throw new Error('El nombre de propietario no puede estar vacío.');
   if (!cleanFarm) throw new Error('El nombre de la finca no puede estar vacío.');
