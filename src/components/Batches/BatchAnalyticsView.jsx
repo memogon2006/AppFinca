@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Layers, 
   DollarSign, 
@@ -23,7 +23,13 @@ import {
   Check,
   BarChart3,
   PackagePlus,
-  MessageCircle
+  MessageCircle,
+  Dna,
+  UserCheck,
+  Target,
+  FileSpreadsheet,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { 
   formatCurrency, 
@@ -32,9 +38,17 @@ import {
   calculateWeightMetrics, 
   calculateFinancials 
 } from '../../services/calculations';
-import { exportBatchComparisonExcel } from '../../services/batchExcelService';
+import { exportBatchComparisonExcel, getAnimalGroupKey } from '../../services/batchExcelService';
 import { useAuth } from '../../context/AuthContext';
-import { FileSpreadsheet } from 'lucide-react';
+
+// Criterios de Comparación Disponibles
+const COMPARISON_CRITERIA = [
+  { id: 'batch', label: 'Lote / Ingreso', icon: '🏷️', LucideIcon: Boxes, shortLabel: 'Lote' },
+  { id: 'breed', label: 'Raza', icon: '🧬', LucideIcon: Dna, shortLabel: 'Raza' },
+  { id: 'owner', label: 'Dueño / Marca', icon: '👤', LucideIcon: UserCheck, shortLabel: 'Dueño/Hierro' },
+  { id: 'productionType', label: 'Tipo de Producción', icon: '🎯', LucideIcon: Target, shortLabel: 'Propósito' },
+  { id: 'category', label: 'Categoría / Etapa', icon: '🐄', LucideIcon: Layers, shortLabel: 'Categoría' },
+];
 
 export function BatchAnalyticsView({
   cattle = [],
@@ -46,19 +60,53 @@ export function BatchAnalyticsView({
   onOpenWhatsAppReport
 }) {
   const { currentUser, isWorker } = useAuth();
-  const [activeTab, setActiveTab] = useState('detail'); // 'detail' | 'compare'
-  const [selectedBatch, setSelectedBatch] = useState('all'); // 'all' o nombre del lote
+  
+  // Pestaña Activa: 'detail' (Detalle individual) | 'compare' (Comparador Multi-criterio)
+  const [activeTab, setActiveTab] = useState('detail');
+  
+  // Criterio de Agrupación / Comparación Activo
+  const [comparisonCriterion, setComparisonCriterion] = useState('batch'); // 'batch' | 'breed' | 'owner' | 'productionType' | 'category'
+  
+  // Grupo seleccionado para la vista de detalle ('all' o nombre del grupo)
+  const [selectedGroupDetail, setSelectedGroupDetail] = useState('all');
+  
+  // Grupos seleccionados para el Comparador (Array de nombres para multi-selección)
+  const [comparedGroups, setComparedGroups] = useState([]);
+  
+  // Filtros de búsqueda y estado
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Activo'); // 'Activo' (predeterminado) | 'all' | 'Vendido' | 'ready480'
   const [exportingExcel, setExportingExcel] = useState(false);
 
-  // Estados para el Comparador de Lotes
-  const [comparedBatches, setComparedBatches] = useState([]); // Array con los nombres de lotes seleccionados
+  // Información del criterio activo
+  const activeCriterionInfo = useMemo(() => {
+    return COMPARISON_CRITERIA.find(c => c.id === comparisonCriterion) || COMPARISON_CRITERIA[0];
+  }, [comparisonCriterion]);
 
+  // Obtener lista única de grupos para el criterio activo
+  const allGroups = useMemo(() => {
+    const set = new Set(cattle.map(c => getAnimalGroupKey(c, comparisonCriterion)).filter(Boolean));
+    const list = Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return list.length > 0 ? list : ['General'];
+  }, [cattle, comparisonCriterion]);
+
+  // Sincronizar grupos seleccionados para el comparador cuando cambia el criterio
+  useEffect(() => {
+    if (allGroups.length > 0) {
+      setComparedGroups(prev => {
+        const valid = prev.filter(g => allGroups.includes(g));
+        // Si no hay selecciones válidas para el nuevo criterio, seleccionar todos
+        if (valid.length > 0) return valid;
+        return allGroups;
+      });
+    }
+  }, [allGroups, comparisonCriterion]);
+
+  // Manejador de exportación a Excel con el criterio activo
   const handleDownloadComparisonExcel = () => {
     try {
       setExportingExcel(true);
-      exportBatchComparisonExcel(cattle, weighings, currentUser?.farmName || 'Mi Finca');
+      exportBatchComparisonExcel(cattle, weighings, currentUser?.farmName || 'Mi Finca', comparisonCriterion);
     } catch (err) {
       alert('Error al exportar Excel de Comparativa: ' + err.message);
     } finally {
@@ -66,23 +114,17 @@ export function BatchAnalyticsView({
     }
   };
 
-  // Obtener lista única de lotes
-  const allBatches = useMemo(() => {
-    const set = new Set(cattle.map(c => c.entryBatch || c.paddock || 'Ingreso #1').filter(Boolean));
-    return Array.from(set).sort();
-  }, [cattle]);
-
-  // Cálculos consolidados por cada lote individual
-  const batchesStatistics = useMemo(() => {
-    return allBatches.map(batchName => {
-      const batchAnimals = cattle.filter(c => (c.entryBatch || c.paddock || 'Ingreso #1') === batchName);
-      const headCount = batchAnimals.length;
-      const activeAnimals = batchAnimals.filter(c => c.status === 'Activo');
-      const soldAnimals = batchAnimals.filter(c => c.status === 'Vendido');
-      const deadAnimals = batchAnimals.filter(c => c.status === 'Muerto');
+  // Cálculos consolidados por cada grupo del criterio activo
+  const groupsStatistics = useMemo(() => {
+    return allGroups.map(groupName => {
+      const groupAnimals = cattle.filter(c => getAnimalGroupKey(c, comparisonCriterion) === groupName);
+      const headCount = groupAnimals.length;
+      const activeAnimals = groupAnimals.filter(c => c.status === 'Activo');
+      const soldAnimals = groupAnimals.filter(c => c.status === 'Vendido');
+      const deadAnimals = groupAnimals.filter(c => c.status === 'Muerto');
 
       // Fechas
-      const dates = batchAnimals.map(c => c.entryDate).filter(Boolean).sort();
+      const dates = groupAnimals.map(c => c.entryDate).filter(Boolean).sort();
       const earliestDate = dates[0] || 'N/A';
 
       // Totales de Compra y Entrada
@@ -115,7 +157,7 @@ export function BatchAnalyticsView({
       let totalSoldWeight = 0;
       let totalProfitRealized = 0;
 
-      batchAnimals.forEach(animal => {
+      groupAnimals.forEach(animal => {
         const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
         const wm = calculateWeightMetrics(animal, animalWeighs);
         const fin = calculateFinancials(animal);
@@ -180,7 +222,6 @@ export function BatchAnalyticsView({
       const avgGainKg = headCount > 0 ? (totalGainKg / headCount) : 0;
       const avgGdp = gdpCount > 0 ? (gdpSum / gdpCount) : 0;
       
-      // Días en finca del lote: Si hay animales activos, corresponde exactamente al tiempo de los animales activos en finca
       const activeAvgDays = activeAnimals.length > 0 ? Math.round(activeDaysSum / activeAnimals.length) : 0;
       const soldAvgDays = soldAnimals.length > 0 ? Math.round(soldDaysSum / soldAnimals.length) : 0;
       const avgDays = activeAnimals.length > 0 ? activeAvgDays : (headCount > 0 ? Math.round(totalDaysSum / headCount) : 0);
@@ -195,7 +236,8 @@ export function BatchAnalyticsView({
       const soldAvgExitWeight = soldAnimals.length > 0 ? (totalSoldWeight / soldAnimals.length) : 0;
 
       return {
-        batchName,
+        groupName,
+        criterion: comparisonCriterion,
         headCount,
         activeCount: activeAnimals.length,
         soldCount: soldAnimals.length,
@@ -232,21 +274,14 @@ export function BatchAnalyticsView({
         avgSoldPricePerKg,
         soldAvgExitWeight,
         totalProfitRealized,
-        animals: batchAnimals
+        animals: groupAnimals
       };
     });
-  }, [allBatches, cattle, weighings]);
+  }, [allGroups, cattle, weighings, comparisonCriterion]);
 
-  // Inicializar lotes a comparar si está vacío
-  useMemo(() => {
-    if (comparedBatches.length === 0 && allBatches.length > 0) {
-      setComparedBatches(allBatches.slice(0, 3));
-    }
-  }, [allBatches, comparedBatches.length]);
-
-  // Lote actualmente enfocado para métricas de detalle
-  const currentBatchData = useMemo(() => {
-    if (selectedBatch === 'all') {
+  // Grupo actualmente enfocado para métricas de detalle
+  const currentGroupData = useMemo(() => {
+    if (selectedGroupDetail === 'all') {
       const headCount = cattle.length;
       const activeAnimals = cattle.filter(c => c.status === 'Activo');
       const soldAnimals = cattle.filter(c => c.status === 'Vendido');
@@ -341,7 +376,7 @@ export function BatchAnalyticsView({
       const soldAvgExitWeight = soldAnimals.length > 0 ? (totalSoldWeight / soldAnimals.length) : 0;
 
       return {
-        batchName: 'Todos los Lotes (Consolidado General)',
+        groupName: `Todos los Registros (${activeCriterionInfo.label})`,
         headCount,
         activeCount: activeAnimals.length,
         soldCount: soldAnimals.length,
@@ -382,14 +417,14 @@ export function BatchAnalyticsView({
       };
     }
 
-    return batchesStatistics.find(b => b.batchName === selectedBatch) || batchesStatistics[0] || null;
-  }, [selectedBatch, batchesStatistics, cattle, weighings]);
+    return groupsStatistics.find(g => g.groupName === selectedGroupDetail) || groupsStatistics[0] || null;
+  }, [selectedGroupDetail, groupsStatistics, cattle, weighings, activeCriterionInfo]);
 
   // Lista de animales filtrados para la tabla detallada
-  const filteredBatchAnimals = useMemo(() => {
-    let list = selectedBatch === 'all' 
+  const filteredGroupAnimals = useMemo(() => {
+    let list = selectedGroupDetail === 'all' 
       ? cattle 
-      : cattle.filter(c => (c.entryBatch || c.paddock || 'Ingreso #1') === selectedBatch);
+      : cattle.filter(c => getAnimalGroupKey(c, comparisonCriterion) === selectedGroupDetail);
 
     // Filtro por Estado
     if (statusFilter === 'Activo') {
@@ -414,7 +449,10 @@ export function BatchAnalyticsView({
         const owner = (c.owner || '').toLowerCase();
         const breed = (c.breed || '').toLowerCase();
         const color = (c.color || '').toLowerCase();
-        return tag.includes(q) || name.includes(q) || brand.includes(q) || owner.includes(q) || breed.includes(q) || color.includes(q);
+        const cat = (c.category || '').toLowerCase();
+        const prod = (c.productionType || '').toLowerCase();
+        const batch = (c.entryBatch || c.paddock || '').toLowerCase();
+        return tag.includes(q) || name.includes(q) || brand.includes(q) || owner.includes(q) || breed.includes(q) || color.includes(q) || cat.includes(q) || prod.includes(q) || batch.includes(q);
       });
     }
 
@@ -425,7 +463,7 @@ export function BatchAnalyticsView({
       if (orderA !== orderB) return orderA - orderB;
       return (a.tagNumber || '').localeCompare(b.tagNumber || '', undefined, { numeric: true });
     });
-  }, [cattle, selectedBatch, statusFilter, searchQuery, weighings]);
+  }, [cattle, selectedGroupDetail, comparisonCriterion, statusFilter, searchQuery, weighings]);
 
   // Totales dinámicos de la tabla filtrada
   const tableSummary = useMemo(() => {
@@ -438,7 +476,7 @@ export function BatchAnalyticsView({
     let gdpSum = 0;
     let gdpCount = 0;
 
-    filteredBatchAnimals.forEach(c => {
+    filteredGroupAnimals.forEach(c => {
       const animalWeighs = weighings.filter(w => String(w.cattleId) === String(c.id));
       const wm = calculateWeightMetrics(c, animalWeighs);
       const fin = calculateFinancials(c);
@@ -459,7 +497,7 @@ export function BatchAnalyticsView({
       }
     });
 
-    const count = filteredBatchAnimals.length;
+    const count = filteredGroupAnimals.length;
     const avgEWeight = count > 0 ? (totEntryWeight / count) : 0;
     const avgCWeight = count > 0 ? (totCurrentWeight / count) : 0;
     const avgGain = count > 0 ? (totGain / count) : 0;
@@ -482,46 +520,51 @@ export function BatchAnalyticsView({
       totInvestment,
       totEstimated
     };
-  }, [filteredBatchAnimals, weighings]);
+  }, [filteredGroupAnimals, weighings]);
 
-  // Datos filtrados para el Comparador de Lotes
-  const selectedBatchesForComparison = useMemo(() => {
-    if (comparedBatches.length === 0) return batchesStatistics;
-    return batchesStatistics.filter(b => comparedBatches.includes(b.batchName));
-  }, [comparedBatches, batchesStatistics]);
+  // Datos filtrados para el Comparador Multi-criterio
+  const selectedGroupsForComparison = useMemo(() => {
+    if (comparedGroups.length === 0) return groupsStatistics;
+    return groupsStatistics.filter(g => comparedGroups.includes(g.groupName));
+  }, [comparedGroups, groupsStatistics]);
 
   // Medallas de eficiencia en la comparativa
-  const bestPurchaseBatch = useMemo(() => {
-    const valid = batchesStatistics.filter(b => b.costPerEntryKg > 0);
+  const bestPurchaseGroup = useMemo(() => {
+    const valid = groupsStatistics.filter(g => g.costPerEntryKg > 0);
     if (valid.length === 0) return null;
     return valid.reduce((best, cur) => cur.costPerEntryKg < best.costPerEntryKg ? cur : best, valid[0]);
-  }, [batchesStatistics]);
+  }, [groupsStatistics]);
 
-  const bestGdpBatch = useMemo(() => {
-    const valid = batchesStatistics.filter(b => b.avgGdp > 0);
+  const bestGdpGroup = useMemo(() => {
+    const valid = groupsStatistics.filter(g => g.avgGdp > 0);
     if (valid.length === 0) return null;
     return valid.reduce((best, cur) => cur.avgGdp > best.avgGdp ? cur : best, valid[0]);
-  }, [batchesStatistics]);
+  }, [groupsStatistics]);
 
-  const bestGainBatch = useMemo(() => {
-    const valid = batchesStatistics.filter(b => b.avgGainKg > 0);
+  const bestGainGroup = useMemo(() => {
+    const valid = groupsStatistics.filter(g => g.avgGainKg > 0);
     if (valid.length === 0) return null;
     return valid.reduce((best, cur) => cur.avgGainKg > best.avgGainKg ? cur : best, valid[0]);
-  }, [batchesStatistics]);
+  }, [groupsStatistics]);
 
-  const toggleBatchComparison = (batchName) => {
-    setComparedBatches(prev => {
-      if (prev.includes(batchName)) {
-        if (prev.length === 1) return prev; // Mantener al menos 1
-        return prev.filter(name => name !== batchName);
+  // Manejo de multi-selección de grupos a comparar
+  const toggleGroupComparison = (groupName) => {
+    setComparedGroups(prev => {
+      if (prev.includes(groupName)) {
+        if (prev.length === 1) return prev; // Mantener al menos 1 seleccionado
+        return prev.filter(name => name !== groupName);
       } else {
-        return [...prev, batchName];
+        return [...prev, groupName];
       }
     });
   };
 
-  const selectAllForComparison = () => {
-    setComparedBatches(allBatches);
+  const selectAllGroupsForComparison = () => {
+    setComparedGroups(allGroups);
+  };
+
+  const selectSingleGroupForComparison = (groupName) => {
+    setComparedGroups([groupName]);
   };
 
   return (
@@ -531,13 +574,13 @@ export function BatchAnalyticsView({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Boxes className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <span>Análisis & Comparador por Lote / Ingreso</span>
+            <Boxes className="w-6 h-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Análisis & Comparador de Ganado</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {isWorker 
-              ? 'Control de cabezas de ganado, kilos promedio, ganancia diaria de peso (GDP) y comparativa de rendimiento entre lotes.'
-              : 'Control de valor compra total de los animales, precio por animal, valor del kilo ($/kg), kilos promedio y comparativa cara a cara entre lotes.'}
+              ? 'Control zootécnico y comparativas avanzadas por Lote, Raza, Dueño/Marca, Tipo de Producción y Categoría/Etapa.'
+              : 'Control integral de precios, kilos, rendimiento GDP y análisis comparativo por Lote, Raza, Dueño, Producción y Categoría.'}
           </p>
         </div>
 
@@ -547,10 +590,10 @@ export function BatchAnalyticsView({
               onClick={handleDownloadComparisonExcel}
               disabled={exportingExcel}
               className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-slate-700 shadow-sm transition cursor-pointer min-h-[40px] whitespace-nowrap"
-              title="Descargar Comparativa de Lotes con Gráfica en Excel"
+              title={`Descargar Comparativa por ${activeCriterionInfo.label} en Excel con Gráficas`}
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{exportingExcel ? 'Generando Excel...' : '📊 Comparativa Excel'}</span>
+              <span>{exportingExcel ? 'Generando Excel...' : `📊 Comparativa Excel (${activeCriterionInfo.shortLabel})`}</span>
             </button>
           )}
 
@@ -558,7 +601,7 @@ export function BatchAnalyticsView({
             <button
               onClick={onOpenExportImport}
               className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border border-slate-300 dark:border-slate-700 transition cursor-pointer min-h-[40px] whitespace-nowrap shadow-sm"
-              title="Exportar Todos los Lotes a Excel"
+              title="Exportar Todo a Excel"
             >
               <DownloadCloud className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Exportar Todo</span>
@@ -567,7 +610,7 @@ export function BatchAnalyticsView({
         </div>
       </div>
 
-      {/* Selector de Pestañas: Vista Individual vs Comparador */}
+      {/* Selector de Pestañas Principales: Vista Individual vs Comparador */}
       <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-800">
         <button
           onClick={() => setActiveTab('detail')}
@@ -578,9 +621,9 @@ export function BatchAnalyticsView({
           }`}
         >
           <Layers className="w-4 h-4 shrink-0" />
-          <span className="truncate">Detalle por Lote</span>
+          <span className="truncate">Detalle ({activeCriterionInfo.shortLabel})</span>
           <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[11px] font-black bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 shrink-0">
-            {allBatches.length} {allBatches.length === 1 ? 'lote' : 'lotes'}
+            {allGroups.length} {allGroups.length === 1 ? 'grupo' : 'grupos'}
           </span>
         </button>
 
@@ -593,31 +636,71 @@ export function BatchAnalyticsView({
           }`}
         >
           <ArrowRightLeft className="w-4 h-4 shrink-0" />
-          <span className="truncate">Comparar Lotes</span>
+          <span className="truncate">Comparador Multidimensional</span>
           <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[11px] font-black bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800 shrink-0">
-            Comparador Pro
+            5 Criterios
           </span>
         </button>
       </div>
 
       {/* ========================================================================= */}
-      {/* VISTA 1: DETALLE POR LOTE / INGRESO INDIVIDUAL (KPIs & TABLA DETALLADA) */}
+      {/* BARRA SELECTORA DE CRITERIO DE COMPARACIÓN (DISPONIBLE EN AMBAS VISTAS)  */}
+      {/* ========================================================================= */}
+      <div className="custom-card p-3 sm:p-4 space-y-2.5 border-2 border-emerald-500/30 dark:border-emerald-500/20 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <span className="text-xs font-black uppercase text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Filter className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Criterio de Agrupación & Comparación:</span>
+          </span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+            Compara por Lote, Raza, Dueño/Marca, Tipo de Producción o Etapa
+          </span>
+        </div>
+
+        {/* Botones de Selección de Criterio */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {COMPARISON_CRITERIA.map((crit) => {
+            const isSelected = comparisonCriterion === crit.id;
+            return (
+              <button
+                key={crit.id}
+                type="button"
+                onClick={() => {
+                  setComparisonCriterion(crit.id);
+                  setSelectedGroupDetail('all');
+                }}
+                className={`p-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 border cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/20 scale-[1.02]'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="text-base">{crit.icon}</span>
+                <span className="truncate">{crit.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* VISTA 1: DETALLE POR GRUPO INDIVIDUAL (KPIS & TABLA DETALLADA)            */}
       {/* ========================================================================= */}
       {activeTab === 'detail' && (
         <div className="space-y-6">
           
-          {/* Barra Selectora de Lotes (Chips Deslizables) */}
+          {/* Barra Selectora de Grupos del Criterio Activo */}
           <div className="custom-card p-3 sm:p-4 space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
               <span className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Seleccionar Lote / Ingreso:</span>
+                <span>Seleccionar {activeCriterionInfo.label}:</span>
               </span>
               <button
                 onClick={() => setActiveTab('compare')}
                 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto"
               >
-                <span>Comparar con otros lotes</span>
+                <span>Comparar todos los grupos</span>
                 <ArrowRightLeft className="w-3 h-3" />
               </button>
             </div>
@@ -625,37 +708,37 @@ export function BatchAnalyticsView({
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
               {/* Chip Consolidado */}
               <button
-                onClick={() => setSelectedBatch('all')}
+                onClick={() => setSelectedGroupDetail('all')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-black transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer border ${
-                  selectedBatch === 'all'
+                  selectedGroupDetail === 'all'
                     ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/20'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>📊 Todos los Lotes ({cattle.filter(c => c.status === 'Activo').length} en finca)</span>
+                <span>📊 Todos ({cattle.filter(c => c.status === 'Activo').length} en finca)</span>
               </button>
 
-              {/* Chips por cada lote */}
-              {batchesStatistics.map((batch) => {
-                const isSelected = selectedBatch === batch.batchName;
+              {/* Chips por cada grupo del criterio */}
+              {groupsStatistics.map((group) => {
+                const isSelected = selectedGroupDetail === group.groupName;
                 return (
                   <button
-                    key={batch.batchName}
-                    onClick={() => setSelectedBatch(batch.batchName)}
+                    key={group.groupName}
+                    onClick={() => setSelectedGroupDetail(group.groupName)}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-2 cursor-pointer border ${
                       isSelected
                         ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/20 font-black'
                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
                     }`}
                   >
-                    <span>🏷️ {batch.batchName}</span>
+                    <span>{activeCriterionInfo.icon} {group.groupName}</span>
                     <span className={`px-2 py-0.2 rounded-full text-[10px] font-black ${
                       isSelected 
                         ? 'bg-white/20 text-white' 
                         : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'
                     }`}>
-                      {batch.activeCount} en finca {batch.soldCount > 0 ? `| ${batch.soldCount} v.` : ''}
+                      {group.activeCount} en finca {group.soldCount > 0 ? `| ${group.soldCount} v.` : ''}
                     </span>
                   </button>
                 );
@@ -663,15 +746,15 @@ export function BatchAnalyticsView({
             </div>
           </div>
 
-          {/* TARJETAS DE MÉTRICAS DEL LOTE SELECCIONADO */}
-          {currentBatchData && (
+          {/* TARJETAS DE MÉTRICAS DEL GRUPO SELECCIONADO */}
+          {currentGroupData && (
             <div className="space-y-4">
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
                 <div>
                   <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 min-w-0">
-                    <span className="text-emerald-600 dark:text-emerald-400 shrink-0">🏷️</span>
-                    <span className="truncate">{currentBatchData.batchName}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 shrink-0">{activeCriterionInfo.icon}</span>
+                    <span className="truncate">{currentGroupData.groupName}</span>
                   </h2>
                   <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {statusFilter === 'Activo' 
@@ -695,7 +778,7 @@ export function BatchAnalyticsView({
                       }`}
                     >
                       <span className={`w-2 h-2 rounded-full ${statusFilter === 'Activo' ? 'bg-white' : 'bg-emerald-500'}`}></span>
-                      <span>🟢 Activos ({currentBatchData.activeCount})</span>
+                      <span>🟢 Activos ({currentGroupData.activeCount})</span>
                     </button>
 
                     <button
@@ -707,7 +790,7 @@ export function BatchAnalyticsView({
                           : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      <span>🌐 Histórico ({currentBatchData.headCount})</span>
+                      <span>🌐 Histórico ({currentGroupData.headCount})</span>
                     </button>
 
                     <button
@@ -719,11 +802,11 @@ export function BatchAnalyticsView({
                           : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      <span>🏷️ Vendidos ({currentBatchData.soldCount})</span>
+                      <span>🏷️ Vendidos ({currentGroupData.soldCount})</span>
                     </button>
                   </div>
 
-                  {/* Botón WhatsApp Reporte Lote */}
+                  {/* Botón WhatsApp Reporte Lote / Grupo */}
                   {onOpenWhatsAppReport && (
                     <button
                       type="button"
@@ -738,8 +821,7 @@ export function BatchAnalyticsView({
                 </div>
               </div>
 
-              {/* 4 TARJETAS DINÁMICAS SEGÚN EL FILTRO SELECCIONADO */}
-              {/* 4 TARJETAS DINÁMICAS SEGÚN EL FILTRO SELECCIONADO */}
+              {/* 4 TARJETAS DINÁMICAS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 {/* 1. Total Cabezas / Valor Compra */}
@@ -747,17 +829,17 @@ export function BatchAnalyticsView({
                   <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">
-                        Total Bovinos en Lote
+                        Total Bovinos ({activeCriterionInfo.shortLabel})
                       </span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-sm">
-                        🟢 {currentBatchData.activeCount} activos
+                        🟢 {currentGroupData.activeCount} activos
                       </span>
                     </div>
                     <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
-                      {currentBatchData.headCount} cabezas
+                      {currentGroupData.headCount} cabezas
                     </p>
                     <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-slate-800">
-                      <span>{currentBatchData.activeCount} en finca • {currentBatchData.soldCount} salidos</span>
+                      <span>{currentGroupData.activeCount} en finca • {currentGroupData.soldCount} salidos</span>
                     </div>
                   </div>
                 ) : (
@@ -772,34 +854,34 @@ export function BatchAnalyticsView({
                       </span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200/80 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-sm">
                         {statusFilter === 'Activo' 
-                          ? `🟢 ${currentBatchData.activeCount} activos` 
+                          ? `🟢 ${currentGroupData.activeCount} activos` 
                           : statusFilter === 'all' 
-                          ? `🌐 ${currentBatchData.headCount} cabezas` 
-                          : `🏷️ ${currentBatchData.soldCount} vendidos`}
+                          ? `🌐 ${currentGroupData.headCount} cabezas` 
+                          : `🏷️ ${currentGroupData.soldCount} vendidos`}
                       </span>
                     </div>
                     <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                       {formatCurrency(
                         statusFilter === 'Activo' 
-                          ? currentBatchData.activePurchaseCost 
+                          ? currentGroupData.activePurchaseCost 
                           : statusFilter === 'all' 
-                          ? currentBatchData.totalPurchaseCost 
-                          : currentBatchData.soldPurchaseCost
+                          ? currentGroupData.totalPurchaseCost 
+                          : currentGroupData.soldPurchaseCost
                       )}
                     </p>
                     <div className="text-xs text-amber-900 dark:text-amber-300 font-extrabold flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-slate-800">
                       <span>
                         Promedio: {formatCurrency(
                           statusFilter === 'Activo' 
-                            ? currentBatchData.activeAvgPricePerHead 
+                            ? currentGroupData.activeAvgPricePerHead 
                             : statusFilter === 'all' 
-                            ? currentBatchData.avgPricePerHead 
-                            : currentBatchData.soldAvgPricePerHead
+                            ? currentGroupData.avgPricePerHead 
+                            : currentGroupData.soldAvgPricePerHead
                         )} / animal
                       </span>
-                      {statusFilter === 'Activo' && currentBatchData.soldCount > 0 && (
+                      {statusFilter === 'Activo' && currentGroupData.soldCount > 0 && (
                         <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
-                          Histórico: {formatCurrency(currentBatchData.totalPurchaseCost)}
+                          Histórico: {formatCurrency(currentGroupData.totalPurchaseCost)}
                         </span>
                       )}
                     </div>
@@ -810,14 +892,14 @@ export function BatchAnalyticsView({
                 {isWorker ? (
                   <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm space-y-1">
                     <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">
-                      Biomasa Total del Lote
+                      Biomasa Total del Grupo
                     </span>
                     <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
-                      {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeCurrentWeight : currentBatchData.totalCurrentWeight, 0)}
+                      {formatNumber(statusFilter === 'Activo' ? currentGroupData.activeCurrentWeight : currentGroupData.totalCurrentWeight, 0)}
                       <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400"> kg</span>
                     </p>
                     <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-slate-800">
-                      <span>Entrada: {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeEntryWeight : currentBatchData.totalEntryWeight, 0)} kg totales</span>
+                      <span>Entrada: {formatNumber(statusFilter === 'Activo' ? currentGroupData.activeEntryWeight : currentGroupData.totalEntryWeight, 0)} kg totales</span>
                     </div>
                   </div>
                 ) : (
@@ -827,19 +909,19 @@ export function BatchAnalyticsView({
                     </span>
                     <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                       {statusFilter === 'Vendido' ? (
-                        formatCurrency(currentBatchData.totalSalesRevenue)
+                        formatCurrency(currentGroupData.totalSalesRevenue)
                       ) : (
                         <>
-                          {formatCurrency(statusFilter === 'Activo' ? currentBatchData.activeCostPerEntryKg : currentBatchData.costPerEntryKg)}
+                          {formatCurrency(statusFilter === 'Activo' ? currentGroupData.activeCostPerEntryKg : currentGroupData.costPerEntryKg)}
                           <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400"> / kg</span>
                         </>
                       )}
                     </p>
                     <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-slate-800">
                       {statusFilter === 'Vendido' ? (
-                        <span>Promedio salida: {formatCurrency(currentBatchData.avgSoldPricePerKg)}/kg ({formatNumber(currentBatchData.totalSoldWeight, 0)} kg)</span>
+                        <span>Promedio salida: {formatCurrency(currentGroupData.avgSoldPricePerKg)}/kg ({formatNumber(currentGroupData.totalSoldWeight, 0)} kg)</span>
                       ) : (
-                        <span>Sobre {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeEntryWeight : currentBatchData.totalEntryWeight, 0)} kg totales de entrada</span>
+                        <span>Sobre {formatNumber(statusFilter === 'Activo' ? currentGroupData.activeEntryWeight : currentGroupData.totalEntryWeight, 0)} kg totales de entrada</span>
                       )}
                     </div>
                   </div>
@@ -852,12 +934,12 @@ export function BatchAnalyticsView({
                   </span>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                     {!isWorker && statusFilter === 'Vendido' ? (
-                      <span className={currentBatchData.totalProfitRealized >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}>
-                        {formatCurrency(currentBatchData.totalProfitRealized)}
+                      <span className={currentGroupData.totalProfitRealized >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}>
+                        {formatCurrency(currentGroupData.totalProfitRealized)}
                       </span>
                     ) : (
                       <>
-                        {formatNumber(currentBatchData.avgCurrentWeight, 1)}
+                        {formatNumber(currentGroupData.avgCurrentWeight, 1)}
                         <span className="text-xs font-bold text-blue-700 dark:text-blue-400"> kg actual</span>
                       </>
                     )}
@@ -867,8 +949,8 @@ export function BatchAnalyticsView({
                       <span>Ganancia total acumulada</span>
                     ) : (
                       <>
-                        <span>Entrada: {formatNumber(statusFilter === 'Activo' ? currentBatchData.activeAvgEntryWeight : currentBatchData.avgEntryWeight, 1)} kg</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-black">+{formatNumber(currentBatchData.avgGainKg, 1)} kg ganados</span>
+                        <span>Entrada: {formatNumber(statusFilter === 'Activo' ? currentGroupData.activeAvgEntryWeight : currentGroupData.avgEntryWeight, 1)} kg</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-black">+{formatNumber(currentGroupData.avgGainKg, 1)} kg ganados</span>
                       </>
                     )}
                   </div>
@@ -878,34 +960,34 @@ export function BatchAnalyticsView({
                 <div className="p-5 rounded-2xl bg-purple-50/90 dark:bg-slate-900/90 border border-purple-200/90 dark:border-purple-500/30 shadow-sm space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase text-purple-800 dark:text-purple-400">
-                      {statusFilter === 'Vendido' ? 'Salida Promedio' : 'Desempeño & GDP Lote'}
+                      {statusFilter === 'Vendido' ? 'Salida Promedio' : 'Desempeño & GDP'}
                     </span>
-                    {statusFilter !== 'Vendido' && currentBatchData.readyToSellCount > 0 && (
+                    {statusFilter !== 'Vendido' && currentGroupData.readyToSellCount > 0 && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-200 text-purple-900 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 shadow-sm">
-                        🎯 {currentBatchData.readyToSellCount} listos
+                        🎯 {currentGroupData.readyToSellCount} listos
                       </span>
                     )}
                   </div>
                   <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                     {statusFilter === 'Vendido' ? (
                       <>
-                        {formatNumber(currentBatchData.soldAvgExitWeight, 1)}
+                        {formatNumber(currentGroupData.soldAvgExitWeight, 1)}
                         <span className="text-xs font-bold text-purple-700 dark:text-purple-400"> kg / animal</span>
                       </>
                     ) : (
                       <>
-                        {formatNumber(currentBatchData.avgGdp, 3)}
+                        {formatNumber(currentGroupData.avgGdp, 3)}
                         <span className="text-xs font-bold text-purple-700 dark:text-purple-400"> kg/día</span>
                       </>
                     )}
                   </p>
                   <div className="text-xs text-purple-900 dark:text-purple-300 font-medium flex items-center justify-between pt-1 border-t border-purple-200/60 dark:border-slate-800">
                     {statusFilter === 'Vendido' ? (
-                      <span>Entrada prom: {formatNumber(currentBatchData.soldAvgEntryWeight, 1)} kg</span>
+                      <span>Entrada prom: {formatNumber(currentGroupData.soldAvgEntryWeight, 1)} kg</span>
                     ) : (
                       <>
-                        <span>{currentBatchData.avgDays} días en finca</span>
-                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400">Total: +{formatNumber(currentBatchData.totalGainKg, 0)} kg carne</span>
+                        <span>{currentGroupData.avgDays} días en finca</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400">Total: +{formatNumber(currentGroupData.totalGainKg, 0)} kg carne</span>
                       </>
                     )}
                   </div>
@@ -924,11 +1006,11 @@ export function BatchAnalyticsView({
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <Layers className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Listado de Animales ({filteredBatchAnimals.length} registros)</span>
+                  <span>Listado de Animales ({filteredGroupAnimals.length} registros)</span>
                 </h3>
-                {selectedBatch !== 'all' && (
+                {selectedGroupDetail !== 'all' && (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                    Lote: {selectedBatch}
+                    {activeCriterionInfo.icon} {selectedGroupDetail}
                   </span>
                 )}
               </div>
@@ -939,53 +1021,53 @@ export function BatchAnalyticsView({
                   onClick={() => setStatusFilter('all')}
                   className={`px-2.5 py-1 rounded-lg transition cursor-pointer whitespace-nowrap ${
                     statusFilter === 'all' 
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' 
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-black' 
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  Todos ({currentBatchData?.headCount || 0})
+                  Todos ({currentGroupData?.headCount || 0})
                 </button>
                 <button
                   onClick={() => setStatusFilter('Activo')}
                   className={`px-2.5 py-1 rounded-lg transition cursor-pointer whitespace-nowrap ${
                     statusFilter === 'Activo' 
-                      ? 'bg-emerald-600 text-white shadow-sm' 
+                      ? 'bg-emerald-600 text-white shadow-sm font-black' 
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  🟢 En Finca ({currentBatchData?.activeCount || 0})
+                  🟢 En Finca ({currentGroupData?.activeCount || 0})
                 </button>
                 <button
                   onClick={() => setStatusFilter('Vendido')}
                   className={`px-2.5 py-1 rounded-lg transition cursor-pointer whitespace-nowrap ${
                     statusFilter === 'Vendido' 
-                      ? 'bg-amber-600 text-white shadow-sm' 
+                      ? 'bg-amber-600 text-white shadow-sm font-black' 
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  🏷️ Vendidos ({currentBatchData?.soldCount || 0})
+                  🏷️ Vendidos ({currentGroupData?.soldCount || 0})
                 </button>
                 <button
                   onClick={() => setStatusFilter('ready480')}
                   className={`px-2.5 py-1 rounded-lg transition cursor-pointer whitespace-nowrap ${
                     statusFilter === 'ready480' 
-                      ? 'bg-purple-600 text-white shadow-sm' 
+                      ? 'bg-purple-600 text-white shadow-sm font-black' 
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  🎯 ≥480kg ({currentBatchData?.readyToSellCount || 0})
+                  🎯 ≥480kg ({currentGroupData?.readyToSellCount || 0})
                 </button>
               </div>
             </div>
 
-            {/* Buscador dentro del lote */}
+            {/* Buscador dentro del grupo */}
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar en este lote por arete, nombre, hierro, raza o dueño..."
+                placeholder="Buscar por arete, nombre, hierro, dueño, raza, lote o color..."
                 className="w-full pl-10 pr-8 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
               />
               {searchQuery && (
@@ -998,8 +1080,8 @@ export function BatchAnalyticsView({
               )}
             </div>
 
-            {/* Tabla Detallada con Bordes Negros Nítidos */}
-            {filteredBatchAnimals.length > 0 ? (
+            {/* Tabla Detallada con Bordes Nítidos */}
+            {filteredGroupAnimals.length > 0 ? (
               <div className="overflow-x-auto border-2 border-slate-900 dark:border-slate-700 rounded-xl">
                 <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[900px]">
                   <thead className="bg-emerald-800 text-white uppercase text-[11px] font-black border-b-2 border-slate-900">
@@ -1007,6 +1089,7 @@ export function BatchAnalyticsView({
                       <th className="p-3 border-r border-emerald-900">Arete / Chapa</th>
                       <th className="p-3 border-r border-emerald-900">Nombre / Hierro</th>
                       <th className="p-3 border-r border-emerald-900">Lote</th>
+                      <th className="p-3 border-r border-emerald-900">Raza / Propósito</th>
                       <th className="p-3 border-r border-emerald-900">Estado</th>
                       <th className="p-3 border-r border-emerald-900 text-right">Kilos Entrada</th>
                       <th className="p-3 border-r border-emerald-900 text-right">Kilos Actuales</th>
@@ -1016,7 +1099,6 @@ export function BatchAnalyticsView({
                         <>
                           <th className="p-3 border-r border-emerald-900">Categoría</th>
                           <th className="p-3 border-r border-emerald-900">Sexo</th>
-                          <th className="p-3 border-r border-emerald-900">Raza</th>
                           <th className="p-3 text-right">Color</th>
                         </>
                       ) : (
@@ -1030,7 +1112,7 @@ export function BatchAnalyticsView({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-300 dark:divide-slate-700 font-medium">
-                    {filteredBatchAnimals.map((animal, idx) => {
+                    {filteredGroupAnimals.map((animal, idx) => {
                       const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
                       const wm = calculateWeightMetrics(animal, animalWeighs);
                       const fin = calculateFinancials(animal);
@@ -1060,10 +1142,16 @@ export function BatchAnalyticsView({
                           <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                             <div className="font-bold">{animal.name || '-'}</div>
                             {animal.ironBrand && <div className="text-[10px] text-slate-500 dark:text-slate-400">Hierro: {animal.ironBrand}</div>}
+                            {animal.owner && animal.owner !== 'Propio' && <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Dueño: {animal.owner}</div>}
                           </td>
 
                           <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap font-bold text-slate-600 dark:text-slate-400">
                             {animal.entryBatch || animal.paddock || 'Ingreso #1'}
+                          </td>
+
+                          <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
+                            <div className="font-bold text-slate-800 dark:text-slate-200">{animal.breed || 'Sin Raza'}</div>
+                            <div className="text-[10px] text-slate-500">{animal.productionType || 'Sin Propósito'}</div>
                           </td>
 
                           <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
@@ -1106,9 +1194,6 @@ export function BatchAnalyticsView({
                               <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                                 {animal.sex || '-'}
                               </td>
-                              <td className="p-3 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                                {animal.breed || '-'}
-                              </td>
                               <td className="p-3 text-right whitespace-nowrap">
                                 {animal.color || '-'}
                               </td>
@@ -1140,7 +1225,7 @@ export function BatchAnalyticsView({
                   {/* PIE DE TABLA CON TOTALES Y PROMEDIOS EXACTOS */}
                   <tfoot className="bg-amber-100 dark:bg-amber-950/80 text-amber-950 dark:text-amber-200 font-black border-t-2 border-slate-900 text-[11px]">
                     <tr>
-                      <td colSpan={4} className="p-3 border-r border-slate-900">
+                      <td colSpan={5} className="p-3 border-r border-slate-900">
                         📊 TOTALES / PROMEDIOS ({tableSummary.count} cabezas filtradas)
                       </td>
                       <td className="p-3 text-right border-r border-slate-900 whitespace-nowrap">
@@ -1159,8 +1244,8 @@ export function BatchAnalyticsView({
                         {formatNumber(tableSummary.avgGdp, 3)}
                       </td>
                       {isWorker ? (
-                        <td colSpan={4} className="p-3 text-right text-slate-700 dark:text-slate-300">
-                          {tableSummary.count} animales registrados en lote
+                        <td colSpan={3} className="p-3 text-right text-slate-700 dark:text-slate-300">
+                          {tableSummary.count} animales registrados
                         </td>
                       ) : (
                         <>
@@ -1195,23 +1280,23 @@ export function BatchAnalyticsView({
       )}
 
       {/* ========================================================================= */}
-      {/* VISTA 2: COMPARADOR EJECUTIVO ENTRE LOTES / INGRESOS (CORTO & CONCISO)   */}
+      {/* VISTA 2: COMPARADOR MULTIDIMENSIONAL (SELECCIÓN MÚLTIPLE & MATRIZ PRO)     */}
       {/* ========================================================================= */}
       {activeTab === 'compare' && (
         <div className="space-y-5">
           
-          {/* Selector Rápido de Lotes a Comparar */}
+          {/* Panel de Selección Múltiple de Grupos */}
           <div className="custom-card p-4 space-y-3 border-2 border-indigo-200 dark:border-indigo-900/60 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <ArrowRightLeft className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>{isWorker ? 'Comparador Rápido de Rendimiento & Tiempo entre Lotes' : 'Comparador Rápido de Precios, Rendimiento & Tiempo'}</span>
+                  <span>Comparador por {activeCriterionInfo.label} (Selecciona los grupos a contrastar)</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {isWorker 
-                    ? 'Selecciona los lotes a contrastar cara a cara en ganancia de peso, rendimiento GDP y días en predio.' 
-                    : 'Selecciona los lotes a contrastar cara a cara en inversión de compra, ganancia de peso y días en predio.'}
+                    ? `Selecciona 2 o más ${activeCriterionInfo.label.toLowerCase()}s para contrastar kilos, ganancia de carne y ritmo GDP.` 
+                    : `Selecciona 2 o más ${activeCriterionInfo.label.toLowerCase()}s para contrastar compras, precios por kilo ($/kg), ganancia de carne y rendimiento GDP.`}
                 </p>
               </div>
 
@@ -1221,31 +1306,32 @@ export function BatchAnalyticsView({
                     onClick={handleDownloadComparisonExcel}
                     disabled={exportingExcel}
                     className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
-                    title="Descargar este análisis y gráficas en Excel"
+                    title={`Descargar comparativa de ${activeCriterionInfo.label} en Excel`}
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>{exportingExcel ? 'Descargando...' : '📊 Descargar Excel con Gráficas'}</span>
+                    <span>{exportingExcel ? 'Descargando...' : '📊 Descargar Excel'}</span>
                   </button>
                 )}
 
                 <button
-                  onClick={selectAllForComparison}
+                  type="button"
+                  onClick={selectAllGroupsForComparison}
                   className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-black hover:bg-indigo-100 transition cursor-pointer"
                 >
-                  Seleccionar Todos ({allBatches.length})
+                  Seleccionar Todos ({allGroups.length})
                 </button>
               </div>
             </div>
 
-            {/* Chips de Selección Rápida */}
-            <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
-              {batchesStatistics.map((b) => {
-                const isChecked = comparedBatches.length === 0 || comparedBatches.includes(b.batchName);
+            {/* Chips de Selección Múltiple con Checkbox */}
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              {groupsStatistics.map((group) => {
+                const isChecked = comparedGroups.includes(group.groupName);
                 return (
                   <button
-                    key={b.batchName}
+                    key={group.groupName}
                     type="button"
-                    onClick={() => toggleBatchComparison(b.batchName)}
+                    onClick={() => toggleGroupComparison(group.groupName)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-2 border cursor-pointer ${
                       isChecked
                         ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
@@ -1257,11 +1343,11 @@ export function BatchAnalyticsView({
                     }`}>
                       {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                     </div>
-                    <span>🏷️ {b.batchName}</span>
+                    <span>{activeCriterionInfo.icon} {group.groupName}</span>
                     <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                       isChecked ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                     }`}>
-                      {b.headCount} cab
+                      {group.headCount} cab
                     </span>
                   </button>
                 );
@@ -1269,9 +1355,9 @@ export function BatchAnalyticsView({
             </div>
           </div>
 
-          {/* CUADRO SINTÉTICO DE MEJORES RENDIMIENTOS (MINI DESTACADOS) */}
+          {/* CUADRO SINTÉTICO DE MEJORES RENDIMIENTOS (MEDALLERO DESTACADO) */}
           <div className={`grid grid-cols-1 ${!isWorker ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
-            {!isWorker && bestPurchaseBatch && (
+            {!isWorker && bestPurchaseGroup && (
               <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between">
                 <div>
                   <div className="text-[11px] font-black uppercase text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
@@ -1279,21 +1365,21 @@ export function BatchAnalyticsView({
                     <span>Mejor Precio Kilo Compra</span>
                   </div>
                   <div className="text-sm font-black text-slate-900 dark:text-white">
-                    🏷️ {bestPurchaseBatch.batchName}
+                    {activeCriterionInfo.icon} {bestPurchaseGroup.groupName}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-base font-black text-emerald-700 dark:text-emerald-300">
-                    {formatCurrency(bestPurchaseBatch.costPerEntryKg)}/kg
+                    {formatCurrency(bestPurchaseGroup.costPerEntryKg)}/kg
                   </div>
                   <div className="text-[10px] text-emerald-800 dark:text-emerald-400 font-bold">
-                    {formatCurrency(bestPurchaseBatch.avgPricePerHead)}/cab
+                    {formatCurrency(bestPurchaseGroup.avgPricePerHead)}/cab
                   </div>
                 </div>
               </div>
             )}
 
-            {bestGdpBatch && (
+            {bestGdpGroup && (
               <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-300 dark:border-purple-800/60 flex items-center justify-between">
                 <div>
                   <div className="text-[11px] font-black uppercase text-purple-800 dark:text-purple-400 flex items-center gap-1">
@@ -1301,21 +1387,21 @@ export function BatchAnalyticsView({
                     <span>Mayor Rendimiento (GDP)</span>
                   </div>
                   <div className="text-sm font-black text-slate-900 dark:text-white">
-                    🏷️ {bestGdpBatch.batchName}
+                    {activeCriterionInfo.icon} {bestGdpGroup.groupName}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-base font-black text-purple-700 dark:text-purple-300">
-                    {formatNumber(bestGdpBatch.avgGdp, 3)} kg/d
+                    {formatNumber(bestGdpGroup.avgGdp, 3)} kg/d
                   </div>
                   <div className="text-[10px] text-purple-800 dark:text-purple-400 font-bold">
-                    +{formatNumber(bestGdpBatch.avgGainKg, 1)} kg ganados
+                    +{formatNumber(bestGdpGroup.avgGainKg, 1)} kg ganados
                   </div>
                 </div>
               </div>
             )}
 
-            {bestGainBatch && (
+            {bestGainGroup && (
               <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-300 dark:border-blue-800/60 flex items-center justify-between">
                 <div>
                   <div className="text-[11px] font-black uppercase text-blue-800 dark:text-blue-400 flex items-center gap-1">
@@ -1323,15 +1409,15 @@ export function BatchAnalyticsView({
                     <span>Más Carne Ganada / Cabeza</span>
                   </div>
                   <div className="text-sm font-black text-slate-900 dark:text-white">
-                    🏷️ {bestGainBatch.batchName}
+                    {activeCriterionInfo.icon} {bestGainGroup.groupName}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-base font-black text-blue-700 dark:text-blue-300">
-                    +{formatNumber(bestGainBatch.avgGainKg, 1)} kg/cab
+                    +{formatNumber(bestGainGroup.avgGainKg, 1)} kg/cab
                   </div>
                   <div className="text-[10px] text-blue-800 dark:text-blue-400 font-bold">
-                    Total: +{formatNumber(bestGainBatch.totalGainKg, 0)} kg
+                    Total: +{formatNumber(bestGainGroup.totalGainKg, 0)} kg
                   </div>
                 </div>
               </div>
@@ -1343,10 +1429,14 @@ export function BatchAnalyticsView({
             <div className="flex items-center justify-between">
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <Scale className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>{isWorker ? 'Tabla Comparativa de Rendimiento & Tiempo' : 'Tabla Comparativa de Precios, Rendimiento & Tiempo'}</span>
+                <span>
+                  {isWorker 
+                    ? `Tabla Comparativa de Rendimiento & Tiempo por ${activeCriterionInfo.label}` 
+                    : `Tabla Comparativa de Precios, Rendimiento & Tiempo por ${activeCriterionInfo.label}`}
+                </span>
               </h3>
               <span className="text-xs text-slate-500 font-bold">
-                {selectedBatchesForComparison.length} {selectedBatchesForComparison.length === 1 ? 'lote' : 'lotes'}
+                {selectedGroupsForComparison.length} {selectedGroupsForComparison.length === 1 ? 'grupo' : 'grupos'} seleccionados
               </span>
             </div>
 
@@ -1354,7 +1444,7 @@ export function BatchAnalyticsView({
               <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[900px]">
                 <thead className="bg-slate-900 text-white uppercase text-[11px] font-black border-b-2 border-slate-900">
                   <tr>
-                    <th className="p-3 border-r border-slate-800">Lote / Ingreso</th>
+                    <th className="p-3 border-r border-slate-800">{activeCriterionInfo.label}</th>
                     <th className="p-3 border-r border-slate-800 text-center">Cabezas</th>
                     {!isWorker && (
                       <>
@@ -1373,77 +1463,77 @@ export function BatchAnalyticsView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 dark:divide-slate-700 font-medium">
-                  {selectedBatchesForComparison.map((b, idx) => (
+                  {selectedGroupsForComparison.map((group, idx) => (
                     <tr 
-                      key={b.batchName}
+                      key={group.groupName}
                       className={`hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition ${
                         idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/60'
                       }`}
                     >
-                      {/* Lote */}
+                      {/* Nombre del Grupo */}
                       <td className="p-3 font-black text-slate-900 dark:text-white border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-indigo-600 dark:text-indigo-400">🏷️</span>
-                          <span>{b.batchName}</span>
+                          <span className="text-indigo-600 dark:text-indigo-400">{activeCriterionInfo.icon}</span>
+                          <span>{group.groupName}</span>
                         </div>
                       </td>
 
                       {/* Cabezas */}
                       <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                        <span className="font-black text-emerald-700 dark:text-emerald-400">{b.activeCount} en finca</span>
-                        {b.soldCount > 0 && <span className="text-[10px] text-amber-700 dark:text-amber-400 block font-bold">({b.soldCount} v.)</span>}
+                        <span className="font-black text-emerald-700 dark:text-emerald-400">{group.activeCount} en finca</span>
+                        {group.soldCount > 0 && <span className="text-[10px] text-amber-700 dark:text-amber-400 block font-bold">({group.soldCount} v.)</span>}
                       </td>
 
                       {!isWorker && (
                         <>
                           {/* Valor de Compra Total */}
                           <td className="p-3 text-right font-black text-amber-950 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                            {formatCurrency(b.totalPurchaseCost)}
+                            {formatCurrency(group.totalPurchaseCost)}
                           </td>
 
                           {/* Precio Promedio por Animal */}
                           <td className="p-3 text-right font-extrabold text-slate-800 dark:text-slate-200 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                            {formatCurrency(b.avgPricePerHead)}
+                            {formatCurrency(group.avgPricePerHead)}
                           </td>
 
                           {/* Valor del Kilo Entrada ($/kg) */}
                           <td className="p-3 text-right font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                            {formatCurrency(b.costPerEntryKg)}/kg
+                            {formatCurrency(group.costPerEntryKg)}/kg
                           </td>
                         </>
                       )}
 
                       {/* Kilos Entrada Promedio */}
                       <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-semibold whitespace-nowrap">
-                        {formatNumber(b.avgEntryWeight, 1)} kg
+                        {formatNumber(group.avgEntryWeight, 1)} kg
                       </td>
 
                       {/* Kilos Actual Promedio */}
                       <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-slate-900 dark:text-white whitespace-nowrap">
-                        {formatNumber(b.avgCurrentWeight, 1)} kg
+                        {formatNumber(group.avgCurrentWeight, 1)} kg
                       </td>
 
                       {/* Ganancia de Carne Promedio */}
                       <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-blue-700 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20 whitespace-nowrap">
-                        +{formatNumber(b.avgGainKg, 1)} kg/cab
+                        +{formatNumber(group.avgGainKg, 1)} kg/cab
                       </td>
 
                       {/* Rendimiento (GDP kg/día) */}
                       <td className="p-3 text-right border-r border-slate-300 dark:border-slate-700 font-black text-purple-700 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-950/20 whitespace-nowrap">
-                        {formatNumber(b.avgGdp, 3)} kg/d
+                        {formatNumber(group.avgGdp, 3)} kg/d
                       </td>
 
                       {/* Tiempo en Finca */}
                       <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                        <span className="font-extrabold text-slate-800 dark:text-slate-200">{b.avgDays} días</span>
-                        <span className="text-[10px] text-slate-500 block font-normal">Desde {b.earliestDate === 'Todas las fechas' || b.earliestDate === 'N/A' ? b.earliestDate : formatDate(b.earliestDate)}</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">{group.avgDays} días</span>
+                        <span className="text-[10px] text-slate-500 block font-normal">Desde {group.earliestDate === 'Todas las fechas' || group.earliestDate === 'N/A' ? group.earliestDate : formatDate(group.earliestDate)}</span>
                       </td>
 
                       {/* Listos ≥ 480 kg */}
                       <td className="p-3 text-center border-r border-slate-300 dark:border-slate-700 whitespace-nowrap">
-                        {b.readyToSellCount > 0 ? (
+                        {group.readyToSellCount > 0 ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200 border border-purple-300">
-                            🎯 {b.readyToSellCount} listos
+                            🎯 {group.readyToSellCount} listos
                           </span>
                         ) : (
                           <span className="text-slate-400 text-[11px] font-bold">0</span>
@@ -1454,7 +1544,7 @@ export function BatchAnalyticsView({
                       <td className="p-3 text-center whitespace-nowrap">
                         <button
                           onClick={() => {
-                            setSelectedBatch(b.batchName);
+                            setSelectedGroupDetail(group.groupName);
                             setActiveTab('detail');
                           }}
                           className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition cursor-pointer shadow-sm"
@@ -1469,31 +1559,31 @@ export function BatchAnalyticsView({
             </div>
           </div>
 
-          {/* TARJETAS RESUMEN CARA A CARA (DISEÑO COMPACTO Y CONCISO) */}
+          {/* TARJETAS RESUMEN CARA A CARA */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {selectedBatchesForComparison.map((b) => (
+            {selectedGroupsForComparison.map((group) => (
               <div 
-                key={b.batchName}
+                key={group.groupName}
                 className="custom-card p-4 space-y-3 border-2 border-slate-300 dark:border-slate-700 shadow-sm"
               >
                 {/* Header Compacto */}
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                   <div>
                     <div className="flex items-center gap-1.5 font-black text-base text-slate-900 dark:text-white">
-                      <span>🏷️</span>
-                      <span>{b.batchName}</span>
+                      <span>{activeCriterionInfo.icon}</span>
+                      <span className="truncate">{group.groupName}</span>
                     </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                      ⏱️ <span className="font-bold text-slate-700 dark:text-slate-300">{b.avgDays} días en finca</span> • Desde {b.earliestDate === 'Todas las fechas' || b.earliestDate === 'N/A' ? b.earliestDate : formatDate(b.earliestDate)}
+                      ⏱️ <span className="font-bold text-slate-700 dark:text-slate-300">{group.avgDays} días en finca</span> • Desde {group.earliestDate === 'Todas las fechas' || group.earliestDate === 'N/A' ? group.earliestDate : formatDate(group.earliestDate)}
                     </div>
                   </div>
 
                   <div className="text-right">
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
-                      {b.headCount} cabezas
+                      {group.headCount} cabezas
                     </span>
                     <div className="text-[10px] text-slate-500 mt-0.5">
-                      {b.activeCount} en finca {b.soldCount > 0 ? `• ${b.soldCount} v.` : ''}
+                      {group.activeCount} en finca {group.soldCount > 0 ? `• ${group.soldCount} v.` : ''}
                     </div>
                   </div>
                 </div>
@@ -1503,16 +1593,16 @@ export function BatchAnalyticsView({
                   <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-1.5">
                     <div className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-400 flex items-center justify-between">
                       <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor de Compra & Precios:</span>
-                      <span className="font-black text-xs text-amber-950 dark:text-amber-300">{formatCurrency(b.totalPurchaseCost)}</span>
+                      <span className="font-black text-xs text-amber-950 dark:text-amber-300">{formatCurrency(group.totalPurchaseCost)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
                       <div>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Precio / Animal:</span>
-                        <span className="font-extrabold text-slate-800 dark:text-slate-200">{formatCurrency(b.avgPricePerHead)}</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">{formatCurrency(group.avgPricePerHead)}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Valor del Kilo:</span>
-                        <span className="font-black text-emerald-700 dark:text-emerald-400">{formatCurrency(b.costPerEntryKg)}/kg</span>
+                        <span className="font-black text-emerald-700 dark:text-emerald-400">{formatCurrency(group.costPerEntryKg)}/kg</span>
                       </div>
                     </div>
                   </div>
@@ -1522,36 +1612,36 @@ export function BatchAnalyticsView({
                 <div className="p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 space-y-1.5">
                   <div className="text-[10px] font-black uppercase text-blue-800 dark:text-blue-400 flex items-center justify-between">
                     <span className="flex items-center gap-1"><Scale className="w-3 h-3" /> Rendimiento de Peso & GDP:</span>
-                    <span className="font-black text-xs text-purple-700 dark:text-purple-400">{formatNumber(b.avgGdp, 3)} kg/día</span>
+                    <span className="font-black text-xs text-purple-700 dark:text-purple-400">{formatNumber(group.avgGdp, 3)} kg/día</span>
                   </div>
                   <div className="grid grid-cols-3 gap-1 text-xs pt-1 border-t border-blue-200/60 dark:border-blue-800/40 text-center">
                     <div>
                       <span className="text-[10px] text-slate-500 block">Entrada Prom:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{formatNumber(b.avgEntryWeight, 1)} kg</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{formatNumber(group.avgEntryWeight, 1)} kg</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 block">Actual Prom:</span>
-                      <span className="font-black text-slate-900 dark:text-white">{formatNumber(b.avgCurrentWeight, 1)} kg</span>
+                      <span className="font-black text-slate-900 dark:text-white">{formatNumber(group.avgCurrentWeight, 1)} kg</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block font-bold">Ganancia:</span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-400">+{formatNumber(b.avgGainKg, 1)} kg</span>
+                      <span className="font-black text-emerald-600 dark:text-emerald-400">+{formatNumber(group.avgGainKg, 1)} kg</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Footer del Lote con Acción Rápida */}
+                {/* Footer del Grupo con Acción Rápida */}
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[11px] font-extrabold text-slate-600 dark:text-slate-400">
-                    {b.readyToSellCount > 0 ? (
-                      <span className="text-purple-700 dark:text-purple-300 font-black">🎯 {b.readyToSellCount} listos (≥480kg)</span>
+                    {group.readyToSellCount > 0 ? (
+                      <span className="text-purple-700 dark:text-purple-300 font-black">🎯 {group.readyToSellCount} listos (≥480kg)</span>
                     ) : (
-                      <span>En etapa de ceba</span>
+                      <span>En etapa de levante / ceba</span>
                     )}
                   </span>
                   <button
                     onClick={() => {
-                      setSelectedBatch(b.batchName);
+                      setSelectedGroupDetail(group.groupName);
                       setActiveTab('detail');
                     }}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition cursor-pointer flex items-center gap-1"

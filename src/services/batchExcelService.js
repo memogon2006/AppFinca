@@ -16,19 +16,50 @@ export function generateVisualBar(value, max, barLength = 20) {
   return `${'█'.repeat(filledCount)}${'░'.repeat(emptyCount)} ${percent}%`;
 }
 
+export function getAnimalGroupKey(c, criterion = 'batch') {
+  switch (criterion) {
+    case 'breed':
+      return c.breed?.trim() || 'Sin Raza Definida';
+    case 'owner':
+      if (c.owner && c.ironBrand) return `${c.owner.trim()} (${c.ironBrand.trim()})`;
+      if (c.owner) return c.owner.trim();
+      if (c.ironBrand) return `Hierro: ${c.ironBrand.trim()}`;
+      return 'Propio / Sin Asignar';
+    case 'productionType':
+      return c.productionType?.trim() || 'Sin Propósito Definido';
+    case 'category':
+      if (c.category?.trim()) return c.category.trim();
+      if (c.sex === 'Macho') return 'Macho General';
+      if (c.sex === 'Hembra') return 'Hembra General';
+      return 'Sin Categoría';
+    case 'batch':
+    default:
+      return c.entryBatch?.trim() || c.paddock?.trim() || 'Ingreso #1';
+  }
+}
+
 /**
- * Construye la hoja de cálculo estilizada de "Comparativa de Lotes con Gráficas"
+ * Construye la hoja de cálculo estilizada de "Comparativa de Lotes / Razas / Dueños / Producción / Categorías con Gráficas"
  */
-export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmName = 'Finca Ganadera') {
-  // 1. Agrupar animales por lote
-  const batchNames = Array.from(
-    new Set(cattle.map(c => c.entryBatch || c.paddock || 'Ingreso #1').filter(Boolean))
-  ).sort();
+export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmName = 'Finca Ganadera', criterion = 'batch') {
+  const criterionLabels = {
+    batch: { name: 'Lotes & Ingresos', header: 'Lote / Ingreso #' },
+    breed: { name: 'Razas', header: 'Raza' },
+    owner: { name: 'Dueños & Marcas', header: 'Dueño / Marca' },
+    productionType: { name: 'Tipos de Producción', header: 'Tipo de Producción' },
+    category: { name: 'Categorías & Etapas', header: 'Categoría / Etapa' }
+  };
+  const critInfo = criterionLabels[criterion] || criterionLabels.batch;
 
-  if (batchNames.length === 0) return null;
+  // 1. Agrupar animales por el criterio seleccionado
+  const groupNames = Array.from(
+    new Set(cattle.map(c => getAnimalGroupKey(c, criterion)).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-  const batchesData = batchNames.map(name => {
-    const animals = cattle.filter(c => (c.entryBatch || c.paddock || 'Ingreso #1') === name);
+  if (groupNames.length === 0) return null;
+
+  const batchesData = groupNames.map(name => {
+    const animals = cattle.filter(c => getAnimalGroupKey(c, criterion) === name);
     const headCount = animals.length;
     const activeCount = animals.filter(c => c.status === 'Activo').length;
     const soldCount = animals.filter(c => c.status === 'Vendido').length;
@@ -109,7 +140,7 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
     };
   });
 
-  // Identificar los lotes destacados
+  // Identificar los grupos destacados
   const validPurchase = batchesData.filter(b => b.costPerEntryKg > 0);
   const bestPurchase = validPurchase.length > 0
     ? validPurchase.reduce((best, cur) => cur.costPerEntryKg < best.costPerEntryKg ? cur : best, validPurchase[0])
@@ -134,14 +165,14 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
   const aoa = [];
 
   // Fila 0: Título Principal
-  aoa.push([`⚖️ COMPARATIVA EJECUTIVA DE LOTES & INGRESOS • ${farmName.toUpperCase()}`]);
+  aoa.push([`⚖️ COMPARATIVA EJECUTIVA POR ${critInfo.name.toUpperCase()} • ${farmName.toUpperCase()}`]);
   // Fila 1: Subtítulo con fecha
   aoa.push([`Análisis de Precios de Compra, Valor de Ingreso, Rendimientos (GDP), Biomasa y Tiempo en Finca | Generado: ${formatDate(new Date())}`]);
   // Fila 2: Vacía
   aoa.push([]);
 
   // Fila 3: Sección Medallero
-  aoa.push(['🏆 CUADRO DE HONOR Y EFICIENCIA DE LOTES']);
+  aoa.push([`🏆 CUADRO DE HONOR Y EFICIENCIA POR ${critInfo.name.toUpperCase()}`]);
   // Fila 4: Medallas
   const med1 = bestPurchase ? `🥇 MEJOR PRECIO COMPRA ($/kg): ${bestPurchase.batchName} (${formatCurrency(bestPurchase.costPerEntryKg)}/kg • ${formatCurrency(bestPurchase.avgPricePerHead)}/cab)` : '🥇 MEJOR PRECIO: N/A';
   const med2 = bestGdp ? `⚡ MAYOR RENDIMIENTO (GDP): ${bestGdp.batchName} (${formatNumber(bestGdp.avgGdp, 3)} kg/día)` : '⚡ MAYOR GDP: N/A';
@@ -151,11 +182,11 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
   aoa.push([]);
 
   // Fila 6: Título Tabla Matriz
-  aoa.push(['📊 MATRIZ COMPARATIVA DE LOTES & INGRESOS']);
+  aoa.push([`📊 MATRIZ COMPARATIVA POR ${critInfo.name.toUpperCase()}`]);
 
   // Fila 7: Encabezados de Tabla
   const tableHeaders = [
-    'Lote / Ingreso #',
+    critInfo.header,
     'En Finca (Activos)',
     'Vendidos',
     'Total Cab',
@@ -557,20 +588,29 @@ export function buildBatchComparisonWorksheet(cattle = [], weighings = [], farmN
 }
 
 /**
- * Genera y descarga directamente un archivo Excel exclusivo de Comparativa de Lotes con Gráficas
+ * Genera y descarga directamente un archivo Excel exclusivo de Comparativa con Gráficas (Lotes, Razas, Dueños, etc.)
  */
-export function exportBatchComparisonExcel(cattle = [], weighings = [], farmName = 'Finca Ganadera') {
+export function exportBatchComparisonExcel(cattle = [], weighings = [], farmName = 'Finca Ganadera', criterion = 'batch') {
   const wb = XLSX.utils.book_new();
-  const ws = buildBatchComparisonWorksheet(cattle, weighings, farmName);
+  const ws = buildBatchComparisonWorksheet(cattle, weighings, farmName, criterion);
   
   if (!ws) {
-    throw new Error('No hay lotes con animales disponibles para exportar.');
+    throw new Error('No hay animales registrados para exportar la comparativa.');
   }
 
-  XLSX.utils.book_append_sheet(wb, ws, '⚖️ Comparativa de Lotes');
+  const critLabels = {
+    batch: 'Lotes',
+    breed: 'Razas',
+    owner: 'Dueños_Marcas',
+    productionType: 'Tipo_Producción',
+    category: 'Categorías'
+  };
+  const critText = critLabels[criterion] || 'Lotes';
+
+  XLSX.utils.book_append_sheet(wb, ws, `⚖️ Comparativa ${critText.replace('_', ' ')}`);
 
   const cleanFarm = farmName.replace(/[^a-zA-Z0-9]/g, '_');
-  const fileName = `Comparativa_Lotes_${cleanFarm}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const fileName = `Comparativa_${critText}_${cleanFarm}_${new Date().toISOString().slice(0, 10)}.xlsx`;
   XLSX.writeFile(wb, fileName);
   return fileName;
 }

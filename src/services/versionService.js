@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.38";
+export const CURRENT_APP_VERSION = "2.14.39";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.39",
+    date: "22/09/2026",
+    title: "🧬 Comparador Multidimensional de Ganado (Lote, Raza, Dueño/Hierro, Tipo Producción y Categoría)",
+    highlights: [
+      "5 Dimensiones de Comparación: Posibilidad de analizar y contrastar el desempeño del ganado por Lote / Ingreso (🏷️), Raza (🧬), Dueño o Marca / Hierro (👤), Tipo de Producción (🎯) y Categoría / Etapa (🐄).",
+      "Selección Múltiple Interactiva: Elige 1, 2, 3 o todos los grupos para comparativas lado a lado instantáneas con medallas de eficiencia, tabla matriz sintética y tarjetas cara a cara.",
+      "Integración en Detalle y Excel: Vistas de detalle individual filtradas por cualquier dimensión y exportación de reportes Excel estilizados con gráficos de barras para el criterio seleccionado.",
+      "Privacidad Zootécnica de Trabajadores: Protección total de datos financieros en todos los criterios para perfiles de trabajadores de campo."
+    ]
+  },
   {
     version: "2.14.38",
     date: "22/09/2026",
