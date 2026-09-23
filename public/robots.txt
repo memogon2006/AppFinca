@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://finca-ganadera-gamma.vercel.app/sitemap.xml
