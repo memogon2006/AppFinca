@@ -29,8 +29,21 @@ import {
   Target,
   FileSpreadsheet,
   CheckSquare,
-  Square
+  Square,
+  PieChart as PieIcon,
+  Activity
 } from 'lucide-react';
+import { 
+  ResponsiveContainer, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  CartesianGrid, 
+  Cell, 
+  Legend 
+} from 'recharts';
 import { 
   formatCurrency, 
   formatNumber, 
@@ -40,6 +53,7 @@ import {
 } from '../../services/calculations';
 import { exportBatchComparisonExcel, getAnimalGroupKey } from '../../services/batchExcelService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 // Criterios de Comparación Disponibles
 const COMPARISON_CRITERIA = [
@@ -60,6 +74,7 @@ export function BatchAnalyticsView({
   onOpenWhatsAppReport
 }) {
   const { currentUser, isWorker } = useAuth();
+  const { isDark } = useTheme();
   
   // Pestaña Activa: 'detail' (Detalle individual) | 'compare' (Comparador Multi-criterio)
   const [activeTab, setActiveTab] = useState('detail');
@@ -73,6 +88,10 @@ export function BatchAnalyticsView({
   // Grupos seleccionados para el Comparador (Array de nombres para multi-selección)
   const [comparedGroups, setComparedGroups] = useState([]);
   
+  // Estado para la métrica activa en las gráficas comparativas
+  const [comparisonMetricMode, setComparisonMetricMode] = useState('gdp'); // 'gdp' | 'weights' | 'gain' | 'heads' | 'costKg'
+  const [economicMetricMode, setEconomicMetricMode] = useState('costKg'); // 'costKg' | 'totalPurchase'
+
   // Filtros de búsqueda y estado
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Activo'); // 'Activo' (predeterminado) | 'all' | 'Vendido' | 'ready480'
@@ -95,7 +114,6 @@ export function BatchAnalyticsView({
     if (allGroups.length > 0) {
       setComparedGroups(prev => {
         const valid = prev.filter(g => allGroups.includes(g));
-        // Si no hay selecciones válidas para el nuevo criterio, seleccionar todos
         if (valid.length > 0) return valid;
         return allGroups;
       });
@@ -528,6 +546,72 @@ export function BatchAnalyticsView({
     return groupsStatistics.filter(g => comparedGroups.includes(g.groupName));
   }, [comparedGroups, groupsStatistics]);
 
+  // Datos estructurados para las Gráficas Comparativas Recharts
+  const comparisonChartData = useMemo(() => {
+    return selectedGroupsForComparison.map(group => ({
+      name: group.groupName.length > 14 ? group.groupName.slice(0, 12) + '…' : group.groupName,
+      fullName: group.groupName,
+      gdp: Number(group.avgGdp.toFixed(3)),
+      pesoEntrada: Number(group.avgEntryWeight.toFixed(1)),
+      pesoActual: Number(group.avgCurrentWeight.toFixed(1)),
+      gananciaKg: Number(group.avgGainKg.toFixed(1)),
+      totalGanancia: Number(group.totalGainKg.toFixed(0)),
+      costoKg: Math.round(group.costPerEntryKg),
+      inversionTotal: Math.round(group.totalPurchaseCost),
+      precioAnimal: Math.round(group.avgPricePerHead),
+      activos: group.activeCount,
+      vendidos: group.soldCount,
+      totalCabezas: group.headCount,
+      listos480: group.readyToSellCount,
+      diasFinca: group.avgDays
+    }));
+  }, [selectedGroupsForComparison]);
+
+  // Datos de distribución por rangos de peso para la vista de detalle
+  const detailWeightDistributionData = useMemo(() => {
+    const activeAnimals = filteredGroupAnimals.filter(c => c.status === 'Activo');
+    let under300 = 0;
+    let between300_380 = 0;
+    let between380_480 = 0;
+    let ready480Plus = 0;
+
+    activeAnimals.forEach(c => {
+      const animalWeighs = weighings.filter(w => String(w.cattleId) === String(c.id));
+      const wm = calculateWeightMetrics(c, animalWeighs);
+      if (wm.currentWeight >= 480) ready480Plus++;
+      else if (wm.currentWeight >= 380) between380_480++;
+      else if (wm.currentWeight >= 300) between300_380++;
+      else under300++;
+    });
+
+    return [
+      { range: '< 300 kg', label: 'Levante', count: under300, color: '#f59e0b' },
+      { range: '300-380 kg', label: 'Desarrollo', count: between300_380, color: '#3b82f6' },
+      { range: '380-480 kg', label: 'Finalización', count: between380_480, color: '#8b5cf6' },
+      { range: '≥ 480 kg', label: 'Listos Venta', count: ready480Plus, color: '#10b981' }
+    ];
+  }, [filteredGroupAnimals, weighings]);
+
+  // Ranking Top 5 mejores animales en ganancia del grupo
+  const detailTopPerformers = useMemo(() => {
+    return filteredGroupAnimals
+      .filter(c => c.status === 'Activo')
+      .map(c => {
+        const animalWeighs = weighings.filter(w => String(w.cattleId) === String(c.id));
+        const wm = calculateWeightMetrics(c, animalWeighs);
+        return {
+          id: c.id,
+          tagNumber: c.tagNumber,
+          name: c.name,
+          gain: wm.totalGain,
+          gdp: wm.overallGdp,
+          weight: wm.currentWeight
+        };
+      })
+      .sort((a, b) => b.gain - a.gain)
+      .slice(0, 5);
+  }, [filteredGroupAnimals, weighings]);
+
   // Medallas de eficiencia en la comparativa
   const bestPurchaseGroup = useMemo(() => {
     const valid = groupsStatistics.filter(g => g.costPerEntryKg > 0);
@@ -579,8 +663,8 @@ export function BatchAnalyticsView({
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             {isWorker 
-              ? 'Control zootécnico y comparativas avanzadas por Lote, Raza, Dueño/Marca, Tipo de Producción y Categoría/Etapa.'
-              : 'Control integral de precios, kilos, rendimiento GDP y análisis comparativo por Lote, Raza, Dueño, Producción y Categoría.'}
+              ? 'Control zootécnico, gráficas visuales y comparativas avanzadas por Lote, Raza, Dueño/Marca, Tipo de Producción y Categoría/Etapa.'
+              : 'Control integral de precios, gráficas de rendimiento, biomasa, análisis económico y comparativas por Lote, Raza, Dueño, Producción y Categoría.'}
           </p>
         </div>
 
@@ -636,7 +720,7 @@ export function BatchAnalyticsView({
           }`}
         >
           <ArrowRightLeft className="w-4 h-4 shrink-0" />
-          <span className="truncate">Comparador Multidimensional</span>
+          <span className="truncate">Comparador & Gráficas</span>
           <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[11px] font-black bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800 shrink-0">
             5 Criterios
           </span>
@@ -684,7 +768,7 @@ export function BatchAnalyticsView({
       </div>
 
       {/* ========================================================================= */}
-      {/* VISTA 1: DETALLE POR GRUPO INDIVIDUAL (KPIS & TABLA DETALLADA)            */}
+      {/* VISTA 1: DETALLE POR GRUPO INDIVIDUAL (KPIS, GRÁFICA & TABLA DETALLADA)   */}
       {/* ========================================================================= */}
       {activeTab === 'detail' && (
         <div className="space-y-6">
@@ -700,7 +784,7 @@ export function BatchAnalyticsView({
                 onClick={() => setActiveTab('compare')}
                 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto"
               >
-                <span>Comparar todos los grupos</span>
+                <span>Comparar todos los grupos con gráficas</span>
                 <ArrowRightLeft className="w-3 h-3" />
               </button>
             </div>
@@ -766,7 +850,7 @@ export function BatchAnalyticsView({
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                  {/* Selector de Ámbito / Estado: Activos (Defecto), Todos (Histórico), Vendidos */}
+                  {/* Selector de Ámbito / Estado */}
                   <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold overflow-x-auto no-scrollbar shadow-sm">
                     <button
                       type="button"
@@ -806,7 +890,7 @@ export function BatchAnalyticsView({
                     </button>
                   </div>
 
-                  {/* Botón WhatsApp Reporte Lote / Grupo */}
+                  {/* Botón WhatsApp Reporte */}
                   {onOpenWhatsAppReport && (
                     <button
                       type="button"
@@ -997,6 +1081,111 @@ export function BatchAnalyticsView({
 
             </div>
           )}
+
+          {/* ========================================================================= */}
+          {/* GRÁFICAS EN VISTA DETALLE: DISTRIBUCIÓN POR RANGOS DE PESO & TOP ANIMALES */}
+          {/* ========================================================================= */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            {/* Gráfica 1: Distribución por Rangos de Peso */}
+            <div className="custom-card p-4 space-y-3 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                    Distribución por Rango de Peso
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  {filteredGroupAnimals.filter(c => c.status === 'Activo').length} activos en hato
+                </span>
+              </div>
+
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={detailWeightDistributionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                    <XAxis dataKey="range" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} />
+                    <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} allowDecimals={false} unit=" cab" />
+                    <Tooltip 
+                      formatter={(value, name, item) => [
+                        `${value} cabezas`, 
+                        `${item.payload.label} (${((value / (filteredGroupAnimals.filter(c => c.status === 'Activo').length || 1)) * 100).toFixed(0)}%)`
+                      ]}
+                      contentStyle={{ 
+                        backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                        borderColor: isDark ? '#334155' : '#e2e8f0', 
+                        borderRadius: '0.75rem', 
+                        color: isDark ? '#fff' : '#0f172a',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                      {detailWeightDistributionData.map((entry, index) => (
+                        <Cell key={`cell-weight-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Subpanel 2: Top Ganancia del Grupo */}
+            <div className="custom-card p-4 space-y-3 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                    Top 5 Ganancia de Peso en {activeCriterionInfo.shortLabel}
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                  Mejores Rendimientos
+                </span>
+              </div>
+
+              {detailTopPerformers.length > 0 ? (
+                <div className="space-y-2">
+                  {detailTopPerformers.map((animal, idx) => (
+                    <div 
+                      key={animal.id}
+                      onClick={() => onSelectAnimal && onSelectAnimal(cattle.find(c => c.id === animal.id))}
+                      className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between cursor-pointer transition text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] ${
+                          idx === 0 ? 'bg-amber-400 text-amber-950' : idx === 1 ? 'bg-slate-300 text-slate-800' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <span className="font-black text-slate-900 dark:text-white">{animal.tagNumber}</span>
+                          {animal.name && <span className="text-[11px] text-slate-500 ml-1">({animal.name})</span>}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-right">
+                        <div>
+                          <div className="font-black text-emerald-600 dark:text-emerald-400">+{formatNumber(animal.gain, 1)} kg</div>
+                          <div className="text-[10px] text-slate-500">{formatNumber(animal.gdp, 3)} kg/d</div>
+                        </div>
+                        <div className="font-bold text-slate-800 dark:text-slate-200">
+                          {formatNumber(animal.weight, 1)} kg
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="h-40 flex items-center justify-center text-xs text-slate-400 text-center">
+                  No hay animales activos con pesajes para calcular el ranking.
+                </div>
+              )}
+            </div>
+
+          </div>
 
           {/* TABLA DETALLADA ANIMAL POR ANIMAL CON BORDES DEFINIDOS */}
           <div className="custom-card p-5 space-y-4">
@@ -1280,10 +1469,10 @@ export function BatchAnalyticsView({
       )}
 
       {/* ========================================================================= */}
-      {/* VISTA 2: COMPARADOR MULTIDIMENSIONAL (SELECCIÓN MÚLTIPLE & MATRIZ PRO)     */}
+      {/* VISTA 2: COMPARADOR MULTIDIMENSIONAL & GRÁFICAS COMPARATIVAS PRO          */}
       {/* ========================================================================= */}
       {activeTab === 'compare' && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           
           {/* Panel de Selección Múltiple de Grupos */}
           <div className="custom-card p-4 space-y-3 border-2 border-indigo-200 dark:border-indigo-900/60 shadow-sm">
@@ -1295,8 +1484,8 @@ export function BatchAnalyticsView({
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {isWorker 
-                    ? `Selecciona 2 o más ${activeCriterionInfo.label.toLowerCase()}s para contrastar kilos, ganancia de carne y ritmo GDP.` 
-                    : `Selecciona 2 o más ${activeCriterionInfo.label.toLowerCase()}s para contrastar compras, precios por kilo ($/kg), ganancia de carne y rendimiento GDP.`}
+                    ? `Selecciona 2 o más ${activeCriterionInfo.label.toLowerCase()}s para contrastar kilos, ganancia de carne, ritmo GDP y gráficas visuales.` 
+                    : `Selecciona 2 o más ${activeCriterionInfo.label.toLowerCase()}s para contrastar compras, precios por kilo ($/kg), ganancia de carne, rendimiento GDP y gráficas comparativas.`}
                 </p>
               </div>
 
@@ -1306,7 +1495,7 @@ export function BatchAnalyticsView({
                     onClick={handleDownloadComparisonExcel}
                     disabled={exportingExcel}
                     className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
-                    title={`Descargar comparativa de ${activeCriterionInfo.label} en Excel`}
+                    title={`Descargar comparativa de ${activeCriterionInfo.label} en Excel con Gráficas`}
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5" />
                     <span>{exportingExcel ? 'Descargando...' : '📊 Descargar Excel'}</span>
@@ -1422,6 +1611,290 @@ export function BatchAnalyticsView({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* ========================================================================= */}
+          {/* SECCIÓN DE GRÁFICAS COMPARATIVAS MULTIDIMENSIONALES RECHARTS             */}
+          {/* ========================================================================= */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            {/* Gráfica 1: Comparativa Zootécnica de Rendimiento & Pesos */}
+            <div className="custom-card p-4 space-y-3 border-2 border-slate-300 dark:border-slate-700 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                    Desempeño Zootécnico & Pesos
+                  </h3>
+                </div>
+
+                {/* Selector de Métrica */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-black overflow-x-auto no-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setComparisonMetricMode('gdp')}
+                    className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                      comparisonMetricMode === 'gdp'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    ⚡ GDP (kg/d)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setComparisonMetricMode('weights')}
+                    className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                      comparisonMetricMode === 'weights'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    ⚖️ Entrada vs Actual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setComparisonMetricMode('gain')}
+                    className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                      comparisonMetricMode === 'gain'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    🥩 Ganancia (+kg)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setComparisonMetricMode('heads')}
+                    className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                      comparisonMetricMode === 'heads'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    👥 Cabezas
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenedor Gráfica Recharts */}
+              <div className="h-64 sm:h-72 w-full pt-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  {comparisonMetricMode === 'weights' ? (
+                    <BarChart data={comparisonChartData} margin={{ top: 15, right: 10, left: -15, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                      <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} interval={0} angle={-25} textAnchor="end" />
+                      <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} unit=" kg" />
+                      <Tooltip 
+                        formatter={(value, name) => [`${value} kg`, name === 'pesoEntrada' ? 'Peso Entrada Prom' : 'Peso Actual Prom']}
+                        labelFormatter={(label, item) => item && item[0] ? item[0].payload.fullName : label}
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                          borderColor: isDark ? '#334155' : '#e2e8f0', 
+                          borderRadius: '0.75rem', 
+                          color: isDark ? '#fff' : '#0f172a',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                      <Legend verticalAlign="top" height={30} iconType="circle" />
+                      <Bar dataKey="pesoEntrada" name="Peso Entrada (kg)" fill="#64748b" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pesoActual" name="Peso Actual (kg)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  ) : comparisonMetricMode === 'heads' ? (
+                    <BarChart data={comparisonChartData} margin={{ top: 15, right: 10, left: -20, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                      <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} interval={0} angle={-25} textAnchor="end" />
+                      <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} allowDecimals={false} unit=" cab" />
+                      <Tooltip 
+                        formatter={(value, name) => [`${value} cab`, name === 'activos' ? '🟢 En Finca (Activos)' : '🏷️ Vendidos']}
+                        labelFormatter={(label, item) => item && item[0] ? item[0].payload.fullName : label}
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                          borderColor: isDark ? '#334155' : '#e2e8f0', 
+                          borderRadius: '0.75rem', 
+                          color: isDark ? '#fff' : '#0f172a',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                      <Legend verticalAlign="top" height={30} iconType="circle" />
+                      <Bar dataKey="activos" name="En Finca (Activos)" fill="#10b981" stackId="a" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="vendidos" name="Vendidos" fill="#f59e0b" stackId="a" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  ) : (
+                    <BarChart data={comparisonChartData} margin={{ top: 15, right: 10, left: -15, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                      <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} interval={0} angle={-25} textAnchor="end" />
+                      <YAxis 
+                        stroke={isDark ? '#94a3b8' : '#64748b'} 
+                        fontSize={11} 
+                        unit={comparisonMetricMode === 'gdp' ? ' kg/d' : ' kg'} 
+                      />
+                      <Tooltip 
+                        formatter={(value, name, item) => [
+                          comparisonMetricMode === 'gdp' 
+                            ? `${value} kg/día (${item.payload.diasFinca} días en finca)` 
+                            : `+${value} kg/cabeza (Total lote: +${item.payload.totalGanancia} kg)`,
+                          comparisonMetricMode === 'gdp' ? '⚡ Ritmo GDP' : '🥩 Ganancia Promedio'
+                        ]}
+                        labelFormatter={(label, item) => item && item[0] ? item[0].payload.fullName : label}
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                          borderColor: isDark ? '#334155' : '#e2e8f0', 
+                          borderRadius: '0.75rem', 
+                          color: isDark ? '#fff' : '#0f172a',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                      <Bar 
+                        dataKey={comparisonMetricMode === 'gdp' ? 'gdp' : 'gananciaKg'} 
+                        fill="#8b5cf6" 
+                        radius={[6, 6, 0, 0]}
+                      >
+                        {comparisonChartData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-bar-${index}`} 
+                            fill={
+                              comparisonMetricMode === 'gdp'
+                                ? (entry.gdp >= 0.75 ? '#10b981' : entry.gdp >= 0.5 ? '#06b6d4' : entry.gdp >= 0.35 ? '#8b5cf6' : '#f59e0b')
+                                : '#3b82f6'
+                            } 
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Gráfica 2: Comparativa Económica (Admin) / Animales Listos (Worker) */}
+            {!isWorker ? (
+              <div className="custom-card p-4 space-y-3 border-2 border-slate-300 dark:border-slate-700 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                      Comparativa Económica & Costo de Entrada
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-black">
+                    <button
+                      type="button"
+                      onClick={() => setEconomicMetricMode('costKg')}
+                      className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                        economicMetricMode === 'costKg'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      💲 Valor Kilo ($/kg)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEconomicMetricMode('totalPurchase')}
+                      className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                        economicMetricMode === 'totalPurchase'
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      💰 Inversión Total ($)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Contenedor Gráfica Económica */}
+                <div className="h-64 sm:h-72 w-full pt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonChartData} margin={{ top: 15, right: 10, left: 0, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                      <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} interval={0} angle={-25} textAnchor="end" />
+                      <YAxis 
+                        stroke={isDark ? '#94a3b8' : '#64748b'} 
+                        fontSize={11} 
+                        tickFormatter={(val) => economicMetricMode === 'costKg' ? `$${val}` : `$${(val / 1000000).toFixed(1)}M`}
+                      />
+                      <Tooltip 
+                        formatter={(value, name, item) => [
+                          economicMetricMode === 'costKg' 
+                            ? `${formatCurrency(value)}/kg (${formatCurrency(item.payload.precioAnimal)}/animal)` 
+                            : formatCurrency(value),
+                          economicMetricMode === 'costKg' ? 'Valor Kilo Entrada' : 'Inversión Compra Total'
+                        ]}
+                        labelFormatter={(label, item) => item && item[0] ? item[0].payload.fullName : label}
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                          borderColor: isDark ? '#334155' : '#e2e8f0', 
+                          borderRadius: '0.75rem', 
+                          color: isDark ? '#fff' : '#0f172a',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                      <Bar 
+                        dataKey={economicMetricMode === 'costKg' ? 'costoKg' : 'inversionTotal'} 
+                        fill={economicMetricMode === 'costKg' ? '#059669' : '#d97706'} 
+                        radius={[6, 6, 0, 0]}
+                      >
+                        {comparisonChartData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-econ-${index}`} 
+                            fill={economicMetricMode === 'costKg' ? '#10b981' : '#f59e0b'} 
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              <div className="custom-card p-4 space-y-3 border-2 border-slate-300 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                      Bovinos Listos para Venta (≥480kg)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300">
+                    Etapa de Finalización
+                  </span>
+                </div>
+
+                <div className="h-64 sm:h-72 w-full pt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonChartData} margin={{ top: 15, right: 10, left: -20, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                      <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} interval={0} angle={-25} textAnchor="end" />
+                      <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} allowDecimals={false} unit=" cab" />
+                      <Tooltip 
+                        formatter={(value, name, item) => [`${value} listos de ${item.payload.activos} en finca`, '🎯 Listos ≥480kg']}
+                        labelFormatter={(label, item) => item && item[0] ? item[0].payload.fullName : label}
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                          borderColor: isDark ? '#334155' : '#e2e8f0', 
+                          borderRadius: '0.75rem', 
+                          color: isDark ? '#fff' : '#0f172a',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                      <Bar dataKey="listos480" fill="#a855f7" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* TABLA COMPARATIVA SINTÉTICA (PRECIOS, RENDIMIENTOS, TIEMPO, VALOR DE COMPRA) */}

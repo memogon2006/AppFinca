@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.40";
+export const CURRENT_APP_VERSION = "2.14.41";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.41",
+    date: "22/09/2026",
+    title: "📊 Gráficas Visuales Interactivas en Lotes, Ingresos & Comparaciones",
+    highlights: [
+      "Gráficas Zootécnicas Comparativas: Visualización en barras interactivas de Ganancia Diaria de Peso (GDP kg/día), Evolución de Pesos (Entrada vs Actual), Kilos Ganados y Población de Cabezas.",
+      "Análisis Económico Visual: Gráfica comparativa de Valor del Kilo de Entrada ($/kg) e Inversión Total de Compra para administradores.",
+      "Distribución de Biomasa por Rango: Gráfica de rangos de peso (<300kg, 300-380kg, 380-480kg, ≥480kg Listos) y ranking Top 5 en báscula por grupo."
+    ]
+  },
   {
     version: "2.14.40",
     date: "22/09/2026",
