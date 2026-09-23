@@ -37,6 +37,7 @@ import { UpdateNotificationBanner } from './components/Common/UpdateNotification
 import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { sanitizeData, sanitizeString } from './services/sanitizeService';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -330,8 +331,9 @@ export default function App() {
 
   const activeCattleCount = cattle.filter(c => c.status === 'Activo').length;
 
-  const handleSaveAnimal = async (animalData) => {
-    if (!userId) return;
+  const handleSaveAnimal = async (rawAnimalData) => {
+    if (!userId || !rawAnimalData) return;
+    const animalData = sanitizeData(rawAnimalData);
 
     if (animalData.id) {
       const updated = { ...animalData, userId };
@@ -415,8 +417,9 @@ export default function App() {
   };
 
   // Guardar Lote Completo de Bovinos
-  const handleSaveBatchCattle = async (batchAnimals) => {
-    if (!userId || !batchAnimals || batchAnimals.length === 0) return;
+  const handleSaveBatchCattle = async (rawBatchAnimals) => {
+    if (!userId || !rawBatchAnimals || rawBatchAnimals.length === 0) return;
+    const batchAnimals = sanitizeData(rawBatchAnimals);
 
     for (let i = 0; i < batchAnimals.length; i++) {
       const animalData = batchAnimals[i];
@@ -1120,8 +1123,9 @@ export default function App() {
     showToast('Recordatorio eliminado del calendario 🗑️');
   };
 
-  const handleSaveFarmExpense = async (expenseData) => {
-    if (!userId) return;
+  const handleSaveFarmExpense = async (rawExpenseData) => {
+    if (!userId || !rawExpenseData) return;
+    const expenseData = sanitizeData(rawExpenseData);
     const expId = expenseData.id || ('exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
     const record = {
       ...expenseData,
@@ -1168,8 +1172,9 @@ export default function App() {
     showToast('Gasto eliminado de la contabilidad 🗑️');
   };
 
-  const handleSaveFarmIncome = async (incomeData) => {
-    if (!userId) return;
+  const handleSaveFarmIncome = async (rawIncomeData) => {
+    if (!userId || !rawIncomeData) return;
+    const incomeData = sanitizeData(rawIncomeData);
     const incId = incomeData.id || ('inc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
     const record = {
       ...incomeData,
