@@ -82,6 +82,52 @@ export function Navbar({
 
   const displayedNavItems = isWorker ? navItems.filter(item => item.id !== 'finances' && item.id !== 'accounting') : navItems;
 
+  // Agrupación estructurada de módulos por categoría y función
+  const navigationGroups = [
+    {
+      id: 'general',
+      title: 'Panel de Control',
+      badge: 'Principal',
+      badgeClass: 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300/40',
+      items: [
+        { id: 'dashboard', label: 'Tablero Principal', icon: LayoutDashboard, desc: 'Métricas, resumen y alertas' },
+      ]
+    },
+    {
+      id: 'herd',
+      title: 'Ganadería & Inventario',
+      badge: 'Hato',
+      badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 border border-teal-300/40',
+      items: [
+        { id: 'cattle', label: 'Inventario de Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
+        { id: 'batches', label: 'Lotes & Ingresos', icon: Boxes, desc: 'Agrupación y control de potreros' },
+        { id: 'palpation', label: 'Palpación & Reprod.', icon: Stethoscope, desc: 'Preñeces, tactos y estados' },
+        { id: 'weights', label: 'Control de Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
+      ]
+    },
+    {
+      id: 'field_ops',
+      title: 'Trabajo en Corral & Manga',
+      badge: 'Campo',
+      badgeClass: 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 border border-purple-300/40',
+      items: [
+        { id: 'quickWeigh', label: 'Báscula Rápida', icon: Zap, desc: 'Pesaje ágil en manga' },
+      ]
+    },
+    ...(!isWorker ? [
+      {
+        id: 'finances',
+        title: 'Finanzas & Contabilidad',
+        badge: 'Finanzas',
+        badgeClass: 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 border border-amber-300/40',
+        items: [
+          { id: 'accounting', label: 'Contabilidad & Gastos', icon: Wallet, desc: 'Costos fijos, insumos y balance real' },
+          { id: 'finances', label: 'Ventas & Liquidación', icon: DollarSign, desc: 'Ingresos, compras y ventas' },
+        ]
+      }
+    ] : [])
+  ];
+
   const handleLogout = () => {
     setIsSidebarOpen(false);
     if (window.confirm(`¿Deseas cerrar la sesión de ${currentUser?.name || 'tu cuenta'}?`)) {
@@ -331,55 +377,66 @@ export function Navbar({
             </button>
           </div>
 
-          {/* SECCIÓN 1: MÓDULOS DEL SISTEMA */}
-          <div>
-            <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-2 flex items-center justify-between">
-              <span>Módulos de Gestión</span>
-              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Principal</span>
-            </div>
-            <div className="space-y-1">
-              {displayedNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentView === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavigate(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer group ${
-                      isActive
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`p-1.5 rounded-lg transition-colors ${
-                        isActive 
-                          ? 'bg-white/20 text-white' 
-                          : 'bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/50'
-                      }`}>
-                        <Icon className="w-4 h-4 shrink-0" />
-                      </div>
-                      <div className="text-left min-w-0">
-                        <div className="truncate font-black text-xs">{item.label}</div>
-                        <div className={`text-[10px] truncate font-normal ${isActive ? 'text-emerald-100' : 'text-slate-400 dark:text-slate-500'}`}>
-                          {item.desc}
+          {/* SECCIONES CATEGORIZADAS DE MÓDULOS */}
+          <div className="space-y-4">
+            {navigationGroups.map((group) => (
+              <div key={group.id} className="space-y-1.5">
+                {/* Cabecera de Categoría */}
+                <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 flex items-center justify-between">
+                  <span>{group.title}</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${group.badgeClass}`}>
+                    {group.badge}
+                  </span>
+                </div>
+
+                {/* Lista de Módulos de la Categoría */}
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentView === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleNavigate(item.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer group ${
+                          isActive
+                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`p-1.5 rounded-lg transition-colors ${
+                            isActive 
+                              ? 'bg-white/20 text-white' 
+                              : 'bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/50'
+                          }`}>
+                            <Icon className="w-4 h-4 shrink-0" />
+                          </div>
+                          <div className="text-left min-w-0">
+                            <div className="truncate font-black text-xs">{item.label}</div>
+                            <div className={`text-[10px] truncate font-normal ${isActive ? 'text-emerald-100' : 'text-slate-400 dark:text-slate-500'}`}>
+                              {item.desc}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    {isActive && (
-                      <span className="w-2 h-2 rounded-full bg-white shrink-0"></span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                        {isActive && (
+                          <span className="w-2 h-2 rounded-full bg-white shrink-0"></span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* SECCIÓN 2: ACCIONES DE CAMPO & ADMINISTRACIÓN */}
-          <div>
+          {/* SECCIÓN FINAL: HERRAMIENTAS DE CAMPO & GESTIÓN */}
+          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
             <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-2 flex items-center justify-between">
               <span>Herramientas de Campo</span>
-              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Acciones</span>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 border border-amber-300/40">
+                Acciones
+              </span>
             </div>
             <div className="space-y-1">
               
@@ -547,7 +604,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.28 • Modo Campo Offline
+            Software Ganadero • v2.14.29 • Modo Campo Offline
           </div>
 
         </div>

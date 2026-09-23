@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.28";
+export const CURRENT_APP_VERSION = "2.14.29";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.29",
+    date: "22/09/2026",
+    title: "📂 Organización de Módulos por Categoría en Panel Lateral",
+    highlights: [
+      "Separación Funcional y Temática: Módulos agrupados en 4 bloques temáticos claros (Panel de Control, Ganadería & Inventario, Trabajo en Corral & Manga, Finanzas & Contabilidad).",
+      "Insignias Distintivas por Sección: Etiquetas visuales para rápida identificación (Principal, Hato, Campo, Finanzas, Acciones).",
+      "Navegación Intuitiva y Fluida: Jerarquía visual limpia y ordenada para un acceso más ágil a todas las herramientas de la finca."
+    ]
+  },
   {
     version: "2.14.28",
     date: "22/09/2026",
