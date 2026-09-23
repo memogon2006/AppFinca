@@ -1,10 +1,18 @@
-export const CURRENT_APP_VERSION = "2.14.34";
+export const CURRENT_APP_VERSION = "2.14.35";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.35",
+    date: "22/09/2026",
+    title: "🧹 Depuración de Acciones Rápidas: Botón de Liquidación Único",
+    highlights: [
+      "Optimización del Banner: Se retiró el botón duplicado de venta manteniendo exclusivamente '🤝 Liquidación' para abrir la liquidación de ganado de forma directa y limpia."
+    ]
+  },
   {
     version: "2.14.34",
     date: "22/09/2026",
