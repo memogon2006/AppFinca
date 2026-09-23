@@ -3,9 +3,6 @@ import {
   INITIAL_CATTLE, 
   INITIAL_WEIGHINGS, 
   INITIAL_EXPENSES, 
-  INITIAL_VACCINATIONS,
-  INITIAL_PALPATIONS,
-  INITIAL_CALENDAR_NOTES,
   isDemoAnimal,
   DEMO_WEIGHING_IDS,
   DEMO_EXPENSE_IDS 
@@ -279,12 +276,7 @@ export async function clearAllData(userId) {
 // Cargar datos de prueba para el usuario activo preservando sus datos reales
 export async function loadSampleData(userId) {
   if (!userId) return;
-  const tables = [db.cattle, db.weighings, db.expenses];
-  if (db.vaccinations) tables.push(db.vaccinations);
-  if (db.palpations) tables.push(db.palpations);
-  if (db.calendarNotes) tables.push(db.calendarNotes);
-
-  await db.transaction('rw', tables, async () => {
+  await db.transaction('rw', db.cattle, db.weighings, db.expenses, async () => {
     // 1. Eliminar datos de prueba previos si ya existían para no duplicar
     const userCattle = await db.cattle.where('userId').equals(userId).toArray();
     const existingDemoCattle = userCattle.filter(isDemoAnimal);
@@ -314,27 +306,6 @@ export async function loadSampleData(userId) {
       if (e.id) await db.expenses.delete(e.id);
     }
 
-    if (db.vaccinations) {
-      const userVaccines = await db.vaccinations.where('userId').equals(userId).toArray();
-      for (const v of userVaccines.filter(v => v.isDemo || v.id === 'v1' || v.id === 'v2')) {
-        if (v.id) await db.vaccinations.delete(v.id);
-      }
-    }
-
-    if (db.palpations) {
-      const userPalps = await db.palpations.where('userId').equals(userId).toArray();
-      for (const p of userPalps.filter(p => p.isDemo || p.id === 'p1' || p.id === 'p2')) {
-        if (p.id) await db.palpations.delete(p.id);
-      }
-    }
-
-    if (db.calendarNotes) {
-      const userNotes = await db.calendarNotes.where('userId').equals(userId).toArray();
-      for (const n of userNotes.filter(n => n.isDemo || n.id === 'cn1' || n.id === 'cn2')) {
-        if (n.id) await db.calendarNotes.delete(n.id);
-      }
-    }
-
     // 2. Insertar el lote de animales y pesajes demo adaptados
     const adaptedCattle = INITIAL_CATTLE.map(c => ({
       ...c,
@@ -358,33 +329,6 @@ export async function loadSampleData(userId) {
     await db.cattle.bulkPut(adaptedCattle);
     await db.weighings.bulkPut(adaptedWeighings);
     await db.expenses.bulkPut(adaptedExpenses);
-
-    if (db.vaccinations && INITIAL_VACCINATIONS?.length) {
-      const adaptedVaccinations = INITIAL_VACCINATIONS.map(v => ({
-        ...v,
-        userId,
-        isDemo: true,
-      }));
-      await db.vaccinations.bulkPut(adaptedVaccinations);
-    }
-
-    if (db.palpations && INITIAL_PALPATIONS?.length) {
-      const adaptedPalpations = INITIAL_PALPATIONS.map(p => ({
-        ...p,
-        userId,
-        isDemo: true,
-      }));
-      await db.palpations.bulkPut(adaptedPalpations);
-    }
-
-    if (db.calendarNotes && INITIAL_CALENDAR_NOTES?.length) {
-      const adaptedNotes = INITIAL_CALENDAR_NOTES.map(n => ({
-        ...n,
-        userId,
-        isDemo: true,
-      }));
-      await db.calendarNotes.bulkPut(adaptedNotes);
-    }
   });
 }
 

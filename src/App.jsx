@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, initializeDatabase, deleteDemoData, isDemoAnimal, logActivity, loadSampleData } from './services/db';
+import { db, initializeDatabase, deleteDemoData, isDemoAnimal, logActivity } from './services/db';
 import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
@@ -37,7 +37,7 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
-  const { currentUser, isAuthenticated, loading: authLoading, isWorker, effectiveUserId, logout } = useAuth();
+  const { currentUser, isAuthenticated, loading: authLoading, isWorker, effectiveUserId } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -1097,21 +1097,6 @@ export default function App() {
   const demoAnimals = cattle.filter(isDemoAnimal);
   const demoCount = demoAnimals.length;
 
-  const handleResetDemoSession = async () => {
-    try {
-      await loadSampleData(userId);
-      triggerFeedback('success');
-      showToast('✅ Hato de demostración restablecido a los datos iniciales.', 'success');
-    } catch (err) {
-      alert('Error restableciendo datos demo: ' + err.message);
-    }
-  };
-
-  const handleExitDemoSession = () => {
-    logout();
-    triggerFeedback('click');
-  };
-
   const handleDeleteDemoDirect = async () => {
     if (demoCount === 0) return;
     if (window.confirm(`¿Estás seguro de que deseas eliminar los ${demoCount} animales de demostración/ejemplo?\n\nTus animales reales registrados permanecerán 100% seguros e intactos.`)) {
@@ -1128,39 +1113,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
       
-      {/* Banner Exclusivo para Sesión Demo Interactiva */}
-      {currentUser?.isDemo && (
-        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-950 text-white px-3 sm:px-5 py-2 sm:py-2.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs border-b border-emerald-500/40 sticky top-0 z-50 backdrop-blur-md">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-[#e8fe85] font-black text-[10px] uppercase tracking-wider border border-emerald-400/40 shrink-0 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-300" />
-              <span>Demostración en Vivo</span>
-            </span>
-            <p className="text-emerald-100 font-medium text-[11px] sm:text-xs">
-              Estás en la demo interactiva ({cattle.length} bovinos cargados). Puedes probar báscula, palpación, registrar animales o inventarios.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-            <button
-              onClick={handleResetDemoSession}
-              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold text-xs transition border border-white/20 flex items-center gap-1.5 cursor-pointer"
-              title="Restablecer el inventario al hato de demostración original"
-            >
-              <span>🔄 Restablecer Datos</span>
-            </button>
-
-            <button
-              onClick={handleExitDemoSession}
-              className="px-3 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs transition border border-rose-400/50 flex items-center gap-1.5 cursor-pointer"
-              title="Salir del modo demostración e ir a la pantalla de acceso"
-            >
-              <span>🚪 Salir del Demo</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Notificación de Actualización PWA / Versión */}
       <UpdateNotificationBanner />
 
@@ -1210,8 +1162,8 @@ export default function App() {
         activeCattleCount={activeCattleCount}
       />
 
-      {/* Banner Informativo de Datos Demo en Cuenta Real */}
-      {!currentUser?.isDemo && demoCount > 0 && (
+      {/* Banner Informativo de Modo Demostración Activo */}
+      {demoCount > 0 && (
         <div className="max-w-[1600px] w-full mx-auto px-3 sm:px-5 lg:px-6 pt-3">
           <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-100/60 to-orange-50 dark:from-amber-950/70 dark:via-amber-900/50 dark:to-orange-950/50 border border-amber-300 dark:border-amber-700/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">

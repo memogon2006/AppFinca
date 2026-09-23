@@ -32,7 +32,7 @@ import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 import { checkAppUpdate, isVersionGreater } from '../../services/versionService';
 
 export function AuthView() {
-  const { login, register, setSessionUser, requestResetPassword, startDemo } = useAuth();
+  const { login, register, setSessionUser, requestResetPassword } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const fileInputRef = useRef(null);
 
@@ -724,34 +724,6 @@ export function AuthView() {
                       <span>Crear Cuenta Ganadera</span>
                     </>
                   )}
-                </button>
-
-                {/* Separador Visual para Demo */}
-                <div className="relative flex py-1.5 items-center">
-                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-                  <span className="flex-shrink mx-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">o prueba sin registro</span>
-                  <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-                </div>
-
-                {/* Botón de Demostración 1 Clic */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      setLoading(true);
-                      await startDemo();
-                    } catch (err) {
-                      setError('Error iniciando la demostración.');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className="w-full py-3 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 border border-emerald-300/70 dark:border-emerald-700/60 shadow-xs transition active:scale-[0.98] cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
-                  <span>🚀 Probar Demostración Interactiva</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 </button>
 
               </form>

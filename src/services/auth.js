@@ -1,4 +1,4 @@
-import { db, logActivity, loadSampleData } from './db';
+import { db, logActivity } from './db';
 import { 
   cloudSaveUser, 
   cloudFindUser, 
@@ -1007,35 +1007,5 @@ export async function deleteWorkerAccount(workerId, workerEmail, ownerId, adminN
   });
 
   return true;
-}
-
-export const DEMO_USER_SESSION = {
-  id: 'demo_user_hacienda_esperanza',
-  name: 'Ganadero Invitado',
-  farmName: 'Hacienda La Esperanza (DEMO)',
-  email: 'demo@fincaganadera.app',
-  username: 'demo',
-  role: 'admin',
-  isDemo: true,
-  createdAt: new Date().toISOString(),
-};
-
-/**
- * Inicia una sesión de demostración interactiva en modo sandbox local
- */
-export async function startDemoSession() {
-  const sessionUser = {
-    ...DEMO_USER_SESSION,
-    createdAt: new Date().toISOString()
-  };
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
-  if (db.users) {
-    await db.users.put(sessionUser).catch(() => null);
-  }
-  
-  // Cargar hato y datos de demostración para el usuario demo
-  await loadSampleData(sessionUser.id);
-  return sessionUser;
 }
 
