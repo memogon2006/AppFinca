@@ -180,15 +180,7 @@ export function Navbar({
                 <span className="sm:hidden font-bold">+ Bovino</span>
               </button>
 
-              {/* Botón WhatsApp Reportes (Visible en tablets/escritorio) */}
-              <button
-                onClick={onOpenWhatsAppReport}
-                title="Generar y Enviar Reporte por WhatsApp"
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold min-h-[34px] cursor-pointer transition whitespace-nowrap shadow-sm"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span className="hidden md:inline">WhatsApp</span>
-              </button>
+
 
               {/* Botón Sincronización Nube */}
               <button
@@ -553,7 +545,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.25 • Modo Campo Offline
+            Software Ganadero • v2.14.26 • Modo Campo Offline
           </div>
 
         </div>

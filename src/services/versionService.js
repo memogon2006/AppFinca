@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.25";
+export const CURRENT_APP_VERSION = "2.14.26";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.26",
+    date: "22/09/2026",
+    title: "✨ Cabecera Superior Aún Más Limpia y Minimalista",
+    highlights: [
+      "Eliminación del Botón WhatsApp en la Barra Superior: Barra superior más despejada y enfocada en lo esencial.",
+      "Acceso Completo a Reportes por WhatsApp: La herramienta de generación y envío de reportes sigue disponible en el Panel Lateral Desplegable (☰) y en el Tablero."
+    ]
+  },
   {
     version: "2.14.25",
     date: "22/09/2026",
