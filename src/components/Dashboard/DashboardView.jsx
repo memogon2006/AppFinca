@@ -24,7 +24,8 @@ import {
   Syringe,
   ClipboardCheck,
   Stethoscope,
-  TrendingDown
+  TrendingDown,
+  Wallet
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
@@ -42,6 +43,8 @@ export function DashboardView({
   vaccinations = [],
   audits = [],
   calendarNotes = [],
+  farmExpenses = [],
+  farmIncomes = [],
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -92,6 +95,43 @@ export function DashboardView({
     const fin = calculateFinancials(animal);
     totalRealizedProfit += fin.netProfit;
   });
+
+  // Cálculos Financieros Integrales de la Finca (Contabilidad + Ventas)
+  const totalFarmExpenses = farmExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const totalOtherIncomes = farmIncomes.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
+  const totalCattleSalesRevenue = soldCattle.reduce((sum, c) => sum + (parseFloat(c.exitPrice) || 0), 0);
+  const totalGrossIncome = totalCattleSalesRevenue + totalOtherIncomes;
+  const realNetProfit = totalRealizedProfit + totalOtherIncomes - totalFarmExpenses;
+
+  // Gastos e Ingresos del Mes Actual
+  const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+  const currentMonthExpenses = farmExpenses
+    .filter(e => (e.date || '').startsWith(currentMonthPrefix))
+    .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const currentMonthIncomes = farmIncomes
+    .filter(i => (i.date || '').startsWith(currentMonthPrefix))
+    .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
+  const currentMonthCattleProfit = soldCattle
+    .filter(c => (c.exitDate || c.updatedAt || '').startsWith(currentMonthPrefix))
+    .reduce((sum, c) => sum + calculateFinancials(c).netProfit, 0);
+  const currentMonthNetProfit = currentMonthCattleProfit + currentMonthIncomes - currentMonthExpenses;
+
+  // Cobertura de Gastos del Mes
+  const expenseCoveragePct = currentMonthExpenses > 0 
+    ? Math.round(((currentMonthCattleProfit + currentMonthIncomes) / currentMonthExpenses) * 100)
+    : (currentMonthCattleProfit + currentMonthIncomes > 0 ? 100 : 0);
+
+  // Kilos ganados y costo unitario
+  let totalKilosGained = 0;
+  activeCattle.forEach(animal => {
+    const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
+    const metrics = calculateWeightMetrics(animal, animalWeighings);
+    if (metrics.weightGain > 0) totalKilosGained += metrics.weightGain;
+  });
+  const costPerKilo = totalKilosGained > 0 ? (totalFarmExpenses / totalKilosGained) : 0;
+  const dailyCostPerHead = activeCattle.length > 0 && currentMonthExpenses > 0
+    ? currentMonthExpenses / (activeCattle.length * 30)
+    : (activeCattle.length > 0 && totalFarmExpenses > 0 ? totalFarmExpenses / (activeCattle.length * 30) : 0);
 
   // Ganancia diaria de peso (GDP) promedio del hato
   let totalGdpSum = 0;
@@ -305,11 +345,11 @@ export function DashboardView({
           />
         ) : (
           <KpiCard
-            title="Inversión Activa"
-            value={formatCurrency(totalInvestedActive)}
-            subtitle={soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Ganado actualmente en finca'}
-            icon={DollarSign}
-            color="amber"
+            title="Utilidad Neta Real"
+            value={formatCurrency(realNetProfit)}
+            subtitle={totalGrossIncome > 0 || totalFarmExpenses > 0 ? `Ingresos: ${formatCurrency(totalGrossIncome)} • Gastos: ${formatCurrency(totalFarmExpenses)}` : (soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Balance libre de costos')}
+            icon={realNetProfit >= 0 ? TrendingUp : TrendingDown}
+            color={realNetProfit >= 0 ? 'emerald' : 'rose'}
           />
         )}
 
@@ -425,7 +465,7 @@ export function DashboardView({
 
       </div>
 
-      {/* Grid de Alertas Zootécnicas & Resumen Financiero */}
+      {/* Grid de Alertas Zootécnicas & Resumen Financiero Integral */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Alertas del Hato (Partos, Gordos listos para venta, etc.) */}
@@ -438,80 +478,190 @@ export function DashboardView({
           />
         </div>
 
-        {/* Resumen Financiero Rápido */}
-        <div className="lg:col-span-2 custom-card p-5 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Resumen Financiero del Inventario en Finca</span>
-            </h3>
-            <button
-              onClick={() => onNavigate('finances')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-            >
-              Detalle Financiero <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Inversión Activa en Ganado</p>
-              <p className="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(totalInvestedActive)}</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Compra inicial + costos directos</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Ventas Totales Realizadas</p>
-              <p className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                {formatCurrency(soldCattle.reduce((sum, c) => sum + (parseFloat(c.exitPrice) || 0), 0))}
-              </p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{soldCattle.length} cabezas liquidadas</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Utilidad Neta Obtenida</p>
-              <p className="text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400 mt-1">{formatCurrency(totalRealizedProfit)}</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Ganancia libre de costos</p>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                <TrendingUp className="w-5 h-5" />
+        {/* Resumen Financiero Integral & Contabilidad de Finca */}
+        {!isWorker ? (
+          <div className="lg:col-span-2 custom-card p-5 sm:p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base flex items-center gap-2">
+                    <span>Balance Financiero & Contabilidad Ganadera</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Ingresos, gastos de finca, costos unitarios y utilidad líquida real
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900 dark:text-white">¿Listo para registrar un pesaje o venta?</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Mantén los pesos actualizados para calcular las ganancias de peso diarias (GDP).</p>
+
+              {/* Semáforo de Salud Financiera */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border ${
+                  realNetProfit > 0
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                    : realNetProfit === 0
+                    ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                    : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${
+                    realNetProfit > 0 ? 'bg-emerald-500 animate-pulse' : realNetProfit === 0 ? 'bg-amber-500' : 'bg-rose-500 animate-pulse'
+                  }`} />
+                  <span>
+                    {realNetProfit > 0 ? '🟢 Superávit Real' : realNetProfit === 0 ? '🟡 En Equilibrio' : '🔴 Déficit Operativo'}
+                  </span>
+                </span>
+
+                <button
+                  onClick={() => onNavigate('accounting')}
+                  className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-bold flex items-center gap-1 cursor-pointer bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 transition"
+                  title="Abrir módulo completo de contabilidad"
+                >
+                  <span>Módulo Contable</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-              {onOpenPartnershipModal && (
-                <button
-                  onClick={onOpenPartnershipModal}
-                  className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm cursor-pointer"
-                  title="Liquidar o vender ganado"
-                >
-                  💰 Liquidar / Venta
-                </button>
-              )}
-              {onOpenGlossary && (
-                <button
-                  onClick={onOpenGlossary}
-                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 font-semibold text-xs transition cursor-pointer"
-                >
-                  💡 Glosario
-                </button>
-              )}
-              <button
-                onClick={() => onNavigate('quickWeigh')}
-                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm cursor-pointer"
-              >
-                Ir a Báscula
-              </button>
+
+            {/* 4 Métricas Clave de Contabilidad */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* 1. Ingresos Totales */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Ingresos Totales</span>
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <p className="text-lg font-black text-slate-900 dark:text-white tabular-nums">
+                  {formatCurrency(totalGrossIncome)}
+                </p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                  Ventas: {formatCurrency(totalCattleSalesRevenue)} • Otros: {formatCurrency(totalOtherIncomes)}
+                </p>
+              </div>
+
+              {/* 2. Gastos Totales de Finca */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Gastos de Finca</span>
+                  <TrendingDown className="w-4 h-4" />
+                </div>
+                <p className="text-lg font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                  {formatCurrency(totalFarmExpenses)}
+                </p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                  Mes actual: {formatCurrency(currentMonthExpenses)}
+                </p>
+              </div>
+
+              {/* 3. Utilidad Neta Real */}
+              <div className={`p-3.5 rounded-2xl border ${
+                realNetProfit >= 0
+                  ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60'
+                  : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60'
+              }`}>
+                <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Utilidad Neta Real</span>
+                  <DollarSign className={`w-4 h-4 ${realNetProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} />
+                </div>
+                <p className={`text-lg font-black tabular-nums ${
+                  realNetProfit >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'
+                }`}>
+                  {formatCurrency(realNetProfit)}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  Mes: {formatCurrency(currentMonthNetProfit)}
+                </p>
+              </div>
+
+              {/* 4. Costo por Animal / Día */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between text-indigo-600 dark:text-indigo-400 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Costo Mantenimiento</span>
+                  <Scale className="w-4 h-4" />
+                </div>
+                <p className="text-lg font-black text-slate-900 dark:text-white tabular-nums">
+                  {formatCurrency(dailyCostPerHead)}
+                  <span className="text-[11px] font-normal text-slate-400 ml-1">/animal/día</span>
+                </p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                  {costPerKilo > 0 ? `Costo carne: ${formatCurrency(costPerKilo)}/kg` : 'Inversión en hato activo'}
+                </p>
+              </div>
+            </div>
+
+            {/* Barra de Cobertura y Acciones Rápidas */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-amber-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">
+                    Cobertura de Gastos del Mes: <span className="font-black text-emerald-600 dark:text-emerald-400">{expenseCoveragePct}%</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    {expenseCoveragePct >= 100 ? '✅ Gastos cubiertos con utilidades' : '⚠️ Pendiente de cubrir con ventas'}
+                  </span>
+                </div>
+                <div className="w-full sm:w-64 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      expenseCoveragePct >= 100 ? 'bg-emerald-500' : expenseCoveragePct >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(0, expenseCoveragePct))}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                {onOpenAddExpense && (
+                  <button
+                    onClick={onOpenAddExpense}
+                    className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer active:scale-95"
+                  >
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    <span>+ Gasto</span>
+                  </button>
+                )}
+                {onOpenAddIncome && (
+                  <button
+                    onClick={onOpenAddIncome}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer active:scale-95"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>+ Ingreso</span>
+                  </button>
+                )}
+                {onOpenPartnershipModal && (
+                  <button
+                    onClick={onOpenPartnershipModal}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer active:scale-95"
+                  >
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Vender / Liquidar</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="lg:col-span-2 custom-card p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span>Resumen Operativo de Campo</span>
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Ganado Activo en Pastoreo</p>
+                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{activeCattle.length} animales</p>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Bovinos Pesados Recientemente</p>
+                <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{gdpValidAnimals} animales</p>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 

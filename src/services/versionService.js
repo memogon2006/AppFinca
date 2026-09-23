@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.30";
+export const CURRENT_APP_VERSION = "2.14.31";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
  * Historial de las últimas actualizaciones generadas en el sistema
  */
 export const APP_CHANGELOG = [
+  {
+    version: "2.14.31",
+    date: "22/09/2026",
+    title: "📊 Centro Financiero & Contabilidad Ganadera en Tablero Principal",
+    highlights: [
+      "KPI Superior de Utilidad Neta Real: Tarjeta destacada con ganancia líquida descontando compra y todos los gastos operativos.",
+      "Centro Financiero de Finca Integrado: Panel con desglose de Ingresos Totales, Gastos de Finca, Utilidad Neta y Costo Diario de Mantenimiento ($/animal/día).",
+      "Semáforo de Salud Financiera & Cobertura de Gastos: Indicador visual de superávit/déficit y porcentaje de cobertura de costos del mes.",
+      "Acciones Rápidas Directas: Botones para registrar gasto, registrar ingreso o liquidar ganado desde el tablero."
+    ]
+  },
   {
     version: "2.14.30",
     date: "22/09/2026",

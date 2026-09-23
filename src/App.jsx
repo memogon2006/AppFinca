@@ -1348,6 +1348,8 @@ export default function App() {
               setEditingIncome(null);
               setIsIncomeModalOpen(true);
             }}
+            farmExpenses={farmExpenses}
+            farmIncomes={farmIncomes}
           />
         )}
 
