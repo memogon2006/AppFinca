@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.14.37";
+export const CURRENT_APP_VERSION = "2.14.38";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
- * Historial de las últimas actualizaciones generadas en el sistema
- */
-export const APP_CHANGELOG = [
+  * Historial de las últimas actualizaciones generadas en el sistema
+  */
+ export const APP_CHANGELOG = [
+  {
+    version: "2.14.38",
+    date: "22/09/2026",
+    title: "✨ Secuencia Lógica y Armonía Visual de los KPIs en el Tablero Principal",
+    highlights: [
+      "Flujo Intuitivo de 3 Etapas: 1. Cantidad (Total Bovinos) ➔ 2. Rendimientos en Báscula (Biomasa Total y GDP Promedio) ➔ 3. Valores Económicos (Inversión Activa y Utilidad Neta Real).",
+      "Paleta de Colores Zootécnica & Financiera: Emerald para cabezas, Teal para biomasa, Azul para ganancia GDP, Ámbar para inversión de compra y Semáforo dinámico para utilidad líquida."
+    ]
+  },
   {
     version: "2.14.37",
     date: "22/09/2026",

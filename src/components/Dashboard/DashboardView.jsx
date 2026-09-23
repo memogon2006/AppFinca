@@ -312,9 +312,10 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* KPIs Clave Principales (5 para Administrador, 4 para Vaquero) */}
+      {/* KPIs Clave Principales: 1. Cantidad -> 2. Rendimientos (Biomasa & GDP) -> 3. Valores (Inversión & Utilidad) */}
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${!isWorker ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3.5 sm:gap-4`}>
         
+        {/* 1. Cantidad / Inventario Físico */}
         <KpiCard
           title="Total Bovinos Activos"
           value={activeCattle.length}
@@ -323,24 +324,16 @@ export function DashboardView({
           color="emerald"
         />
 
+        {/* 2. Rendimiento en Báscula: Biomasa */}
         <KpiCard
           title="Biomasa Total"
           value={`${formatNumber(totalCurrentWeight, 0)} kg`}
           subtitle={activeCattle.length > 0 ? `Prom: ${formatNumber(totalCurrentWeight / activeCattle.length, 1)} kg/cab` : 'Sin inventario'}
           icon={Scale}
-          color="emerald"
+          color="teal"
         />
 
-        {!isWorker && (
-          <KpiCard
-            title="Inversión Activa"
-            value={formatCurrency(totalInvestedActive)}
-            subtitle={soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Ganado actualmente en finca'}
-            icon={DollarSign}
-            color="amber"
-          />
-        )}
-
+        {/* 3. Rendimiento en Báscula: GDP */}
         <KpiCard
           title="GDP Promedio Hato"
           value={avgGdp > 0 ? `${formatNumber(avgGdp, 3)} kg/d` : '0 kg/d'}
@@ -349,13 +342,25 @@ export function DashboardView({
           color="blue"
         />
 
+        {/* 4. Valores Económicos: Inversión en Ganado Activo */}
+        {!isWorker && (
+          <KpiCard
+            title="Inversión Activa"
+            value={formatCurrency(totalInvestedActive)}
+            subtitle={soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Ganado activo en finca'}
+            icon={DollarSign}
+            color="amber"
+          />
+        )}
+
+        {/* 5. Valores Económicos: Utilidad Neta Real (o Manejo de Ceba para Vaquero) */}
         {isWorker ? (
           <KpiCard
             title="Ganado en Ceba"
             value={`${fatteningCount} cabezas`}
             subtitle={`${milkingCount} en ordeño • ${pregnantCount} gestación`}
             icon={Layers}
-            color="teal"
+            color="purple"
           />
         ) : (
           <KpiCard

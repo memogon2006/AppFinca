@@ -29,6 +29,20 @@ const colorThemes = {
     divider: 'border-purple-200/80 dark:border-slate-800',
     subtext: 'text-slate-600 dark:text-slate-400',
   },
+  teal: {
+    card: 'bg-teal-50/90 dark:bg-slate-900/90 border-teal-200/90 dark:border-teal-500/30 text-teal-950 dark:text-slate-100',
+    title: 'text-teal-800/90 dark:text-teal-400',
+    iconBox: 'bg-white/90 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-700/50',
+    divider: 'border-teal-200/80 dark:border-slate-800',
+    subtext: 'text-slate-600 dark:text-slate-400',
+  },
+  indigo: {
+    card: 'bg-indigo-50/90 dark:bg-slate-900/90 border-indigo-200/90 dark:border-indigo-500/30 text-indigo-950 dark:text-slate-100',
+    title: 'text-indigo-800/90 dark:text-indigo-400',
+    iconBox: 'bg-white/90 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700/50',
+    divider: 'border-indigo-200/80 dark:border-slate-800',
+    subtext: 'text-slate-600 dark:text-slate-400',
+  },
   rose: {
     card: 'bg-rose-50/90 dark:bg-slate-900/90 border-rose-200/90 dark:border-rose-500/30 text-rose-950 dark:text-slate-100',
     title: 'text-rose-800/90 dark:text-rose-400',

@@ -604,7 +604,7 @@ export function Navbar({
 
           {/* Versión y Créditos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v2.14.37 • Modo Campo Offline
+            Software Ganadero • v2.14.38 • Modo Campo Offline
           </div>
 
         </div>
