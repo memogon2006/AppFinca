@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.61";
+export const CURRENT_APP_VERSION = "2.14.62";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.62",
+    date: "24/09/2026",
+    title: "🔒 Mensaje Unificado de Seguridad: Usuario o Contraseña Incorrectos",
+    highlights: [
+      "Protección de Identidad y Privacidad (Estándar OWASP): Se unificó la respuesta ante errores de autenticación a 'Usuario o contraseña incorrectos', impidiendo que terceros descubran si un correo existe o no en la plataforma.",
+      "Seguimiento Seguro de Intentos: Se mantiene activo el conteo progresivo de intentos restantes y el bloqueo automático de 5 minutos al 5º intento consecutivo.",
+      "Mayor Robustez en Ciberseguridad: Se mitigan ataques de fuerza bruta y enumeración de usuarios en toda la plataforma."
+    ]
+  },
   {
     version: "2.14.61",
     date: "24/09/2026",

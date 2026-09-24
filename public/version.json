@@ -1,5 +1,5 @@
 {
-  "version": "2.14.61",
-  "buildTime": 1790292000000,
-  "description": "🛡️ Bloqueo por 5 Intentos Fallidos & Acceso Directo al Tablero Principal"
+  "version": "2.14.62",
+  "buildTime": 1790293000000,
+  "description": "🔒 Mensaje Unificado de Seguridad: Usuario o Contraseña Incorrectos"
 }

@@ -98,7 +98,7 @@ export function recordFailedLoginAttempt(emailOrUser) {
 
     localStorage.setItem(key, JSON.stringify(data));
     const remainingAttempts = MAX_FAILED_ATTEMPTS - data.attempts;
-    throw new Error(`Contraseña incorrecta. Te ${remainingAttempts === 1 ? 'queda 1 intento' : `quedan ${remainingAttempts} intentos`} antes de que el acceso se bloquee por 5 minutos.`);
+    throw new Error(`Usuario o contraseña incorrectos. Te ${remainingAttempts === 1 ? 'queda 1 intento' : `quedan ${remainingAttempts} intentos`} antes de que el acceso se bloquee por 5 minutos.`);
   } catch (e) {
     throw e;
   }
@@ -431,7 +431,7 @@ export async function loginUser({ email, password }) {
   }
 
   if (!user) {
-    throw new Error('No se encontró ninguna cuenta con este usuario o correo. Por favor verifica tus credenciales.');
+    recordFailedLoginAttempt(cleanInput);
   }
 
   // Validar si la cuenta de trabajador está deshabilitada
