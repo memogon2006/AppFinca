@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.49";
+export const CURRENT_APP_VERSION = "2.14.50";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.50",
+    date: "23/09/2026",
+    title: "✅ Aceptación Obligatoria de Términos & Condiciones al Crear Cuenta",
+    highlights: [
+      "Casilla Obligatoria de Aceptación: Se agregó un checkbox requerido en el formulario de registro de nueva cuenta para validar que el usuario lea y acepte los Términos y Condiciones y la Política de Tratamiento de Datos.",
+      "Validación de Registro Blindada: El sistema bloquea la creación de la cuenta y alerta amigablemente si la casilla no está marcada.",
+      "Auto-Marcado al Aceptar en Modal: Si el usuario abre el modal legal para leer los términos y pulsa 'Aceptar y Continuar', la casilla queda automáticamente marcada.",
+      "Enlaces Directos: Acceso instantáneo a la lectura de los Términos de Uso y la Política de Privacidad (Ley 1581) directamente desde la casilla."
+    ]
+  },
   {
     version: "2.14.49",
     date: "23/09/2026",

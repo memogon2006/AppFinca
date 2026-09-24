@@ -23,6 +23,7 @@ import {
 export function PrivacyPolicyModal({ 
   isOpen, 
   onClose, 
+  onAccept,
   defaultTab = 'terms', // 'terms' | 'privacy' | 'all'
   zIndex = 'z-[70]' 
 }) {
@@ -531,7 +532,10 @@ export function PrivacyPolicyModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (onAccept) onAccept();
+              onClose();
+            }}
             className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-950/30 transition cursor-pointer active:scale-95"
           >
             Aceptar y Continuar

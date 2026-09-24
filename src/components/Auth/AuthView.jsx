@@ -63,6 +63,7 @@ export function AuthView() {
   // Toggle para ver / ocultar contraseñas
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // Recordar correo en este dispositivo
   const [rememberMe, setRememberMe] = useState(() => {
@@ -149,6 +150,9 @@ export function AuthView() {
       if (password.length < 4) return setError('La contraseña debe tener al menos 4 caracteres.');
       if (password !== confirmPassword) {
         return setError('Las contraseñas no coinciden. Verifícalas por favor.');
+      }
+      if (!acceptedTerms) {
+        return setError('⚠️ Debes marcar la casilla para aceptar los Términos y Condiciones y la Política de Privacidad.');
       }
 
       try {
@@ -705,6 +709,54 @@ export function AuthView() {
                   </div>
                 )}
 
+                {/* Casilla Obligatoria de Aceptación de Términos al Registrarse */}
+                {mode === 'register' && (
+                  <div className={`p-3 rounded-2xl border transition-all ${
+                    acceptedTerms 
+                      ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/80 shadow-xs' 
+                      : 'bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800'
+                  }`}>
+                    <label className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        name="acceptedTerms"
+                        checked={acceptedTerms}
+                        onChange={(e) => {
+                          setAcceptedTerms(e.target.checked);
+                          setError(null);
+                        }}
+                        className="w-4 h-4 mt-0.5 rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
+                        required
+                      />
+                      <span className="leading-snug text-[11.5px]">
+                        He leído y acepto obligatoriamente los{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPrivacyModalOpen(true);
+                          }}
+                          className="text-emerald-600 dark:text-emerald-400 font-extrabold hover:underline inline cursor-pointer"
+                        >
+                          Términos y Condiciones de Uso
+                        </button>{' '}
+                        y la{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPrivacyModalOpen(true);
+                          }}
+                          className="text-emerald-600 dark:text-emerald-400 font-extrabold hover:underline inline cursor-pointer"
+                        >
+                          Política de Privacidad y Tratamiento de Datos (Ley 1581)
+                        </button>
+                        . <span className="text-rose-500 font-bold">*</span>
+                      </span>
+                    </label>
+                  </div>
+                )}
+
                 {/* Botón Principal de Envío */}
                 <button
                   type="submit"
@@ -772,6 +824,7 @@ export function AuthView() {
       <PrivacyPolicyModal
         isOpen={isPrivacyModalOpen}
         onClose={() => setIsPrivacyModalOpen(false)}
+        onAccept={() => setAcceptedTerms(true)}
       />
 
     </div>
