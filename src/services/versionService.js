@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.56";
+export const CURRENT_APP_VERSION = "2.14.57";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.57",
+    date: "24/09/2026",
+    title: "✨ Experiencia Móvil Limpia: Retiro de Barra Inferior Redundante",
+    highlights: [
+      "Eliminación de la Barra Inferior: Toda la navegación se centraliza de forma limpia en el botón Menú superior y panel lateral desplegable, ganando más espacio vertical útil en pantallas móviles.",
+      "Mayor Área de Visualización: Se eliminó el margen inferior redundante para que las tarjetas, tablas y formularios aprovechen el 100% de la pantalla del celular.",
+      "Acceso Directo y Rápido: Acceso a todos los módulos (Tablero, Ganado, Lotes, Palpación, Báscula, etc.) desde el menú superior siempre visible."
+    ]
+  },
   {
     version: "2.14.56",
     date: "24/09/2026",

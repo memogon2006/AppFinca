@@ -70,19 +70,6 @@ export function Navbar({
     };
   }, [isSidebarOpen]);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Tablero Principal', shortLabel: 'Tablero', icon: LayoutDashboard, desc: 'Métricas, resumen y alertas' },
-    { id: 'cattle', label: 'Inventario de Ganado', shortLabel: 'Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
-    { id: 'batches', label: 'Lotes, Ingresos & Comparaciones', shortLabel: 'Lotes & Comparar', icon: Boxes, desc: 'Agrupación y control de potreros' },
-    { id: 'palpation', label: 'Palpación & Reprod.', shortLabel: 'Palpación', icon: Stethoscope, desc: 'Preñeces, tactos y estados' },
-    { id: 'weights', label: 'Control de Pesos', shortLabel: 'Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
-    { id: 'quickWeigh', label: 'Báscula Rápida', shortLabel: 'Báscula', icon: Zap, desc: 'Pesaje ágil en manga' },
-    { id: 'finances', label: 'Ventas & Liquidación', shortLabel: 'Ventas', icon: DollarSign, desc: 'Ingresos, compras y ventas' },
-    { id: 'accounting', label: 'Contabilidad & Gastos', shortLabel: 'Contabilidad', icon: Wallet, desc: 'Costos fijos, insumos y balance real' },
-  ];
-
-  const displayedNavItems = isWorker ? navItems.filter(item => item.id !== 'finances' && item.id !== 'accounting') : navItems;
-
   // Agrupación estructurada de módulos por categoría y función
   const navigationGroups = [
     {
@@ -621,48 +608,6 @@ export function Navbar({
 
         </div>
       </aside>
-
-      {/* ========================================================================= */}
-      {/* 3. BARRA INFERIOR MÓVIL (< md) PARA ACCESOS RÁPIDOS CON EL PULGAR          */}
-      {/* ========================================================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom,6px)] shadow-lg">
-        <div 
-          className="grid h-14 items-center px-1"
-          style={{ gridTemplateColumns: `repeat(${displayedNavItems.length > 5 ? 5 : displayedNavItems.length}, minmax(0, 1fr))` }}
-        >
-          {displayedNavItems.slice(0, 4).map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNavigate(item.id)}
-                className={`flex flex-col items-center justify-center h-full py-1 text-[9px] font-bold transition-all ${
-                  isActive
-                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                <div className={`p-1 rounded-lg transition-colors ${isActive ? 'bg-emerald-100 dark:bg-emerald-500/20 shadow-sm' : ''}`}>
-                  <Icon className="w-3.5 h-3.5" />
-                </div>
-                <span className="truncate max-w-[48px] text-[9px] mt-0.5 leading-tight">{item.shortLabel}</span>
-              </button>
-            );
-          })}
-
-          {/* Botón "Más" para abrir el panel lateral */}
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="flex flex-col items-center justify-center h-full py-1 text-[9px] font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer"
-          >
-            <div className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
-              <Menu className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <span className="truncate max-w-[48px] text-[9px] mt-0.5 leading-tight">Menú</span>
-          </button>
-        </div>
-      </nav>
     </>
   );
 }
