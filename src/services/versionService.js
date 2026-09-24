@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.52";
+export const CURRENT_APP_VERSION = "2.14.53";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.53",
+    date: "23/09/2026",
+    title: "🧪 Segunda Actualización de Prueba: Validación de Auto-Guardado en Vivo",
+    highlights: [
+      "Prueba Adicional de Continuidad: Comprobación de preservación de formularios abiertos y borradores de animales.",
+      "Reapertura Automática Instantánea: Mantiene la vista, modal y valores intactos tras actualizar con 1 clic.",
+      "Verificación de Notificación Flotante: Aviso de actualización en tiempo real."
+    ]
+  },
   {
     version: "2.14.52",
     date: "23/09/2026",
