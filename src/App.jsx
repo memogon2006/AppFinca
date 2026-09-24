@@ -931,25 +931,54 @@ export default function App() {
   };
 
   const handleDeleteAnimal = async (animalId) => {
-    const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
+    if (!animalId && animalId !== 0) return;
+
+    // 1. Localizar el animal por ID numérico o string
+    const animal = (await db.cattle.get(animalId)) || 
+                   (!isNaN(Number(animalId)) ? await db.cattle.get(Number(animalId)) : null) ||
+                   (await db.cattle.filter(c => String(c.id) === String(animalId)).first());
+
     const targetId = animal ? animal.id : animalId;
     const tag = animal?.tagNumber || 'Bovino';
 
-    await db.cattle.delete(targetId);
-    markPendingDelete(userId, 'cattle', targetId);
+    // 2. Marcar de inmediato en la lista de eliminaciones pendientes y tombstones
+    const deleteIds = [String(targetId), String(animalId)];
+    if (!isNaN(Number(targetId))) deleteIds.push(String(Number(targetId)));
+    if (!isNaN(Number(animalId))) deleteIds.push(String(Number(animalId)));
+    markPendingDelete(userId, 'cattle', ...deleteIds);
 
-    const relatedWeighings = await db.weighings.where('cattleId').equals(String(targetId)).toArray();
-    await db.weighings.where('cattleId').equals(String(targetId)).delete();
+    // 3. Eliminar de IndexedDB con todas las variantes de ID
+    await db.cattle.delete(targetId).catch(() => null);
+    if (!isNaN(Number(targetId))) {
+      await db.cattle.delete(Number(targetId)).catch(() => null);
+    }
+    await db.cattle.delete(String(targetId)).catch(() => null);
+    await db.cattle.filter(c => String(c.id) === String(targetId) || String(c.id) === String(animalId)).delete().catch(() => null);
+
+    // 4. Eliminar registros vinculados (pesajes, palpaciones)
+    const idStrings = new Set(deleteIds);
+    const relatedWeighings = await db.weighings.filter(w => idStrings.has(String(w.cattleId))).toArray();
     if (relatedWeighings.length > 0) {
-      markPendingDelete(userId, 'weighings', ...relatedWeighings.map(w => w.id));
+      const wIds = relatedWeighings.map(w => String(w.id));
+      await db.weighings.filter(w => idStrings.has(String(w.cattleId))).delete().catch(() => null);
+      markPendingDelete(userId, 'weighings', ...wIds);
     }
 
-    if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
+    if (db.palpations) {
+      const relatedPalpations = await db.palpations.filter(p => idStrings.has(String(p.cattleId))).toArray();
+      if (relatedPalpations.length > 0) {
+        const pIds = relatedPalpations.map(p => String(p.id));
+        await db.palpations.filter(p => idStrings.has(String(p.cattleId))).delete().catch(() => null);
+        markPendingDelete(userId, 'palpations', ...pIds);
+      }
+    }
+
+    if (selectedAnimal && idStrings.has(String(selectedAnimal.id))) {
       setIsDetailModalOpen(false);
       setSelectedAnimal(null);
     }
 
-    // Registrar acción en bitácora de auditoría
+    // 5. Registrar en bitácora de auditoría
     await logActivity({
       action: 'animal_deleted',
       description: `Eliminó del inventario el bovino Chapa #${animal?.tagNumber || tag}${animal?.color ? ` (Color: ${animal.color})` : ''}${animal?.sex ? ` (Sexo: ${animal.sex})` : ''}${animal?.entryBatch ? ` (Lote: ${animal.entryBatch})` : ''}${animal?.currentWeight ? ` (Peso: ${animal.currentWeight} kg)` : ''}`,
@@ -959,7 +988,8 @@ export default function App() {
       userId,
     }).catch(() => null);
 
-    cloudPushData(userId);
+    // 6. Subir de inmediato y de forma segura a Firebase
+    await cloudPushData(userId);
     showToast(`Bovino ${tag} eliminado del inventario 🗑️`, 'danger');
   };
 

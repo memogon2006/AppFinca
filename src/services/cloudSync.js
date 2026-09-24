@@ -142,6 +142,61 @@ export async function cloudFindUser(email) {
 
 const PENDING_SYNC_KEY = 'ganadera_pending_sync_';
 const PENDING_DEL_KEY = 'ganadera_pending_del_';
+const TOMBSTONES_KEY = 'ganadera_tombstones_';
+const TOMBSTONE_TTL_MS = 5 * 60 * 1000; // 5 minutos de memoria para evitar resurrección de elementos eliminados
+
+/**
+ * Obtiene el mapa de lápidas (tombstones) de elementos eliminados recientemente
+ */
+export function getTombstones(userId) {
+  if (!userId) return new Map();
+  try {
+    const key = `${TOMBSTONES_KEY}${userId}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return new Map();
+    const list = JSON.parse(raw);
+    const now = Date.now();
+    const map = new Map();
+    const validList = [];
+    for (const item of list) {
+      if (item && item.id && item.tableName && (now - (item.timestamp || 0) < TOMBSTONE_TTL_MS)) {
+        map.set(`${item.tableName}_${String(item.id)}`, item);
+        validList.push(item);
+      }
+    }
+    if (validList.length !== list.length) {
+      localStorage.setItem(key, JSON.stringify(validList));
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+/**
+ * Agrega lápidas de elementos eliminados para blindar contra resurrección al reconciliar
+ */
+export function addTombstones(userId, tableName, ...itemIds) {
+  if (!userId || !tableName || !itemIds) return;
+  try {
+    const key = `${TOMBSTONES_KEY}${userId}`;
+    const raw = localStorage.getItem(key);
+    const list = raw ? JSON.parse(raw) : [];
+    const now = Date.now();
+    const validIds = itemIds.flat().filter(Boolean).map(String);
+    for (const id of validIds) {
+      const idx = list.findIndex(item => item.tableName === tableName && String(item.id) === id);
+      if (idx >= 0) {
+        list[idx].timestamp = now;
+      } else {
+        list.push({ tableName, id, timestamp: now });
+      }
+    }
+    localStorage.setItem(key, JSON.stringify(list));
+  } catch (e) {
+    console.warn('Error saving tombstone:', e);
+  }
+}
 
 /**
  * Registra IDs de elementos creados o editados localmente pendientes de sincronizar con Firebase
@@ -204,10 +259,12 @@ export function clearPendingSync(userId, itemIds = null) {
 export function markPendingDelete(userId, tableName, ...itemIds) {
   if (!userId || !tableName || !itemIds || itemIds.length === 0) return;
   try {
+    const validIds = itemIds.flat().filter(Boolean).map(String);
+    addTombstones(userId, tableName, ...validIds);
+
     const key = `${PENDING_DEL_KEY}${userId}`;
     const raw = localStorage.getItem(key);
     const list = raw ? JSON.parse(raw) : [];
-    const validIds = itemIds.flat().filter(Boolean).map(String);
     for (const id of validIds) {
       if (!list.some(item => item.tableName === tableName && String(item.id) === id)) {
         list.push({ tableName, id });
@@ -339,11 +396,18 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
     .filter(d => d.tableName === tableName)
     .map(d => String(d.id));
   const pendingDeleteSet = new Set(pendingDeletes);
+  const tombstones = getTombstones(userId);
+
+  const isDeleted = (id) => {
+    if (!id && id !== 0) return false;
+    const strId = String(id);
+    return pendingDeleteSet.has(strId) || tombstones.has(`${tableName}_${strId}`);
+  };
 
   // 1. Guardar o actualizar todos los registros recibidos en una sola operación batch ultrarrápida
-  // Excluir registros eliminados localmente Y registros modificados/creados localmente pendientes de subida
+  // Excluir registros eliminados localmente (pendientes o en tombstones) Y registros modificados/creados localmente pendientes de subida
   const validItems = remoteList
-    .filter(item => item && item.id && !pendingDeleteSet.has(String(item.id)) && !pendingIds.has(String(item.id)))
+    .filter(item => item && item.id && !isDeleted(item.id) && !pendingIds.has(String(item.id)))
     .map(item => ({ ...item, userId }));
 
   if (validItems.length > 0) {
@@ -357,8 +421,19 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
     }
   }
 
-  // 2. Eliminar registros locales obsoletos en una sola operación batch
-  // NUNCA eliminar registros que fueron creados o modificados localmente y están pendientes de subida
+  // 2. Si algún registro recibido de Firebase está marcado como eliminado en tombstones,
+  // asegurar su eliminación inmediata de IndexedDB local
+  for (const item of remoteList) {
+    if (item && item.id && isDeleted(item.id)) {
+      await db[tableName].delete(item.id).catch(() => null);
+      if (!isNaN(Number(item.id))) {
+        await db[tableName].delete(Number(item.id)).catch(() => null);
+      }
+      await db[tableName].delete(String(item.id)).catch(() => null);
+    }
+  }
+
+  // 3. Eliminar registros locales obsoletos que ya no existen en Firebase o que fueron eliminados
   try {
     const remoteIds = new Set(remoteList.map(item => String(item.id)));
     const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
@@ -366,7 +441,7 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
     const idsToDelete = localItems
       .filter(localItem => 
         localItem.id && 
-        !remoteIds.has(String(localItem.id)) && 
+        (!remoteIds.has(String(localItem.id)) || isDeleted(localItem.id)) && 
         !pendingIds.has(String(localItem.id))
       )
       .map(localItem => localItem.id);

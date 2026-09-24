@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.53";
+export const CURRENT_APP_VERSION = "2.14.54";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.54",
+    date: "23/09/2026",
+    title: "⚡ Eliminación Instantánea y Blindada al Primer Clic (Cero Resurrección)",
+    highlights: [
+      "Eliminación Inmediata al Primer Clic: Se eliminó la condición de carrera con la sincronización en la nube que causaba que un animal eliminado reapareciera temporalmente si una descarga coincidía en el mismo segundo.",
+      "Registro Persistente de Lápidas (Tombstones): La aplicación mantiene memoria de los identificadores borrados para que ninguna respuesta rezagada de la red pueda volver a insertar un bovino eliminado.",
+      "Limpieza Multi-Tipo en Base de Datos: Borrado garantizado en IndexedDB soportando identificadores numéricos y de texto.",
+      "Sincronización PUSH Inmediata: Los borrados de animales, pesajes y palpaciones se envían y aseguran en Firebase en tiempo real."
+    ]
+  },
   {
     version: "2.14.53",
     date: "23/09/2026",

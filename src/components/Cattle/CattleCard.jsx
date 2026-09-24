@@ -37,7 +37,10 @@ export function CattleCard({
   }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const handleDelete = (e) => {
-    e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (isWorker) return;
     if (window.confirm(`⚠️ ¿Estás seguro de que deseas eliminar permanentemente al bovino ${animal.tagNumber} (${animal.name || 'Sin nombre'})?\n\nEsta acción borrará también su historial de pesajes.`)) {
       onDelete(animal.id);

@@ -271,9 +271,12 @@ export function CattleListView({
   }, [filteredCattle, weighings]);
 
   const handleDeletePrompt = (animal, e) => {
-    e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (window.confirm(`⚠️ ¿Estás seguro de que deseas eliminar permanentemente al bovino ${animal.tagNumber} (${animal.name || 'Sin nombre'})?\n\nEsta acción borrará también su historial de pesajes.`)) {
-      onDeleteAnimal(animal.id);
+      handleDeleteAnimalSafe(animal.id);
     }
   };
 
