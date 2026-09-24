@@ -440,12 +440,14 @@ export function QuickWeighinView({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        {/* Controles de la Báscula: Fecha, Checklist y Guardar Todo */}
+        <div className="w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-end gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-emerald-700/40">
+          
           {/* Botón Switch Modo Checklist / Arqueo */}
           <button
             type="button"
             onClick={() => setEnableChecklistMode(prev => !prev)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition cursor-pointer min-h-[42px] border ${
+            className={`w-full sm:w-auto px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition cursor-pointer min-h-[44px] border shrink-0 ${
               enableChecklistMode
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30'
                 : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
@@ -456,8 +458,9 @@ export function QuickWeighinView({
             <span>{enableChecklistMode ? '📋 Checklist Activo' : '📋 + Conectar Checklist'}</span>
           </button>
 
-          <div className="flex-1 sm:flex-initial">
-            <label className="block text-[11px] font-black text-amber-300 mb-1 flex items-center gap-1">
+          {/* Campo Fecha de Pesaje */}
+          <div className="w-full sm:w-auto flex flex-col shrink-0">
+            <label className="text-[11px] font-black text-amber-300 mb-1 flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-amber-300" />
               <span>Fecha del Pesaje * (Seleccionar)</span>
             </label>
@@ -466,50 +469,53 @@ export function QuickWeighinView({
               type="date"
               value={weighDate}
               onChange={(e) => setWeighDate(e.target.value)}
-              className={`w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-extrabold border backdrop-blur-sm min-h-[42px] focus:outline-none transition ${
+              className={`w-full sm:w-44 px-3.5 py-2 rounded-xl text-xs font-extrabold border backdrop-blur-sm min-h-[44px] focus:outline-none transition ${
                 isDateMissing 
-                  ? 'bg-rose-500/30 border-rose-400 text-white ring-2 ring-rose-400 animate-pulse' 
+                  ? 'bg-rose-500/30 border-rose-400 text-white ring-2 ring-rose-400' 
                   : 'bg-emerald-500/30 text-white border-emerald-300 ring-2 ring-emerald-400/40'
               }`}
               required
             />
             {isDateMissing && (
-              <span className="text-[10px] text-rose-300 font-bold block mt-0.5 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Se tiene que añadir fecha para continuar
+              <span className="text-[10px] text-rose-300 font-bold mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 shrink-0" /> Se tiene que añadir fecha para continuar
               </span>
             )}
           </div>
           
-          {/* BOTÓN GUARDAR TODO */}
-          <button
-            onClick={handleSaveAllFilled}
-            disabled={saving}
-            className={`self-end px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 min-h-[42px] cursor-pointer ${
-              isReadyToSaveAll
-                ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950 shadow-xl shadow-emerald-500/40 ring-4 ring-emerald-300/40 scale-105 animate-pulse'
-                : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-lg shadow-amber-400/30'
-            }`}
-            title={
-              isReadyToSaveAll 
-                ? '¡Listo! Guardar todos los pesajes' 
-                : isDateMissing 
-                  ? 'Se tiene que añadir fecha para continuar' 
-                  : 'Ingresa pesos en los animales abajo'
-            }
-          >
-            {isReadyToSaveAll ? <Sparkles className="w-4 h-4 text-slate-950 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            <span>Guardar Todo {filledCount > 0 ? `(${filledCount})` : ''}</span>
-          </button>
-
-          {filledCount > 0 && (
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* BOTÓN GUARDAR TODO */}
             <button
-              onClick={handleClearDraft}
-              className="self-end p-2.5 rounded-xl bg-white/10 hover:bg-rose-500/30 text-rose-200 border border-white/20 text-xs transition cursor-pointer"
-              title="Borrar borrador escrito en pantalla"
+              onClick={handleSaveAllFilled}
+              disabled={saving}
+              className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 min-h-[44px] cursor-pointer ${
+                isReadyToSaveAll
+                  ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950 shadow-xl shadow-emerald-500/40 ring-4 ring-emerald-300/40 active:scale-95'
+                  : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-lg shadow-amber-400/30 active:scale-95'
+              }`}
+              title={
+                isReadyToSaveAll 
+                  ? '¡Listo! Guardar todos los pesajes' 
+                  : isDateMissing 
+                    ? 'Se tiene que añadir fecha para continuar' 
+                    : 'Ingresa pesos en los animales abajo'
+              }
             >
-              <Trash2 className="w-4 h-4" />
+              {isReadyToSaveAll ? <Sparkles className="w-4 h-4 text-slate-950 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              <span>Guardar Todo {filledCount > 0 ? `(${filledCount})` : ''}</span>
             </button>
-          )}
+
+            {filledCount > 0 && (
+              <button
+                onClick={handleClearDraft}
+                className="p-2.5 rounded-xl bg-white/10 hover:bg-rose-500/30 text-rose-200 border border-white/20 text-xs transition cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
+                title="Borrar borrador escrito en pantalla"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
 

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.57";
+export const CURRENT_APP_VERSION = "2.14.58";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.58",
+    date: "24/09/2026",
+    title: "📐 Corrección de Superposición en Celulares (Báscula Rápida y Formularios)",
+    highlights: [
+      "Eliminación de Solapamiento en Controles: La selección de fecha y el botón 'Guardar Todo' ahora se apilan verticalmente de forma limpia en pantallas de celular, evitando cualquier choque o superposición visual.",
+      "Botones y Campos Ergonómicos: Botones con ancho táctil completo en móvil, bordes nítidos y mensajes de validación perfectamente alineados.",
+      "Separación Visual Óptima: Espaciado uniforme para modo vertical y horizontal en cualquier modelo de smartphone."
+    ]
+  },
   {
     version: "2.14.57",
     date: "24/09/2026",
