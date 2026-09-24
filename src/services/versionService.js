@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.54";
+export const CURRENT_APP_VERSION = "2.14.55";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.55",
+    date: "24/09/2026",
+    title: "🎨 Nuevo Fondo y Estilo Colorido para la Barra Superior",
+    highlights: [
+      "Gradiente Ganadero Vibrante: La barra superior ahora cuenta con un fondo degradado elegante en tonos verde esmeralda y bosque que resalta la identidad ganadera.",
+      "Alto Contraste y Legibilidad: Texto blanco brillante, botones translúcidos tipo cristal y bordes luminosos para una visualización clara tanto de día como de noche.",
+      "Botón de Menú y Acciones Destacadas: Estilizado premium del botón Menú, botón Registrar Bovino y badges de estado del hato."
+    ]
+  },
   {
     version: "2.14.54",
     date: "23/09/2026",
