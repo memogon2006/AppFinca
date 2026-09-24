@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.51";
+export const CURRENT_APP_VERSION = "2.14.52";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.52",
+    date: "23/09/2026",
+    title: "🧪 Actualización de Prueba: Verificación de Auto-Guardado de Formularios en Vivo",
+    highlights: [
+      "Prueba de Continuidad: Diseñada para comprobar que al actualizar la app mientras estás digitando un lote de ganado o formulario, no pierdes ningún dato.",
+      "Restauración Instantánea: Tu formulario y pantalla actual se reabren automáticamente con todos los aretes, pesos y valores escritos.",
+      "Verificación de Notificación Flotante: Comprobación del aviso flotante con 1 clic en tiempo real."
+    ]
+  },
   {
     version: "2.14.51",
     date: "23/09/2026",
