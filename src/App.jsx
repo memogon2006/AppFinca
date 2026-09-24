@@ -1578,6 +1578,7 @@ export default function App() {
               setIsIncomeModalOpen(true);
             }}
             onDeleteIncome={handleDeleteFarmIncome}
+            onSelectAnimal={handleSelectAnimal}
           />
         )}
 

@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.14.47";
+export const CURRENT_APP_VERSION = "2.14.48";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.48",
+    date: "23/09/2026",
+    title: "📊 Detalle Contable y Financiero Mensual al Clic en Gráfica y Meses",
+    highlights: [
+      "Interacción Directa en la Gráfica: Al hacer clic en cualquier barra de la gráfica mensual (Ingresos, Gastos, Utilidad) o en los botones de meses (Abr, May, Jun, Jul, Ago, Sep) se abre el desglose completo del mes.",
+      "Tarjetas KPI del Mes: Resumen instantáneo de Ingresos Operativos, Gastos de Finca, Utilidad Neta Realizada y Ganancia en Ventas de Ganado.",
+      "Pestañas de Desglose Mensual: Acceso a Gastos Detallados con filtros y buscador, Ganado Vendido con compradores y utilidades, Otros Ingresos (leche/queso/servicios) y Resumen con gráficas por rubro.",
+      "Gestión Contable en el Mes: Posibilidad de agregar, editar o eliminar gastos e ingresos directamente desde el modal del mes.",
+      "Exportación y Comunicación: Descarga en Excel profesional con todas las hojas del mes y generador de informe para WhatsApp."
+    ]
+  },
   {
     version: "2.14.47",
     date: "23/09/2026",

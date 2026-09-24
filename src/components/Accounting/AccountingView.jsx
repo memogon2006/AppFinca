@@ -48,6 +48,7 @@ import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '.
 import { useAuth } from '../../context/AuthContext';
 import { EXPENSE_CATEGORIES } from './ExpenseModal';
 import { INCOME_CATEGORIES } from './IncomeModal';
+import { MonthAccountingDetailModal } from './MonthAccountingDetailModal';
 
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -76,12 +77,14 @@ export function AccountingView({
   onDeleteExpense, 
   onOpenAddIncome, 
   onOpenEditIncome, 
-  onDeleteIncome 
+  onDeleteIncome,
+  onSelectAnimal
 }) {
   const { currentUser, isWorker } = useAuth();
   
   // Estados de navegación interna
   const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'expenses' | 'incomes' | 'unit_costs'
+  const [selectedMonthForDetail, setSelectedMonthForDetail] = useState(null);
   
   // Filtros de fecha
   const currentYear = new Date().getFullYear().toString();
@@ -369,6 +372,10 @@ export function AccountingView({
       data.push({
         month: monthLabel,
         fullLabel: `${MONTH_NAMES[d.getMonth()]} ${yNum}`,
+        monthPrefix,
+        year: yNum,
+        monthName: MONTH_NAMES[d.getMonth()],
+        monthIndex: d.getMonth(),
         Ingresos: monthIncome,
         Gastos: monthExp,
         UtilidadNeta: monthNet
@@ -796,35 +803,95 @@ export function AccountingView({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Gráfico 1: Comparativa Mensual Ingresos vs Gastos vs Utilidad Neta (2 columnas) */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-indigo-600" />
-                Historial Mensual: Ingresos vs Gastos vs Utilidad Neta
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Evolución de la rentabilidad ganadera mes a mes (Últimos 6 meses)
-              </p>
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-indigo-600" />
+                  Historial Mensual: Ingresos vs Gastos vs Utilidad Neta
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Evolución de la rentabilidad ganadera mes a mes (Últimos 6 meses)
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800/50 self-start sm:self-auto">
+                👆 Clic en cualquier barra o mes para ver desglose
+              </span>
+            </div>
+
+            <div className="h-60 sm:h-64 w-full cursor-pointer">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={monthlyComparisonData} 
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  onClick={(state) => {
+                    if (state && state.activePayload && state.activePayload.length > 0) {
+                      setSelectedMonthForDetail(state.activePayload[0].payload);
+                    }
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fontSize: 11, cursor: 'pointer' }}
+                    onClick={(e) => {
+                      if (e && e.value) {
+                        const found = monthlyComparisonData.find(m => m.month === e.value);
+                        if (found) setSelectedMonthForDetail(found);
+                      }
+                    }}
+                  />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(v / 1000000).toFixed(1)}M`} />
+                  <Tooltip 
+                    formatter={(value, name) => [formatCurrency(value), name]}
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                  <Bar 
+                    dataKey="Ingresos" 
+                    fill="#10b981" 
+                    radius={[4, 4, 0, 0]} 
+                    cursor="pointer"
+                    onClick={(data) => data && setSelectedMonthForDetail(data)}
+                  />
+                  <Bar 
+                    dataKey="Gastos" 
+                    fill="#f43f5e" 
+                    radius={[4, 4, 0, 0]} 
+                    cursor="pointer"
+                    onClick={(data) => data && setSelectedMonthForDetail(data)}
+                  />
+                  <Bar 
+                    dataKey="UtilidadNeta" 
+                    fill="#6366f1" 
+                    radius={[4, 4, 0, 0]} 
+                    cursor="pointer"
+                    onClick={(data) => data && setSelectedMonthForDetail(data)}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="h-64 sm:h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyComparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(v / 1000000).toFixed(1)}M`} />
-                <Tooltip 
-                  formatter={(value, name) => [formatCurrency(value), name]}
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '11px' }}
-                />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                <Bar dataKey="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="UtilidadNeta" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Botones directos de meses para máxima facilidad de acceso en móviles y pantallas táctiles */}
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Ver mes detallado:</span>
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {monthlyComparisonData.map(m => (
+                <button
+                  key={m.monthPrefix}
+                  onClick={() => setSelectedMonthForDetail(m)}
+                  className="px-2.5 py-1 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer shadow-xs"
+                  title={`Ver gastos, ingresos y ventas de ${m.fullLabel}`}
+                >
+                  {m.month}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1281,6 +1348,23 @@ export function AccountingView({
         )}
 
       </div>
+
+      {/* Modal de Detalle Contable & Financiero Mensual */}
+      <MonthAccountingDetailModal
+        isOpen={!!selectedMonthForDetail}
+        onClose={() => setSelectedMonthForDetail(null)}
+        monthData={selectedMonthForDetail}
+        farmExpenses={farmExpenses}
+        farmIncomes={farmIncomes}
+        cattle={cattle}
+        onOpenAddExpense={onOpenAddExpense}
+        onOpenEditExpense={onOpenEditExpense}
+        onDeleteExpense={onDeleteExpense}
+        onOpenAddIncome={onOpenAddIncome}
+        onOpenEditIncome={onOpenEditIncome}
+        onDeleteIncome={onDeleteIncome}
+        onSelectAnimal={onSelectAnimal}
+      />
 
     </div>
   );
