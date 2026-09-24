@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.58";
+export const CURRENT_APP_VERSION = "2.14.59";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.59",
+    date: "24/09/2026",
+    title: "📐 Ajuste Preciso de Campos y Filtros a los Márgenes de Pantalla",
+    highlights: [
+      "Ajuste Perfecto a Contenedores: Se corrigió el desborde de los campos de fecha en filtros de ventas e inventario para que respeten estrictamente el ancho y bordes de las tarjetas.",
+      "Reglas Globales de Contención Responsiva: Todos los campos de entrada de datos (`inputs`, `dates`, `selects`) ahora se adaptan con `box-border` y `min-w-0` sin salirse de los límites de pantalla.",
+      "Espaciado y Proporción Visual Equilibrada: Márgenes limpios, alineación uniforme y visualización armoniosa en todo tipo de dispositivos móviles."
+    ]
+  },
   {
     version: "2.14.58",
     date: "24/09/2026",

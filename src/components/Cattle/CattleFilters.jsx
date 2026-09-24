@@ -190,57 +190,57 @@ export function CattleFilters({ filters, setFilters, owners = [], breeds = [], e
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 min-w-0">
           {/* Fecha de Compra / Ingreso: Desde */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+          <div className="min-w-0 w-full">
+            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
               📅 Compra / Ingreso Desde:
             </label>
             <input
               type="date"
               value={filters.entryDateStart || ''}
               onChange={(e) => setFilters(prev => ({ ...prev, entryDateStart: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
+              className="w-full max-w-full box-border px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 min-h-[38px]"
             />
           </div>
 
           {/* Fecha de Compra / Ingreso: Hasta */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+          <div className="min-w-0 w-full">
+            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
               📅 Compra / Ingreso Hasta:
             </label>
             <input
               type="date"
               value={filters.entryDateEnd || ''}
               onChange={(e) => setFilters(prev => ({ ...prev, entryDateEnd: e.target.value }))}
-              className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
+              className="w-full max-w-full box-border px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 min-h-[38px]"
             />
           </div>
 
           {/* Si está en pestaña Vendidos o Todos, mostrar Fecha de Venta / Salida */}
           {(filters.status === 'Vendido' || filters.status === 'Todos') && (
             <>
-              <div>
-                <label className="block text-[11px] font-bold text-teal-700 dark:text-teal-300 mb-0.5">
+              <div className="min-w-0 w-full">
+                <label className="block text-[11px] font-bold text-teal-700 dark:text-teal-300 mb-1">
                   🏷️ Fecha de Venta / Salida Desde:
                 </label>
                 <input
                   type="date"
                   value={filters.saleDateStart || ''}
                   onChange={(e) => setFilters(prev => ({ ...prev, saleDateStart: e.target.value }))}
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-teal-500"
+                  className="w-full max-w-full box-border px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-teal-500 min-h-[38px]"
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-teal-700 dark:text-teal-300 mb-0.5">
+              <div className="min-w-0 w-full">
+                <label className="block text-[11px] font-bold text-teal-700 dark:text-teal-300 mb-1">
                   🏷️ Fecha de Venta / Salida Hasta:
                 </label>
                 <input
                   type="date"
                   value={filters.saleDateEnd || ''}
                   onChange={(e) => setFilters(prev => ({ ...prev, saleDateEnd: e.target.value }))}
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-teal-500"
+                  className="w-full max-w-full box-border px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-teal-500 min-h-[38px]"
                 />
               </div>
             </>

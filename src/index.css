@@ -29,6 +29,23 @@
     font-feature-settings: 'tnum' 1, 'lnum' 1;
     font-variant-numeric: tabular-nums lining-nums;
   }
+
+  /* Control estricto de dimensiones para evitar desbordes en móviles y WebKit */
+  input, select, textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="time"] {
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 /* Custom scrollbars */

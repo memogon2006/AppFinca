@@ -309,17 +309,17 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         </div>
 
         {/* BARRA DE BÚSQUEDA Y FILTROS POR FECHA DE VENTA */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3">
-          <div className="flex flex-col md:flex-row items-center gap-3">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-3 overflow-hidden">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             {/* Buscador */}
-            <div className="relative flex-1 w-full">
+            <div className="relative flex-1 w-full min-w-0">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar por arete, comprador, fecha (YYYY-MM), dueño..."
-                className="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                className="w-full pl-9 pr-8 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 box-border"
               />
               {searchQuery && (
                 <button
@@ -332,27 +332,27 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
             </div>
 
             {/* Modalidad de Venta */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 shrink-0">
               <button
                 onClick={() => setSaleTypeFilter('')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  !saleTypeFilter ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
+                  !saleTypeFilter ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
                 Todas
               </button>
               <button
                 onClick={() => setSaleTypeFilter('Compania')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  saleTypeFilter === 'Compania' ? 'bg-teal-600 text-white' : 'text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-950'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
+                  saleTypeFilter === 'Compania' ? 'bg-teal-600 text-white shadow-sm' : 'text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-950'
                 }`}
               >
                 🤝 Compañía
               </button>
               <button
                 onClick={() => setSaleTypeFilter('Directa')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  saleTypeFilter === 'Directa' ? 'bg-blue-600 text-white' : 'text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
+                  saleTypeFilter === 'Directa' ? 'bg-blue-600 text-white shadow-sm' : 'text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950'
                 }`}
               >
                 💰 Directa
@@ -361,36 +361,36 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
           </div>
 
           {/* Rango de Fechas de Venta */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs pt-1 border-t border-slate-200 dark:border-slate-800/80 items-end">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs pt-2 border-t border-slate-200 dark:border-slate-800/80 items-end min-w-0">
+            <div className="min-w-0 w-full">
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
                 📅 Fecha de Venta / Salida Desde:
               </label>
               <input
                 type="date"
                 value={saleStartDate}
                 onChange={(e) => setSaleStartDate(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                className="w-full max-w-full box-border px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 text-xs min-h-[38px]"
               />
             </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+            <div className="min-w-0 w-full">
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
                 📅 Fecha de Venta / Salida Hasta:
               </label>
               <input
                 type="date"
                 value={saleEndDate}
                 onChange={(e) => setSaleEndDate(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                className="w-full max-w-full box-border px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 text-xs min-h-[38px]"
               />
             </div>
 
             {hasActiveFilters && (
-              <div>
+              <div className="min-w-0 w-full">
                 <button
                   onClick={clearFilters}
-                  className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-xs font-bold hover:bg-rose-100 transition cursor-pointer flex items-center gap-1"
+                  className="w-full sm:w-auto px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-xs font-bold hover:bg-rose-100 transition cursor-pointer flex items-center justify-center gap-1 min-h-[38px]"
                 >
                   <X className="w-3.5 h-3.5" /> Limpiar Filtros
                 </button>
