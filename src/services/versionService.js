@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.55";
+export const CURRENT_APP_VERSION = "2.14.56";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.56",
+    date: "24/09/2026",
+    title: "📱 Optimización Móvil: Barra Superior Limpia, Espaciosa y Sin Amontonamientos",
+    highlights: [
+      "Distribución Perfecta en Celulares: El botón Menú ahora es un botón compacto de acceso rápido con icono estilizado, liberando más del 60% de espacio en pantalla.",
+      "Nombre de Finca y Badges Centrados: Eliminada la superposición de texto y métricas en dispositivos móviles con tipografía auto-adaptable.",
+      "Botones de Acción Optimizados: Botones de registro rápido (+), sincronización en la nube y perfil con diseño minimalista de alto impacto visual."
+    ]
+  },
   {
     version: "2.14.55",
     date: "24/09/2026",

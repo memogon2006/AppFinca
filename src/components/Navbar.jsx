@@ -157,49 +157,49 @@ export function Navbar({
       {/* 1. TOP HEADER (Limpio, elegante, con botón hamburguesa siempre accesible)  */}
       {/* ========================================================================= */}
       <header className="sticky top-0 z-40 bg-gradient-to-r from-emerald-900 via-teal-950 to-emerald-950 text-white backdrop-blur-md border-b-2 border-emerald-500/30 shadow-lg shadow-emerald-950/25 transition-all duration-200">
-        <div className="w-full mx-auto px-3 sm:px-4 lg:px-6 max-w-[1700px]">
-          <div className="flex items-center justify-between h-15 sm:h-16 gap-2">
+        <div className="w-full mx-auto px-2 sm:px-4 lg:px-6 max-w-[1700px]">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-1.5 sm:gap-2">
             
-            {/* LADO IZQUIERDO: Botón Menú Hamburguesa Destacado, Más Largo y Grande */}
+            {/* LADO IZQUIERDO: Botón Menú Hamburguesa (Compacto en móvil, completo en PC) */}
             <div className="flex items-center shrink-0">
               <button
                 onClick={() => setIsSidebarOpen(true)}
                 title="Abrir Menú Principal"
                 aria-label="Abrir Menú Principal"
-                className="flex items-center justify-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-emerald-300 shadow-md shadow-emerald-950/40 cursor-pointer transition-all duration-150 active:scale-95 group shrink-0 min-w-[105px] sm:min-w-[130px]"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 p-2 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white border-2 border-emerald-300 shadow-md shadow-emerald-950/40 cursor-pointer transition-all duration-150 active:scale-95 group shrink-0 h-9 sm:h-auto min-w-[36px] sm:min-w-[110px]"
               >
-                <Menu className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-white stroke-[2.5] group-hover:scale-110 transition-transform shrink-0" />
-                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white select-none">
+                <Menu className="w-5 h-5 text-white stroke-[2.5] group-hover:scale-110 transition-transform shrink-0" />
+                <span className="hidden sm:inline text-xs sm:text-sm font-black uppercase tracking-wider text-white select-none">
                   Menú
                 </span>
               </button>
             </div>
 
-            {/* CENTRO: Logo, Nombre de Finca y Métricas Rápidas Centrados */}
+            {/* CENTRO: Logo, Nombre de Finca y Métricas Rápidas (Espacioso y sin solaparse) */}
             <div 
               onClick={() => handleNavigate('dashboard')}
-              className="flex-1 flex items-center justify-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0 px-2"
+              className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2.5 cursor-pointer group min-w-0 px-1 sm:px-2 overflow-hidden"
               title="Ir al Tablero Principal"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 border border-emerald-400/40 p-0.5 shadow-md flex items-center justify-center shrink-0 group-hover:scale-105 active:scale-95 transition overflow-hidden backdrop-blur-sm">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-white/10 border border-emerald-400/40 p-0.5 shadow-md flex items-center justify-center shrink-0 group-hover:scale-105 active:scale-95 transition overflow-hidden backdrop-blur-sm">
                 <img src="/icon-192.png" alt="Logo" className="w-full h-full object-cover rounded-lg" />
               </div>
 
-              <div className="flex flex-col items-start sm:items-center justify-center min-w-0">
-                <h1 className="text-xs sm:text-sm md:text-base font-black tracking-tight text-white uppercase truncate max-w-[120px] sm:max-w-[260px] md:max-w-[380px] group-hover:text-emerald-300 transition leading-tight drop-shadow-sm">
+              <div className="flex flex-col items-center sm:items-start justify-center min-w-0">
+                <h1 className="text-xs sm:text-sm md:text-base font-black tracking-tight text-white uppercase truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[280px] md:max-w-[400px] group-hover:text-emerald-300 transition leading-tight drop-shadow-sm text-center sm:text-left">
                   {currentUser?.farmName || 'INVENTARIO BOVINO'}
                 </h1>
 
-                <div className="text-[10px] text-emerald-200 flex items-center justify-center gap-1.5 font-medium mt-0.5">
+                <div className="text-[10px] text-emerald-200 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 font-medium mt-0.5">
                   {/* Contador Activo */}
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-200 font-bold border border-emerald-400/30 text-[10px] whitespace-nowrap backdrop-blur-sm">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-500/25 text-emerald-200 font-bold border border-emerald-400/30 text-[9px] sm:text-[10px] whitespace-nowrap backdrop-blur-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>{activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}</span>
                   </span>
 
                   {/* Estado de Conexión */}
                   <span 
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold text-[10px] border transition-colors whitespace-nowrap backdrop-blur-sm ${
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md font-bold text-[9px] sm:text-[10px] border transition-colors whitespace-nowrap backdrop-blur-sm ${
                       isOnline
                         ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30'
                         : 'bg-amber-500/30 text-amber-200 border-amber-400/50 animate-pulse'
@@ -207,7 +207,7 @@ export function Navbar({
                     title={isOnline ? '🟢 Conectado a la nube.' : '📡 Modo Campo Offline.'}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-                    <span className="hidden sm:inline text-white/90">{isOnline ? 'En línea' : 'Modo Campo'}</span>
+                    <span className="hidden xs:inline sm:inline text-white/90">{isOnline ? 'En línea' : 'Modo Campo'}</span>
                   </span>
                 </div>
               </div>
@@ -215,18 +215,17 @@ export function Navbar({
 
 
 
-            {/* LADO DERECHO: Acciones Directas y Perfil */}
+            {/* LADO DERECHO: Acciones Directas y Perfil (Adaptado a móvil y escritorio) */}
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               
               {/* Botón Principal: + Registrar Bovino */}
               <button
                 onClick={onOpenNewAnimal}
-                className="py-1.5 px-2.5 sm:px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-[0.97] text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/30 border border-emerald-300/40 min-h-[34px] cursor-pointer whitespace-nowrap transition"
+                className="p-1.5 sm:py-1.5 sm:px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-[0.97] text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/30 border border-emerald-300/40 h-9 sm:h-auto min-h-[34px] min-w-[34px] cursor-pointer whitespace-nowrap transition"
                 title="Registrar un nuevo animal al inventario"
               >
                 <PlusCircle className="w-4 h-4 shrink-0 text-white" />
                 <span className="hidden sm:inline">Registrar Bovino</span>
-                <span className="sm:hidden font-bold">+ Bovino</span>
               </button>
 
 
@@ -236,7 +235,7 @@ export function Navbar({
                 onClick={onManualSync}
                 disabled={isSyncing}
                 title={isSyncing ? 'Sincronizando con la nube...' : 'Sincronizar datos con la nube'}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/20 flex items-center justify-center min-h-[34px] min-w-[34px] cursor-pointer transition shrink-0 backdrop-blur-sm"
+                className="p-1.5 sm:p-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/20 flex items-center justify-center h-9 w-9 sm:h-auto sm:w-auto min-h-[34px] min-w-[34px] cursor-pointer transition shrink-0 backdrop-blur-sm"
               >
                 {isSyncing ? (
                   <RefreshCw className="w-4 h-4 text-emerald-300 animate-spin" />
@@ -245,11 +244,11 @@ export function Navbar({
                 )}
               </button>
 
-              {/* Toggle Tema Oscuro/Claro */}
+              {/* Toggle Tema Oscuro/Claro (En pantallas medianas y grandes) */}
               <button
                 onClick={toggleTheme}
                 title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
-                className="hidden sm:flex p-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/20 items-center justify-center min-h-[34px] min-w-[34px] cursor-pointer transition shrink-0 backdrop-blur-sm"
+                className="hidden md:flex p-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/20 items-center justify-center min-h-[34px] min-w-[34px] cursor-pointer transition shrink-0 backdrop-blur-sm"
               >
                 {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-300" />}
               </button>
@@ -258,13 +257,13 @@ export function Navbar({
               <div 
                 onClick={onOpenProfile}
                 title="Mi Perfil y Ajustes de Finca"
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-xl border cursor-pointer transition group min-h-[34px] whitespace-nowrap shrink-0 backdrop-blur-sm ${
+                className={`flex items-center gap-1.5 p-1 sm:px-2 sm:py-1 rounded-xl border cursor-pointer transition group min-h-[34px] whitespace-nowrap shrink-0 backdrop-blur-sm ${
                   isWorker
                     ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/40 text-amber-100'
                     : 'bg-white/10 hover:bg-white/20 border-white/20 text-emerald-100'
                 }`}
               >
-                <div className={`w-6 h-6 rounded-lg text-white font-black text-[11px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition ${
+                <div className={`w-7 h-7 sm:w-6 sm:h-6 rounded-lg text-white font-black text-[11px] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition ${
                   isWorker ? 'bg-amber-500' : 'bg-emerald-600 border border-emerald-400/50'
                 }`}>
                   {isWorker ? '🤠' : getInitials(currentUser?.name)}
@@ -281,14 +280,14 @@ export function Navbar({
                 </div>
               </div>
 
-              {/* Botón Salir */}
+              {/* Botón Salir (Pantallas medianas y grandes; en móvil está en el Menú) */}
               <button
                 onClick={handleLogout}
                 title="Cerrar Sesión"
-                className="px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/40 text-xs font-bold flex items-center gap-1 min-h-[34px] cursor-pointer transition whitespace-nowrap shrink-0 shadow-sm backdrop-blur-sm"
+                className="hidden md:flex px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/40 text-xs font-bold items-center gap-1 min-h-[34px] cursor-pointer transition whitespace-nowrap shrink-0 shadow-sm backdrop-blur-sm"
               >
                 <LogOut className="w-3.5 h-3.5 text-rose-300 shrink-0" />
-                <span className="hidden sm:inline">Salir</span>
+                <span>Salir</span>
               </button>
 
             </div>
