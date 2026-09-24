@@ -9,9 +9,11 @@ import {
   CreditCard, 
   Check, 
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '../../services/calculations';
+import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
 export const EXPENSE_CATEGORIES = [
   { id: 'nomina', label: 'Nómina & Mano de Obra', icon: '🤠', defaultType: 'Fijo', examples: 'Sueldos, jornales, bonificaciones, seguridad social' },
@@ -45,6 +47,8 @@ export function ExpenseModal({
   });
 
   const [errors, setErrors] = useState({});
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const isDraftInitializedRef = React.useRef(false);
 
   useEffect(() => {
     if (expense) {
@@ -60,8 +64,9 @@ export function ExpenseModal({
         recurrenceFrequency: expense.recurrenceFrequency || 'Mensual',
         notes: expense.notes || '',
       });
+      setIsDraftRestored(false);
     } else {
-      setFormData({
+      const defaultState = {
         date: new Date().toISOString().slice(0, 10),
         type: 'Variable',
         category: 'alimentacion',
@@ -71,10 +76,47 @@ export function ExpenseModal({
         isRecurring: false,
         recurrenceFrequency: 'Mensual',
         notes: '',
-      });
+      };
+      
+      const draft = loadDraft('expense');
+      if (draft && (draft.concept || draft.amount || draft.notes)) {
+        setFormData(draft);
+        setIsDraftRestored(true);
+      } else {
+        setFormData(defaultState);
+        setIsDraftRestored(false);
+      }
     }
     setErrors({});
+    setTimeout(() => {
+      isDraftInitializedRef.current = true;
+    }, 100);
   }, [expense, isOpen]);
+
+  // Auto-guardar borrador de gasto
+  useEffect(() => {
+    if (!isOpen || expense || !isDraftInitializedRef.current) return;
+    if (formData.concept || formData.amount || formData.notes) {
+      saveDraft('expense', formData);
+    }
+  }, [isOpen, expense, formData]);
+
+  const handleDiscardDraft = () => {
+    clearDraft('expense');
+    setIsDraftRestored(false);
+    setFormData({
+      date: new Date().toISOString().slice(0, 10),
+      type: 'Variable',
+      category: 'alimentacion',
+      concept: '',
+      amount: '',
+      paymentMethod: 'Efectivo',
+      isRecurring: false,
+      recurrenceFrequency: 'Mensual',
+      notes: '',
+    });
+    setErrors({});
+  };
 
   if (!isOpen) return null;
 
@@ -111,6 +153,11 @@ export function ExpenseModal({
       updatedAt: new Date().toISOString()
     };
 
+    if (!expense) {
+      clearDraft('expense');
+      setIsDraftRestored(false);
+    }
+
     onSave(payload);
     onClose();
   };
@@ -145,6 +192,23 @@ export function ExpenseModal({
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           
+          {/* BANNER DE BORRADOR RESTAURADO */}
+          {isDraftRestored && !expense && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 animate-fade-in gap-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+                <span className="text-xs font-bold">✨ Borrador recuperado automáticamente</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-rose-500/20 text-amber-900 dark:text-amber-100 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-xs shrink-0 transition cursor-pointer"
+              >
+                Descartar
+              </button>
+            </div>
+          )}
+
           {/* Monto y Fecha */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

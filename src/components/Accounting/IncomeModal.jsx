@@ -5,9 +5,11 @@ import {
   Calendar, 
   PlusCircle, 
   Check, 
-  TrendingUp 
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '../../services/calculations';
+import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
 export const INCOME_CATEGORIES = [
   { id: 'leche', label: 'Venta de Leche & Queso', icon: '🥛', examples: 'Liquidación quincenal de leche, venta de quesos' },
@@ -35,6 +37,8 @@ export function IncomeModal({
   });
 
   const [errors, setErrors] = useState({});
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const isDraftInitializedRef = React.useRef(false);
 
   useEffect(() => {
     if (income) {
@@ -47,18 +51,53 @@ export function IncomeModal({
         paymentMethod: income.paymentMethod || 'Transferencia',
         notes: income.notes || '',
       });
+      setIsDraftRestored(false);
     } else {
-      setFormData({
+      const defaultState = {
         date: new Date().toISOString().slice(0, 10),
         category: 'leche',
         concept: '',
         amount: '',
         paymentMethod: 'Transferencia',
         notes: '',
-      });
+      };
+
+      const draft = loadDraft('income');
+      if (draft && (draft.concept || draft.amount || draft.notes)) {
+        setFormData(draft);
+        setIsDraftRestored(true);
+      } else {
+        setFormData(defaultState);
+        setIsDraftRestored(false);
+      }
     }
     setErrors({});
+    setTimeout(() => {
+      isDraftInitializedRef.current = true;
+    }, 100);
   }, [income, isOpen]);
+
+  // Auto-guardar borrador de ingreso
+  useEffect(() => {
+    if (!isOpen || income || !isDraftInitializedRef.current) return;
+    if (formData.concept || formData.amount || formData.notes) {
+      saveDraft('income', formData);
+    }
+  }, [isOpen, income, formData]);
+
+  const handleDiscardDraft = () => {
+    clearDraft('income');
+    setIsDraftRestored(false);
+    setFormData({
+      date: new Date().toISOString().slice(0, 10),
+      category: 'leche',
+      concept: '',
+      amount: '',
+      paymentMethod: 'Transferencia',
+      notes: '',
+    });
+    setErrors({});
+  };
 
   if (!isOpen) return null;
 
@@ -86,6 +125,11 @@ export function IncomeModal({
       amount: parseFloat(formData.amount) || 0,
       updatedAt: new Date().toISOString()
     };
+
+    if (!income) {
+      clearDraft('income');
+      setIsDraftRestored(false);
+    }
 
     onSave(payload);
     onClose();
@@ -121,6 +165,23 @@ export function IncomeModal({
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           
+          {/* BANNER DE BORRADOR RESTAURADO */}
+          {isDraftRestored && !income && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-200 animate-fade-in gap-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+                <span className="text-xs font-bold">✨ Borrador recuperado automáticamente</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-rose-500/20 text-amber-900 dark:text-amber-100 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-xs shrink-0 transition cursor-pointer"
+              >
+                Descartar
+              </button>
+            </div>
+          )}
+
           {/* Monto y Fecha */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

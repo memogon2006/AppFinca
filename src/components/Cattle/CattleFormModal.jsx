@@ -20,6 +20,7 @@ import {
   saveConsecutiveTraceabilityLog 
 } from '../../services/consecutiveService';
 import { ConsecutiveWarningModal } from './ConsecutiveWarningModal';
+import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
 export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[60]', cattleList = [] }) {
   const { currentUser, isWorker } = useAuth();
@@ -28,6 +29,8 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const [detectedDuplicates, setDetectedDuplicates] = useState([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [highlightDuplicates, setHighlightDuplicates] = useState(false);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const isDraftInitializedRef = React.useRef(false);
 
   // Estado para Control de Numeración Consecutiva
   const [isConsecutiveModalOpen, setIsConsecutiveModalOpen] = useState(false);
@@ -221,11 +224,83 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         isBreedingOnly: false,
       });
       setShowAdvancedMilk(false);
+
+      // Cargar borrador para nuevo animal si existe
+      const draft = loadDraft('cattle_form');
+      if (draft) {
+        setFormData(draft);
+        if (draft.pregnancyDays) setGestationDaysInput(String(draft.pregnancyDays));
+        const hasData = draft.tagNumber || draft.name || draft.entryWeight || draft.color || draft.notes || draft.entryPrice;
+        if (hasData) {
+          setIsDraftRestored(true);
+        }
+      }
     }
     setErrors({});
     setHighlightDuplicates(false);
     setConsecutiveConfirmed(false);
+    setTimeout(() => {
+      isDraftInitializedRef.current = true;
+    }, 100);
   }, [animal, isOpen]);
+
+  // Auto-guardar borrador continuamente en segundo plano (solo cuando es registro de animal nuevo)
+  useEffect(() => {
+    if (!isOpen || isEditing || !isDraftInitializedRef.current) return;
+
+    const hasData = formData.tagNumber || formData.name || formData.entryWeight || formData.color || formData.notes || formData.entryPrice || formData.ironBrand;
+
+    if (hasData) {
+      saveDraft('cattle_form', formData);
+    }
+  }, [isOpen, isEditing, formData]);
+
+  // Descartar borrador y reiniciar formulario
+  const handleDiscardDraft = () => {
+    clearDraft('cattle_form');
+    setIsDraftRestored(false);
+    setGestationDaysInput('');
+    setFormData({
+      tagNumber: '',
+      name: '',
+      ironBrand: '',
+      owner: 'Hacienda Principal',
+      sex: 'Macho',
+      breed: '',
+      category: 'Novillo',
+      productionType: 'Ceba',
+      status: 'Activo',
+      color: '',
+      entryBatch: 'Ingreso #1',
+      entryDate: new Date().toISOString().split('T')[0],
+      entryType: 'Compra',
+      entryWeight: '',
+      entryPrice: '',
+      additionalCosts: 0,
+      currentWeight: '',
+      notes: '',
+      motherId: '',
+      motherTag: '',
+      fatherType: 'toro',
+      fatherId: '',
+      fatherTag: '',
+      birthWeight: '',
+      femaleStatuses: [],
+      femaleStatus: 'No aplica',
+      reproductiveStatus: 'No aplica',
+      serviceDate: '',
+      expectedCalvingDate: '',
+      pregnancyDays: 0,
+      milkingStatus: 'No aplica',
+      dailyMilkLiters: '',
+      lactationCycleDays: 305,
+      lactationCycleTotalLiters: '',
+      lactationCycleAvgLiters: '',
+      isBreedingOnly: false,
+    });
+    setShowAdvancedMilk(false);
+    setErrors({});
+  };
 
   // Evaluación en tiempo real del consecutivo
   const consecutiveEvaluation = useMemo(() => {
@@ -605,6 +680,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       pregnancyDays: isFemale && isSavedPregnant ? (parseInt(gestationDaysInput) || parseInt(dataToSave.pregnancyDays) || 0) : 0,
       isBreedingOnly: isFemale ? Boolean(isSavedNursing || dataToSave.isBreedingOnly) : false,
     });
+    if (!isEditing) {
+      clearDraft('cattle_form');
+      setIsDraftRestored(false);
+    }
     onClose();
   };
 
@@ -763,6 +842,28 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     >
       <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
         
+        {/* BANNER DE BORRADOR RESTAURADO */}
+        {isDraftRestored && !isEditing && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 text-amber-950 dark:text-amber-200 animate-fade-in gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 animate-pulse" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold">✨ Borrador recuperado automáticamente</p>
+                <p className="text-[11px] opacity-80">Se preservaron los datos del bovino que estabas digitando.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-rose-500/20 text-amber-900 dark:text-amber-100 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-xs shrink-0 transition cursor-pointer border border-amber-500/30 hover:border-rose-500/30 active:scale-95"
+            >
+              🗑️ Descartar borrador y reiniciar
+            </button>
+          </div>
+        )}
+
         {/* SECCIÓN 1: Identificación y Origen */}
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3 flex items-center gap-1.5">

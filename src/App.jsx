@@ -37,6 +37,7 @@ import { UpdateNotificationBanner } from './components/Common/UpdateNotification
 import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -128,6 +129,97 @@ export default function App() {
     init();
   }, []);
 
+  // Restaurar vista y modal activo al cargar la aplicación tras actualización o recarga
+  const hasRestoredUIStateRef = useRef(false);
+  useEffect(() => {
+    if (hasRestoredUIStateRef.current) return;
+    const savedUI = loadActiveUIState();
+    if (savedUI) {
+      hasRestoredUIStateRef.current = true;
+      if (savedUI.currentView && typeof savedUI.currentView === 'string') {
+        setCurrentView(savedUI.currentView);
+      }
+      if (savedUI.activeModal) {
+        if (savedUI.activeModal === 'batchEntry') {
+          setIsBatchEntryModalOpen(true);
+        } else if (savedUI.activeModal === 'cattleForm') {
+          setEditingAnimal(savedUI.modalPayload?.editingAnimal || null);
+          setIsFormModalOpen(true);
+        } else if (savedUI.activeModal === 'expense') {
+          setEditingExpense(savedUI.modalPayload?.editingExpense || null);
+          setIsExpenseModalOpen(true);
+        } else if (savedUI.activeModal === 'income') {
+          setEditingIncome(savedUI.modalPayload?.editingIncome || null);
+          setIsIncomeModalOpen(true);
+        } else if (savedUI.activeModal === 'calendar') {
+          setIsCalendarOpen(true);
+        } else if (savedUI.activeModal === 'checklist') {
+          setIsChecklistOpen(true);
+        }
+      }
+    }
+  }, []);
+
+  // Persistir automáticamente la vista y el modal activo en tiempo real
+  useEffect(() => {
+    let activeModal = null;
+    let modalPayload = null;
+
+    if (isBatchEntryModalOpen) {
+      activeModal = 'batchEntry';
+    } else if (isFormModalOpen) {
+      activeModal = 'cattleForm';
+      modalPayload = { editingAnimal };
+    } else if (isExpenseModalOpen) {
+      activeModal = 'expense';
+      modalPayload = { editingExpense };
+    } else if (isIncomeModalOpen) {
+      activeModal = 'income';
+      modalPayload = { editingIncome };
+    } else if (isDetailModalOpen && selectedAnimal) {
+      activeModal = 'cattleDetail';
+      modalPayload = { animalId: selectedAnimal.id };
+    } else if (isWeightModalOpen && weighingAnimal) {
+      activeModal = 'weight';
+      modalPayload = { animalId: weighingAnimal.id };
+    } else if (isSellModalOpen && sellingAnimal) {
+      activeModal = 'sell';
+      modalPayload = { animalId: sellingAnimal.id };
+    } else if (isDeathModalOpen && deathAnimal) {
+      activeModal = 'death';
+      modalPayload = { animalId: deathAnimal.id };
+    } else if (isCalendarOpen) {
+      activeModal = 'calendar';
+    } else if (isChecklistOpen) {
+      activeModal = 'checklist';
+    }
+
+    saveActiveUIState({
+      currentView,
+      activeModal,
+      modalPayload
+    });
+  }, [
+    currentView,
+    isBatchEntryModalOpen,
+    isFormModalOpen,
+    editingAnimal,
+    isExpenseModalOpen,
+    editingExpense,
+    isIncomeModalOpen,
+    editingIncome,
+    isDetailModalOpen,
+    selectedAnimal,
+    isWeightModalOpen,
+    weighingAnimal,
+    isSellModalOpen,
+    sellingAnimal,
+    isDeathModalOpen,
+    deathAnimal,
+    isCalendarOpen,
+    isChecklistOpen
+  ]);
+
   const userId = effectiveUserId || currentUser?.id;
 
   // Redirigir a vista permitida si un trabajador intenta acceder a finanzas
@@ -203,6 +295,32 @@ export default function App() {
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
+
+  // Restaurar modales asociados a un animal específico cuando el inventario esté listo
+  const hasRestoredAnimalModalRef = useRef(false);
+  useEffect(() => {
+    if (hasRestoredAnimalModalRef.current || !cattle || cattle.length === 0) return;
+    const savedUI = loadActiveUIState();
+    if (savedUI && savedUI.activeModal && savedUI.modalPayload?.animalId) {
+      const match = cattle.find(c => c.id === savedUI.modalPayload.animalId);
+      if (match) {
+        hasRestoredAnimalModalRef.current = true;
+        if (savedUI.activeModal === 'cattleDetail') {
+          setSelectedAnimal(match);
+          setIsDetailModalOpen(true);
+        } else if (savedUI.activeModal === 'weight') {
+          setWeighingAnimal(match);
+          setIsWeightModalOpen(true);
+        } else if (savedUI.activeModal === 'sell') {
+          setSellingAnimal(match);
+          setIsSellModalOpen(true);
+        } else if (savedUI.activeModal === 'death') {
+          setDeathAnimal(match);
+          setIsDeathModalOpen(true);
+        }
+      }
+    }
+  }, [cattle]);
 
   const weighings = useLiveQuery(
     () => {

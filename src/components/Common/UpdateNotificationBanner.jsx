@@ -140,6 +140,14 @@ export function UpdateNotificationBanner() {
             </div>
           )}
 
+          {/* Insignia de Preservación de Formularios y Trabajo en Curso */}
+          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-400/30 text-[11px] text-emerald-200">
+            <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
+            <span className="font-medium leading-tight">
+              Tus formularios abiertos, animales y datos digitados se preservan automáticamente al actualizar.
+            </span>
+          </div>
+
           {/* Botón de Actualizar */}
           <div className="mt-3.5 flex items-center justify-end gap-2">
             <button

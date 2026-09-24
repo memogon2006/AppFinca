@@ -36,12 +36,14 @@ import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
 import { analyzeFarmConsecutives, extractConsecutiveNumber } from '../../services/consecutiveService';
+import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
 export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]', cattleList = [] }) {
   const { currentUser, isWorker } = useAuth();
   const [batchDuplicates, setBatchDuplicates] = useState([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
 
   // Estadísticas de consecutivos en la finca
   const farmConsecutiveStats = useMemo(() => {
@@ -115,6 +117,89 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   }, [farmConsecutiveStats?.nextSuggestedConsecutive, isOpen]);
 
   const [errors, setErrors] = useState(null);
+  const isDraftInitializedRef = React.useRef(false);
+
+  // 1. Cargar borrador guardado al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      const draft = loadDraft('batch_entry');
+      if (draft) {
+        if (draft.batchInfo) setBatchInfo(draft.batchInfo);
+        if (draft.costMode) setCostMode(draft.costMode);
+        if (draft.fixedPricePerHead !== undefined) setFixedPricePerHead(draft.fixedPricePerHead);
+        if (draft.pricePerKg !== undefined) setPricePerKg(draft.pricePerKg);
+        if (draft.batchExpenses !== undefined) setBatchExpenses(draft.batchExpenses);
+        if (draft.expensesConcept !== undefined) setExpensesConcept(draft.expensesConcept);
+        if (Array.isArray(draft.rows) && draft.rows.length > 0) setRows(draft.rows);
+        if (draft.seriesConfig) setSeriesConfig(draft.seriesConfig);
+
+        const hasSubstantialData = (Array.isArray(draft.rows) && draft.rows.some(r => r.tagNumber || r.entryWeight || r.color)) ||
+          draft.batchExpenses || draft.pricePerKg || draft.fixedPricePerHead;
+
+        if (hasSubstantialData) {
+          setIsDraftRestored(true);
+        }
+      }
+      setTimeout(() => {
+        isDraftInitializedRef.current = true;
+      }, 100);
+    } else {
+      isDraftInitializedRef.current = false;
+    }
+  }, [isOpen]);
+
+  // 2. Guardar borrador automáticamente en segundo plano cuando hay cambios
+  useEffect(() => {
+    if (!isOpen || !isDraftInitializedRef.current) return;
+
+    const hasData = rows.some(r => r.tagNumber || r.entryWeight || r.color) ||
+      batchExpenses || pricePerKg || fixedPricePerHead || batchInfo.ironBrand || batchInfo.notes;
+
+    if (hasData) {
+      saveDraft('batch_entry', {
+        batchInfo,
+        costMode,
+        fixedPricePerHead,
+        pricePerKg,
+        batchExpenses,
+        expensesConcept,
+        rows,
+        seriesConfig
+      });
+    }
+  }, [isOpen, batchInfo, costMode, fixedPricePerHead, pricePerKg, batchExpenses, expensesConcept, rows, seriesConfig]);
+
+  // Descartar borrador y reiniciar formulario a valores limpios
+  const handleDiscardDraft = () => {
+    clearDraft('batch_entry');
+    setIsDraftRestored(false);
+    setBatchInfo({
+      entryType: 'Compra',
+      entryBatch: 'Ingreso #1',
+      entryDate: new Date().toISOString().split('T')[0],
+      owner: 'Hacienda Principal',
+      ironBrand: '',
+      sex: 'Macho',
+      productionType: 'Ceba',
+      category: 'Novillo',
+      breed: '',
+      notes: '',
+      fatherType: 'toro',
+      fatherId: '',
+      fatherTag: '',
+    });
+    setCostMode('pricePerKg');
+    setFixedPricePerHead('');
+    setPricePerKg('');
+    setBatchExpenses('');
+    setExpensesConcept('');
+    setRows([
+      { id: '1', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+      { id: '2', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+      { id: '3', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+    ]);
+    setErrors(null);
+  };
 
   // Lista dinámica de colores (historial registrado en finca + base estándar)
   const availableColors = useMemo(() => {
@@ -230,6 +315,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const avgTotalCostPerHead = totalAnimals > 0 ? (totalInvestmentWithExpenses / totalAnimals) : 0;
 
   const executeSaveBatch = (batchAnimalsPayload) => {
+    clearDraft('batch_entry');
+    setIsDraftRestored(false);
     onSaveBatch(batchAnimalsPayload);
     onClose();
   };
@@ -401,6 +488,28 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         
+        {/* BANNER DE BORRADOR RESTAURADO */}
+        {isDraftRestored && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 text-amber-950 dark:text-amber-200 animate-fade-in gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 animate-pulse" />
+              </div>
+              <div className="text-xs">
+                <p className="font-bold">✨ Borrador recuperado automáticamente</p>
+                <p className="text-[11px] opacity-80">Se preservaron los animales, pesos y datos que estabas ingresando.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-rose-500/20 text-amber-900 dark:text-amber-100 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-xs shrink-0 transition cursor-pointer border border-amber-500/30 hover:border-rose-500/30 active:scale-95"
+            >
+              🗑️ Descartar borrador y reiniciar
+            </button>
+          </div>
+        )}
+
         {/* PASO 1: DATOS GENERALES DEL LOTE */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2.5">

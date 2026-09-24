@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.50";
+export const CURRENT_APP_VERSION = "2.14.51";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.51",
+    date: "23/09/2026",
+    title: "💾 Persistencia y Auto-Guardado de Borradores al Actualizar o Recargar",
+    highlights: [
+      "Auto-Guardado Continuo en Vivo: Todo lo que estés digitando en lotes completos de ganado, registro de bovinos individuales, gastos o ingresos se guarda en tiempo real en tu dispositivo.",
+      "Restauración Automática sin Pérdida de Datos: Al presionar 'Actualizar Ahora en 1 Clic' o recargar el navegador, la aplicación reabre exactamente la pantalla y el formulario donde estabas trabajando con todos los animales, pesos y datos preservados.",
+      "Aviso Visual de Recuperación: Banner informativo que confirma que el borrador fue restaurado con opción de descartar o reiniciar si se desea.",
+      "Limpieza Inteligente: Los borradores se liberan automáticamente una vez que guardas con éxito el lote o registro."
+    ]
+  },
   {
     version: "2.14.50",
     date: "23/09/2026",

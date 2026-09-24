@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ganado-app-cache-v2.14.50';
+const CACHE_NAME = 'ganado-app-cache-v2.14.51';
 
 // Recursos estáticos críticos base precacheados en instalación
 const STATIC_ASSETS = [

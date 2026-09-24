@@ -1,5 +1,5 @@
 {
-  "version": "2.14.50",
-  "buildTime": 1790273000000,
-  "description": "✅ Aceptación Obligatoria de Términos y Condiciones al Crear Cuenta."
+  "version": "2.14.51",
+  "buildTime": 1790274000000,
+  "description": "💾 Persistencia y Auto-Guardado de Borradores al Actualizar o Recargar."
 }
