@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.14.48";
+export const CURRENT_APP_VERSION = "2.14.49";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.49",
+    date: "23/09/2026",
+    title: "📜 Términos y Condiciones de Uso & Tratamiento de Datos (Ley 1581)",
+    highlights: [
+      "Centro Legal Unificado: Incorporación completa del contrato de Términos y Condiciones de Uso del software ganadero junto a la Política de Privacidad y Tratamiento de Datos Personales (Ley 1581 de 2012 / Decreto 1377 de 2013).",
+      "Propiedad Inalienable de los Datos: Cláusula contractual explícita que ratifica que el ganadero es el único y exclusivo dueño de toda la información pecuaria y económica ingresada.",
+      "Garantía de No Comercialización: Compromiso formal de cero venta, cesión o divulgación de datos a terceros o empresas de publicidad.",
+      "Exclusión de Responsabilidad Veterinaria: Declaración de apoyo tecnológico y complementariedad profesional zootécnica.",
+      "Navegación Interactiva por Pestañas: Pestañas para alternar entre Términos y Condiciones, Política de Privacidad y Vista Consolidada con botón de impresión y PDF."
+    ]
+  },
   {
     version: "2.14.48",
     date: "23/09/2026",

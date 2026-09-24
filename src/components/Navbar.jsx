@@ -603,9 +603,21 @@ export function Navbar({
             </button>
           </div>
 
-          {/* Versión y Créditos */}
-          <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium">
-            Software Ganadero • v{CURRENT_APP_VERSION} • Modo Campo Offline
+          {/* Versión y Términos */}
+          <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium space-y-0.5">
+            <div>Software Ganadero • v{CURRENT_APP_VERSION} • Modo Campo Offline</div>
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSidebarOpen(false);
+                  if (onOpenProfile) onOpenProfile();
+                }}
+                className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+              >
+                📜 Términos, Condiciones & Privacidad
+              </button>
+            </div>
           </div>
 
         </div>

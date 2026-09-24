@@ -25,7 +25,8 @@ import {
   Send,
   Users,
   Cloud,
-  DownloadCloud
+  DownloadCloud,
+  Scale
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
@@ -1224,8 +1225,8 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
               onClick={() => setIsPrivacyPolicyOpen(true)}
               className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Política de Privacidad y Tratamiento de Datos (Ley 1581)</span>
+              <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Términos, Condiciones & Política de Privacidad (Ley 1581)</span>
             </button>
 
             <button

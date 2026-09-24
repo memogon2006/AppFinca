@@ -753,13 +753,13 @@ export function AuthView() {
             </button>
 
             <div className="text-center text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
-              Al usar la plataforma aceptas la{' '}
+              Al usar la plataforma aceptas los{' '}
               <button
                 type="button"
                 onClick={() => setIsPrivacyModalOpen(true)}
                 className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
               >
-                Política de Privacidad y Tratamiento de Datos (Ley 1581)
+                Términos y Condiciones & Política de Privacidad y Tratamiento de Datos (Ley 1581)
               </button>
             </div>
           </div>
