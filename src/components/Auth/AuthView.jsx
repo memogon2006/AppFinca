@@ -30,6 +30,7 @@ import {
 
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 import { checkAppUpdate, isVersionGreater } from '../../services/versionService';
+import { getLoginLockoutStatus } from '../../services/auth';
 
 export function AuthView() {
   const { login, register, setSessionUser, requestResetPassword } = useAuth();
@@ -78,6 +79,28 @@ export function AuthView() {
     password: '',
     confirmPassword: '',
   });
+
+  // Estado de bloqueo de seguridad por 5 intentos fallidos
+  const [lockoutStatus, setLockoutStatus] = useState(() => {
+    const savedEmail = localStorage.getItem('ganado_saved_email') || '';
+    return getLoginLockoutStatus(savedEmail);
+  });
+
+  // Monitoreo segundo a segundo del tiempo de bloqueo
+  useEffect(() => {
+    const email = (formData.email || '').trim().toLowerCase();
+    const checkLockout = () => {
+      const status = getLoginLockoutStatus(email);
+      setLockoutStatus(status);
+      if (!status.isLocked && error && error.includes('bloqueado temporalmente')) {
+        setError(null);
+      }
+    };
+
+    checkLockout();
+    const interval = setInterval(checkLockout, 1000);
+    return () => clearInterval(interval);
+  }, [formData.email, error]);
 
   // Estado para clave temporal recuperada
   const [recoveredData, setRecoveredData] = useState(null);
@@ -167,10 +190,15 @@ export function AuthView() {
       if (!email || !password) {
         return setError('Por favor ingresa tu correo/usuario y contraseña.');
       }
+      if (lockoutStatus.isLocked) {
+        return setError(`⛔ Acceso bloqueado temporalmente por seguridad tras 5 intentos fallidos. Podrás intentar nuevamente en ${lockoutStatus.formattedRemaining}.`);
+      }
       try {
         setLoading(true);
         await login({ email, password });
       } catch (err) {
+        const status = getLoginLockoutStatus(email);
+        setLockoutStatus(status);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -532,6 +560,27 @@ export function AuthView() {
               /* ========================================================================= */
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 
+                {/* Banner de Bloqueo por 5 Intentos Fallidos */}
+                {mode === 'login' && lockoutStatus.isLocked && (
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-400 dark:border-amber-600 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in shadow-sm">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h4 className="font-black text-amber-950 dark:text-amber-100 text-xs sm:text-sm flex items-center gap-1.5">
+                        <span>⛔ Acceso Bloqueado Temporalmente</span>
+                      </h4>
+                      <p className="text-[11.5px] leading-relaxed text-amber-800 dark:text-amber-300">
+                        Has superado el límite de 5 intentos fallidos consecutivos de contraseña. Por seguridad, podrás volver a intentar en:
+                      </p>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-200/80 dark:bg-amber-900/80 font-mono font-black text-amber-950 dark:text-amber-100 text-sm tracking-wider mt-0.5">
+                        <span>⏱️ {lockoutStatus.formattedRemaining}</span>
+                        <span className="text-[10px] uppercase font-sans font-bold text-amber-800 dark:text-amber-300">min</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {mode === 'register' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Nombre de Ganadero */}
@@ -760,16 +809,27 @@ export function AuthView() {
                 {/* Botón Principal de Envío */}
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition min-h-[48px] mt-3 cursor-pointer"
+                  disabled={loading || (mode === 'login' && lockoutStatus.isLocked)}
+                  className={`w-full py-3.5 px-4 rounded-xl text-white font-extrabold text-sm flex items-center justify-center gap-2 transition min-h-[48px] mt-3 cursor-pointer ${
+                    mode === 'login' && lockoutStatus.isLocked
+                      ? 'bg-amber-600 dark:bg-amber-700 opacity-90 cursor-not-allowed shadow-md shadow-amber-600/20'
+                      : 'bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-emerald-600/25'
+                  }`}
                 >
                   {loading ? (
                     <span>Conectando con la Nube...</span>
                   ) : mode === 'login' ? (
-                    <>
-                      <span>Ingresar a Mi Finca</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                    lockoutStatus.isLocked ? (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Bloqueado temporalmente ({lockoutStatus.formattedRemaining})</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Ingresar a Mi Finca</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />

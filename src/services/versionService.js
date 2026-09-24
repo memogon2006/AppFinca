@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.59";
+export const CURRENT_APP_VERSION = "2.14.61";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.61",
+    date: "24/09/2026",
+    title: "🛡️ Bloqueo por 5 Intentos Fallidos & Acceso Directo al Tablero Principal",
+    highlights: [
+      "Bloqueo Temporal de 5 Minutos: Tras ingresar 5 veces consecutivas la contraseña incorrecta, el sistema bloquea temporalmente el formulario de acceso durante 5 minutos para proteger la cuenta contra intentos no autorizados.",
+      "Temporizador de Seguridad en Vivo: Visualización de un aviso con contador regresivo segundo a segundo (MM:SS) y botón de acceso deshabilitado mientras dure el bloqueo.",
+      "Reinicio Automático: Una vez transcurrido el tiempo o tras un inicio de sesión correcto, el contador se reinicia automáticamente.",
+      "Acceso Directo al Tablero Principal: Al iniciar sesión o entrar a la aplicación, la plataforma se posiciona obligatoriamente en el Tablero de Control general con vista limpia."
+    ]
+  },
   {
     version: "2.14.59",
     date: "24/09/2026",

@@ -16,6 +16,104 @@ import {
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
+const LOCKOUT_PREFIX = 'ganado_login_lockout_';
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutos de bloqueo
+
+/**
+ * Normaliza la clave de identificación del usuario para el bloqueo
+ */
+function getLockoutKey(emailOrUser) {
+  const clean = (emailOrUser || '').trim().toLowerCase();
+  return `${LOCKOUT_PREFIX}${clean.replace(/[^a-z0-9_.-]/g, '_')}`;
+}
+
+/**
+ * Consulta el estado actual de bloqueo por intentos fallidos
+ */
+export function getLoginLockoutStatus(emailOrUser) {
+  if (!emailOrUser) return { isLocked: false, remainingMs: 0, attempts: 0, formattedRemaining: '05:00' };
+  const key = getLockoutKey(emailOrUser);
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return { isLocked: false, remainingMs: 0, attempts: 0, formattedRemaining: '05:00' };
+    const data = JSON.parse(raw);
+    const now = Date.now();
+
+    if (data.lockedUntil && now < data.lockedUntil) {
+      const remainingMs = data.lockedUntil - now;
+      const totalSeconds = Math.ceil(remainingMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return {
+        isLocked: true,
+        remainingMs,
+        attempts: data.attempts || MAX_FAILED_ATTEMPTS,
+        remainingMinutes: minutes,
+        remainingSeconds: seconds,
+        formattedRemaining: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      };
+    }
+
+    // Si ya expiró el tiempo de bloqueo, limpiar el registro
+    if (data.lockedUntil && now >= data.lockedUntil) {
+      localStorage.removeItem(key);
+      return { isLocked: false, remainingMs: 0, attempts: 0, formattedRemaining: '05:00' };
+    }
+
+    return {
+      isLocked: false,
+      remainingMs: 0,
+      attempts: data.attempts || 0,
+      formattedRemaining: '05:00'
+    };
+  } catch (e) {
+    return { isLocked: false, remainingMs: 0, attempts: 0, formattedRemaining: '05:00' };
+  }
+}
+
+/**
+ * Registra un intento fallido de contraseña. Si llega a 5, activa el bloqueo de 5 minutos.
+ */
+export function recordFailedLoginAttempt(emailOrUser) {
+  if (!emailOrUser) return;
+  const key = getLockoutKey(emailOrUser);
+  try {
+    const raw = localStorage.getItem(key);
+    const data = raw ? JSON.parse(raw) : { attempts: 0 };
+    const now = Date.now();
+
+    data.attempts = (data.attempts || 0) + 1;
+    data.lastAttemptAt = now;
+
+    if (data.attempts >= MAX_FAILED_ATTEMPTS) {
+      data.lockedUntil = now + LOCKOUT_DURATION_MS;
+      localStorage.setItem(key, JSON.stringify(data));
+      const totalSeconds = Math.ceil(LOCKOUT_DURATION_MS / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      throw new Error(`⛔ Has superado el límite de 5 intentos fallidos. Por seguridad, el acceso ha sido bloqueado temporalmente durante 5 minutos (${formatted}).`);
+    }
+
+    localStorage.setItem(key, JSON.stringify(data));
+    const remainingAttempts = MAX_FAILED_ATTEMPTS - data.attempts;
+    throw new Error(`Contraseña incorrecta. Te ${remainingAttempts === 1 ? 'queda 1 intento' : `quedan ${remainingAttempts} intentos`} antes de que el acceso se bloquee por 5 minutos.`);
+  } catch (e) {
+    throw e;
+  }
+}
+
+/**
+ * Limpia el contador de intentos fallidos y el bloqueo tras un inicio de sesión exitoso
+ */
+export function clearLoginLockout(emailOrUser) {
+  if (!emailOrUser) return;
+  const key = getLockoutKey(emailOrUser);
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {}
+}
 
 /**
  * Función pura JavaScript SHA-256 para máxima compatibilidad con teléfonos móviles (Safari iOS, Android, WebViews)
@@ -229,6 +327,12 @@ export async function loginUser({ email, password }) {
     throw new Error('Por favor ingresa tu correo/usuario y contraseña.');
   }
 
+  // 0. VERIFICAR BLOQUEO POR 5 INTENTOS FALLIDOS CONSECUTIVOS
+  const lockout = getLoginLockoutStatus(cleanInput);
+  if (lockout.isLocked) {
+    throw new Error(`⛔ Acceso bloqueado temporalmente por seguridad tras 5 intentos fallidos. Podrás volver a intentar en ${lockout.formattedRemaining}.`);
+  }
+
   const inputHash = await hashPassword(cleanPassword);
   const rawAlias = cleanInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
 
@@ -255,6 +359,10 @@ export async function loginUser({ email, password }) {
     if (localUser.role === 'worker' && localUser.isActive === false) {
       throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
     }
+
+    // Limpiar bloqueo tras éxito
+    clearLoginLockout(cleanInput);
+    if (localUser.email) clearLoginLockout(localUser.email);
 
     const sessionUser = {
       id: localUser.id,
@@ -332,8 +440,12 @@ export async function loginUser({ email, password }) {
   }
 
   if (user.passwordHash !== inputHash) {
-    throw new Error('Contraseña incorrecta. Activa "Ver clave" para verificar que no haya errores de digitación.');
+    recordFailedLoginAttempt(cleanInput);
   }
+
+  // Limpiar bloqueo tras éxito
+  clearLoginLockout(cleanInput);
+  if (user.email) clearLoginLockout(user.email);
 
   const sessionUser = {
     id: user.id,

@@ -129,7 +129,7 @@ export default function App() {
     init();
   }, []);
 
-  // Restaurar vista y modal activo al cargar la aplicación tras actualización o recarga
+  // Restaurar vista y modal activo al recargar la aplicación si ya hay sesión previa
   const hasRestoredUIStateRef = useRef(false);
   useEffect(() => {
     if (hasRestoredUIStateRef.current) return;
@@ -159,6 +159,22 @@ export default function App() {
       }
     }
   }, []);
+
+  // Garantizar que al iniciar sesión o ingresar a la plataforma siempre se posicione en el Tablero Principal
+  const prevUserRef = useRef(null);
+  useEffect(() => {
+    if (currentUser) {
+      if (!prevUserRef.current || prevUserRef.current.id !== currentUser.id) {
+        setCurrentView('dashboard');
+        clearActiveUIModal();
+        try {
+          const saved = loadActiveUIState() || {};
+          saveActiveUIState({ ...saved, currentView: 'dashboard', activeModal: null, modalPayload: null });
+        } catch (e) {}
+      }
+    }
+    prevUserRef.current = currentUser;
+  }, [currentUser]);
 
   // Persistir automáticamente la vista y el modal activo en tiempo real
   useEffect(() => {
