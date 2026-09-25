@@ -143,6 +143,7 @@ export const FARM_PRESETS = {
 };
 
 const STORAGE_KEY = 'ganado_active_modules';
+const STORAGE_TS_KEY = 'ganado_active_modules_ts';
 const EVENT_NAME = 'ganado_modules_changed';
 
 // Configuración por defecto (Todos activos para garantizar retrocompatibilidad)
@@ -168,6 +169,20 @@ export function getEffectiveFarmId(sessionUser = null) {
     return user.role === 'worker' ? (user.ownerId || user.id) : user.id;
   } catch (e) {
     return null;
+  }
+}
+
+/**
+ * Obtiene la marca de tiempo de la última modificación local de módulos
+ */
+export function getModulesUpdatedAt(targetFarmId = null) {
+  try {
+    const farmId = targetFarmId || getEffectiveFarmId();
+    if (!farmId) return 0;
+    const raw = localStorage.getItem(`${STORAGE_TS_KEY}_${farmId}`);
+    return raw ? parseInt(raw, 10) || 0 : 0;
+  } catch (e) {
+    return 0;
   }
 }
 
@@ -217,15 +232,17 @@ export function getActiveModules(targetFarmId = null) {
 /**
  * Guarda y emite la actualización de módulos activos para una finca específica
  */
-export function setActiveModules(modules, customFarmId = null) {
+export function setActiveModules(modules, customFarmId = null, syncToCloud = true) {
   try {
     const farmId = customFarmId || getEffectiveFarmId();
     const current = getActiveModules(farmId);
     const updated = { ...current, ...modules };
+    const now = Date.now();
     
-    // Guardar exclusivamente bajo la clave con ámbito de finca
+    // Guardar exclusivamente bajo la clave con ámbito de finca y actualizar marca de tiempo
     if (farmId) {
       localStorage.setItem(`${STORAGE_KEY}_${farmId}`, JSON.stringify(updated));
+      localStorage.setItem(`${STORAGE_TS_KEY}_${farmId}`, String(now));
     }
 
     // Actualizar sesión en memoria si corresponde a la cuenta actual
@@ -236,16 +253,18 @@ export function setActiveModules(modules, customFarmId = null) {
         const currentSessionFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
         if (currentSessionFarmId === farmId || !customFarmId) {
           user.activeModules = updated;
+          user.activeModulesUpdatedAt = now;
           localStorage.setItem('ganado_current_user_session', JSON.stringify(user));
         }
       }
     } catch (uErr) {}
 
-    // Notificar a componentes UI
+    // Notificar a componentes UI y servicios
     const activeFarmId = getEffectiveFarmId();
     if (!farmId || farmId === activeFarmId) {
-      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: updated }));
+      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { modules: updated, farmId, syncToCloud } }));
     }
+
     return updated;
   } catch (e) {
     console.error('Error guardando módulos activos:', e);
@@ -260,7 +279,7 @@ export function toggleModule(moduleKey, customFarmId = null) {
   const farmId = customFarmId || getEffectiveFarmId();
   const current = getActiveModules(farmId);
   const next = !current[moduleKey];
-  return setActiveModules({ [moduleKey]: next }, farmId);
+  return setActiveModules({ [moduleKey]: next }, farmId, true);
 }
 
 /**
@@ -434,7 +453,8 @@ export function useActiveModules() {
 
   useEffect(() => {
     const handleUpdate = (e) => {
-      setModules(e.detail || getActiveModules());
+      const updated = e.detail?.modules || e.detail || getActiveModules();
+      setModules(updated);
     };
 
     window.addEventListener(EVENT_NAME, handleUpdate);

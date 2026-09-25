@@ -1,7 +1,37 @@
 import { db } from './db';
-import { getActiveModules, setActiveModules } from './moduleService';
+import { getActiveModules, setActiveModules, getModulesUpdatedAt } from './moduleService';
 
 const FIREBASE_URL = 'https://ganadera-plataforma-default-rtdb.firebaseio.com';
+
+// Listener para auto-subida inmediata PUSH-First cuando los módulos cambian en cualquier parte
+if (typeof window !== 'undefined') {
+  window.addEventListener('ganado_modules_changed', (e) => {
+    const detail = e.detail;
+    if (detail && detail.syncToCloud !== false) {
+      const farmId = detail.farmId || (() => {
+        try {
+          const raw = localStorage.getItem('ganado_current_user_session');
+          if (!raw) return null;
+          const u = JSON.parse(raw);
+          return u?.role === 'worker' ? (u.ownerId || u.id) : u?.id;
+        } catch(err) { return null; }
+      })();
+
+      if (farmId && typeof navigator !== 'undefined' && navigator.onLine) {
+        try {
+          const raw = localStorage.getItem('ganado_current_user_session');
+          if (raw) {
+            const u = JSON.parse(raw);
+            if (u && u.role !== 'worker') {
+              cloudSaveUser({ ...u, activeModules: detail.modules || detail, activeModulesUpdatedAt: Date.now() }).catch(() => null);
+            }
+          }
+        } catch (uErr) {}
+        cloudPushData(farmId).catch(() => null);
+      }
+    }
+  });
+}
 
 /**
  * Petición fetch segura con abort timeout de 15s y bypass automático si no hay conexión
@@ -340,10 +370,12 @@ export async function cloudPushData(userId) {
     const activityLogs = db.activityLogs ? await db.activityLogs.filter(isTarget).toArray() : [];
     const calendarNotes = db.calendarNotes ? await db.calendarNotes.filter(isTarget).toArray() : [];
 
-    const activeModules = getActiveModules();
+    const activeModules = getActiveModules(userId);
+    const activeModulesUpdatedAt = getModulesUpdatedAt(userId) || Date.now();
     const payload = {
       userId,
       activeModules,
+      activeModulesUpdatedAt,
       cattle,
       weighings,
       expenses,
@@ -475,10 +507,18 @@ export async function cloudPullData(userId) {
     if (res && res.ok) {
       const remoteData = await res.json();
       if (remoteData && typeof remoteData === 'object') {
-        // Reconciliar módulos activos de la finca
+        // Reconciliar módulos activos de la finca respetando la marca de tiempo local
         if (remoteData.activeModules && typeof remoteData.activeModules === 'object') {
           try {
-            setActiveModules(remoteData.activeModules, userId);
+            const localTs = getModulesUpdatedAt(userId);
+            const remoteTs = parseInt(remoteData.activeModulesUpdatedAt, 10) || 0;
+            // Si el cambio de la nube es más reciente o si localmente no había marca
+            if (!localTs || remoteTs >= localTs) {
+              setActiveModules(remoteData.activeModules, userId, false);
+            } else {
+              // Si el estado local es más reciente que el de la nube, hacer PUSH inmediato
+              cloudPushData(userId).catch(() => null);
+            }
           } catch (modErr) {
             console.warn('Error applying pulled active modules:', modErr);
           }

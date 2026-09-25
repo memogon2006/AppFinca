@@ -19,7 +19,7 @@ import {
 import { db } from '../services/db';
 import { cloudFindUser, syncCloudAndLocal, cloudIsWorkerDeleted } from '../services/cloudSync';
 import { triggerFeedback } from '../services/soundService';
-import { setActiveModules } from '../services/moduleService';
+import { setActiveModules, getActiveModules, getModulesUpdatedAt } from '../services/moduleService';
 
 const AuthContext = createContext();
 
@@ -121,7 +121,13 @@ export function AuthProvider({ children }) {
               }
             } catch (e) {}
           } else if (remoteUser.role !== 'worker' && remoteUser.activeModules) {
-            setActiveModules(remoteUser.activeModules, remoteUser.id);
+            const localTs = getModulesUpdatedAt(remoteUser.id);
+            const remoteTs = parseInt(remoteUser.activeModulesUpdatedAt, 10) || 0;
+            if (!localTs || remoteTs >= localTs) {
+              setActiveModules(remoteUser.activeModules, remoteUser.id, false);
+            } else {
+              activeModules = getActiveModules(remoteUser.id);
+            }
           }
 
           const merged = {

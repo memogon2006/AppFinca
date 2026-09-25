@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.75";
+export const CURRENT_APP_VERSION = "2.14.76";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.76",
+    date: "24/09/2026",
+    title: "⚡ Sincronización Push-First Inmediata & Blindaje contra Sobreescritura de Módulos",
+    highlights: [
+      "Guardado Inmediato a la Nube: Al cambiar de preset (Modo Completo, Lechería, Cría, Ceba) o mover interruptores, el nuevo estado sube y se asegura de inmediato en Firebase en tiempo real.",
+      "Protección por Marca de Tiempo (Timestamp): Las descargas en segundo plano de la nube ya no pueden sobrescribir cambios locales recién realizados.",
+      "Persistencia Blindada: Los interruptores se mantienen exactamente en el estado seleccionado sin apagarse o revertirse automáticamente."
+    ]
+  },
   {
     version: "2.14.75",
     date: "24/09/2026",
