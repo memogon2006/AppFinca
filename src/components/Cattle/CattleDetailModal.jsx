@@ -36,7 +36,8 @@ import {
   Heart,
   ExternalLink,
   Award,
-  Sparkles
+  Sparkles,
+  Users
 } from 'lucide-react';
 import { 
   LineChart, 

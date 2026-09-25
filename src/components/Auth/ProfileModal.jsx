@@ -26,7 +26,8 @@ import {
   Users,
   Cloud,
   DownloadCloud,
-  Scale
+  Scale,
+  Sliders
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
@@ -327,6 +328,7 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
   }, [isOpen, currentUser?.id]);
 
   const handleDeleteDemoData = async () => {
+    const userId = currentUser?.id;
     if (!userId || demoCount === 0) {
       alert('ℹ️ No hay datos de demostración presentes en tu cuenta para eliminar.');
       return;

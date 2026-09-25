@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.71";
+export const CURRENT_APP_VERSION = "2.14.72";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.72",
+    date: "24/09/2026",
+    title: "⚡ Estabilidad de Módulos & Corrección de Renderizado Inicial",
+    highlights: [
+      "Depuración Integral de Importaciones: Corregidas referencias de iconos y componentes en perfil, tarjetas y fichas técnicas.",
+      "Carga Inmediata y Fluida: Eliminado bloqueo en el ErrorBoundary al iniciar o recargar la aplicación.",
+      "Personalización Modular 100% Operativa: Selector de módulos y presets por enfoque productivo en pleno funcionamiento."
+    ]
+  },
   {
     version: "2.14.71",
     date: "24/09/2026",

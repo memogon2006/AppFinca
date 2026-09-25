@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
-import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart } from 'lucide-react';
+import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export function CattleCard({ 
