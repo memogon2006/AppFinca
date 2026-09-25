@@ -88,7 +88,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
   const [showAdvancedMilk, setShowAdvancedMilk] = useState(false);
   const [motherMode, setMotherMode] = useState('hato'); // 'hato' | 'libre'
-  const [showGenealogyManual, setShowGenealogyManual] = useState(false);
+  const [enableGenealogy, setEnableGenealogy] = useState(false);
   const [errors, setErrors] = useState({});
 
   // Lista de posibles vacas madres del hato
@@ -187,13 +187,15 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         setShowAdvancedMilk(true);
       }
       setMotherMode(animal.motherId ? 'hato' : (animal.motherTag ? 'libre' : (availableMothers.length > 0 ? 'hato' : 'libre')));
-      if (animal.motherTag || animal.fatherTag || animal.entryType === 'Nacimiento') {
-        setShowGenealogyManual(true);
+      if (animal.motherTag || animal.motherId || animal.fatherTag || animal.fatherId) {
+        setEnableGenealogy(true);
+      } else {
+        setEnableGenealogy(false);
       }
     } else {
       setGestationDaysInput('');
       setMotherMode(availableMothers.length > 0 ? 'hato' : 'libre');
-      setShowGenealogyManual(false);
+      setEnableGenealogy(false);
       setFormData({
         tagNumber: '',
         name: '',
@@ -1983,8 +1985,53 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             })}
           </div>
 
+          {/* SWITCH / TOGGLE: ACTIVAR DATOS DE GENEALOGÍA */}
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black transition ${
+                enableGenealogy ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+              }`}>
+                🧬
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-900 dark:text-white block">
+                  ¿Registrar datos de Genealogía (Padre y Madre)?
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {enableGenealogy ? 'Opción activada. Ingresa madre y padre abajo.' : 'Predeterminado apagado. Actívalo si deseas registrar ancestros.'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !enableGenealogy;
+                setEnableGenealogy(next);
+                if (!next) {
+                  setFormData(prev => ({
+                    ...prev,
+                    motherId: '',
+                    motherTag: '',
+                    fatherId: '',
+                    fatherTag: '',
+                    fatherType: 'toro',
+                  }));
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                enableGenealogy ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                  enableGenealogy ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* BLOQUE CONDICIONAL / EXPANDIBLE: GENEALOGÍA & PADRES */}
-          {(formData.entryType === 'Nacimiento' || showGenealogyManual || formData.motherTag || formData.fatherTag) && (
+          {enableGenealogy && (
             <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-3.5 shadow-xs animate-in fade-in duration-200">
               <div className="flex items-center justify-between border-b border-emerald-200 dark:border-emerald-800/60 pb-2">
                 <div className="flex items-center gap-2">
@@ -1994,7 +2041,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                   </span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-400/30">
-                  {formData.entryType === 'Nacimiento' ? 'Cría Nacida' : 'Genealogía Opcional'}
+                  Genealogía Activa
                 </span>
               </div>
 

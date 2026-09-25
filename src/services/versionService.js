@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.67";
+export const CURRENT_APP_VERSION = "2.14.68";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.68",
+    date: "24/09/2026",
+    title: "🧬 Switch Opcional de Genealogía (Padre y Madre) en Registro Individual y por Lote",
+    highlights: [
+      "Switch Inteligente Predeterminado Apagado: Los formularios de ingreso individual y por lote inician limpios y ágiles sin exigir datos de padre/madre.",
+      "Activación Opcional en 1 Clic: Al prender el switch, se despliegan de inmediato los selectores de Padre (Toro de finca, Pajilla I.A., Toro externo o libre) y Madre (Vaca del hato o libre).",
+      "Soporte Total en Ingreso por Lote: Permite definir un reproductor/padre común para todo el lote y asignar la chapa de la madre específica por cada fila.",
+      "Integración Transparente con el Árbol Genealógico: Si se ingresa genealogía, se conecta de inmediato con la trazabilidad de 3 generaciones y habilidad materna en la ficha del animal."
+    ]
+  },
   {
     version: "2.14.67",
     date: "24/09/2026",

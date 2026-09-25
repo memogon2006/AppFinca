@@ -107,6 +107,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     defaultWeight: '',
   });
   const [showSeriesGenerator, setShowSeriesGenerator] = useState(false);
+  const [enableBatchGenealogy, setEnableBatchGenealogy] = useState(false);
 
   // Sincronizar automáticamente el número inicial con el consecutivo sugerido de la finca
   useEffect(() => {
@@ -424,11 +425,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         entryDate: batchInfo.entryDate || new Date().toISOString().split('T')[0],
         entryType: batchInfo.entryType || 'Compra',
         origin: isBorn ? 'Nacido en finca' : 'Comprado / Externo',
-        motherId: r.motherId || '',
-        motherTag: r.motherTag || '',
-        fatherType: isBorn ? (batchInfo.fatherType || 'toro') : 'desconocido',
-        fatherId: isBorn ? (batchInfo.fatherId || '') : '',
-        fatherTag: isBorn ? (batchInfo.fatherTag || '') : '',
+        motherId: enableBatchGenealogy ? (r.motherId || '') : '',
+        motherTag: enableBatchGenealogy ? (r.motherTag || '') : '',
+        fatherType: enableBatchGenealogy ? (batchInfo.fatherType || 'toro') : 'desconocido',
+        fatherId: enableBatchGenealogy ? (batchInfo.fatherId || '') : '',
+        fatherTag: enableBatchGenealogy ? (batchInfo.fatherTag || '') : '',
         birthWeight: isBorn && weight ? weight : null,
         entryWeight: weight,
         currentWeight: weight,
@@ -586,18 +587,64 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
             </div>
           </div>
 
-          {/* Panel Condicional: Padre / Reproductor Común del Lote (Si es Nacimiento) */}
-          {batchInfo.entryType === 'Nacimiento' && (
-            <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-2.5">
+          {/* SWITCH / TOGGLE: ACTIVAR DATOS DE GENEALOGÍA DEL LOTE */}
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black transition ${
+                enableBatchGenealogy ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+              }`}>
+                🧬
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-900 dark:text-white block">
+                  ¿Registrar datos de Genealogía (Padre y Madres del Lote)?
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {enableBatchGenealogy ? 'Opción activada. Ingresa el padre común aquí y las madres por fila en el paso 3.' : 'Predeterminado apagado. Actívalo si deseas registrar ancestros para este lote.'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !enableBatchGenealogy;
+                setEnableBatchGenealogy(next);
+                if (!next) {
+                  setBatchInfo(prev => ({
+                    ...prev,
+                    fatherType: 'toro',
+                    fatherId: '',
+                    fatherTag: '',
+                  }));
+                  setRows(prev => prev.map(r => ({ ...r, motherTag: '', motherId: '' })));
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                enableBatchGenealogy ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+              role="switch"
+              aria-checked={enableBatchGenealogy}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                  enableBatchGenealogy ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Panel Condicional: Padre / Reproductor Común del Lote (Si enableBatchGenealogy es true) */}
+          {enableBatchGenealogy && (
+            <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-2.5 animate-in fade-in duration-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Baby className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
-                    Trazabilidad de Crías: Padre / Reproductor del Lote
+                    Padre / Reproductor Común del Lote
                   </span>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-                  (La madre de cada cría se selecciona en la tabla de abajo)
+                  (La madre de cada animal se asigna en la tabla del Paso 3)
                 </span>
               </div>
 
@@ -686,7 +733,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
                   {batchInfo.fatherType === 'desconocido' && (
                     <span className="text-xs text-slate-500 italic font-medium">
-                      Padre sin identificar para este lote de nacimientos.
+                      Padre sin identificar para este lote.
                     </span>
                   )}
                 </div>
@@ -1344,7 +1391,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                   <th className="p-3 min-w-[125px]">N° Arete / Chapa <span className="text-rose-500">*</span></th>
                   <th className="p-3 min-w-[115px]">Sexo <span className="text-rose-500">*</span></th>
                   <th className="p-3 min-w-[120px]">Hierro / Marca</th>
-                  {batchInfo.entryType === 'Nacimiento' && (
+                  {enableBatchGenealogy && (
                     <th className="p-3 min-w-[145px]">
                       <span className="text-emerald-700 dark:text-emerald-300 font-black flex items-center gap-1">
                         <span>🐄 Vaca Madre (Chapa)</span>
@@ -1436,8 +1483,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                         />
                       </td>
 
-                      {/* Vaca Madre (Solo en Nacimiento) */}
-                      {batchInfo.entryType === 'Nacimiento' && (
+                      {/* Vaca Madre (Solo si genealogía está activa) */}
+                      {enableBatchGenealogy && (
                         <td className="p-2.5 min-w-[150px]">
                           <input
                             type="text"
