@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.63";
+export const CURRENT_APP_VERSION = "2.14.64";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.64",
+    date: "24/09/2026",
+    title: "📦 Predeterminado de Sexo en Lotes Completos & Registro Individual",
+    highlights: [
+      "Predeterminado en Blanco en Ingreso por Lotes: El modal de ingreso de lote completo ahora inicia con '-- Seleccionar Sexo del Lote * --', requiriendo selección explícita del usuario.",
+      "Sincronización Inteligente en Lote: Al seleccionar Lechería Especializada o Cría / Vientres, el lote y todos sus animales se configuran automáticamente en Hembra ♀.",
+      "Validación Estricta de Sexo: Bloqueo seguro si algún animal del lote carece de sexo definido antes de guardar."
+    ]
+  },
   {
     version: "2.14.63",
     date: "24/09/2026",

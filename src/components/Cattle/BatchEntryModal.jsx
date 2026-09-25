@@ -67,9 +67,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     entryDate: new Date().toISOString().split('T')[0],
     owner: 'Hacienda Principal',
     ironBrand: '',
-    sex: 'Macho',
+    sex: '',
     productionType: 'Ceba',
-    category: 'Novillo',
+    category: '',
     breed: '',
     notes: '',
     fatherType: 'toro', // 'toro' | 'pajilla' | 'desconocido'
@@ -179,9 +179,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       entryDate: new Date().toISOString().split('T')[0],
       owner: 'Hacienda Principal',
       ironBrand: '',
-      sex: 'Macho',
+      sex: '',
       productionType: 'Ceba',
-      category: 'Novillo',
+      category: '',
       breed: '',
       notes: '',
       fatherType: 'toro',
@@ -194,9 +194,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     setBatchExpenses('');
     setExpensesConcept('');
     setRows([
-      { id: '1', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
-      { id: '2', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
-      { id: '3', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+      { id: '1', tagNumber: '', sex: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
+      { id: '2', tagNumber: '', sex: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
+      { id: '3', tagNumber: '', sex: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
     ]);
     setErrors(null);
   };
@@ -213,7 +213,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       { 
         id: String(Date.now() + Math.random()), 
         tagNumber: '', 
-        sex: batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho', 
+        sex: batchInfo.sex === 'Hembra' ? 'Hembra' : (batchInfo.sex === 'Macho' ? 'Macho' : ''), 
         color: '', 
         entryWeight: '', 
         motherTag: '', 
@@ -346,6 +346,13 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
       return;
     }
 
+    // Validar sexo obligatorio para cada animal del lote
+    const missingSexRows = validRows.filter(r => !r.sex && !batchInfo.sex);
+    if (missingSexRows.length > 0) {
+      setErrors('El sexo es obligatorio. Selecciona el sexo predeterminado del lote o asígnalo individualmente en la tabla a cada animal.');
+      return;
+    }
+
     const isBorn = batchInfo.entryType === 'Nacimiento';
     const isBatchRequired = !isBorn && (batchInfo.productionType === 'Ceba' || batchInfo.entryType === 'Compañía');
 
@@ -470,7 +477,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     }
   };
 
-  const availableCategories = batchInfo.sex === 'Mixto' 
+  const availableCategories = (batchInfo.sex === 'Mixto' || !batchInfo.sex)
     ? CATEGORIES 
     : CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === batchInfo.sex);
   const isBornInBatch = batchInfo.entryType === 'Nacimiento';
@@ -739,10 +746,10 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
             {/* Sexo Común / Predeterminado */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Sexo Predeterminado del Lote
+                Sexo Predeterminado del Lote <span className="text-rose-500">*</span>
               </label>
               <select
-                value={batchInfo.sex}
+                value={batchInfo.sex || ''}
                 onChange={(e) => {
                   const val = e.target.value;
                   setBatchInfo(prev => ({
@@ -758,6 +765,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 }}
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[40px]"
               >
+                <option value="">-- Seleccionar Sexo del Lote * --</option>
                 <option value="Macho">♂ Macho (Predeterminado para todos)</option>
                 <option value="Hembra">♀ Hembra (Predeterminado para todos)</option>
                 <option value="Mixto">⚤ Mixto (Machos y Hembras combinados)</option>
@@ -796,13 +804,35 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
             {/* Categoría */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Categoría / Etapa
+                Categoría / Etapa {batchInfo.sex ? `(${batchInfo.sex === 'Hembra' ? 'Hembras' : batchInfo.sex === 'Macho' ? 'Machos' : 'Mixto'})` : ''}
               </label>
               <select
                 value={batchInfo.category}
-                onChange={(e) => setBatchInfo(prev => ({ ...prev, category: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const femaleCats = ['Vaca', 'Novilla'];
+                  const maleCats = ['Novillo', 'Toro', 'Torete', 'Buey'];
+                  const isFem = femaleCats.includes(val);
+                  const isMasc = maleCats.includes(val);
+
+                  setBatchInfo(prev => ({
+                    ...prev,
+                    category: val,
+                    sex: isFem ? 'Hembra' : (isMasc ? 'Macho' : prev.sex),
+                    productionType: isFem && prev.productionType === 'Ceba' ? 'Cría' : prev.productionType
+                  }));
+
+                  if (isFem) {
+                    setRows(prev => prev.map(r => ({ ...r, sex: 'Hembra' })));
+                    setSeriesConfig(prev => ({ ...prev, defaultSex: 'Hembra' }));
+                  } else if (isMasc) {
+                    setRows(prev => prev.map(r => ({ ...r, sex: 'Macho' })));
+                    setSeriesConfig(prev => ({ ...prev, defaultSex: 'Macho' }));
+                  }
+                }}
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[40px]"
               >
+                {!batchInfo.category && <option value="">-- Seleccionar Categoría --</option>}
                 {availableCategories.map(c => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
@@ -1269,7 +1299,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                     cattleList
                   ) : [];
                   const isRowDuplicate = rowDuplicates.length > 0;
-                  const rowSexValue = row.sex || (batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho');
+                  const rowSexValue = row.sex || (batchInfo.sex === 'Hembra' ? 'Hembra' : batchInfo.sex === 'Macho' ? 'Macho' : '');
 
                   return (
                     <tr key={row.id} className={`transition ${isRowDuplicate ? 'bg-amber-50/60 dark:bg-amber-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}`}>
@@ -1311,9 +1341,13 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                           className={`w-full px-2.5 py-1.5 rounded-lg border font-black text-xs cursor-pointer focus:outline-none transition shadow-sm ${
                             rowSexValue === 'Hembra'
                               ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700 focus:border-rose-500 focus:ring-1 focus:ring-rose-400'
-                              : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-400'
+                              : rowSexValue === 'Macho'
+                                ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-400'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
                           }`}
+                          required
                         >
+                          {!rowSexValue && <option value="">-- Sexo * --</option>}
                           <option value="Macho">♂ Macho</option>
                           <option value="Hembra">♀ Hembra</option>
                         </select>
