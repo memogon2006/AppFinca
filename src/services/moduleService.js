@@ -13,6 +13,7 @@ export const MODULE_KEYS = {
   CEBA_BATCHES: 'ceba_batches',   // 🥩 Lotes de Ceba & Comparativas de Engorde
   REPRODUCTION: 'reproduction',   // 🤰 Reproducción, Palpaciones & Diagnóstico Gestacional
   MILK: 'milk',                   // 🥛 Lechería, Control de Ordeño & Tanque
+  DAIRY: 'milk',                  // 🥛 Alias para compatibilidad
   IATF: 'iatf',                   // 🧬 Biotecnología: Receptoras IATF & Transferencia de Embriones
   PARTNERSHIPS: 'partnerships',   // 🤝 Ganado en Compañía / Inversión Compartida
 };
@@ -252,6 +253,148 @@ export function isModuleActive(moduleKey) {
 }
 
 /**
+ * Detecta y activa automáticamente los módulos necesarios según los datos de un animal registrado o editado.
+ * Si el usuario tenía configurada solo Ceba y registra una vaca lechera, activa Lechería; si registra hembra gestante o parto, activa Reproducción, etc.
+ * Retorna la lista de nombres de módulos recién activados para notificación al usuario.
+ */
+export function autoActivateModulesForAnimal(animal) {
+  if (!animal) return [];
+  const current = getActiveModules();
+  const toActivate = {};
+  const newlyActivated = [];
+
+  const prodType = (animal.productionType || '').toLowerCase().trim();
+  const reproStatus = (animal.reproductiveStatus || '').toLowerCase().trim();
+  const milkStatus = (animal.milkingStatus || '').toLowerCase().trim();
+  const femaleStat = (animal.femaleStatus || '').toLowerCase().trim();
+  const femaleStatuses = Array.isArray(animal.femaleStatuses) ? animal.femaleStatuses.map(s => String(s).toLowerCase()) : [];
+  const entryType = (animal.entryType || '').toLowerCase().trim();
+  const origin = (animal.origin || '').toLowerCase().trim();
+  const owner = (animal.owner || '').toLowerCase().trim();
+
+  // 1. Lechería (MILK)
+  const isMilkRelated = 
+    prodType === 'leche' || 
+    prodType === 'doble propósito' || 
+    prodType === 'doble proposito' ||
+    milkStatus === 'en ordeño' || 
+    milkStatus === 'en ordeno' || 
+    milkStatus === 'seca' ||
+    femaleStat.includes('leche') ||
+    femaleStatuses.some(s => s.includes('leche') || s.includes('ordeño')) ||
+    (parseFloat(animal.dailyMilkLiters) > 0) ||
+    (parseFloat(animal.lactationCycleTotalLiters) > 0);
+
+  if (isMilkRelated && !current[MODULE_KEYS.MILK]) {
+    toActivate[MODULE_KEYS.MILK] = true;
+    newlyActivated.push('🥛 Lechería & Control Lechero');
+  }
+
+  // 2. Reproducción y Palpaciones (REPRODUCTION)
+  const isReproRelated = 
+    prodType === 'cría' || 
+    prodType === 'cria' || 
+    prodType === 'doble propósito' || 
+    prodType === 'doble proposito' ||
+    animal.isBreedingOnly ||
+    reproStatus === 'preñada' || 
+    reproStatus === 'prenada' || 
+    reproStatus === 'en servicio' || 
+    reproStatus === 'inseminada' ||
+    reproStatus === 'receptora' ||
+    femaleStat.includes('gestación') ||
+    femaleStat.includes('gestacion') ||
+    femaleStat.includes('preñada') ||
+    femaleStat.includes('cría') ||
+    femaleStat.includes('cria') ||
+    femaleStatuses.some(s => s.includes('gestación') || s.includes('preñada') || s.includes('cría')) ||
+    entryType === 'nacimiento' || 
+    origin === 'nacido en finca' ||
+    Boolean(animal.motherTag) || 
+    Boolean(animal.motherId) ||
+    Boolean(animal.fatherTag) ||
+    Boolean(animal.fatherId) ||
+    Boolean(animal.serviceDate) ||
+    Boolean(animal.expectedCalvingDate) ||
+    (parseInt(animal.pregnancyDays, 10) > 0);
+
+  if (isReproRelated && !current[MODULE_KEYS.REPRODUCTION]) {
+    toActivate[MODULE_KEYS.REPRODUCTION] = true;
+    newlyActivated.push('🤰 Reproducción & Palpaciones');
+  }
+
+  // 3. Biotecnología / Receptoras IATF (IATF)
+  const isIatfRelated = 
+    animal.isReceptora || 
+    reproStatus === 'receptora' ||
+    Boolean(animal.iatfProtocol) || 
+    Boolean(animal.embryoTransferDate) ||
+    Boolean(animal.donorTag) || 
+    Boolean(animal.donorId);
+
+  if (isIatfRelated) {
+    if (!current[MODULE_KEYS.IATF]) {
+      toActivate[MODULE_KEYS.IATF] = true;
+      newlyActivated.push('🧬 Biotecnología (Receptoras & IATF)');
+    }
+    if (!current[MODULE_KEYS.REPRODUCTION]) {
+      toActivate[MODULE_KEYS.REPRODUCTION] = true;
+      if (!newlyActivated.includes('🤰 Reproducción & Palpaciones')) {
+        newlyActivated.push('🤰 Reproducción & Palpaciones');
+      }
+    }
+  }
+
+  // 4. Ganado en Compañía (PARTNERSHIPS)
+  const isCompanyRelated = 
+    entryType === 'compañía' || 
+    entryType === 'compania' || 
+    origin === 'en compañía' || 
+    origin === 'en compania' ||
+    animal.isCompany || 
+    Boolean(animal.partnershipPercentage) ||
+    owner.includes('compañía') || 
+    owner.includes('compania') || 
+    owner.includes('socio') || 
+    owner.includes('inversionista');
+
+  if (isCompanyRelated && !current[MODULE_KEYS.PARTNERSHIPS]) {
+    toActivate[MODULE_KEYS.PARTNERSHIPS] = true;
+    newlyActivated.push('🤝 Ganado en Compañía');
+  }
+
+  // 5. Lotes de Ceba (CEBA_BATCHES)
+  const isBatchCebaRelated = 
+    entryType === 'lote' || 
+    Boolean(animal.entryBatch) || 
+    prodType === 'ceba' || 
+    prodType === 'levante';
+
+  if (isBatchCebaRelated && (entryType === 'lote' || animal.entryBatch) && !current[MODULE_KEYS.CEBA_BATCHES]) {
+    toActivate[MODULE_KEYS.CEBA_BATCHES] = true;
+    newlyActivated.push('🥩 Lotes de Ceba');
+  }
+
+  // 6. Control de Pesos / Báscula (WEIGHTS)
+  const isWeightRelated = 
+    (parseFloat(animal.entryWeight) > 0) || 
+    (parseFloat(animal.currentWeight) > 0) || 
+    (parseFloat(animal.weight) > 0);
+
+  if (isWeightRelated && !current[MODULE_KEYS.WEIGHTS]) {
+    toActivate[MODULE_KEYS.WEIGHTS] = true;
+    newlyActivated.push('⚖️ Control de Pesos & Báscula');
+  }
+
+  // Si hubo módulos para activar, aplicarlos inmediatamente
+  if (Object.keys(toActivate).length > 0) {
+    setActiveModules(toActivate);
+  }
+
+  return newlyActivated;
+}
+
+/**
  * Hook de React para reaccionar a cambios en los módulos activos en tiempo real
  */
 export function useActiveModules() {
@@ -280,5 +423,6 @@ export function useActiveModules() {
     toggleModule,
     setActiveModules,
     applyFarmPreset,
+    autoActivateModulesForAnimal,
   };
 }

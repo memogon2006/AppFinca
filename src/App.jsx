@@ -39,7 +39,7 @@ import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
-import { useActiveModules, MODULE_KEYS } from './services/moduleService';
+import { useActiveModules, MODULE_KEYS, autoActivateModulesForAnimal, setActiveModules } from './services/moduleService';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -488,6 +488,9 @@ export default function App() {
   const handleSaveAnimal = async (animalData) => {
     if (!userId) return;
 
+    // Detectar y auto-activar módulos si el animal tiene características de leche, cría, IATF, compañía, lote, peso, etc.
+    const activatedModules = autoActivateModulesForAnimal(animalData);
+
     if (animalData.id) {
       const updated = { ...animalData, userId };
       await db.cattle.put(updated);
@@ -529,7 +532,11 @@ export default function App() {
       setEditingAnimal(null);
       cloudPushData(userId);
       triggerFeedback('single');
-      showToast(`Bovino ${animalData.tagNumber} actualizado y sincronizado en la nube ☁️`);
+      if (activatedModules && activatedModules.length > 0) {
+        showToast(`✨ Modificado Chapa #${animalData.tagNumber}. Se activaron: ${activatedModules.join(', ')}`, 'success');
+      } else {
+        showToast(`Bovino ${animalData.tagNumber} actualizado y sincronizado en la nube ☁️`);
+      }
     } else {
       const newId = 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
       const created = {
@@ -569,13 +576,27 @@ export default function App() {
       setEditingAnimal(null);
       cloudPushData(userId);
       triggerFeedback('single');
-      showToast(`¡Bovino ${created.tagNumber} registrado y sincronizado en la nube! ☁️`);
+      if (activatedModules && activatedModules.length > 0) {
+        showToast(`✨ ¡Bovino #${created.tagNumber} guardado! Se activaron: ${activatedModules.join(', ')}`, 'success');
+      } else {
+        showToast(`¡Bovino ${created.tagNumber} registrado y sincronizado en la nube! ☁️`);
+      }
     }
   };
 
   // Guardar Lote Completo de Bovinos
   const handleSaveBatchCattle = async (batchAnimals) => {
     if (!userId || !batchAnimals || batchAnimals.length === 0) return;
+
+    // Auto-activación de módulos para todos los animales del lote
+    const allActivated = new Set();
+    for (const bAnimal of batchAnimals) {
+      const newly = autoActivateModulesForAnimal(bAnimal);
+      if (Array.isArray(newly)) {
+        newly.forEach(m => allActivated.add(m));
+      }
+    }
+    const activatedList = Array.from(allActivated);
 
     const createdIds = [];
     for (let i = 0; i < batchAnimals.length; i++) {
@@ -621,11 +642,18 @@ export default function App() {
     setIsBatchEntryModalOpen(false);
     cloudPushData(userId);
     triggerFeedback('batch');
-    showToast(`¡Lote de ${batchAnimals.length} bovinos registrado y guardado exitosamente! 📦☁️`, 'success');
+    if (activatedList.length > 0) {
+      showToast(`¡Lote guardado! Se activaron automáticamente: ${activatedList.join(', ')} 🚀`, 'success');
+    } else {
+      showToast(`¡Lote de ${batchAnimals.length} bovinos registrado y guardado exitosamente! 📦☁️`, 'success');
+    }
   };
 
   const handleSaveWeight = async ({ cattleId, date, weight, conditionScore, notes }) => {
     if (!userId) return;
+    if (!isModuleActive(MODULE_KEYS.WEIGHTS)) {
+      setActiveModules({ [MODULE_KEYS.WEIGHTS]: true });
+    }
     const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     
     const animal = await db.cattle.get(cattleId) || await db.cattle.get(Number(cattleId));
@@ -927,6 +955,9 @@ export default function App() {
 
   const handleSaveBatchWeighings = async (batch) => {
     if (!userId) return;
+    if (!isModuleActive(MODULE_KEYS.WEIGHTS)) {
+      setActiveModules({ [MODULE_KEYS.WEIGHTS]: true });
+    }
     const syncIds = [];
     for (const item of batch) {
       const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -1134,6 +1165,9 @@ export default function App() {
 
   const handleSavePalpation = async (palpationData) => {
     if (!userId) return;
+    if (!isModuleActive(MODULE_KEYS.REPRODUCTION)) {
+      setActiveModules({ [MODULE_KEYS.REPRODUCTION]: true });
+    }
     const { animalId, tagNumber, date, diagnosis, pregnancyDays, serviceDate, expectedCalvingDate, findings, bodyCondition, veterinarian, method, notes, recheckDays } = palpationData;
 
     const animal = await db.cattle.get(animalId) || await db.cattle.get(Number(animalId));
@@ -1209,6 +1243,9 @@ export default function App() {
 
   const handleSaveBatchPalpations = async (batchPalpations) => {
     if (!userId || !batchPalpations || batchPalpations.length === 0) return;
+    if (!isModuleActive(MODULE_KEYS.REPRODUCTION)) {
+      setActiveModules({ [MODULE_KEYS.REPRODUCTION]: true });
+    }
 
     const syncIds = [];
     for (const pData of batchPalpations) {

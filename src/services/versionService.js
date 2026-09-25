@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.73";
+export const CURRENT_APP_VERSION = "2.14.74";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.74",
+    date: "24/09/2026",
+    title: "✨ Auto-Activación Inteligente de Módulos al Registrar Animales",
+    highlights: [
+      "Detección y Activación Automática: Si una finca configurada solo para Ceba registra una vaca de leche o cría, se activan de inmediato los módulos de Lechería y Reproducción.",
+      "Soporte para Múltiples Orientaciones: Detección zootécnica de Lechería (pesajes de leche, estado en ordeño), Reproducción (palpación, gestación, servicio, genealogía), Biotecnología IATF (receptoras, protocolos), Ganado en Compañía, Lotes de Ceba y Control de Pesos.",
+      "Notificación y Sincronización al Instante: Aviso en pantalla confirmando la activación de los nuevos módulos y sincronización inmediata con la nube y dispositivos de trabajadores."
+    ]
+  },
   {
     version: "2.14.73",
     date: "24/09/2026",
