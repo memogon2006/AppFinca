@@ -143,7 +143,14 @@ export function AuthProvider({ children }) {
             isActive: remoteUser.isActive !== false,
           };
           localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));
-          await db.users.put(merged).catch(() => null);
+          if (db.users && merged.id) {
+            const existingLocal = await db.users.get(merged.id).catch(() => null);
+            const userToSave = {
+              ...merged,
+              passwordHash: remoteUser.passwordHash || existingLocal?.passwordHash || session.passwordHash,
+            };
+            await db.users.put(userToSave).catch(() => null);
+          }
 
           const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
           if (targetDataId && navigator.onLine) {

@@ -247,7 +247,7 @@ export async function registerUser({ name, farmName, email, password, farmPreset
 
   // 1. Validar si ya existe en la Nube Firebase (1 sola cuenta por correo)
   const cloudUser = await cloudFindUser(cleanEmail);
-  if (cloudUser) {
+  if (cloudUser && !cloudUser.isDeleted) {
     throw new Error(`El correo "${cleanEmail}" ya se encuentra registrado. Solo se permite una sola cuenta por correo. Por favor dirígete a la pestaña "Iniciar Sesión" para ingresar.`);
   }
 
@@ -474,6 +474,9 @@ export async function loginUser({ email, password }) {
   }
 
   if (user) {
+    if (!user.id && user.email) {
+      user.id = 'usr_' + toSafeEmailKey(user.email);
+    }
     await db.users.put(user).catch(() => null);
   } else if (localUser) {
     user = localUser;
@@ -481,6 +484,7 @@ export async function loginUser({ email, password }) {
 
   if (!user) {
     recordFailedLoginAttempt(cleanInput);
+    throw new Error('Usuario o contraseña incorrectos.');
   }
 
   // Validar si la cuenta de trabajador está deshabilitada
@@ -488,8 +492,18 @@ export async function loginUser({ email, password }) {
     throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
   }
 
-  if (user.passwordHash !== inputHash) {
+  // Validar hash de contraseña (con auto-recuperación si local tenía el hash correcto)
+  const effectiveHash = user.passwordHash || localUser?.passwordHash;
+  if (!effectiveHash || effectiveHash !== inputHash) {
     recordFailedLoginAttempt(cleanInput);
+    throw new Error('Usuario o contraseña incorrectos.');
+  }
+
+  // Si a la cuenta remota le faltaba el hash pero coincidió con el inputHash, persistirlo
+  if (!user.passwordHash && inputHash) {
+    user.passwordHash = inputHash;
+    cloudSaveUser(user).catch(() => null);
+    await db.users.put(user).catch(() => null);
   }
 
   // Limpiar bloqueo tras éxito

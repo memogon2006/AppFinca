@@ -22,8 +22,18 @@ if (typeof window !== 'undefined') {
           const raw = localStorage.getItem('ganado_current_user_session');
           if (raw) {
             const u = JSON.parse(raw);
-            if (u && u.role !== 'worker') {
-              cloudSaveUser({ ...u, activeModules: detail.modules || detail, activeModulesUpdatedAt: Date.now() }).catch(() => null);
+            if (u && u.role !== 'worker' && u.email) {
+              const safeEmail = toSafeEmailKey(u.email);
+              const modulesPayload = {
+                activeModules: detail.modules || detail,
+                activeModulesUpdatedAt: Date.now(),
+                updatedAt: new Date().toISOString()
+              };
+              safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(modulesPayload),
+              }).catch(() => null);
             }
           }
         } catch (uErr) {}
@@ -61,7 +71,7 @@ export function toSafeEmailKey(email) {
 }
 
 /**
- * Guarda o actualiza el perfil del usuario en Firebase Realtime Database
+ * Guarda o actualiza el perfil del usuario en Firebase Realtime Database sin sobreescribir campos existentes indebidamente
  */
 export async function cloudSaveUser(user) {
   if (!user || !user.email) return false;
@@ -78,15 +88,23 @@ export async function cloudSaveUser(user) {
     ownerEmail: user.ownerEmail || null,
     activeModules: user.activeModules || getActiveModules(),
     farmPreset: user.farmPreset || null,
-    passwordHash: user.passwordHash,
     mustChangePassword: !!user.mustChangePassword,
-    createdAt: user.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
+  if (user.passwordHash) {
+    userPayload.passwordHash = user.passwordHash;
+  }
+  if (user.createdAt) {
+    userPayload.createdAt = user.createdAt;
+  }
+  if (user.activeModulesUpdatedAt) {
+    userPayload.activeModulesUpdatedAt = user.activeModulesUpdatedAt;
+  }
+
   try {
     const res = await safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userPayload),
     });

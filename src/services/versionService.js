@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.76";
+export const CURRENT_APP_VERSION = "2.14.77";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.77",
+    date: "24/09/2026",
+    title: "🔐 Restauración Total del Inicio de Sesión & Blindaje de Credenciales",
+    highlights: [
+      "Restauración del Acceso: Se corrigió y blindó la autenticación en local y nube para que todos los usuarios (administradores y trabajadores) puedan ingresar sin errores.",
+      "Protección de Credenciales (PATCH Safe): Se garantizó que las actualizaciones de módulos y configuración no sobreescriban ni afecten la clave o hash de acceso.",
+      "Auto-recuperación y Sincronización Transparente: Detección y validación optimizada tanto para conexiones directas como en modo offline."
+    ]
+  },
   {
     version: "2.14.76",
     date: "24/09/2026",
