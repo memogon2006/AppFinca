@@ -14,7 +14,7 @@ import {
   cloudIsWorkerDeleted
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
-import { setActiveModules, getActiveModules } from './moduleService';
+import { setActiveModules, getActiveModules, DEFAULT_MODULES, FARM_PRESETS } from './moduleService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
 const LOCKOUT_PREFIX = 'ganado_login_lockout_';
@@ -234,7 +234,7 @@ export function getCurrentUser() {
 /**
  * Registra un nuevo usuario/ganadería o enlaza la cuenta si ya existe con los mismos datos
  */
-export async function registerUser({ name, farmName, email, password }) {
+export async function registerUser({ name, farmName, email, password, farmPreset = 'completo', activeModules = null }) {
   const cleanEmail = (email || '').trim().toLowerCase();
   const cleanName = (name || '').trim();
   const cleanFarm = (farmName || '').trim();
@@ -260,8 +260,10 @@ export async function registerUser({ name, farmName, email, password }) {
   }
 
   const passwordHash = await hashPassword(cleanPassword);
-
   const userId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+  // Módulos iniciales según el preset elegido
+  const initialModules = activeModules || (FARM_PRESETS[farmPreset?.toUpperCase()]?.modules) || DEFAULT_MODULES;
 
   const newUser = {
     id: userId,
@@ -269,12 +271,19 @@ export async function registerUser({ name, farmName, email, password }) {
     farmName: cleanFarm,
     email: cleanEmail,
     passwordHash,
+    farmPreset: farmPreset || 'completo',
+    activeModules: initialModules,
     mustChangePassword: false,
     createdAt: new Date().toISOString(),
   };
 
   // Guardar en base de datos local
   await db.users.put(newUser);
+
+  // Guardar específicamente para este usuario en localStorage
+  try {
+    localStorage.setItem(`ganado_active_modules_${userId}`, JSON.stringify(initialModules));
+  } catch (e) {}
 
   // Si existen animales sin userId, asociarlos
   const legacyCattle = await db.cattle.filter(c => !c.userId).toArray();
@@ -309,11 +318,15 @@ export async function registerUser({ name, farmName, email, password }) {
     name: newUser.name,
     farmName: newUser.farmName,
     email: newUser.email,
+    farmPreset: newUser.farmPreset,
+    activeModules: initialModules,
     createdAt: newUser.createdAt,
     mustChangePassword: false,
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
+  setActiveModules(initialModules, userId);
+
   return sessionUser;
 }
 
@@ -339,8 +352,9 @@ export async function loginUser({ email, password }) {
 
   // 1. RUTA RÁPIDA LOCAL: Buscar en la base de datos local Dexie (toma < 10ms)
   let localUser = null;
+  let allUsers = [];
   try {
-    const allUsers = await db.users.toArray().catch(() => []);
+    allUsers = await db.users.toArray().catch(() => []);
     localUser = allUsers.find(u => {
       if (u.isDeleted) return false;
       const uEmail = (u.email || '').toLowerCase().trim();
@@ -365,18 +379,37 @@ export async function loginUser({ email, password }) {
     clearLoginLockout(cleanInput);
     if (localUser.email) clearLoginLockout(localUser.email);
 
-    // Si es trabajador, cargar y aplicar los módulos activos de la finca del patrón
+    // Identificar el farmId efectivo
+    const effectiveFarmId = localUser.role === 'worker' ? (localUser.ownerId || localUser.id) : localUser.id;
+
+    // Determinar los módulos activos específicos para este usuario/finca
+    let effectiveModules = null;
     if (localUser.role === 'worker') {
-      const ownerId = localUser.ownerId || localUser.id;
-      const owner = allUsers.find(u => u.id === ownerId || u.email === localUser.ownerEmail);
-      if (owner && owner.activeModules) {
-        setActiveModules(owner.activeModules, ownerId);
-      } else if (localUser.activeModules) {
-        setActiveModules(localUser.activeModules, ownerId);
+      const owner = allUsers.find(u => u.id === effectiveFarmId || u.email === localUser.ownerEmail);
+      effectiveModules = owner?.activeModules || localUser.activeModules;
+    } else {
+      effectiveModules = localUser.activeModules;
+      if (!effectiveModules && localUser.farmPreset) {
+        effectiveModules = FARM_PRESETS[localUser.farmPreset.toUpperCase()]?.modules;
       }
-    } else if (localUser.activeModules) {
-      setActiveModules(localUser.activeModules, localUser.id);
     }
+
+    if (!effectiveModules) {
+      const savedScoped = localStorage.getItem(`ganado_active_modules_${effectiveFarmId}`);
+      if (savedScoped) {
+        try { effectiveModules = JSON.parse(savedScoped); } catch (e) {}
+      }
+    }
+
+    if (!effectiveModules) {
+      effectiveModules = { ...DEFAULT_MODULES };
+    }
+
+    // Guardar en scoped storage y activar para esta finca
+    try {
+      localStorage.setItem(`ganado_active_modules_${effectiveFarmId}`, JSON.stringify(effectiveModules));
+    } catch (e) {}
+    setActiveModules(effectiveModules, effectiveFarmId);
 
     const sessionUser = {
       id: localUser.id,
@@ -387,7 +420,8 @@ export async function loginUser({ email, password }) {
       role: localUser.role || 'admin',
       ownerId: localUser.ownerId || null,
       ownerEmail: localUser.ownerEmail || null,
-      activeModules: localUser.activeModules || getActiveModules(),
+      farmPreset: localUser.farmPreset || null,
+      activeModules: effectiveModules,
       isActive: localUser.isActive !== false,
       createdAt: localUser.createdAt,
       mustChangePassword: !!localUser.mustChangePassword,
@@ -463,16 +497,38 @@ export async function loginUser({ email, password }) {
   if (user.email) clearLoginLockout(user.email);
 
   // Reconciliar módulos activos de la finca desde la nube para trabajadores o administradores
+  const effectiveFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+  let remoteModules = null;
+
   if (user.role === 'worker' && user.ownerEmail) {
     try {
       const ownerRecord = await cloudFindUser(user.ownerEmail);
       if (ownerRecord && ownerRecord.activeModules) {
-        setActiveModules(ownerRecord.activeModules, ownerRecord.id || user.ownerId);
+        remoteModules = ownerRecord.activeModules;
       }
     } catch (e) {}
-  } else if (user.role !== 'worker' && user.activeModules) {
-    setActiveModules(user.activeModules, user.id);
+  } else if (user.role !== 'worker') {
+    remoteModules = user.activeModules;
+    if (!remoteModules && user.farmPreset) {
+      remoteModules = FARM_PRESETS[user.farmPreset.toUpperCase()]?.modules;
+    }
   }
+
+  if (!remoteModules) {
+    const savedScoped = localStorage.getItem(`ganado_active_modules_${effectiveFarmId}`);
+    if (savedScoped) {
+      try { remoteModules = JSON.parse(savedScoped); } catch (e) {}
+    }
+  }
+
+  if (!remoteModules) {
+    remoteModules = { ...DEFAULT_MODULES };
+  }
+
+  try {
+    localStorage.setItem(`ganado_active_modules_${effectiveFarmId}`, JSON.stringify(remoteModules));
+  } catch (e) {}
+  setActiveModules(remoteModules, effectiveFarmId);
 
   const sessionUser = {
     id: user.id,
@@ -483,7 +539,8 @@ export async function loginUser({ email, password }) {
     role: user.role || 'admin',
     ownerId: user.ownerId || null,
     ownerEmail: user.ownerEmail || null,
-    activeModules: user.activeModules || getActiveModules(),
+    farmPreset: user.farmPreset || null,
+    activeModules: remoteModules,
     isActive: user.isActive !== false,
     createdAt: user.createdAt,
     mustChangePassword: !!user.mustChangePassword,
@@ -505,6 +562,8 @@ export async function loginUser({ email, password }) {
  */
 export function logoutUser() {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem('ganado_active_modules');
+  window.dispatchEvent(new CustomEvent('ganado_modules_changed', { detail: { ...DEFAULT_MODULES } }));
 }
 
 /**

@@ -894,7 +894,12 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
                       key={key}
                       type="button"
                       onClick={() => {
-                        handleApplyFarmPreset(key);
+                        const updated = handleApplyFarmPreset(key);
+                        if (currentUser?.id && !isWorker) {
+                          db.users.update(currentUser.id, { activeModules: updated, farmPreset: key }).catch(() => null);
+                          cloudSaveUser({ ...currentUser, activeModules: updated, farmPreset: key }).catch(() => null);
+                          cloudPushData(currentUser.id).catch(() => null);
+                        }
                         setModuleToastMsg(`Configuración aplicada: ${preset.shortTitle}`);
                         setTimeout(() => setModuleToastMsg(null), 3000);
                       }}
@@ -963,7 +968,12 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
                     <button
                       type="button"
                       onClick={() => {
-                        handleToggleModule(mod.key);
+                        const updated = handleToggleModule(mod.key);
+                        if (currentUser?.id && !isWorker) {
+                          db.users.update(currentUser.id, { activeModules: updated }).catch(() => null);
+                          cloudSaveUser({ ...currentUser, activeModules: updated }).catch(() => null);
+                          cloudPushData(currentUser.id).catch(() => null);
+                        }
                         setModuleToastMsg(`Módulo "${mod.shortName}" ${active ? 'desactivado' : 'activado'}`);
                         setTimeout(() => setModuleToastMsg(null), 2500);
                       }}

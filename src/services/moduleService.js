@@ -158,11 +158,12 @@ export const DEFAULT_MODULES = {
 /**
  * Obtiene el ID efectivo de la finca (el ID del dueño si es trabajador, o el ID propio si es admin)
  */
-export function getEffectiveFarmId() {
+export function getEffectiveFarmId(sessionUser = null) {
   try {
-    const raw = localStorage.getItem('ganado_current_user_session');
-    if (!raw) return null;
-    const user = JSON.parse(raw);
+    const user = sessionUser || (() => {
+      const raw = localStorage.getItem('ganado_current_user_session');
+      return raw ? JSON.parse(raw) : null;
+    })();
     if (!user) return null;
     return user.role === 'worker' ? (user.ownerId || user.id) : user.id;
   } catch (e) {
@@ -171,55 +172,80 @@ export function getEffectiveFarmId() {
 }
 
 /**
- * Obtiene el mapa actual de módulos activos para la finca en sesión
+ * Obtiene el mapa actual de módulos activos para la finca en sesión o para un farmId específico
  */
-export function getActiveModules() {
+export function getActiveModules(targetFarmId = null) {
   try {
-    const farmId = getEffectiveFarmId();
+    const farmId = targetFarmId || getEffectiveFarmId();
     if (farmId) {
       const scopedRaw = localStorage.getItem(`${STORAGE_KEY}_${farmId}`);
       if (scopedRaw) {
         const parsedScoped = JSON.parse(scopedRaw);
         return { ...DEFAULT_MODULES, ...parsedScoped };
       }
+
+      // Si no está en scoped storage pero hay sesión activa para este farmId
+      const rawUser = localStorage.getItem('ganado_current_user_session');
+      if (rawUser) {
+        const user = JSON.parse(rawUser);
+        const userFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+        if (userFarmId === farmId) {
+          if (user.activeModules && typeof user.activeModules === 'object') {
+            try {
+              localStorage.setItem(`${STORAGE_KEY}_${farmId}`, JSON.stringify(user.activeModules));
+            } catch (e) {}
+            return { ...DEFAULT_MODULES, ...user.activeModules };
+          }
+          if (user.farmPreset) {
+            const preset = FARM_PRESETS[user.farmPreset.toUpperCase()] || FARM_PRESETS.COMPLETO;
+            try {
+              localStorage.setItem(`${STORAGE_KEY}_${farmId}`, JSON.stringify(preset.modules));
+            } catch (e) {}
+            return { ...DEFAULT_MODULES, ...preset.modules };
+          }
+        }
+      }
     }
 
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_MODULES };
-    const parsed = JSON.parse(raw);
-    return { ...DEFAULT_MODULES, ...parsed };
+    // Si no hay sesión o no hay configuración específica, retornar DEFAULT_MODULES
+    return { ...DEFAULT_MODULES };
   } catch (e) {
     return { ...DEFAULT_MODULES };
   }
 }
 
 /**
- * Guarda y emite la actualización de módulos activos para la finca
+ * Guarda y emite la actualización de módulos activos para una finca específica
  */
 export function setActiveModules(modules, customFarmId = null) {
   try {
     const farmId = customFarmId || getEffectiveFarmId();
-    const updated = { ...getActiveModules(), ...modules };
+    const current = getActiveModules(farmId);
+    const updated = { ...current, ...modules };
     
-    // Guardar en clave global y clave con ámbito de finca
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    // Guardar exclusivamente bajo la clave con ámbito de finca
     if (farmId) {
       localStorage.setItem(`${STORAGE_KEY}_${farmId}`, JSON.stringify(updated));
     }
 
-    // Actualizar sesión en memoria local si corresponde
+    // Actualizar sesión en memoria si corresponde a la cuenta actual
     try {
       const rawUser = localStorage.getItem('ganado_current_user_session');
       if (rawUser) {
         const user = JSON.parse(rawUser);
-        if (user && user.role !== 'worker') {
+        const currentSessionFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+        if (currentSessionFarmId === farmId || !customFarmId) {
           user.activeModules = updated;
           localStorage.setItem('ganado_current_user_session', JSON.stringify(user));
         }
       }
     } catch (uErr) {}
 
-    window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: updated }));
+    // Notificar a componentes UI
+    const activeFarmId = getEffectiveFarmId();
+    if (!farmId || farmId === activeFarmId) {
+      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: updated }));
+    }
     return updated;
   } catch (e) {
     console.error('Error guardando módulos activos:', e);
@@ -230,25 +256,30 @@ export function setActiveModules(modules, customFarmId = null) {
 /**
  * Conmuta un módulo específico
  */
-export function toggleModule(moduleKey) {
-  const current = getActiveModules();
+export function toggleModule(moduleKey, customFarmId = null) {
+  const farmId = customFarmId || getEffectiveFarmId();
+  const current = getActiveModules(farmId);
   const next = !current[moduleKey];
-  return setActiveModules({ [moduleKey]: next });
+  return setActiveModules({ [moduleKey]: next }, farmId);
 }
 
 /**
  * Aplica un preset completo de finca
  */
-export function applyFarmPreset(presetKey) {
+export function applyFarmPreset(presetKey, customFarmId = null) {
   const preset = FARM_PRESETS[presetKey?.toUpperCase()] || FARM_PRESETS.COMPLETO;
-  return setActiveModules(preset.modules);
+  const farmId = customFarmId || getEffectiveFarmId();
+  if (farmId) {
+    localStorage.setItem(`${STORAGE_KEY}_${farmId}`, JSON.stringify(preset.modules));
+  }
+  return setActiveModules(preset.modules, farmId);
 }
 
 /**
  * Verifica si un módulo específico está activo en la finca actual
  */
-export function isModuleActive(moduleKey) {
-  const modules = getActiveModules();
+export function isModuleActive(moduleKey, customFarmId = null) {
+  const modules = getActiveModules(customFarmId);
   return Boolean(modules[moduleKey]);
 }
 
@@ -259,7 +290,8 @@ export function isModuleActive(moduleKey) {
  */
 export function autoActivateModulesForAnimal(animal) {
   if (!animal) return [];
-  const current = getActiveModules();
+  const farmId = animal.userId || getEffectiveFarmId();
+  const current = getActiveModules(farmId);
   const toActivate = {};
   const newlyActivated = [];
 
@@ -312,7 +344,7 @@ export function autoActivateModulesForAnimal(animal) {
     origin === 'nacido en finca' ||
     Boolean(animal.motherTag) || 
     Boolean(animal.motherId) ||
-    Boolean(animal.fatherTag) ||
+    Boolean(animal.fatherTag) || 
     Boolean(animal.fatherId) ||
     Boolean(animal.serviceDate) ||
     Boolean(animal.expectedCalvingDate) ||
@@ -386,9 +418,9 @@ export function autoActivateModulesForAnimal(animal) {
     newlyActivated.push('⚖️ Control de Pesos & Báscula');
   }
 
-  // Si hubo módulos para activar, aplicarlos inmediatamente
+  // Si hubo módulos para activar, aplicarlos inmediatamente a esta finca
   if (Object.keys(toActivate).length > 0) {
-    setActiveModules(toActivate);
+    setActiveModules(toActivate, farmId);
   }
 
   return newlyActivated;

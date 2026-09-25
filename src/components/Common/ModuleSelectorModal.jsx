@@ -6,6 +6,9 @@ import {
   useActiveModules, 
   MODULE_KEYS 
 } from '../../services/moduleService';
+import { useAuth } from '../../context/AuthContext';
+import { db } from '../../services/db';
+import { cloudSaveUser, cloudPushData } from '../../services/cloudSync';
 import { 
   Sliders, 
   CheckCircle2, 
@@ -34,20 +37,31 @@ const ICON_MAP = {
 };
 
 export function ModuleSelectorModal({ isOpen, onClose, zIndex = 'z-[70]' }) {
+  const { currentUser, isWorker } = useAuth();
   const { modules, isModuleActive, toggleModule, applyFarmPreset } = useActiveModules();
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [successToast, setSuccessToast] = useState(null);
 
   const handleSelectPreset = (presetKey) => {
     setSelectedPreset(presetKey);
-    applyFarmPreset(presetKey);
+    const updated = applyFarmPreset(presetKey);
+    if (currentUser?.id && !isWorker) {
+      db.users.update(currentUser.id, { activeModules: updated, farmPreset: presetKey }).catch(() => null);
+      cloudSaveUser({ ...currentUser, activeModules: updated, farmPreset: presetKey }).catch(() => null);
+      cloudPushData(currentUser.id).catch(() => null);
+    }
     setSuccessToast(`Se aplicó la configuración: ${FARM_PRESETS[presetKey.toUpperCase()]?.shortTitle || presetKey}`);
     setTimeout(() => setSuccessToast(null), 3000);
   };
 
   const handleToggle = (moduleKey) => {
-    toggleModule(moduleKey);
+    const updated = toggleModule(moduleKey);
     setSelectedPreset(null);
+    if (currentUser?.id && !isWorker) {
+      db.users.update(currentUser.id, { activeModules: updated }).catch(() => null);
+      cloudSaveUser({ ...currentUser, activeModules: updated }).catch(() => null);
+      cloudPushData(currentUser.id).catch(() => null);
+    }
     setSuccessToast('Módulos actualizados con éxito');
     setTimeout(() => setSuccessToast(null), 2500);
   };

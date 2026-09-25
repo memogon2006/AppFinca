@@ -39,7 +39,7 @@ import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
-import { useActiveModules, MODULE_KEYS, autoActivateModulesForAnimal, setActiveModules } from './services/moduleService';
+import { useActiveModules, MODULE_KEYS, autoActivateModulesForAnimal, setActiveModules, getActiveModules } from './services/moduleService';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -173,6 +173,11 @@ export default function App() {
           const saved = loadActiveUIState() || {};
           saveActiveUIState({ ...saved, currentView: 'dashboard', activeModal: null, modalPayload: null });
         } catch (e) {}
+
+        // Sincronizar módulos específicos de la cuenta que acaba de ingresar
+        const farmId = currentUser.role === 'worker' ? (currentUser.ownerId || currentUser.id) : currentUser.id;
+        const currentModules = getActiveModules(farmId);
+        window.dispatchEvent(new CustomEvent('ganado_modules_changed', { detail: currentModules }));
       }
     }
     prevUserRef.current = currentUser;

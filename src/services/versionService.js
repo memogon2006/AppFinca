@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.74";
+export const CURRENT_APP_VERSION = "2.14.75";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.75",
+    date: "24/09/2026",
+    title: "🔒 Aislamiento Estricto de Módulos por Cuenta y Predio Ganadero",
+    highlights: [
+      "Independencia Total de Cuentas: Cada ganadero conserva sus módulos activos de forma 100% aislada (ej. si la Cuenta 1 es solo Cría y la Cuenta 2 es solo Ceba, ninguna altera la configuración de la otra).",
+      "Persistencia de Ámbito por Usuario: Los módulos se guardan y consultan estrictamente con la clave única de la finca (`ganado_active_modules_ID`), impidiendo contaminación entre sesiones en el mismo navegador.",
+      "Cambio de Cuenta Inmediato: Al cerrar e iniciar sesión en una cuenta diferente, la plataforma reconfigura al instante los menús y paneles según el perfil exclusivo de esa cuenta."
+    ]
+  },
   {
     version: "2.14.74",
     date: "24/09/2026",

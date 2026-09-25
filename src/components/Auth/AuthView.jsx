@@ -182,8 +182,15 @@ export function AuthView() {
 
       try {
         setLoading(true);
-        applyFarmPreset(selectedFarmPreset);
-        await register({ name, farmName, email, password });
+        const presetModules = FARM_PRESETS[selectedFarmPreset.toUpperCase()]?.modules || null;
+        await register({ 
+          name, 
+          farmName, 
+          email, 
+          password,
+          farmPreset: selectedFarmPreset,
+          activeModules: presetModules
+        });
       } catch (err) {
         setError(err.message);
       } finally {
