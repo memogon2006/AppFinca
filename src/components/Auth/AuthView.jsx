@@ -31,6 +31,7 @@ import {
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 import { checkAppUpdate, isVersionGreater } from '../../services/versionService';
 import { getLoginLockoutStatus } from '../../services/auth';
+import { FARM_PRESETS, applyFarmPreset } from '../../services/moduleService';
 
 export function AuthView() {
   const { login, register, setSessionUser, requestResetPassword } = useAuth();
@@ -71,7 +72,8 @@ export function AuthView() {
     return localStorage.getItem('ganado_remember_login') === 'true';
   });
 
-  // Form states
+  const [selectedFarmPreset, setSelectedFarmPreset] = useState('completo');
+
   const [formData, setFormData] = useState({
     name: '',
     farmName: '',
@@ -180,6 +182,7 @@ export function AuthView() {
 
       try {
         setLoading(true);
+        applyFarmPreset(selectedFarmPreset);
         await register({ name, farmName, email, password });
       } catch (err) {
         setError(err.message);
@@ -622,6 +625,41 @@ export function AuthView() {
                           className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[46px]"
                           required
                         />
+                      </div>
+                    </div>
+
+                    {/* Selector de Enfoque Principal de la Finca */}
+                    <div className="sm:col-span-2 space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                          🎯 Enfoque de la Finca (Módulos Iniciales)
+                        </label>
+                        <span className="text-[10px] text-slate-400">Puedes cambiarlo adentro</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(FARM_PRESETS).map(([key, preset]) => {
+                          const isSelected = selectedFarmPreset === key.toLowerCase();
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setSelectedFarmPreset(key.toLowerCase())}
+                              className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                                isSelected
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-400/40'
+                                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs font-black">{preset.shortTitle}</span>
+                                {isSelected && <span className="text-[10px] font-bold">✓</span>}
+                              </div>
+                              <span className={`text-[10px] line-clamp-1 mt-0.5 ${isSelected ? 'text-emerald-100' : 'text-slate-400'}`}>
+                                {key === 'CEBA' ? 'Ceba, Báscula, Potreros' : key === 'LECHERIA' ? 'Lechería, Ordeño, Secado' : key === 'CRIA' ? 'Palpación, IATF, Cría' : 'Todos los módulos'}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

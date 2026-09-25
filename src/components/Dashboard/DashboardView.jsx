@@ -37,6 +37,7 @@ import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials } from '../../services/calculations';
 import { useAuth } from '../../context/AuthContext';
+import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
 
 export function DashboardView({ 
   cattle = [], 
@@ -64,6 +65,7 @@ export function DashboardView({
   onOpenAddIncome
 }) {
   const { isWorker } = useAuth();
+  const { isModuleActive } = useActiveModules();
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
 
@@ -209,7 +211,7 @@ export function DashboardView({
               </button>
             )}
 
-            {!isWorker && onOpenPartnershipModal && (
+            {!isWorker && isModuleActive(MODULE_KEYS.PARTNERSHIPS) && onOpenPartnershipModal && (
               <button
                 onClick={onOpenPartnershipModal}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 border border-amber-300 transition cursor-pointer active:scale-95"
@@ -275,23 +277,28 @@ export function DashboardView({
               </button>
             )}
             
-            <button
-              onClick={() => onNavigate('palpation')}
-              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-950/40 border border-purple-400/40 transition cursor-pointer"
-              title="Iniciar jornada de palpación y diagnóstico reproductivo de hembras en corral"
-            >
-              <Stethoscope className="w-4 h-4 text-purple-200" />
-              <span>🩺 Palpación Rápida</span>
-            </button>
+            {isModuleActive(MODULE_KEYS.REPRODUCTION) && (
+              <button
+                onClick={() => onNavigate('palpation')}
+                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-950/40 border border-purple-400/40 transition cursor-pointer"
+                title="Iniciar jornada de palpación y diagnóstico reproductivo de hembras en corral"
+              >
+                <Stethoscope className="w-4 h-4 text-purple-200" />
+                <span>🩺 Palpación Rápida</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => onNavigate('quickWeigh')}
-              className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition backdrop-blur-sm cursor-pointer"
-            >
-              <Zap className="w-4 h-4 text-amber-300" />
-              <span>⚡ Báscula Rápida</span>
-            </button>
-            {onOpenBatchEntry && (
+            {isModuleActive(MODULE_KEYS.WEIGHTS) && (
+              <button
+                onClick={() => onNavigate('quickWeigh')}
+                className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm flex items-center gap-2 border border-white/20 transition backdrop-blur-sm cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>⚡ Báscula Rápida</span>
+              </button>
+            )}
+            
+            {isModuleActive(MODULE_KEYS.CEBA_BATCHES) && onOpenBatchEntry && (
               <button
                 onClick={onOpenBatchEntry}
                 className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
@@ -374,57 +381,63 @@ export function DashboardView({
 
       </div>
 
-      {/* Sub-KPIs de Manejo y Producción */}
+      {/* Sub-KPIs de Manejo y Producción según Módulos Activos */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        
-        <div 
-          onClick={() => onNavigate('females')}
-          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-purple-300 dark:hover:border-purple-600/50 transition cursor-pointer group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-purple-600 dark:text-purple-400 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider">Vacas en Gestación</span>
-            <Baby className="w-4 h-4 group-hover:scale-110 transition" />
+        {isModuleActive(MODULE_KEYS.REPRODUCTION) && (
+          <div 
+            onClick={() => onNavigate('females')}
+            className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-purple-300 dark:hover:border-purple-600/50 transition cursor-pointer group shadow-sm"
+          >
+            <div className="flex items-center justify-between text-purple-600 dark:text-purple-400 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">Vacas en Gestación</span>
+              <Baby className="w-4 h-4 group-hover:scale-110 transition" />
+            </div>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{pregnantCount}</p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Preñadas confirmadas</span>
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{pregnantCount}</p>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">Preñadas confirmadas</span>
-        </div>
+        )}
 
-        <div 
-          onClick={() => onNavigate('females')}
-          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-600/50 transition cursor-pointer group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider">En Ordeño / Leche</span>
-            <Milk className="w-4 h-4 group-hover:scale-110 transition" />
+        {isModuleActive(MODULE_KEYS.DAIRY) && (
+          <div 
+            onClick={() => onNavigate('females')}
+            className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-600/50 transition cursor-pointer group shadow-sm"
+          >
+            <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">En Ordeño / Leche</span>
+              <Milk className="w-4 h-4 group-hover:scale-110 transition" />
+            </div>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{milkingCount}</p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Hembras en producción</span>
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{milkingCount}</p>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">Hembras en producción</span>
-        </div>
+        )}
 
-        <div 
-          onClick={() => onNavigate('females')}
-          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition cursor-pointer group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider">Matrices de Cría</span>
-            <Users className="w-4 h-4 group-hover:scale-110 transition" />
+        {isModuleActive(MODULE_KEYS.REPRODUCTION) && (
+          <div 
+            onClick={() => onNavigate('females')}
+            className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition cursor-pointer group shadow-sm"
+          >
+            <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">Matrices de Cría</span>
+              <Users className="w-4 h-4 group-hover:scale-110 transition" />
+            </div>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{breedingOnlyCount}</p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Vientres exclusivos cría</span>
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{breedingOnlyCount}</p>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">Vientres exclusivos cría</span>
-        </div>
+        )}
 
-        <div 
-          onClick={() => onNavigate('cattle')}
-          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-amber-300 dark:hover:border-amber-600/50 transition cursor-pointer group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider">Lote de Ceba</span>
-            <Activity className="w-4 h-4 group-hover:scale-110 transition" />
+        {isModuleActive(MODULE_KEYS.CEBA_BATCHES) && (
+          <div 
+            onClick={() => onNavigate('cattle')}
+            className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-amber-300 dark:hover:border-amber-600/50 transition cursor-pointer group shadow-sm"
+          >
+            <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">Lote de Ceba</span>
+              <Activity className="w-4 h-4 group-hover:scale-110 transition" />
+            </div>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{fatteningCount}</p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">Bovinos en engorde</span>
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{fatteningCount}</p>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">Bovinos en engorde</span>
-        </div>
-
+        )}
       </div>
 
       {/* Widget de Calendario Ganadero & Fecha Actual en Tiempo Real */}
@@ -446,24 +459,26 @@ export function DashboardView({
       />
 
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isModuleActive(MODULE_KEYS.WEIGHTS) ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
         
         {/* Gráfica 1: Rendimiento de Peso & Aumento */}
-        <div className="custom-card p-5 sm:p-6 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Rendimiento de Ganancia de Peso & GDP</span>
-            </h3>
-            <button
-              onClick={() => onNavigate('weights')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-            >
-              Báscula <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+        {isModuleActive(MODULE_KEYS.WEIGHTS) && (
+          <div className="custom-card p-5 sm:p-6 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span>Rendimiento de Ganancia de Peso & GDP</span>
+              </h3>
+              <button
+                onClick={() => onNavigate('weights')}
+                className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                Báscula <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <WeightPerformanceChart cattle={activeCattle} weighings={weighings} />
           </div>
-          <WeightPerformanceChart cattle={activeCattle} weighings={weighings} />
-        </div>
+        )}
 
         {/* Gráfica 2: Distribución por Propósito & Rangos de Peso Comercial */}
         <div className="custom-card p-5 sm:p-6 space-y-3">

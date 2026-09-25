@@ -41,14 +41,18 @@ import {
   SOUND_PROFILES 
 } from '../../services/soundService';
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
+import { MODULE_CATALOG, FARM_PRESETS, useActiveModules } from '../../services/moduleService';
 
 export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount = 0, zIndex = 'z-[60]' }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout, isWorker } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'version' | 'delete'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'modules' | 'security' | 'version' | 'delete'
   const [demoCount, setDemoCount] = useState(0);
   const [loadingDeleteDemo, setLoadingDeleteDemo] = useState(false);
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
+  const [moduleToastMsg, setModuleToastMsg] = useState(null);
+
+  const { modules, isModuleActive: checkModuleActive, toggleModule: handleToggleModule, applyFarmPreset: handleApplyFarmPreset } = useActiveModules();
 
   // Configuración de Sonido y Selección de Perfil
   const [soundEnabled, setSoundState] = useState(() => isSoundEnabled());
@@ -383,6 +387,21 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
             <User className="w-4 h-4" />
             <span>{isWorker ? 'Mi Perfil' : 'Datos Finca'}</span>
           </button>
+
+          {!isWorker && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('modules')}
+              className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
+                activeTab === 'modules'
+                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Sliders className="w-4 h-4" />
+              <span>🎛️ Módulos</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -808,6 +827,129 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
             )}
 
           </form>
+        )}
+
+        {/* PESTAÑA: PERSONALIZACIÓN MODULAR DE LA FINCA */}
+        {activeTab === 'modules' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {moduleToastMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{moduleToastMsg}</span>
+              </div>
+            )}
+
+            {/* Presets Rápidos */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>Configuración Rápida por Enfoque de Finca:</span>
+                </h4>
+                <span className="text-[10px] text-slate-400">1 toque para configurar</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                {Object.entries(FARM_PRESETS).map(([key, preset]) => {
+                  const isCurrent = Object.entries(preset.modules).every(
+                    ([modKey, expected]) => Boolean(modules[modKey]) === expected
+                  );
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        handleApplyFarmPreset(key);
+                        setModuleToastMsg(`Configuración aplicada: ${preset.shortTitle}`);
+                        setTimeout(() => setModuleToastMsg(null), 3000);
+                      }}
+                      className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition cursor-pointer min-h-[85px] ${
+                        isCurrent
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-400/50'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-emerald-400'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between w-full">
+                        <span className="text-xs font-black leading-snug">{preset.shortTitle}</span>
+                        {isCurrent && <span className="text-[10px] font-black bg-white/20 px-1 rounded">✓ Activo</span>}
+                      </div>
+                      <span className={`text-[10px] mt-1 line-clamp-2 ${isCurrent ? 'text-emerald-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {preset.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Módulos Fijos Base */}
+            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Módulos Fijos:</strong> Inventario, Potreros, Finanzas, Sanidad y Auditoría permanecen siempre activos como base del sistema.
+              </span>
+            </div>
+
+            {/* Módulos Conmutables */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {MODULE_CATALOG.map((mod) => {
+                const active = checkModuleActive(mod.key);
+
+                return (
+                  <div
+                    key={mod.key}
+                    className={`p-3.5 rounded-2xl border transition flex items-start justify-between gap-3 ${
+                      active
+                        ? 'bg-white dark:bg-slate-900 border-emerald-500/50 shadow-xs'
+                        : 'bg-slate-50/70 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-black ${
+                        active ? 'bg-emerald-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                      }`}>
+                        {mod.emoji}
+                      </div>
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-black text-slate-900 dark:text-white truncate">{mod.name}</span>
+                          <span className={`text-[9px] font-bold px-1.5 rounded ${
+                            active ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                          }`}>
+                            {active ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-snug">
+                          {mod.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleToggleModule(mod.key);
+                        setModuleToastMsg(`Módulo "${mod.shortName}" ${active ? 'desactivado' : 'activado'}`);
+                        setTimeout(() => setModuleToastMsg(null), 2500);
+                      }}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none self-center ${
+                        active ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                      role="switch"
+                      aria-checked={active}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          active ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* PESTAÑA 2: CAMBIO DE CONTRASEÑA */}

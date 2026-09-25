@@ -30,6 +30,8 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { CURRENT_APP_VERSION } from '../services/versionService';
+import { useActiveModules, MODULE_KEYS } from '../services/moduleService';
+import { ModuleSelectorModal } from './Common/ModuleSelectorModal';
 
 export function Navbar({ 
   currentView, 
@@ -45,8 +47,10 @@ export function Navbar({
   activeCattleCount = 0 
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isModuleSelectorOpen, setIsModuleSelectorOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const { currentUser, logout, isWorker } = useAuth();
+  const { isModuleActive } = useActiveModules();
 
   // Cerrar sidebar con la tecla Escape
   useEffect(() => {
@@ -71,8 +75,8 @@ export function Navbar({
     };
   }, [isSidebarOpen]);
 
-  // Agrupación estructurada de módulos por categoría y función
-  const navigationGroups = [
+  // Agrupación estructurada de módulos con filtrado dinámico según la orientación de la finca
+  const rawNavigationGroups = [
     {
       id: 'general',
       title: 'Panel de Control',
@@ -89,8 +93,12 @@ export function Navbar({
       badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 border border-teal-300/40',
       items: [
         { id: 'cattle', label: 'Inventario de Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
-        { id: 'batches', label: 'Lotes, Ingresos & Comparaciones', icon: Boxes, desc: 'Agrupación y control de potreros' },
-        { id: 'weights', label: 'Control de Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
+        ...(isModuleActive(MODULE_KEYS.CEBA_BATCHES) ? [
+          { id: 'batches', label: 'Lotes, Ingresos & Comparaciones', icon: Boxes, desc: 'Agrupación y control de potreros' }
+        ] : []),
+        ...(isModuleActive(MODULE_KEYS.WEIGHTS) ? [
+          { id: 'weights', label: 'Control de Pesos', icon: Scale, desc: 'Ganancia diaria e historial' }
+        ] : []),
       ]
     },
     {
@@ -100,8 +108,12 @@ export function Navbar({
       badgeClass: 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 border border-purple-300/40',
       items: [
         { id: 'paddocks', label: 'Potreros & Pastoreo', icon: Leaf, desc: 'Aforos 1m², descansos y rotación de lotes' },
-        { id: 'palpation', label: 'Palpación & Reprod.', icon: Stethoscope, desc: 'Preñeces, tactos y estados' },
-        { id: 'quickWeigh', label: 'Báscula Rápida', icon: Zap, desc: 'Pesaje ágil en manga' },
+        ...(isModuleActive(MODULE_KEYS.REPRODUCTION) ? [
+          { id: 'palpation', label: 'Palpación & Reprod.', icon: Stethoscope, desc: 'Preñeces, tactos y estados' }
+        ] : []),
+        ...(isModuleActive(MODULE_KEYS.WEIGHTS) ? [
+          { id: 'quickWeigh', label: 'Báscula Rápida', icon: Zap, desc: 'Pesaje ágil en manga' }
+        ] : []),
       ]
     },
     ...(!isWorker ? [
@@ -117,6 +129,9 @@ export function Navbar({
       }
     ] : [])
   ];
+
+  // Filtrar grupos que tengan al menos 1 ítem disponible
+  const navigationGroups = rawNavigationGroups.filter(group => group.items && group.items.length > 0);
 
   const handleLogout = () => {
     setIsSidebarOpen(false);
@@ -591,6 +606,20 @@ export function Navbar({
             </button>
           </div>
 
+          {/* Configuración de Módulos de la Finca */}
+          {!isWorker && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSidebarOpen(false);
+                setIsModuleSelectorOpen(true);
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition shadow-xs"
+            >
+              <span>🎛️ Configurar Módulos de la Finca</span>
+            </button>
+          )}
+
           {/* Versión y Términos */}
           <div className="text-center pt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium space-y-0.5">
             <div>Software Ganadero • v{CURRENT_APP_VERSION} • Modo Campo Offline</div>
@@ -610,6 +639,13 @@ export function Navbar({
 
         </div>
       </aside>
+
+      {/* Modal de Configuración de Módulos de la Finca */}
+      <ModuleSelectorModal
+        isOpen={isModuleSelectorOpen}
+        onClose={() => setIsModuleSelectorOpen(false)}
+        zIndex="z-[80]"
+      />
     </>
   );
 }

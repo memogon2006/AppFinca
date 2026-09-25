@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.70";
+export const CURRENT_APP_VERSION = "2.14.71";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.71",
+    date: "24/09/2026",
+    title: "🎛️ Personalización Modular de la Finca por Enfoque Productivo",
+    highlights: [
+      "Perfiles de Enfoque Productivo: Selección inicial en Registro (Ceba pura, Lechería, Cría/Doble Propósito, Completo).",
+      "Activación / Desactivación Dinámica: Módulos opcionales configurables desde la Barra Superior (Navbar) y el Perfil de Administrador en cualquier momento.",
+      "Módulos Base Permanentes: Inventario, Potreros, Finanzas, Sanidad/Calendario y Auditoría siempre disponibles como núcleo de la finca.",
+      "Adaptabilidad Visual Instantánea: El Dashboard, menús de navegación y accesos rápidos se ajustan automáticamente según los módulos encendidos sin afectar datos guardados."
+    ]
+  },
   {
     version: "2.14.70",
     date: "24/09/2026",
