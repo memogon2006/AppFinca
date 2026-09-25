@@ -771,7 +771,20 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
               </label>
               <select
                 value={batchInfo.productionType}
-                onChange={(e) => setBatchInfo(prev => ({ ...prev, productionType: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const isFemaleProd = val === 'Lechería' || val === 'Cría';
+                  setBatchInfo(prev => ({
+                    ...prev,
+                    productionType: val,
+                    sex: isFemaleProd ? 'Hembra' : prev.sex,
+                    category: isFemaleProd && (prev.category === 'Novillo' || prev.category === 'Toro' || prev.category === 'Torete' || prev.category === 'Buey') ? 'Vaca' : prev.category
+                  }));
+                  if (isFemaleProd) {
+                    setRows(prev => prev.map(r => ({ ...r, sex: 'Hembra' })));
+                    setSeriesConfig(prev => ({ ...prev, defaultSex: 'Hembra' }));
+                  }
+                }}
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[40px]"
               >
                 {PRODUCTION_TYPES.map(p => (

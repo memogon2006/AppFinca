@@ -50,9 +50,9 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     name: '',
     ironBrand: '',
     owner: 'Hacienda Principal',
-    sex: 'Macho',
+    sex: '',
     breed: '',
-    category: 'Novillo',
+    category: '',
     productionType: 'Ceba',
     status: 'Activo',
     color: '',
@@ -190,9 +190,9 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         name: '',
         ironBrand: '',
         owner: 'Hacienda Principal',
-        sex: 'Macho',
+        sex: '',
         breed: '',
-        category: 'Novillo',
+        category: '',
         productionType: 'Ceba',
         status: 'Activo',
         color: '',
@@ -265,9 +265,9 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       name: '',
       ironBrand: '',
       owner: 'Hacienda Principal',
-      sex: 'Macho',
+      sex: '',
       breed: '',
-      category: 'Novillo',
+      category: '',
       productionType: 'Ceba',
       status: 'Activo',
       color: '',
@@ -577,7 +577,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
           ...prev,
           sex: 'Macho',
           category: prev.category === 'Vaca' || prev.category === 'Novilla' ? 'Novillo' : (prev.category || 'Novillo'),
-          productionType: 'Ceba', // Macho siempre por defecto Ceba / Engorde / Levante
+          productionType: prev.productionType === 'Lechería' || prev.productionType === 'Cría' ? 'Ceba' : prev.productionType,
           femaleStatuses: [],
           femaleStatus: 'No aplica',
           reproductiveStatus: 'No aplica',
@@ -591,22 +591,156 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
           isBreedingOnly: false,
         }));
         setShowAdvancedMilk(false);
-      } else {
+      } else if (value === 'Hembra') {
         setFormData(prev => ({
           ...prev,
           sex: 'Hembra',
           category: prev.category === 'Novillo' || prev.category === 'Toro' || prev.category === 'Torete' || prev.category === 'Buey' ? 'Vaca' : (prev.category || 'Vaca'),
           productionType: prev.productionType === 'Ceba' ? 'Cría' : prev.productionType,
-          femaleStatuses: ['Vacía'],
-          femaleStatus: 'Vacía',
-          reproductiveStatus: 'Vacía',
-          milkingStatus: 'Seca',
-          dailyMilkLiters: '',
+          femaleStatuses: prev.femaleStatuses?.length ? prev.femaleStatuses : ['Vacía'],
+          femaleStatus: prev.femaleStatus && prev.femaleStatus !== 'No aplica' ? prev.femaleStatus : 'Vacía',
+          reproductiveStatus: prev.reproductiveStatus && prev.reproductiveStatus !== 'No aplica' ? prev.reproductiveStatus : 'Vacía',
+          milkingStatus: prev.milkingStatus && prev.milkingStatus !== 'No aplica' ? prev.milkingStatus : 'Seca',
+          dailyMilkLiters: prev.dailyMilkLiters || '',
           lactationCycleDays: 305,
+          lactationCycleTotalLiters: prev.lactationCycleTotalLiters || '',
+          lactationCycleAvgLiters: prev.lactationCycleAvgLiters || '',
+          isBreedingOnly: false,
+        }));
+      } else {
+        // En blanco '' (deseleccionado)
+        setFormData(prev => ({
+          ...prev,
+          sex: '',
+          femaleStatuses: [],
+          femaleStatus: 'No aplica',
+          reproductiveStatus: 'No aplica',
+          milkingStatus: 'No aplica',
+          dailyMilkLiters: '',
           lactationCycleTotalLiters: '',
           lactationCycleAvgLiters: '',
           isBreedingOnly: false,
         }));
+        setShowAdvancedMilk(false);
+      }
+
+      if (errors.sex) {
+        setErrors(prev => {
+          const n = { ...prev };
+          delete n.sex;
+          return n;
+        });
+      }
+      return;
+    }
+
+    if (name === 'productionType') {
+      const isFemaleProd = value === 'Lechería' || value === 'Cría';
+      setFormData(prev => {
+        if (isFemaleProd) {
+          // Predeterminar automáticamente en Hembra
+          const isCurrentlyFemale = prev.sex === 'Hembra';
+          const defaultStatuses = value === 'Lechería' ? ['Producción de leche'] : ['Vacía'];
+          const newFemaleStatuses = isCurrentlyFemale && prev.femaleStatuses?.length ? prev.femaleStatuses : defaultStatuses;
+          
+          if (value === 'Lechería') {
+            setShowAdvancedMilk(true);
+          }
+
+          return {
+            ...prev,
+            productionType: value,
+            sex: 'Hembra',
+            category: prev.category === 'Novillo' || prev.category === 'Toro' || prev.category === 'Torete' || prev.category === 'Buey' || !prev.category 
+              ? (value === 'Lechería' ? 'Vaca' : 'Vaca') 
+              : prev.category,
+            femaleStatuses: newFemaleStatuses,
+            femaleStatus: newFemaleStatuses.join(', ') || 'Vacía',
+            reproductiveStatus: isCurrentlyFemale ? prev.reproductiveStatus : 'Vacía',
+            milkingStatus: value === 'Lechería' ? 'En ordeño' : (isCurrentlyFemale ? prev.milkingStatus : 'Seca'),
+          };
+        } else {
+          // Si cambia a Ceba o Doble Propósito: se preserva el sexo si ya estaba elegido, o se mantiene en blanco
+          return {
+            ...prev,
+            productionType: value,
+          };
+        }
+      });
+
+      if (isFemaleProd && errors.sex) {
+        setErrors(prev => {
+          const n = { ...prev };
+          delete n.sex;
+          return n;
+        });
+      }
+      if (errors.productionType) {
+        setErrors(prev => {
+          const n = { ...prev };
+          delete n.productionType;
+          return n;
+        });
+      }
+      return;
+    }
+
+    if (name === 'category') {
+      const femaleCats = ['Vaca', 'Novilla'];
+      const maleCats = ['Novillo', 'Toro', 'Torete', 'Buey'];
+
+      setFormData(prev => {
+        let updatedSex = prev.sex;
+        let updatedProd = prev.productionType;
+        let femaleStatuses = prev.femaleStatuses;
+        let femaleStatus = prev.femaleStatus;
+        let reproductiveStatus = prev.reproductiveStatus;
+        let milkingStatus = prev.milkingStatus;
+
+        if (femaleCats.includes(value)) {
+          updatedSex = 'Hembra';
+          if (!prev.sex || prev.sex === 'Macho') {
+            updatedProd = prev.productionType === 'Ceba' ? 'Cría' : prev.productionType;
+            femaleStatuses = ['Vacía'];
+            femaleStatus = 'Vacía';
+            reproductiveStatus = 'Vacía';
+            milkingStatus = 'Seca';
+          }
+        } else if (maleCats.includes(value)) {
+          updatedSex = 'Macho';
+          updatedProd = prev.productionType === 'Lechería' || prev.productionType === 'Cría' ? 'Ceba' : prev.productionType;
+          femaleStatuses = [];
+          femaleStatus = 'No aplica';
+          reproductiveStatus = 'No aplica';
+          milkingStatus = 'No aplica';
+          setShowAdvancedMilk(false);
+        }
+
+        return {
+          ...prev,
+          category: value,
+          sex: updatedSex,
+          productionType: updatedProd,
+          femaleStatuses,
+          femaleStatus,
+          reproductiveStatus,
+          milkingStatus,
+        };
+      });
+
+      if ((femaleCats.includes(value) || maleCats.includes(value)) && errors.sex) {
+        setErrors(prev => {
+          const n = { ...prev };
+          delete n.sex;
+          return n;
+        });
+      }
+      if (errors.category) {
+        setErrors(prev => {
+          const n = { ...prev };
+          delete n.category;
+          return n;
+        });
       }
       return;
     }
@@ -693,6 +827,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
     if (!formData.tagNumber.trim()) {
       newErrors.tagNumber = 'El número de arete o chapa es obligatorio';
+    }
+
+    if (!formData.sex || !formData.sex.trim()) {
+      newErrors.sex = 'El sexo del animal es obligatorio. Selecciona Macho o Hembra.';
     }
 
     if (!formData.color || !formData.color.trim()) {
@@ -828,7 +966,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     executeSave(formData);
   };
 
-  const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || c.sex === formData.sex);
+  const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || (!formData.sex || c.sex === formData.sex));
 
   return (
     <>
@@ -1025,19 +1163,32 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Sexo <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Sexo <span className="text-rose-500 font-bold">*</span>
+                </label>
+                {errors.sex && (
+                  <span className="text-[10px] text-rose-500 font-bold animate-pulse">
+                    ⚠️ Obligatorio
+                  </span>
+                )}
+              </div>
               <select
                 name="sex"
-                value={formData.sex}
+                value={formData.sex || ''}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
+                  errors.sex 
+                    ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20' 
+                    : 'border-slate-300 dark:border-slate-700'
+                } text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
               >
+                <option value="">-- Seleccionar Sexo * --</option>
                 {SEX_OPTIONS.map(s => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
+              {errors.sex && <p className="text-[11px] text-rose-500 font-bold mt-1">{errors.sex}</p>}
             </div>
 
             <div>
@@ -1136,7 +1287,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Categoría / Etapa ({formData.sex === 'Hembra' ? 'Hembras' : 'Machos'})
+                Categoría / Etapa {formData.sex ? `(${formData.sex === 'Hembra' ? 'Hembras' : 'Machos'})` : ''}
               </label>
               <select
                 name="category"
@@ -1144,6 +1295,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 onChange={handleChange}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
               >
+                {!formData.category && <option value="">-- Seleccionar Categoría --</option>}
                 {availableCategories.map(c => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}

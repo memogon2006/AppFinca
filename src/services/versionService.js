@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.62";
+export const CURRENT_APP_VERSION = "2.14.63";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.63",
+    date: "24/09/2026",
+    title: "🐄 Predeterminado Inteligente de Sexo (Lechería & Cría) & Selección Obligatoria",
+    highlights: [
+      "Predeterminado Automático a Hembra: Al seleccionar 'Lechería Especializada' o 'Cría / Vientres' (o categorías como Vaca o Novilla), el sistema establece automáticamente el sexo en Hembra 🐄 y habilita sus módulos productivos.",
+      "Inicio en Blanco & Validación Obligatoria: Para ganado de Ceba o nuevos registros generales, el campo de sexo inicia en blanco y es estrictamente obligatorio seleccionarlo antes de guardar el animal.",
+      "Sincronización Reactiva en Formularios: Cambio ágil entre categorías zootécnicas y propósitos tanto en registro individual como en lote."
+    ]
+  },
   {
     version: "2.14.62",
     date: "24/09/2026",
