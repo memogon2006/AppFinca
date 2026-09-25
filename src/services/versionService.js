@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.64";
+export const CURRENT_APP_VERSION = "2.14.65";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.65",
+    date: "24/09/2026",
+    title: "🏷️ Hierro / Marca Individual por Animal en Lotes Completos",
+    highlights: [
+      "Columna de Hierro en Tabla de Lote (Punto 3): Ahora puedes asignar marcas de hierro diferentes para cada animal dentro del mismo lote (ej. animal #1 marca 'Y', animal #2 marca 'Z').",
+      "Hierro General del Lote (Opcional): Si defines un hierro en el Paso 1, se aplica automáticamente como sugerido para todos los animales que no tengan marca específica.",
+      "Soporte en Generador de Series: Puedes definir un hierro específico al generar series automáticas de aretes."
+    ]
+  },
   {
     version: "2.14.64",
     date: "24/09/2026",

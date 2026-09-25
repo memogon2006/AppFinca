@@ -102,6 +102,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     count: 5,
     defaultSex: 'Macho',
     defaultColor: 'Castaño',
+    defaultIronBrand: '',
     defaultWeight: '',
   });
   const [showSeriesGenerator, setShowSeriesGenerator] = useState(false);
@@ -254,6 +255,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     const weight = seriesConfig.defaultWeight ? String(seriesConfig.defaultWeight) : '';
     const rowSex = seriesConfig.defaultSex || (batchInfo.sex === 'Hembra' ? 'Hembra' : 'Macho');
 
+    const brand = seriesConfig.defaultIronBrand !== undefined ? seriesConfig.defaultIronBrand.trim() : (batchInfo.ironBrand?.trim() || '');
+
     const newRows = [];
     for (let i = 0; i < count; i++) {
       const num = start + i;
@@ -268,6 +271,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         id: String(Date.now() + i),
         tagNumber: tag,
         sex: rowSex,
+        ironBrand: brand,
         color: color || '',
         entryWeight: weight,
         motherTag: '',
@@ -396,11 +400,13 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         animalNotes = animalNotes ? `${animalNotes} • ${expenseDetail}` : expenseDetail;
       }
 
+      const rowBrand = (r.ironBrand !== undefined && r.ironBrand.trim() !== '') ? r.ironBrand.trim() : (batchInfo.ironBrand?.trim() || '');
+
       return {
         tagNumber: r.tagNumber.trim(),
         name: '',
         color: r.color.trim() || '',
-        ironBrand: batchInfo.ironBrand.trim() || '',
+        ironBrand: rowBrand,
         owner: batchInfo.owner.trim() || 'Hacienda Principal',
         sex: animalSex,
         productionType: batchInfo.productionType,
@@ -432,10 +438,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     // Detectar duplicados frente a animales activos existentes
     const duplicatesFound = [];
     validRows.forEach(r => {
+      const rowBrand = (r.ironBrand !== undefined && r.ironBrand.trim() !== '') ? r.ironBrand.trim() : (batchInfo.ironBrand?.trim() || '');
       const matches = findDuplicateCattle(
         {
           tagNumber: r.tagNumber,
-          ironBrand: batchInfo.ironBrand,
+          ironBrand: rowBrand,
           owner: batchInfo.owner,
         },
         cattleList
@@ -462,7 +469,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         userId: currentUser?.id,
         farmName: currentUser?.farmName,
         tagNumberEntered: dup.candidate?.tagNumber || dup.animal?.tagNumber,
-        ironBrand: batchInfo.ironBrand,
+        ironBrand: dup.candidate?.ironBrand || batchInfo.ironBrand,
         owner: batchInfo.owner,
         matchingAnimals: [dup.animal],
         priority: dup.priority || 'MEDIA',
@@ -730,15 +737,16 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
             </div>
 
             {/* Hierro de Origen */}
+            {/* Hierro de Origen */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Hierro / Marca de Origen
+                Hierro / Marca General (Opcional)
               </label>
               <input
                 type="text"
                 value={batchInfo.ironBrand}
                 onChange={(e) => setBatchInfo(prev => ({ ...prev, ironBrand: e.target.value }))}
-                placeholder="Ej. H-12, Corona, etc."
+                placeholder="Ej. H-12, Corona (Aplica si se deja vacío en tabla)"
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[40px]"
               />
             </div>
@@ -1226,6 +1234,17 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 </div>
 
                 <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hierro Serie:</label>
+                  <input
+                    type="text"
+                    value={seriesConfig.defaultIronBrand !== undefined ? seriesConfig.defaultIronBrand : (batchInfo.ironBrand || '')}
+                    onChange={(e) => setSeriesConfig(prev => ({ ...prev, defaultIronBrand: e.target.value }))}
+                    placeholder={batchInfo.ironBrand || "Ej. H-12, Corona"}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                  />
+                </div>
+
+                <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Color Común:</label>
                   <input
                     type="text"
@@ -1268,12 +1287,13 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
           {/* TABLA DE FILAS DINÁMICAS */}
           <div className="overflow-x-auto max-h-80 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl">
-            <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[680px]">
+            <table className="w-full text-left text-xs text-slate-800 dark:text-slate-200 min-w-[750px]">
               <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 uppercase font-extrabold text-[10px] sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th className="p-3 w-10 text-center">#</th>
-                  <th className="p-3 min-w-[130px]">N° Arete / Chapa <span className="text-rose-500">*</span></th>
-                  <th className="p-3 min-w-[125px]">Sexo <span className="text-rose-500">*</span></th>
+                  <th className="p-3 min-w-[125px]">N° Arete / Chapa <span className="text-rose-500">*</span></th>
+                  <th className="p-3 min-w-[115px]">Sexo <span className="text-rose-500">*</span></th>
+                  <th className="p-3 min-w-[120px]">Hierro / Marca</th>
                   {batchInfo.entryType === 'Nacimiento' && (
                     <th className="p-3 min-w-[145px]">
                       <span className="text-emerald-700 dark:text-emerald-300 font-black flex items-center gap-1">
@@ -1281,19 +1301,20 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                       </span>
                     </th>
                   )}
-                  <th className="p-3 min-w-[130px]">Color / Pelaje <span className="text-rose-500">*</span></th>
-                  <th className="p-3 min-w-[110px]">{batchInfo.entryType === 'Nacimiento' ? 'Peso Nacer (kg)' : 'Peso Entrada (kg)'}</th>
-                  <th className="p-3 text-right min-w-[120px]">{isWorker ? 'Categoría' : 'Costo Calculado (COP)'}</th>
+                  <th className="p-3 min-w-[125px]">Color / Pelaje <span className="text-rose-500">*</span></th>
+                  <th className="p-3 min-w-[105px]">{batchInfo.entryType === 'Nacimiento' ? 'Peso Nacer (kg)' : 'Peso Entrada (kg)'}</th>
+                  <th className="p-3 text-right min-w-[115px]">{isWorker ? 'Categoría' : 'Costo Calculado (COP)'}</th>
                   <th className="p-3 w-10 text-center"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {rows.map((row, idx) => {
                   const rowCost = calculateRowCost(row.entryWeight);
+                  const rowBrand = (row.ironBrand !== undefined && row.ironBrand !== '') ? row.ironBrand : batchInfo.ironBrand;
                   const rowDuplicates = row.tagNumber?.trim() ? findDuplicateCattle(
                     {
                       tagNumber: row.tagNumber,
-                      ironBrand: batchInfo.ironBrand,
+                      ironBrand: rowBrand,
                       owner: batchInfo.owner,
                     },
                     cattleList
@@ -1351,6 +1372,17 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                           <option value="Macho">♂ Macho</option>
                           <option value="Hembra">♀ Hembra</option>
                         </select>
+                      </td>
+
+                      {/* Hierro / Marca Individual */}
+                      <td className="p-2.5 min-w-[110px]">
+                        <input
+                          type="text"
+                          value={row.ironBrand !== undefined ? row.ironBrand : ''}
+                          onChange={(e) => handleRowChange(row.id, 'ironBrand', e.target.value)}
+                          placeholder={batchInfo.ironBrand || "Ej. EP, H-12"}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-emerald-500"
+                        />
                       </td>
 
                       {/* Vaca Madre (Solo en Nacimiento) */}
