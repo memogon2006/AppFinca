@@ -87,6 +87,8 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   });
 
   const [showAdvancedMilk, setShowAdvancedMilk] = useState(false);
+  const [motherMode, setMotherMode] = useState('hato'); // 'hato' | 'libre'
+  const [showGenealogyManual, setShowGenealogyManual] = useState(false);
   const [errors, setErrors] = useState({});
 
   // Lista de posibles vacas madres del hato
@@ -184,8 +186,14 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       if (isFemale && (initialFemaleStatuses.includes('Producción de leche') || animal.lactationCycleTotalLiters || animal.lactationCycleAvgLiters || (animal.dailyMilkLiters && animal.dailyMilkLiters > 0))) {
         setShowAdvancedMilk(true);
       }
+      setMotherMode(animal.motherId ? 'hato' : (animal.motherTag ? 'libre' : (availableMothers.length > 0 ? 'hato' : 'libre')));
+      if (animal.motherTag || animal.fatherTag || animal.entryType === 'Nacimiento') {
+        setShowGenealogyManual(true);
+      }
     } else {
       setGestationDaysInput('');
+      setMotherMode(availableMothers.length > 0 ? 'hato' : 'libre');
+      setShowGenealogyManual(false);
       setFormData({
         tagNumber: '',
         name: '',
@@ -1975,125 +1983,173 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             })}
           </div>
 
-          {/* BLOQUE CONDICIONAL: GENEALOGÍA & PADRES SI ES CRÍA NACIDA EN FINCA */}
-          {formData.entryType === 'Nacimiento' && (
-            <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-3.5 shadow-xs">
+          {/* BLOQUE CONDICIONAL / EXPANDIBLE: GENEALOGÍA & PADRES */}
+          {(formData.entryType === 'Nacimiento' || showGenealogyManual || formData.motherTag || formData.fatherTag) && (
+            <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-emerald-500/40 space-y-3.5 shadow-xs animate-in fade-in duration-200">
               <div className="flex items-center justify-between border-b border-emerald-200 dark:border-emerald-800/60 pb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">🌱</span>
+                  <Dna className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
                     Genealogía: Registro de Vaca Madre y Padre / Reproductor
                   </span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-400/30">
-                  Trazabilidad Activa
+                  {formData.entryType === 'Nacimiento' ? 'Cría Nacida' : 'Genealogía Opcional'}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 
-                {/* 1. SELECCIÓN DE LA MADRE */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <span>🐄 Vaca Madre (Identificación)</span>
+                {/* 1. SELECCIÓN FLEXIBLE DE LA MADRE */}
+                <div className="space-y-2 p-3 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/50">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>🐄 Vaca Madre</span>
+                    </label>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                      {motherMode === 'hato' ? 'Animal en Hato' : 'Nombre Libre (Sin Ficha)'}
                     </span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Madre en hato</span>
-                  </label>
-                  
-                  <div className="space-y-2">
-                    {availableMothers.length > 0 && (
-                      <select
-                        value={formData.motherId || ''}
-                        onChange={(e) => {
-                          const mId = e.target.value;
-                          const found = availableMothers.find(m => String(m.id) === String(mId));
-                          setFormData(prev => ({
-                            ...prev,
-                            motherId: mId,
-                            motherTag: found ? found.tagNumber : prev.motherTag,
-                            owner: found?.owner ? found.owner : prev.owner,
-                            ironBrand: found?.ironBrand ? found.ironBrand : prev.ironBrand,
-                          }));
-                        }}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600/70 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
-                      >
-                        <option value="">-- Seleccionar Vaca Madre del Hato --</option>
-                        {availableMothers.map(m => (
-                          <option key={m.id} value={m.id}>
-                            🐄 #{m.tagNumber} {m.name ? `• ${m.name}` : ''} {m.breed ? `(${m.breed})` : ''} - {m.owner || 'Finca'}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-
-                    <input
-                      type="text"
-                      name="motherTag"
-                      value={formData.motherTag || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const match = availableMothers.find(m => m.tagNumber.toLowerCase() === val.trim().toLowerCase());
-                        setFormData(prev => ({
-                          ...prev,
-                          motherTag: val,
-                          motherId: match ? match.id : ''
-                        }));
-                      }}
-                      placeholder="O escribe chapa/nombre manual de la madre (ej. Vaca #104, Lucero)"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
-                    />
                   </div>
-                </div>
 
-                {/* 2. SELECCIÓN DEL PADRE / REPRODUCTOR */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                    <span>🐂 Padre / Reproductor (Opcional)</span>
-                    <span className="text-[10px] text-slate-500 font-semibold">Toro o I.A.</span>
-                  </label>
-
-                  <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 mb-2">
+                  {/* Selector de Modo de Madre: Hato vs Libre */}
+                  <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'toro' }))}
-                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        (formData.fatherType || 'toro') === 'toro'
-                          ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      onClick={() => setMotherMode('hato')}
+                      className={`flex-1 py-1 px-2 rounded-md text-[11px] font-extrabold transition cursor-pointer ${
+                        motherMode === 'hato'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      🐂 Toro de Finca
+                      🐄 Del Hato ({availableMothers.length})
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'pajilla' }))}
-                      className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
-                        formData.fatherType === 'pajilla'
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      onClick={() => {
+                        setMotherMode('libre');
+                        setFormData(prev => ({ ...prev, motherId: '' }));
+                      }}
+                      className={`flex-1 py-1 px-2 rounded-md text-[11px] font-extrabold transition cursor-pointer ${
+                        motherMode === 'libre'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      🧪 Pajilla / I.A.
+                      ✏️ Nombre / Arete Libre
+                    </button>
+                  </div>
+
+                  {motherMode === 'hato' ? (
+                    <div className="space-y-1">
+                      {availableMothers.length > 0 ? (
+                        <select
+                          value={formData.motherId || ''}
+                          onChange={(e) => {
+                            const mId = e.target.value;
+                            const found = availableMothers.find(m => String(m.id) === String(mId));
+                            setFormData(prev => ({
+                              ...prev,
+                              motherId: mId,
+                              motherTag: found ? found.tagNumber : '',
+                              owner: found?.owner ? found.owner : prev.owner,
+                              ironBrand: found?.ironBrand ? found.ironBrand : prev.ironBrand,
+                            }));
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600/70 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                        >
+                          <option value="">-- Seleccionar Vaca Madre del Hato --</option>
+                          {availableMothers.map(m => (
+                            <option key={m.id} value={m.id}>
+                              🐄 #{m.tagNumber} {m.name ? `• ${m.name}` : ''} {m.breed ? `(${m.breed})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 italic">
+                          No hay vacas activas en la finca. Usa la opción "Nombre / Arete Libre".
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        name="motherTag"
+                        value={formData.motherTag || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, motherTag: e.target.value, motherId: '' }))}
+                        placeholder="Ej. La Mora #105, Vaca Comprada en Subasta"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-semibold text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                      />
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        ℹ️ Se guardará el nombre de la madre para la genealogía de esta cría sin crear un animal nuevo.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. SELECCIÓN FLEXIBLE DEL PADRE / REPRODUCTOR */}
+                <div className="space-y-2 p-3 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/50">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-slate-900 dark:text-white">
+                      <span>🐂 Padre / Reproductor</span>
+                    </label>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                      {formData.fatherType === 'toro' ? 'Toro del Hato' : formData.fatherType === 'libre' ? 'Toro Externo / Libre' : formData.fatherType === 'pajilla' ? 'Pajilla / I.A.' : 'No Registrado'}
+                    </span>
+                  </div>
+
+                  {/* Selector de Modo de Padre: Toro de Finca | Nombre Libre | Pajilla | Desconocido */}
+                  <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'toro' }))}
+                      className={`py-1 px-1 rounded font-extrabold transition cursor-pointer text-center truncate ${
+                        (formData.fatherType || 'toro') === 'toro'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      🐂 Hato
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'libre', fatherId: '' }))}
+                      className={`py-1 px-1 rounded font-extrabold transition cursor-pointer text-center truncate ${
+                        formData.fatherType === 'libre'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      ✏️ Libre
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, fatherType: 'pajilla', fatherId: '' }))}
+                      className={`py-1 px-1 rounded font-extrabold transition cursor-pointer text-center truncate ${
+                        formData.fatherType === 'pajilla'
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      🧪 Pajilla
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, fatherType: 'desconocido', fatherTag: '', fatherId: '' }))}
-                      className={`py-1 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`py-1 px-1 rounded font-extrabold transition cursor-pointer text-center truncate ${
                         formData.fatherType === 'desconocido'
-                          ? 'bg-slate-600 text-white shadow-sm'
+                          ? 'bg-slate-600 text-white shadow-xs'
                           : 'text-slate-500 hover:text-slate-800'
                       }`}
-                      title="Padre Desconocido"
                     >
                       ❓ No reg.
                     </button>
                   </div>
 
-                  {/* Si es Toro de Finca */}
                   {formData.fatherType === 'toro' && (
-                    <div className="space-y-1.5">
-                      {availableBulls.length > 0 && (
+                    <div className="space-y-1">
+                      {availableBulls.length > 0 ? (
                         <select
                           value={formData.fatherId || ''}
                           onChange={(e) => {
@@ -2102,44 +2158,79 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                             setFormData(prev => ({
                               ...prev,
                               fatherId: bId,
-                              fatherTag: found ? found.tagNumber : prev.fatherTag
+                              fatherTag: found ? found.tagNumber : ''
                             }));
                           }}
-                          className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
                         >
-                          <option value="">-- Seleccionar Toro Reproductor del Hato --</option>
+                          <option value="">-- Seleccionar Toro del Hato --</option>
                           {availableBulls.map(b => (
                             <option key={b.id} value={b.id}>
                               🐂 #{b.tagNumber} {b.name ? `• ${b.name}` : ''} {b.breed ? `(${b.breed})` : ''}
                             </option>
                           ))}
                         </select>
+                      ) : (
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 italic">
+                          No hay toros activos en el inventario. Usa la opción "Libre".
+                        </p>
                       )}
+                    </div>
+                  )}
+
+                  {formData.fatherType === 'libre' && (
+                    <div className="space-y-1">
                       <input
                         type="text"
                         name="fatherTag"
                         value={formData.fatherTag || ''}
                         onChange={handleChange}
-                        placeholder="O escribe chapa/nombre del toro (ej. Toro #05, Sansón)"
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
+                        placeholder="Ej. Toro Barcino #12, Toro del Vecino..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 min-h-[40px]"
                       />
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        ℹ️ Nombre del toro sin crear animal en el inventario.
+                      </p>
                     </div>
                   )}
 
-                  {/* Si es Pajilla / I.A. */}
                   {formData.fatherType === 'pajilla' && (
-                    <input
-                      type="text"
-                      name="fatherTag"
-                      value={formData.fatherTag || ''}
-                      onChange={handleChange}
-                      placeholder="Código de pajilla / Nombre del toro donante (ej. Pajilla Gyr 302, Brahman Rojo)"
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-600 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-purple-500 min-h-[40px]"
-                    />
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        name="fatherTag"
+                        value={formData.fatherTag || ''}
+                        onChange={handleChange}
+                        placeholder="Ej. Pajilla Gyr 302, Brahman Rojo 550/2..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-purple-300 dark:border-purple-600 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-purple-500 min-h-[40px]"
+                      />
+                      <p className="text-[10px] text-purple-700 dark:text-purple-300">
+                        🧪 Código del semen / Toro donante I.A.
+                      </p>
+                    </div>
+                  )}
+
+                  {formData.fatherType === 'desconocido' && (
+                    <p className="text-[11px] text-slate-500 italic py-2">
+                      Padre sin identificar para este animal.
+                    </p>
                   )}
                 </div>
 
               </div>
+            </div>
+          )}
+
+          {formData.entryType !== 'Nacimiento' && !showGenealogyManual && !formData.motherTag && !formData.fatherTag && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowGenealogyManual(true)}
+                className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer py-1"
+              >
+                <Dna className="w-3.5 h-3.5" />
+                <span>+ ¿Conoces los padres de este animal? Registrar genealogía / pedigrí (Opcional)</span>
+              </button>
             </div>
           )}
 

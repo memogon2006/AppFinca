@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { 
@@ -33,7 +33,10 @@ import {
   Zap,
   Syringe,
   Dna,
-  Heart
+  Heart,
+  ExternalLink,
+  Award,
+  Sparkles
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -64,15 +67,89 @@ export function CattleDetailModal({
   isDark = false 
 }) {
   const { isWorker } = useAuth();
+  const [ancestorModalAnimal, setAncestorModalAnimal] = useState(null);
   if (!animal) return null;
 
-  const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'financials' | 'sanitary' | 'general'
+  const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'pedigree' | 'financials' | 'sanitary' | 'general'
 
   const allCattle = cattleList.length > 0 ? cattleList : cattle;
   const offspring = (allCattle || []).filter(c => 
     (c.motherTag && animal?.tagNumber && c.motherTag.trim().toLowerCase() === animal.tagNumber.trim().toLowerCase()) ||
     (c.motherId && animal?.id && String(c.motherId) === String(animal.id))
   );
+
+  // 1. Madre del animal (en el hato o externa)
+  const motherAnimal = (allCattle || []).find(c => 
+    (animal.motherId && String(c.id) === String(animal.motherId)) ||
+    (animal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === animal.motherTag.trim().toLowerCase())
+  );
+
+  // 2. Padre del animal (en el hato o externo)
+  const fatherAnimal = (allCattle || []).find(c => 
+    (animal.fatherId && String(c.id) === String(animal.fatherId)) ||
+    (animal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === animal.fatherTag.trim().toLowerCase())
+  );
+
+  // 3. Abuelos Paternos (de fatherAnimal)
+  const paternalGrandfather = fatherAnimal ? (allCattle || []).find(c => 
+    (fatherAnimal.fatherId && String(c.id) === String(fatherAnimal.fatherId)) ||
+    (fatherAnimal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === fatherAnimal.fatherTag.trim().toLowerCase())
+  ) : null;
+  const paternalGrandmother = fatherAnimal ? (allCattle || []).find(c => 
+    (fatherAnimal.motherId && String(c.id) === String(fatherAnimal.motherId)) ||
+    (fatherAnimal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === fatherAnimal.motherTag.trim().toLowerCase())
+  ) : null;
+
+  // 4. Abuelos Maternos (de motherAnimal)
+  const maternalGrandfather = motherAnimal ? (allCattle || []).find(c => 
+    (motherAnimal.fatherId && String(c.id) === String(motherAnimal.fatherId)) ||
+    (motherAnimal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === motherAnimal.fatherTag.trim().toLowerCase())
+  ) : null;
+  const maternalGrandmother = motherAnimal ? (allCattle || []).find(c => 
+    (motherAnimal.motherId && String(c.id) === String(motherAnimal.motherId)) ||
+    (motherAnimal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === motherAnimal.motherTag.trim().toLowerCase())
+  ) : null;
+
+  // Habilidad Materna en hembras con crías
+  const maternalEfficiency = useMemo(() => {
+    if (!offspring || offspring.length === 0) return null;
+    const cowWeight = parseFloat(animal.currentWeight) || parseFloat(animal.entryWeight) || 0;
+    
+    // Crías con peso al destete o pesaje registrado
+    const calvesWithWeights = offspring.map(calf => {
+      const calfWeights = weighings.filter(w => String(w.cattleId) === String(calf.id));
+      const latestWeight = calfWeights.length > 0 ? calfWeights[calfWeights.length - 1].weight : (parseFloat(calf.currentWeight) || parseFloat(calf.entryWeight) || 0);
+      const birthWeight = parseFloat(calf.birthWeight) || parseFloat(calf.entryWeight) || 0;
+      return {
+        calf,
+        birthWeight,
+        latestWeight,
+        weaningRatio: cowWeight > 0 && latestWeight > 0 ? (latestWeight / cowWeight) * 100 : 0
+      };
+    });
+
+    const validRatios = calvesWithWeights.filter(c => c.weaningRatio > 0);
+    const avgRatio = validRatios.length > 0 ? validRatios.reduce((acc, c) => acc + c.weaningRatio, 0) / validRatios.length : 0;
+
+    let rating = 'Regular';
+    let ratingColor = 'text-amber-600 bg-amber-50 border-amber-300 dark:bg-amber-950/50 dark:border-amber-700 dark:text-amber-300';
+    if (avgRatio >= 45) {
+      rating = 'Excelente Vientre ⭐';
+      ratingColor = 'text-emerald-700 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/50 dark:border-emerald-700 dark:text-emerald-300';
+    } else if (avgRatio >= 38) {
+      rating = 'Buena Eficiencia 🟢';
+      ratingColor = 'text-blue-700 bg-blue-50 border-blue-300 dark:bg-blue-950/50 dark:border-blue-700 dark:text-blue-300';
+    }
+
+    return {
+      cowWeight,
+      totalCalves: offspring.length,
+      calvesWithWeights,
+      avgRatio: Math.round(avgRatio * 10) / 10,
+      rating,
+      ratingColor
+    };
+  }, [offspring, animal, weighings]);
 
   const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
@@ -120,6 +197,7 @@ export function CattleDetailModal({
   const uniqueChartData = weightChartData.filter((v, i, a) => a.findIndex(t => t.date === v.date) === i);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -354,6 +432,19 @@ export function CattleDetailModal({
               <span>Reproducción, Cría & Lechería</span>
             </button>
           )}
+
+          {/* PESTAÑA DE GENEALOGÍA & PEDIGRÍ */}
+          <button
+            onClick={() => setActiveTab('pedigree')}
+            className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition min-h-[38px] cursor-pointer ${
+              activeTab === 'pedigree'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'text-amber-800 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-100 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+            }`}
+          >
+            <Dna className="w-4 h-4" />
+            <span>Genealogía & Pedigrí {offspring.length > 0 ? `(${offspring.length} crías)` : ''}</span>
+          </button>
 
           {!isWorker && (
             <button
@@ -1008,6 +1099,258 @@ export function CattleDetailModal({
           </div>
         )}
 
+        {/* PESTAÑA DE GENEALOGÍA & PEDIGRÍ */}
+        {activeTab === 'pedigree' && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            
+            {/* Banner Destacado de Pedigrí */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-300 dark:border-amber-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-600 text-white shadow-md shadow-amber-600/30">
+                  <Dna className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-amber-950 dark:text-amber-100 uppercase tracking-wide">
+                    Árbol Genealógico & Pedigrí (3 Generaciones)
+                  </h4>
+                  <p className="text-xs text-amber-900/80 dark:text-amber-300/90 font-medium">
+                    Trazabilidad de padres del hato, toros externos, inseminación artificial y madres.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                <span className="px-3 py-1 rounded-xl bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-200 font-extrabold text-xs border border-amber-300 dark:border-amber-700">
+                  {motherAnimal ? '🐄 Madre en Hato' : (animal.motherTag ? '🐄 Madre Externa' : 'Madre sin registrar')}
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-white dark:bg-slate-900 text-blue-900 dark:text-blue-200 font-extrabold text-xs border border-blue-300 dark:border-blue-700">
+                  {fatherAnimal ? '🐂 Padre en Hato' : (animal.fatherTag ? (animal.fatherType === 'pajilla' ? '🧪 Pajilla I.A.' : '🐂 Padre Externo') : 'Padre sin registrar')}
+                </span>
+              </div>
+            </div>
+
+            {/* ÁRBOL GENEALÓGICO VISUAL (3 Generaciones) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-4">
+              <h5 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Estructura de Pedigrí: Animal → Padres → Abuelos</span>
+              </h5>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                
+                {/* GENERACIÓN 1: ANIMAL PROPIO */}
+                <div className="p-4 rounded-2xl bg-emerald-600 text-white shadow-lg space-y-2 border-2 border-emerald-400">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                      Generación 1 (Animal)
+                    </span>
+                    <span className="text-xs">{animal.sex === 'Hembra' ? '🐄' : '🐂'}</span>
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-black">#{animal.tagNumber}</h4>
+                    {animal.name && <p className="text-xs font-bold text-emerald-100">{animal.name}</p>}
+                  </div>
+                  <div className="text-xs space-y-0.5 text-emerald-50 pt-1 border-t border-white/20">
+                    <p>• Raza: <strong>{animal.breed || 'Cebú Comercial'}</strong></p>
+                    <p>• Sexo: <strong>{animal.sex}</strong> • Color: <strong>{animal.color || 'N/A'}</strong></p>
+                    <p>• Peso Actual: <strong>{weightMetrics.hasWeight ? `${weightMetrics.currentWeight} kg` : 'Sin pesaje'}</strong></p>
+                  </div>
+                </div>
+
+                {/* GENERACIÓN 2: PADRE Y MADRE */}
+                <div className="space-y-3">
+                  
+                  {/* PADRE */}
+                  <div className={`p-3.5 rounded-xl border-2 transition ${
+                    fatherAnimal 
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-400 dark:border-blue-600 shadow-sm'
+                      : animal.fatherTag
+                        ? 'bg-purple-50 dark:bg-purple-950/30 border-purple-300 dark:border-purple-700'
+                        : 'bg-white dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-700 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-black uppercase text-blue-900 dark:text-blue-200 flex items-center gap-1">
+                        <span>🐂 Padre (Gen 2)</span>
+                      </span>
+                      {fatherAnimal ? (
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-100">
+                          Hato
+                        </span>
+                      ) : animal.fatherTag ? (
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-100">
+                          {animal.fatherType === 'pajilla' ? 'Pajilla' : 'Externo'}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {fatherAnimal ? (
+                      <div>
+                        <p className="text-sm font-black text-slate-900 dark:text-white">#{fatherAnimal.tagNumber} {fatherAnimal.name ? `• ${fatherAnimal.name}` : ''}</p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold">{fatherAnimal.breed || 'Toro Reproductor'} • {fatherAnimal.owner}</p>
+                        <button
+                          type="button"
+                          onClick={() => setAncestorModalAnimal(fatherAnimal)}
+                          className="mt-2 w-full py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-black text-[11px] flex items-center justify-center gap-1 transition cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Ver Ficha Técnica
+                        </button>
+                      </div>
+                    ) : animal.fatherTag ? (
+                      <div>
+                        <p className="text-sm font-black text-slate-900 dark:text-white">{animal.fatherTag}</p>
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
+                          {animal.fatherType === 'pajilla' ? '🧪 Pajilla de Inseminación Artificial' : '🐂 Toro externo / Monta libre'}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic py-1">Padre sin identificar</p>
+                    )}
+                  </div>
+
+                  {/* MADRE */}
+                  <div className={`p-3.5 rounded-xl border-2 transition ${
+                    motherAnimal 
+                      ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 dark:border-rose-600 shadow-sm'
+                      : animal.motherTag
+                        ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700'
+                        : 'bg-white dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-700 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-black uppercase text-rose-900 dark:text-rose-200 flex items-center gap-1">
+                        <span>🐄 Madre (Gen 2)</span>
+                      </span>
+                      {motherAnimal ? (
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-100">
+                          Hato
+                        </span>
+                      ) : animal.motherTag ? (
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100">
+                          Externa
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {motherAnimal ? (
+                      <div>
+                        <p className="text-sm font-black text-slate-900 dark:text-white">#{motherAnimal.tagNumber} {motherAnimal.name ? `• ${motherAnimal.name}` : ''}</p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold">{motherAnimal.breed || 'Vaca Vientre'} • {motherAnimal.owner}</p>
+                        <button
+                          type="button"
+                          onClick={() => setAncestorModalAnimal(motherAnimal)}
+                          className="mt-2 w-full py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[11px] flex items-center justify-center gap-1 transition cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Ver Ficha Técnica
+                        </button>
+                      </div>
+                    ) : animal.motherTag ? (
+                      <div>
+                        <p className="text-sm font-black text-slate-900 dark:text-white">{animal.motherTag}</p>
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
+                          🐄 Vaca madre registrada sin ficha en inventario
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic py-1">Madre sin identificar</p>
+                    )}
+                  </div>
+
+                </div>
+
+                {/* GENERACIÓN 3: ABUELOS */}
+                <div className="space-y-2 text-xs">
+                  
+                  {/* Abuelos Paternos */}
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <span className="text-[9px] font-black uppercase text-slate-500 block mb-1">Linaje Paterno (Abuelos):</span>
+                    <p className="font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                      👴 Abuelo P: {paternalGrandfather ? `#${paternalGrandfather.tagNumber}` : (fatherAnimal?.fatherTag || 'N/A')}
+                    </p>
+                    <p className="font-extrabold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+                      👵 Abuela P: {paternalGrandmother ? `#${paternalGrandmother.tagNumber}` : (fatherAnimal?.motherTag || 'N/A')}
+                    </p>
+                  </div>
+
+                  {/* Abuelos Maternos */}
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <span className="text-[9px] font-black uppercase text-slate-500 block mb-1">Linaje Materno (Abuelos):</span>
+                    <p className="font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                      👴 Abuelo M: {maternalGrandfather ? `#${maternalGrandfather.tagNumber}` : (motherAnimal?.fatherTag || 'N/A')}
+                    </p>
+                    <p className="font-extrabold text-slate-800 dark:text-slate-200 truncate mt-0.5">
+                      👵 Abuela M: {maternalGrandmother ? `#${maternalGrandmother.tagNumber}` : (motherAnimal?.motherTag || 'N/A')}
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+            {/* SECCIÓN ESPECIAL: HISTORIAL DE CRÍAS Y HABILIDAD MATERNA */}
+            {offspring.length > 0 && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-4 shadow-sm">
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
+                  <div>
+                    <h5 className="text-xs sm:text-sm font-black uppercase tracking-wider text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
+                      <Baby className="w-4 h-4 text-purple-600" />
+                      <span>Historial de Partos y Crías del Vientre ({offspring.length})</span>
+                    </h5>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Registro de todas las crías nacidas de esta hembra en el inventario.
+                    </p>
+                  </div>
+
+                  {maternalEfficiency && maternalEfficiency.avgRatio > 0 && (
+                    <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${maternalEfficiency.ratingColor}`}>
+                      <Award className="w-4 h-4 shrink-0" />
+                      <div className="text-xs">
+                        <span className="font-black block">Habilidad Materna: {maternalEfficiency.avgRatio}%</span>
+                        <span className="text-[10px] font-bold">{maternalEfficiency.rating}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tarjetas de Crías */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {offspring.map((calf, idx) => {
+                    const calfWeights = weighings.filter(w => String(w.cattleId) === String(calf.id));
+                    const latestW = calfWeights.length > 0 ? calfWeights[calfWeights.length - 1].weight : (parseFloat(calf.currentWeight) || parseFloat(calf.entryWeight) || 0);
+                    return (
+                      <div
+                        key={calf.id || idx}
+                        onClick={() => setAncestorModalAnimal(calf)}
+                        className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 hover:border-purple-400 transition cursor-pointer space-y-1.5 shadow-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-slate-900 dark:text-white">
+                            #{calf.tagNumber} {calf.name ? `• ${calf.name}` : ''}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${calf.sex === 'Hembra' ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300' : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'}`}>
+                            {calf.sex}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 space-y-0.5">
+                          <p>• Nacimiento: <strong>{formatDate(calf.entryDate)}</strong></p>
+                          <p>• Peso nacer: <strong>{calf.birthWeight || calf.entryWeight || 'N/A'} kg</strong></p>
+                          <p>• Peso actual: <strong className="text-emerald-700 dark:text-emerald-400">{latestW > 0 ? `${latestW} kg` : 'Sin pesaje'}</strong></p>
+                        </div>
+                        <div className="pt-1 border-t border-slate-200 dark:border-slate-700 text-[10px] text-purple-700 dark:text-purple-300 font-bold flex items-center justify-between">
+                          <span>Estado: {calf.status}</span>
+                          <span className="flex items-center gap-0.5">Ver ficha →</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+              </div>
+            )}
+
+          </div>
+        )}
+
         {/* 5. Ficha General & Genealogía */}
         {activeTab === 'general' && (
           <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-4 text-xs font-bold shadow-sm">
@@ -1096,5 +1439,27 @@ export function CattleDetailModal({
 
       </div>
     </Modal>
+
+    {/* Submodal para explorar ancestros o crías */}
+    {ancestorModalAnimal && (
+      <CattleDetailModal
+        isOpen={Boolean(ancestorModalAnimal)}
+        onClose={() => setAncestorModalAnimal(null)}
+        animal={ancestorModalAnimal}
+        cattle={allCattle}
+        cattleList={allCattle}
+        weighings={weighings}
+        vaccinations={vaccinations}
+        onOpenAddWeight={onOpenAddWeight}
+        onOpenSell={onOpenSell}
+        onOpenEdit={onOpenEdit}
+        onOpenDeath={onOpenDeath}
+        onRevertDeath={onRevertDeath}
+        onDelete={onDelete}
+        onDeleteWeight={onDeleteWeight}
+        isDark={isDark}
+      />
+    )}
+    </>
   );
 }

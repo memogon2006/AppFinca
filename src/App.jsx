@@ -12,6 +12,7 @@ import { QuickWeighinView } from './components/Weights/QuickWeighinView';
 import { FemalesView } from './components/Females/FemalesView';
 import { QuickPalpationView } from './components/Females/QuickPalpationView';
 import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
+import { PaddocksView } from './components/Paddocks/PaddocksView';
 import { FinancesView } from './components/Finances/FinancesView';
 import { AccountingView } from './components/Accounting/AccountingView';
 import { ExpenseModal } from './components/Accounting/ExpenseModal';
@@ -390,6 +391,14 @@ export default function App() {
     () => {
       if (!userId && !currentUser?.id) return [];
       return db.farmIncomes ? db.farmIncomes.filter(i => !i.userId || allowedUserIds.has(i.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const paddocks = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.paddocks ? db.paddocks.filter(p => !p.userId || allowedUserIds.has(p.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -1432,6 +1441,135 @@ export default function App() {
     showToast('Ingreso eliminado de la contabilidad 🗑️');
   };
 
+  // ==================== POTREROS & PASTOREO ROTACIONAL ====================
+
+  const handleSavePaddock = async (paddockData) => {
+    if (!userId || !db.paddocks) return;
+    let targetId = paddockData.id;
+    if (paddockData.id) {
+      await db.paddocks.update(paddockData.id, {
+        ...paddockData,
+        userId,
+        updatedAt: new Date().toISOString(),
+      });
+      markPendingSync(userId, paddockData.id);
+      await logActivity({
+        action: 'paddock_updated',
+        description: `Actualizó datos del potrero "${paddockData.name}" (${paddockData.areaHa} ha, Pasto: ${paddockData.pastureType})`,
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+      showToast(`Potrero "${paddockData.name}" actualizado con éxito 🌾`);
+    } else {
+      const newId = 'pad_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      targetId = newId;
+      await db.paddocks.put({
+        ...paddockData,
+        id: newId,
+        userId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      markPendingSync(userId, newId);
+      await logActivity({
+        action: 'paddock_created',
+        description: `Registró nuevo potrero "${paddockData.name}" (${paddockData.areaHa} ha, Pasto: ${paddockData.pastureType})`,
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+      showToast(`Potrero "${paddockData.name}" registrado en el catálogo 🌾`);
+    }
+    cloudPushData(userId);
+    triggerFeedback('single');
+  };
+
+  const handleDeletePaddock = async (paddockId) => {
+    if (!userId || !db.paddocks || !paddockId) return;
+    const target = await db.paddocks.get(paddockId) || await db.paddocks.get(Number(paddockId));
+    if (target) {
+      await db.paddocks.delete(target.id);
+      markPendingDelete(userId, 'paddocks', target.id);
+      await logActivity({
+        action: 'paddock_deleted',
+        description: `Eliminó el potrero "${target.name}"`,
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+      cloudPushData(userId);
+      triggerFeedback('warning');
+      showToast(`Potrero eliminado 🗑️`, 'warning');
+    }
+  };
+
+  const handleRotateBatch = async ({ fromPaddockId, toPaddockId, batchName, date, updateCattleLocation, notes }) => {
+    if (!userId || !db.paddocks) return;
+    const todayStr = date || new Date().toISOString().split('T')[0];
+    const changedPaddockIds = [];
+
+    // 1. Potrero origen pasa a descanso
+    if (fromPaddockId && fromPaddockId !== 'none') {
+      const fromP = await db.paddocks.get(fromPaddockId) || await db.paddocks.get(Number(fromPaddockId));
+      if (fromP) {
+        await db.paddocks.update(fromP.id, {
+          status: 'descanso',
+          currentBatchId: '',
+          currentBatchName: '',
+          exitDate: todayStr,
+          lastRestStartDate: todayStr,
+          updatedAt: new Date().toISOString(),
+        });
+        changedPaddockIds.push(fromP.id);
+      }
+    }
+
+    // 2. Potrero destino pasa a ocupado
+    let destPaddockName = '';
+    if (toPaddockId && toPaddockId !== 'none') {
+      const toP = await db.paddocks.get(toPaddockId) || await db.paddocks.get(Number(toPaddockId));
+      if (toP) {
+        destPaddockName = toP.name;
+        await db.paddocks.update(toP.id, {
+          status: 'ocupado',
+          currentBatchName: batchName || toP.currentBatchName || 'Lote Activo',
+          entryDate: todayStr,
+          exitDate: '',
+          updatedAt: new Date().toISOString(),
+        });
+        changedPaddockIds.push(toP.id);
+      }
+    }
+
+    // 3. Si se marcó actualizar ubicación del ganado, actualizar su potrero
+    const changedCattleIds = [];
+    if (updateCattleLocation && batchName && destPaddockName) {
+      const matched = cattle.filter(c => c.status === 'Activo' && (c.entryBatch === batchName || c.paddock === batchName));
+      for (const animal of matched) {
+        await db.cattle.update(animal.id, {
+          paddock: destPaddockName,
+          updatedAt: new Date().toISOString(),
+        });
+        changedCattleIds.push(animal.id);
+      }
+    }
+
+    markPendingSync(userId, ...changedPaddockIds, ...changedCattleIds);
+
+    await logActivity({
+      action: 'batch_rotated',
+      description: `Rotó el lote "${batchName}" hacia el potrero "${destPaddockName || 'Destino'}"${changedCattleIds.length > 0 ? ` (${changedCattleIds.length} bovinos reubicados)` : ''}${notes ? ` - "${notes}"` : ''}`,
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('batch');
+    showToast(`¡Lote "${batchName}" rotado exitosamente hacia ${destPaddockName}! 🌾🔄`, 'success');
+  };
+
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
@@ -1644,6 +1782,17 @@ export default function App() {
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
             onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
             onOpenCensusModal={() => setIsCensusModalOpen(true)}
+          />
+        )}
+
+        {currentView === 'paddocks' && (
+          <PaddocksView
+            paddocks={paddocks}
+            cattle={cattle}
+            onSavePaddock={handleSavePaddock}
+            onDeletePaddock={handleDeletePaddock}
+            onRotateBatch={handleRotateBatch}
+            isWorker={isWorker}
           />
         )}
 

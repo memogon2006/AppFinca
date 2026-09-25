@@ -131,6 +131,22 @@ db.version(12).stores({
   settings: 'key, userId'
 });
 
+db.version(13).stores({
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, motherId, motherTag, fatherId, fatherTag, fatherType, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  farmExpenses: '++id, date, type, category, concept, amount, isRecurring, recurrenceFrequency, paymentMethod, userId, createdAt',
+  farmIncomes: '++id, date, type, category, concept, amount, paymentMethod, userId, createdAt',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  calendarNotes: '++id, date, title, category, completed, userId, createdAt',
+  paddocks: '++id, name, areaHa, pastureType, waterSource, status, currentBatchId, currentBatchName, entryDate, exitDate, lastRestStartDate, targetRestDays, targetGrazingDays, notes, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Registrar una acción en la bitácora de auditoría
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {
@@ -266,6 +282,9 @@ export async function clearAllData(userId) {
   if (db.palpations) tables.push(db.palpations);
   if (db.activityLogs) tables.push(db.activityLogs);
   if (db.calendarNotes) tables.push(db.calendarNotes);
+  if (db.farmExpenses) tables.push(db.farmExpenses);
+  if (db.farmIncomes) tables.push(db.farmIncomes);
+  if (db.paddocks) tables.push(db.paddocks);
   await db.transaction('rw', tables, async () => {
     await db.cattle.where('userId').equals(userId).delete();
     await db.weighings.where('userId').equals(userId).delete();
@@ -285,7 +304,121 @@ export async function clearAllData(userId) {
     if (db.calendarNotes) {
       await db.calendarNotes.where('userId').equals(userId).delete();
     }
+    if (db.farmExpenses) {
+      await db.farmExpenses.where('userId').equals(userId).delete();
+    }
+    if (db.farmIncomes) {
+      await db.farmIncomes.where('userId').equals(userId).delete();
+    }
+    if (db.paddocks) {
+      await db.paddocks.where('userId').equals(userId).delete();
+    }
   });
+}
+
+// ==================== POTREROS & PASTOREO ROTACIONAL ====================
+
+export async function getPaddocks(userId) {
+  try {
+    if (!db.paddocks) return [];
+    const list = await db.paddocks
+      .filter(p => p.userId === userId || !p.userId)
+      .toArray();
+    return list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', { numeric: true }));
+  } catch (err) {
+    console.warn('Error obteniendo potreros:', err);
+    return [];
+  }
+}
+
+export async function addPaddock(paddockData) {
+  try {
+    if (!db.paddocks) return null;
+    const item = {
+      ...paddockData,
+      areaHa: parseFloat(paddockData.areaHa) || 0,
+      targetRestDays: parseInt(paddockData.targetRestDays) || 30,
+      targetGrazingDays: parseInt(paddockData.targetGrazingDays) || 3,
+      status: paddockData.status || 'descanso',
+      createdAt: paddockData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const id = await db.paddocks.add(item);
+    return { ...item, id };
+  } catch (err) {
+    console.error('Error agregando potrero:', err);
+    throw err;
+  }
+}
+
+export async function updatePaddock(id, updates) {
+  try {
+    if (!db.paddocks) return;
+    const cleanUpdates = {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    if (updates.areaHa !== undefined) cleanUpdates.areaHa = parseFloat(updates.areaHa) || 0;
+    if (updates.targetRestDays !== undefined) cleanUpdates.targetRestDays = parseInt(updates.targetRestDays) || 30;
+    if (updates.targetGrazingDays !== undefined) cleanUpdates.targetGrazingDays = parseInt(updates.targetGrazingDays) || 3;
+    await db.paddocks.update(id, cleanUpdates);
+    return await db.paddocks.get(id);
+  } catch (err) {
+    console.error('Error actualizando potrero:', err);
+    throw err;
+  }
+}
+
+export async function deletePaddock(id) {
+  try {
+    if (!db.paddocks) return;
+    await db.paddocks.delete(id);
+    return true;
+  } catch (err) {
+    console.error('Error eliminando potrero:', err);
+    throw err;
+  }
+}
+
+export async function rotatePaddockBatch({ fromPaddockId, toPaddockId, batchName, date = new Date().toISOString().split('T')[0], userId }) {
+  try {
+    const todayStr = date || new Date().toISOString().split('T')[0];
+    if (fromPaddockId && fromPaddockId !== 'none') {
+      const fromP = await db.paddocks.get(Number(fromPaddockId) || fromPaddockId);
+      if (fromP) {
+        await db.paddocks.update(fromP.id, {
+          status: 'descanso',
+          currentBatchId: '',
+          currentBatchName: '',
+          exitDate: todayStr,
+          lastRestStartDate: todayStr,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+    if (toPaddockId && toPaddockId !== 'none') {
+      const toP = await db.paddocks.get(Number(toPaddockId) || toPaddockId);
+      if (toP) {
+        await db.paddocks.update(toP.id, {
+          status: 'ocupado',
+          currentBatchName: batchName || toP.currentBatchName || 'Lote Activo',
+          entryDate: todayStr,
+          exitDate: '',
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+    await logActivity({
+      action: 'Rotación de Potrero',
+      description: `Lote "${batchName || 'Ganado'}" rotado a nuevo potrero.`,
+      operatorName: 'Rotación de Pastoreo',
+      userId: userId || 'default',
+    });
+    return true;
+  } catch (err) {
+    console.error('Error rotando lote entre potreros:', err);
+    throw err;
+  }
 }
 
 // Cargar datos de prueba para el usuario activo preservando sus datos reales
@@ -451,6 +584,9 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.farmIncomes) {
       farmIncomes = await db.farmIncomes.where('userId').equals(userId).toArray();
     }
+    if (db.paddocks) {
+      paddocks = await db.paddocks.where('userId').equals(userId).toArray();
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
@@ -462,10 +598,11 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.calendarNotes) calendarNotes = await db.calendarNotes.toArray();
     if (db.farmExpenses) farmExpenses = await db.farmExpenses.toArray();
     if (db.farmIncomes) farmIncomes = await db.farmIncomes.toArray();
+    if (db.paddocks) paddocks = await db.paddocks.toArray();
   }
 
   const backup = {
-    version: 6,
+    version: 7,
     appName: "INVENTARIO BOVINO APP",
     exportDate: new Date().toISOString(),
     farmName: userDetails.farmName || "Mi Finca Ganadera",
@@ -481,6 +618,7 @@ export async function exportBackupData(userId, userDetails = {}) {
     audits,
     activityLogs,
     calendarNotes,
+    paddocks: paddocks || [],
   };
 
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
@@ -509,6 +647,7 @@ export async function importBackupData(jsonData, userId) {
     if (db.calendarNotes) tables.push(db.calendarNotes);
     if (db.farmExpenses) tables.push(db.farmExpenses);
     if (db.farmIncomes) tables.push(db.farmIncomes);
+    if (db.paddocks) tables.push(db.paddocks);
 
     await db.transaction('rw', tables, async () => {
       if (userId) {
@@ -522,6 +661,7 @@ export async function importBackupData(jsonData, userId) {
         if (db.calendarNotes) await db.calendarNotes.where('userId').equals(userId).delete();
         if (db.farmExpenses) await db.farmExpenses.where('userId').equals(userId).delete();
         if (db.farmIncomes) await db.farmIncomes.where('userId').equals(userId).delete();
+        if (db.paddocks) await db.paddocks.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
@@ -533,6 +673,7 @@ export async function importBackupData(jsonData, userId) {
         if (db.calendarNotes) await db.calendarNotes.clear();
         if (db.farmExpenses) await db.farmExpenses.clear();
         if (db.farmIncomes) await db.farmIncomes.clear();
+        if (db.paddocks) await db.paddocks.clear();
       }
 
       if (data.cattle?.length) {
@@ -605,6 +746,13 @@ export async function importBackupData(jsonData, userId) {
           userId: userId || n.userId || 'default',
         }));
         await db.calendarNotes.bulkPut(cleanedCN);
+      }
+      if (data.paddocks?.length && db.paddocks) {
+        const cleanedPad = data.paddocks.map(pad => ({
+          ...pad,
+          userId: userId || pad.userId || 'default',
+        }));
+        await db.paddocks.bulkPut(cleanedPad);
       }
     });
 

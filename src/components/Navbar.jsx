@@ -24,7 +24,8 @@ import {
   Stethoscope,
   Users,
   ChevronRight,
-  Wallet
+  Wallet,
+  Leaf
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -88,6 +89,7 @@ export function Navbar({
       badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 border border-teal-300/40',
       items: [
         { id: 'cattle', label: 'Inventario de Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
+        { id: 'paddocks', label: 'Potreros & Pastoreo', icon: Leaf, desc: 'Aforos 1m², descansos y rotación de lotes' },
         { id: 'batches', label: 'Lotes, Ingresos & Comparaciones', icon: Boxes, desc: 'Agrupación y control de potreros' },
         { id: 'weights', label: 'Control de Pesos', icon: Scale, desc: 'Ganancia diaria e historial' },
       ]

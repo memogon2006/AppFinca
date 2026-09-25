@@ -1,10 +1,23 @@
-export const CURRENT_APP_VERSION = "2.14.66";
+export const CURRENT_APP_VERSION = "2.14.67";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.67",
+    date: "24/09/2026",
+    title: "🌾 Potreros & Pastoreo Rotacional + 🧬 Árbol Genealógico Flexible",
+    highlights: [
+      "Módulo de Potreros & Pastoreo Rotacional: Catálogo completo de potreros con hectáreas, tipos de pastos, fuentes de agua, infraestructura y notas.",
+      "Semáforo Inteligente de Descanso y Pastoreo: Monitoreo en vivo de días de reposo vs días meta, y alertas visuales de tiempo de pastoreo con barra de progreso.",
+      "Calculadora de Aforo 1m² & Capacidad de Carga: Estimación zootécnica de forraje verde total, consumo del lote y días sostenibles con 1 toque.",
+      "Rotación Rápida de Lotes: Mueve grupos entre potreros actualizando descansos, ocupaciones y ubicación de los animales en 1 clic.",
+      "Árbol Genealógico Flexible (3 Generaciones): Visualización interactiva de padres y abuelos en la ficha técnica con soporte de padres externos o pajillas I.A. sin requerir registrarlos previamente.",
+      "Habilidad Materna & Eficiencia de Destete: Cálculo zootécnico automático del porcentaje de peso destetado sobre el peso de la vaca reproductora."
+    ]
+  },
   {
     version: "2.14.66",
     date: "24/09/2026",
