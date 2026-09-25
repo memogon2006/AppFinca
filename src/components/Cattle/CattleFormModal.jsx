@@ -868,9 +868,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     }
 
     if (!isWorker) {
-      if (formData.entryType === 'Compañía') {
+      if (formData.entryType !== 'Nacimiento') {
         if (formData.entryPrice === '' || formData.entryPrice === null || Number(formData.entryPrice) <= 0) {
-          newErrors.entryPrice = 'El valor inicial o inversión es obligatorio para ganado en compañía.';
+          newErrors.entryPrice = formData.entryType === 'Compañía' 
+            ? 'El valor inicial o inversión es obligatorio para ganado en compañía.'
+            : 'El valor inicial o precio de compra es obligatorio.';
         }
       } else {
         if (formData.entryPrice !== '' && Number(formData.entryPrice) < 0) {
@@ -2288,9 +2290,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 {formData.entryType === 'Nacimiento' ? 'Peso al Nacer (kg)' : 'Peso Inicial (kg)'} {isWeightRequired ? (
                   <span className="text-rose-500 font-bold">*</span>
                 ) : (
-                  <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">
-                    {formData.entryType === 'Compañía' ? '(Opcional en Compañía)' : '(Opcional en Cría)'}
-                  </span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">(Recomendable)</span>
                 )}
               </label>
               <input
@@ -2302,11 +2302,9 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 placeholder={
                   formData.entryType === 'Nacimiento' 
                     ? "Ej. 32 (Al nacer)" 
-                    : formData.entryType === 'Compañía'
-                      ? "Ej. 280 (Opcional en Compañía)"
-                      : isWeightRequired 
-                        ? "Ej. 280 (Obligatorio)" 
-                        : "Ej. 420 (Opcional)"
+                    : isWeightRequired 
+                      ? "Ej. 280 (Obligatorio)" 
+                      : "Ej. 420 (Recomendable)"
                 }
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-slate-900 dark:text-white font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px] ${
                   errors.entryWeight ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'
@@ -2323,10 +2321,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                       ? 'Costo de Nacimiento ($)' 
                       : formData.entryType === 'Compañía' 
                         ? 'Valor Inicial / Inversión ($)' 
-                        : 'Valor Inicial / Compra ($)'} {formData.entryType === 'Compañía' ? (
-                      <span className="text-rose-500 font-bold">*</span>
+                        : 'Valor Inicial / Compra ($)'} {formData.entryType === 'Nacimiento' ? (
+                      <span className="text-slate-400 dark:text-slate-500 font-normal text-[11px]">(Opcional)</span>
                     ) : (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">(Recomendable)</span>
+                      <span className="text-rose-500 font-bold">*</span>
                     )}
                   </label>
                   <input
@@ -2337,9 +2335,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                     placeholder={
                       formData.entryType === 'Nacimiento' 
                         ? "Ej. 0 (Opcional)" 
-                        : formData.entryType === 'Compañía' 
-                          ? "Ej. 2500000 (Obligatorio)" 
-                          : "Ej. 2500000 (Recomendable)"
+                        : "Ej. 2500000 (Obligatorio)"
                     }
                     className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition min-h-[44px] ${
                       errors.entryPrice ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'

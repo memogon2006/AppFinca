@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.69";
+export const CURRENT_APP_VERSION = "2.14.70";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.70",
+    date: "24/09/2026",
+    title: "💰 Valor Inicial Obligatorio & ⚖️ Peso Inicial con Etiqueta Recomendable",
+    highlights: [
+      "Valor Inicial Obligatorio: Configurado como campo estricto requerido (*) tanto en Compra Comercial como en Ganado en Compañía.",
+      "Peso Inicial Optimizado: Eliminadas leyendas de '(Opcional)' en favor del badge verde estilizado '(Recomendable)' para cría y vientres.",
+      "Validaciones de Registro Robustas: Mensajes claros y específicos si se intenta guardar un animal comprado o en compañía sin su costo o inversión inicial."
+    ]
+  },
   {
     version: "2.14.69",
     date: "24/09/2026",
