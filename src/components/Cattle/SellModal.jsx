@@ -5,12 +5,10 @@ import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, Shield
 import confetti from 'canvas-confetti';
 
 export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-[60]' }) {
-  if (!animal) return null;
-
-  const entryPrice = parseFloat(animal.entryPrice) || 0;
-  const entryWeight = parseFloat(animal.entryWeight) || 0;
-  const currentWeight = parseFloat(animal.currentWeight || entryWeight);
-  const additionalCosts = parseFloat(animal.additionalCosts) || 0;
+  const entryPrice = parseFloat(animal?.entryPrice) || 0;
+  const entryWeight = parseFloat(animal?.entryWeight) || 0;
+  const currentWeight = parseFloat(animal?.currentWeight || entryWeight);
+  const additionalCosts = parseFloat(animal?.additionalCosts) || 0;
 
   const [saleData, setSaleData] = useState({
     exitDate: new Date().toISOString().split('T')[0],
@@ -27,6 +25,8 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
   const [settlementMode, setSettlementMode] = useState('direct');
   const [farmPercent, setFarmPercent] = useState(50);
   const [partnerPercent, setPartnerPercent] = useState(50);
+
+  if (!isOpen || !animal) return null;
 
   const isPartnership = settlementMode === 'partnership';
 

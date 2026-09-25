@@ -5,24 +5,25 @@ import { formatNumber, formatDate, getDaysDifference, calculateWeightMetrics } f
 import { triggerWeighingFeedback } from '../../services/soundService';
 
 export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight, zIndex = 'z-[60]' }) {
-  if (!animal) return null;
-
   const animalWeighs = useMemo(() => {
+    if (!animal) return [];
     return (weighings || []).filter(w => String(w.cattleId) === String(animal.id));
   }, [weighings, animal]);
 
   const metrics = useMemo(() => {
+    if (!animal) return { currentWeight: 0 };
     return calculateWeightMetrics(animal, animalWeighs);
   }, [animal, animalWeighs]);
 
   // Obtener la fecha más reciente registrada (fecha de ingreso o último pesaje)
   const existingDates = useMemo(() => {
+    if (!animal) return [];
     const dates = [animal.entryDate, ...animalWeighs.map(w => w.date)].filter(Boolean);
     return Array.from(new Set(dates)).sort();
   }, [animal, animalWeighs]);
 
-  const lastRecordedDate = existingDates.length > 0 ? existingDates[existingDates.length - 1] : (animal.entryDate || '');
-  const lastRecordedWeight = metrics.currentWeight || parseFloat(animal.entryWeight) || 0;
+  const lastRecordedDate = existingDates.length > 0 ? existingDates[existingDates.length - 1] : (animal?.entryDate || '');
+  const lastRecordedWeight = metrics.currentWeight || parseFloat(animal?.entryWeight) || 0;
 
   const [weightData, setWeightData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -39,6 +40,8 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
       notes: '',
     });
   }, [isOpen, animal]);
+
+  if (!isOpen || !animal) return null;
 
   const newWeightNum = parseFloat(weightData.weight) || 0;
   const gainSinceLast = newWeightNum > 0 ? (newWeightNum - lastRecordedWeight) : 0;

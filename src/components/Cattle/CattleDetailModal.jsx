@@ -58,66 +58,89 @@ export function CattleDetailModal({
   weighings = [], 
   vaccinations = [],
   onOpenAddWeight, 
-  onOpenSell,
-  onOpenEdit,
-  onOpenDeath,
-  onRevertDeath,
-  onDelete,
-  onDeleteWeight,
+  onOpenSell, 
+  onOpenEdit, 
+  onOpenDeath, 
+  onRevertDeath, 
+  onDelete, 
+  onDeleteWeight, 
   isDark = false 
 }) {
   const { isWorker } = useAuth();
   const [ancestorModalAnimal, setAncestorModalAnimal] = useState(null);
-  if (!animal) return null;
-
   const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'pedigree' | 'financials' | 'sanitary' | 'general'
 
   const allCattle = cattleList.length > 0 ? cattleList : cattle;
-  const offspring = (allCattle || []).filter(c => 
-    (c.motherTag && animal?.tagNumber && c.motherTag.trim().toLowerCase() === animal.tagNumber.trim().toLowerCase()) ||
-    (c.motherId && animal?.id && String(c.motherId) === String(animal.id))
-  );
+
+  // Crías de este animal
+  const offspring = useMemo(() => {
+    if (!animal) return [];
+    return (allCattle || []).filter(c => 
+      (c.motherTag && animal?.tagNumber && c.motherTag.trim().toLowerCase() === animal.tagNumber.trim().toLowerCase()) ||
+      (c.motherId && animal?.id && String(c.motherId) === String(animal.id))
+    );
+  }, [allCattle, animal]);
 
   // 1. Madre del animal (en el hato o externa)
-  const motherAnimal = (allCattle || []).find(c => 
-    (animal.motherId && String(c.id) === String(animal.motherId)) ||
-    (animal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === animal.motherTag.trim().toLowerCase())
-  );
+  const motherAnimal = useMemo(() => {
+    if (!animal) return null;
+    return (allCattle || []).find(c => 
+      (animal.motherId && String(c.id) === String(animal.motherId)) ||
+      (animal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === animal.motherTag.trim().toLowerCase())
+    );
+  }, [allCattle, animal]);
 
   // 2. Padre del animal (en el hato o externo)
-  const fatherAnimal = (allCattle || []).find(c => 
-    (animal.fatherId && String(c.id) === String(animal.fatherId)) ||
-    (animal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === animal.fatherTag.trim().toLowerCase())
-  );
+  const fatherAnimal = useMemo(() => {
+    if (!animal) return null;
+    return (allCattle || []).find(c => 
+      (animal.fatherId && String(c.id) === String(animal.fatherId)) ||
+      (animal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === animal.fatherTag.trim().toLowerCase())
+    );
+  }, [allCattle, animal]);
 
   // 3. Abuelos Paternos (de fatherAnimal)
-  const paternalGrandfather = fatherAnimal ? (allCattle || []).find(c => 
-    (fatherAnimal.fatherId && String(c.id) === String(fatherAnimal.fatherId)) ||
-    (fatherAnimal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === fatherAnimal.fatherTag.trim().toLowerCase())
-  ) : null;
-  const paternalGrandmother = fatherAnimal ? (allCattle || []).find(c => 
-    (fatherAnimal.motherId && String(c.id) === String(fatherAnimal.motherId)) ||
-    (fatherAnimal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === fatherAnimal.motherTag.trim().toLowerCase())
-  ) : null;
+  const paternalGrandfather = useMemo(() => {
+    if (!fatherAnimal) return null;
+    return (allCattle || []).find(c => 
+      (fatherAnimal.fatherId && String(c.id) === String(fatherAnimal.fatherId)) ||
+      (fatherAnimal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === fatherAnimal.fatherTag.trim().toLowerCase())
+    );
+  }, [allCattle, fatherAnimal]);
+
+  const paternalGrandmother = useMemo(() => {
+    if (!fatherAnimal) return null;
+    return (allCattle || []).find(c => 
+      (fatherAnimal.motherId && String(c.id) === String(fatherAnimal.motherId)) ||
+      (fatherAnimal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === fatherAnimal.motherTag.trim().toLowerCase())
+    );
+  }, [allCattle, fatherAnimal]);
 
   // 4. Abuelos Maternos (de motherAnimal)
-  const maternalGrandfather = motherAnimal ? (allCattle || []).find(c => 
-    (motherAnimal.fatherId && String(c.id) === String(motherAnimal.fatherId)) ||
-    (motherAnimal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === motherAnimal.fatherTag.trim().toLowerCase())
-  ) : null;
-  const maternalGrandmother = motherAnimal ? (allCattle || []).find(c => 
-    (motherAnimal.motherId && String(c.id) === String(motherAnimal.motherId)) ||
-    (motherAnimal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === motherAnimal.motherTag.trim().toLowerCase())
-  ) : null;
+  const maternalGrandfather = useMemo(() => {
+    if (!motherAnimal) return null;
+    return (allCattle || []).find(c => 
+      (motherAnimal.fatherId && String(c.id) === String(motherAnimal.fatherId)) ||
+      (motherAnimal.fatherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === motherAnimal.fatherTag.trim().toLowerCase())
+    );
+  }, [allCattle, motherAnimal]);
+
+  const maternalGrandmother = useMemo(() => {
+    if (!motherAnimal) return null;
+    return (allCattle || []).find(c => 
+      (motherAnimal.motherId && String(c.id) === String(motherAnimal.motherId)) ||
+      (motherAnimal.motherTag && c.tagNumber && c.tagNumber.trim().toLowerCase() === motherAnimal.motherTag.trim().toLowerCase())
+    );
+  }, [allCattle, motherAnimal]);
 
   // Habilidad Materna en hembras con crías
   const maternalEfficiency = useMemo(() => {
-    if (!offspring || offspring.length === 0) return null;
+    if (!animal || !offspring || offspring.length === 0) return null;
     const cowWeight = parseFloat(animal.currentWeight) || parseFloat(animal.entryWeight) || 0;
     
     // Crías con peso al destete o pesaje registrado
     const calvesWithWeights = offspring.map(calf => {
-      const calfWeights = weighings.filter(w => String(w.cattleId) === String(calf.id));
+      const calfWeights = (weighings || []).filter(w => String(w.cattleId) === String(calf.id));
       const latestWeight = calfWeights.length > 0 ? calfWeights[calfWeights.length - 1].weight : (parseFloat(calf.currentWeight) || parseFloat(calf.entryWeight) || 0);
       const birthWeight = parseFloat(calf.birthWeight) || parseFloat(calf.entryWeight) || 0;
       return {
@@ -151,7 +174,9 @@ export function CattleDetailModal({
     };
   }, [offspring, animal, weighings]);
 
-  const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
+  if (!isOpen || !animal) return null;
+
+  const animalWeighings = (weighings || []).filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
   const financials = calculateFinancials(animal);
   const repro = calculateReproduction(animal);
