@@ -5,7 +5,8 @@ import {
   PRODUCTION_TYPES, 
   CATEGORIES, 
   COMMON_BREEDS,
-  getDynamicFarmColors 
+  getDynamicFarmColors,
+  getDynamicFarmIronBrands
 } from '../../types/cattle';
 import { formatCurrency, formatNumber } from '../../services/calculations';
 import { 
@@ -206,6 +207,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const availableColors = useMemo(() => {
     return getDynamicFarmColors(cattleList, seriesConfig.defaultColor);
   }, [cattleList, seriesConfig.defaultColor]);
+
+  // Lista dinámica de marcas/hierros registrados en la finca
+  const availableIronBrands = useMemo(() => {
+    return getDynamicFarmIronBrands(cattleList, batchInfo.ironBrand);
+  }, [cattleList, batchInfo.ironBrand]);
 
   // Agregar fila individual
   const handleAddRow = () => {
@@ -737,18 +743,43 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
             </div>
 
             {/* Hierro de Origen */}
-            {/* Hierro de Origen */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Hierro / Marca General (Opcional)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Hierro / Marca General (Opcional)
+                </label>
+                {availableIronBrands.length > 0 && (
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                    <Sparkles className="w-3 h-3" /> Sugerencias
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 value={batchInfo.ironBrand}
                 onChange={(e) => setBatchInfo(prev => ({ ...prev, ironBrand: e.target.value }))}
+                list="batch-brands-list"
                 placeholder="Ej. H-12, Corona (Aplica si se deja vacío en tabla)"
                 className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[40px]"
               />
+              {availableIronBrands.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                  {availableIronBrands.map(b => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => setBatchInfo(prev => ({ ...prev, ironBrand: b }))}
+                      className={`text-[10px] px-2 py-0.5 rounded-lg border font-bold transition cursor-pointer ${
+                        batchInfo.ironBrand === b
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
+                      }`}
+                    >
+                      🏷️ {b}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Sexo Común / Predeterminado */}
@@ -1239,9 +1270,28 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                     type="text"
                     value={seriesConfig.defaultIronBrand !== undefined ? seriesConfig.defaultIronBrand : (batchInfo.ironBrand || '')}
                     onChange={(e) => setSeriesConfig(prev => ({ ...prev, defaultIronBrand: e.target.value }))}
+                    list="batch-brands-list"
                     placeholder={batchInfo.ironBrand || "Ej. H-12, Corona"}
                     className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
                   />
+                  {availableIronBrands.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                      {availableIronBrands.map(b => (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => setSeriesConfig(prev => ({ ...prev, defaultIronBrand: b }))}
+                          className={`text-[9px] px-1.5 py-0.5 rounded border transition cursor-pointer ${
+                            (seriesConfig.defaultIronBrand !== undefined ? seriesConfig.defaultIronBrand : batchInfo.ironBrand) === b
+                              ? 'bg-amber-600 text-white border-amber-600 font-bold'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {b}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1380,6 +1430,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                           type="text"
                           value={row.ironBrand !== undefined ? row.ironBrand : ''}
                           onChange={(e) => handleRowChange(row.id, 'ironBrand', e.target.value)}
+                          list="batch-brands-list"
                           placeholder={batchInfo.ironBrand || "Ej. EP, H-12"}
                           className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-emerald-500"
                         />
@@ -1477,6 +1528,12 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
           <datalist id="colors-list-quick">
             {availableColors.map(c => (
               <option key={c} value={c} />
+            ))}
+          </datalist>
+
+          <datalist id="batch-brands-list">
+            {availableIronBrands.map(b => (
+              <option key={b} value={b} />
             ))}
           </datalist>
 

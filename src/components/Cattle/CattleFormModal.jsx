@@ -7,7 +7,8 @@ import {
   FEMALE_STATUSES,
   ENTRY_TYPES, 
   COMMON_BREEDS,
-  getDynamicFarmColors 
+  getDynamicFarmColors,
+  getDynamicFarmIronBrands
 } from '../../types/cattle';
 import { BOVINE_GESTATION_DAYS, formatDate } from '../../services/calculations';
 import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Heart, Dna, Tag, Calendar, Clock, AlertCircle } from 'lucide-react';
@@ -311,6 +312,11 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const availableColors = useMemo(() => {
     return getDynamicFarmColors(cattleList, formData.color);
   }, [cattleList, formData.color]);
+
+  // Lista dinámica de hierros/marcas registrados en finca
+  const availableIronBrands = useMemo(() => {
+    return getDynamicFarmIronBrands(cattleList, formData.ironBrand);
+  }, [cattleList, formData.ironBrand]);
 
   // Validación en tiempo real con Debounce para detectar identificaciones duplicadas
   useEffect(() => {
@@ -1192,14 +1198,22 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Marca de Hierro
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Marca de Hierro
+                </label>
+                {availableIronBrands.length > 0 && (
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                    <Sparkles className="w-3 h-3" /> Finca
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 name="ironBrand"
                 value={formData.ironBrand}
                 onChange={handleChange}
+                list="cattle-form-brands-list"
                 placeholder="Ej. EP-01, RG-★"
                 className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border ${
                   detectedDuplicates.some(d => d.matchType === 'tag_and_brand' || d.matchType === 'tag_brand_and_owner')
@@ -1207,6 +1221,36 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                     : 'border-slate-300 dark:border-slate-700'
                 } text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]`}
               />
+
+              {/* Chips de Marcas/Hierros registrados en la finca */}
+              {availableIronBrands.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                  {availableIronBrands.map((b) => {
+                    const isSelected = formData.ironBrand?.trim().toLowerCase() === b.toLowerCase();
+                    return (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, ironBrand: b }))}
+                        className={`text-[10px] px-2 py-0.5 rounded-lg border font-bold transition cursor-pointer flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-1 ring-emerald-400'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
+                        }`}
+                      >
+                        🏷️ {b}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Datalist para autocompletar en el input */}
+              <datalist id="cattle-form-brands-list">
+                {availableIronBrands.map(b => (
+                  <option key={b} value={b} />
+                ))}
+              </datalist>
             </div>
 
             <div className="sm:col-span-2">

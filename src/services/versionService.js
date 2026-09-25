@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.65";
+export const CURRENT_APP_VERSION = "2.14.66";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.66",
+    date: "24/09/2026",
+    title: "⚡ Sugerencias Rápidas y Chips de Marcas / Hierros Registrados en la Finca",
+    highlights: [
+      "Historial de Marcas de la Finca: El sistema analiza automáticamente todos los hierros registrados en tu hato y los presenta ordenados por frecuencia de uso.",
+      "Chips de Selección a 1 Toque: Selecciona de inmediato cualquier marca de hierro previa tocando su botón directo tanto en el registro individual como en lotes.",
+      "Autocompletado Rápido con Datalist: Escribe y visualiza sugerencias instantáneas en el campo de Hierro General (Paso 1), Generador de Series (Paso 3) y en cada fila de animal individual."
+    ]
+  },
   {
     version: "2.14.65",
     date: "24/09/2026",

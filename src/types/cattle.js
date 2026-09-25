@@ -128,3 +128,33 @@ export function getDynamicFarmColors(cattleList = [], extraColor = '') {
   });
 }
 
+/**
+ * Obtiene la lista dinámica de hierros / marcas registradas en el inventario de la finca,
+ * ordenada por frecuencia de uso y orden alfabético.
+ */
+export function getDynamicFarmIronBrands(cattleList = [], extraBrand = '') {
+  const brandCounts = {};
+
+  (cattleList || []).forEach(c => {
+    const brand = (c.ironBrand || '').trim();
+    if (brand) {
+      brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+    }
+  });
+
+  if (extraBrand && extraBrand.trim()) {
+    const cur = extraBrand.trim();
+    if (!brandCounts[cur]) {
+      brandCounts[cur] = 0.5;
+    }
+  }
+
+  return Object.keys(brandCounts).sort((a, b) => {
+    const countA = brandCounts[a] || 0;
+    const countB = brandCounts[b] || 0;
+    if (countB !== countA) return countB - countA;
+    return a.localeCompare(b, 'es', { sensitivity: 'base' });
+  });
+}
+
+
