@@ -19,6 +19,7 @@ import {
 import { db } from '../services/db';
 import { cloudFindUser, syncCloudAndLocal, cloudIsWorkerDeleted } from '../services/cloudSync';
 import { triggerFeedback } from '../services/soundService';
+import { setActiveModules } from '../services/moduleService';
 
 const AuthContext = createContext();
 
@@ -104,13 +105,23 @@ export function AuthProvider({ children }) {
 
           let farmName = remoteUser.farmName || session.farmName;
           const ownerEmail = remoteUser.ownerEmail || session.ownerEmail;
+          let activeModules = remoteUser.activeModules || session.activeModules || null;
+          
           if ((remoteUser.role === 'worker' || session.role === 'worker') && ownerEmail) {
             try {
               const ownerRecord = await cloudFindUser(ownerEmail);
-              if (ownerRecord && ownerRecord.farmName) {
-                farmName = ownerRecord.farmName;
+              if (ownerRecord) {
+                if (ownerRecord.farmName) {
+                  farmName = ownerRecord.farmName;
+                }
+                if (ownerRecord.activeModules) {
+                  activeModules = ownerRecord.activeModules;
+                  setActiveModules(ownerRecord.activeModules, ownerRecord.id);
+                }
               }
             } catch (e) {}
+          } else if (remoteUser.role !== 'worker' && remoteUser.activeModules) {
+            setActiveModules(remoteUser.activeModules, remoteUser.id);
           }
 
           const merged = {
@@ -122,6 +133,7 @@ export function AuthProvider({ children }) {
             role: remoteUser.role || session.role || 'admin',
             ownerId: remoteUser.ownerId || session.ownerId || null,
             ownerEmail: ownerEmail || null,
+            activeModules: activeModules || session.activeModules || null,
             isActive: remoteUser.isActive !== false,
           };
           localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));

@@ -531,8 +531,40 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
                     <strong>Patrón / Propietario:</strong> {currentUser?.ownerEmail || 'Administrador del Predio'}
                   </p>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400 pl-5">
-                    Tienes acceso para registrar pesajes en báscula, partos, palpaciones y vacunas. Los balances de compra, venta y utilidades son confidenciales del dueño.
+                    Tienes acceso para registrar pesajes en báscula, partos, palpaciones y vacunas según los módulos activos de la finca.
                   </p>
+                </div>
+
+                {/* Módulos Habilitados para el Vaquero por el Administrador */}
+                <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-amber-200 dark:border-amber-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Módulos de Campo Activos para esta Finca:</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold">Configurado por el Patrón</span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10.5px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                      📋 Inventario Físico
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10.5px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                      🌿 Potreros & Pastoreo
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10.5px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                      💉 Sanidad & Vacunación
+                    </span>
+                    {MODULE_CATALOG.filter(m => checkModuleActive(m.key)).map(m => (
+                      <span 
+                        key={m.key} 
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10.5px] font-bold bg-amber-100/90 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-xs"
+                      >
+                        <span>{m.emoji}</span>
+                        <span>{m.name}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Botones de Acción Inmediata para el Vaquero / Mayordomo */}

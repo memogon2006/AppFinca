@@ -108,6 +108,9 @@ export function Navbar({
       badgeClass: 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 border border-purple-300/40',
       items: [
         { id: 'paddocks', label: 'Potreros & Pastoreo', icon: Leaf, desc: 'Aforos 1m², descansos y rotación de lotes' },
+        ...(isModuleActive(MODULE_KEYS.REPRODUCTION) || isModuleActive(MODULE_KEYS.DAIRY) ? [
+          { id: 'females', label: 'Hembras & Reproducción', icon: Stethoscope, desc: 'Gestación, partos, secado y ordeño' }
+        ] : []),
         ...(isModuleActive(MODULE_KEYS.REPRODUCTION) ? [
           { id: 'palpation', label: 'Palpación & Reprod.', icon: Stethoscope, desc: 'Preñeces, tactos y estados' }
         ] : []),

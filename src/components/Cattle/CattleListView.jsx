@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
+import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
 
 export function CattleListView({ 
   cattle = [], 
@@ -60,6 +61,7 @@ export function CattleListView({
   onOpenVaccinationModal
 }) {
   const { isWorker } = useAuth();
+  const { isModuleActive } = useActiveModules();
   const handleOpenNewAnimalSafe = onOpenNewAnimal || onOpenNew;
   const handleDeleteAnimalSafe = onDeleteAnimal || onDelete;
   const handleAddWeightSafe = onOpenAddWeight || onAddWeight;
@@ -368,7 +370,7 @@ export function CattleListView({
           </div>
 
           {/* Botón Ingresar Lote Completo */}
-          {onOpenBatchEntry && (
+          {isModuleActive(MODULE_KEYS.CEBA_BATCHES) && onOpenBatchEntry && (
             <button
               onClick={onOpenBatchEntry}
               className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-teal-600/20 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"

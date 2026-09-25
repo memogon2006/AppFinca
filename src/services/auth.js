@@ -14,6 +14,7 @@ import {
   cloudIsWorkerDeleted
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
+import { setActiveModules, getActiveModules } from './moduleService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
 const LOCKOUT_PREFIX = 'ganado_login_lockout_';
@@ -364,6 +365,19 @@ export async function loginUser({ email, password }) {
     clearLoginLockout(cleanInput);
     if (localUser.email) clearLoginLockout(localUser.email);
 
+    // Si es trabajador, cargar y aplicar los módulos activos de la finca del patrón
+    if (localUser.role === 'worker') {
+      const ownerId = localUser.ownerId || localUser.id;
+      const owner = allUsers.find(u => u.id === ownerId || u.email === localUser.ownerEmail);
+      if (owner && owner.activeModules) {
+        setActiveModules(owner.activeModules, ownerId);
+      } else if (localUser.activeModules) {
+        setActiveModules(localUser.activeModules, ownerId);
+      }
+    } else if (localUser.activeModules) {
+      setActiveModules(localUser.activeModules, localUser.id);
+    }
+
     const sessionUser = {
       id: localUser.id,
       name: localUser.name,
@@ -373,6 +387,7 @@ export async function loginUser({ email, password }) {
       role: localUser.role || 'admin',
       ownerId: localUser.ownerId || null,
       ownerEmail: localUser.ownerEmail || null,
+      activeModules: localUser.activeModules || getActiveModules(),
       isActive: localUser.isActive !== false,
       createdAt: localUser.createdAt,
       mustChangePassword: !!localUser.mustChangePassword,
@@ -447,6 +462,18 @@ export async function loginUser({ email, password }) {
   clearLoginLockout(cleanInput);
   if (user.email) clearLoginLockout(user.email);
 
+  // Reconciliar módulos activos de la finca desde la nube para trabajadores o administradores
+  if (user.role === 'worker' && user.ownerEmail) {
+    try {
+      const ownerRecord = await cloudFindUser(user.ownerEmail);
+      if (ownerRecord && ownerRecord.activeModules) {
+        setActiveModules(ownerRecord.activeModules, ownerRecord.id || user.ownerId);
+      }
+    } catch (e) {}
+  } else if (user.role !== 'worker' && user.activeModules) {
+    setActiveModules(user.activeModules, user.id);
+  }
+
   const sessionUser = {
     id: user.id,
     name: user.name,
@@ -456,6 +483,7 @@ export async function loginUser({ email, password }) {
     role: user.role || 'admin',
     ownerId: user.ownerId || null,
     ownerEmail: user.ownerEmail || null,
+    activeModules: user.activeModules || getActiveModules(),
     isActive: user.isActive !== false,
     createdAt: user.createdAt,
     mustChangePassword: !!user.mustChangePassword,

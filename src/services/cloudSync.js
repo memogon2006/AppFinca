@@ -1,4 +1,5 @@
 import { db } from './db';
+import { getActiveModules, setActiveModules } from './moduleService';
 
 const FIREBASE_URL = 'https://ganadera-plataforma-default-rtdb.firebaseio.com';
 
@@ -42,6 +43,11 @@ export async function cloudSaveUser(user) {
     name: user.name,
     farmName: user.farmName,
     email: cleanEmail,
+    role: user.role || 'admin',
+    ownerId: user.ownerId || null,
+    ownerEmail: user.ownerEmail || null,
+    activeModules: user.activeModules || getActiveModules(),
+    farmPreset: user.farmPreset || null,
     passwordHash: user.passwordHash,
     mustChangePassword: !!user.mustChangePassword,
     createdAt: user.createdAt || new Date().toISOString(),
@@ -334,8 +340,10 @@ export async function cloudPushData(userId) {
     const activityLogs = db.activityLogs ? await db.activityLogs.filter(isTarget).toArray() : [];
     const calendarNotes = db.calendarNotes ? await db.calendarNotes.filter(isTarget).toArray() : [];
 
+    const activeModules = getActiveModules();
     const payload = {
       userId,
+      activeModules,
       cattle,
       weighings,
       expenses,
@@ -467,6 +475,15 @@ export async function cloudPullData(userId) {
     if (res && res.ok) {
       const remoteData = await res.json();
       if (remoteData && typeof remoteData === 'object') {
+        // Reconciliar módulos activos de la finca
+        if (remoteData.activeModules && typeof remoteData.activeModules === 'object') {
+          try {
+            setActiveModules(remoteData.activeModules, userId);
+          } catch (modErr) {
+            console.warn('Error applying pulled active modules:', modErr);
+          }
+        }
+
         const collections = [
           'cattle',
           'weighings',

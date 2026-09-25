@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.14.72";
+export const CURRENT_APP_VERSION = "2.14.73";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.73",
+    date: "24/09/2026",
+    title: "🤝 Propagación y Herencia Automática de Módulos para Vaqueros y Trabajadores",
+    highlights: [
+      "Sincronización Estricta Finca-Trabajador: Las cuentas de vaqueros y mayordomos ahora heredan exactamente los módulos activos configurados por el administrador de la finca.",
+      "Vistas Filtradas para Campo: Si la finca está orientada a Lechería, el trabajador únicamente verá módulos de Lechería, Ordeño, Sanidad e Inventario.",
+      "Panel Informativo de Módulos Asignados: La ficha del trabajador muestra con claridad las herramientas habilitadas para su operación.",
+      "Protección de Rutas en Nube y Offline: El sistema bloquea accesos directos o menús a módulos inactivos tanto en línea como fuera de línea."
+    ]
+  },
   {
     version: "2.14.72",
     date: "24/09/2026",

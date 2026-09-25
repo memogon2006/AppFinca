@@ -1,5 +1,5 @@
 {
-  "version": "2.14.72",
-  "buildTime": 1790313000000,
-  "description": "⚡ Estabilidad de Módulos & Corrección de Renderizado Inicial"
+  "version": "2.14.73",
+  "buildTime": 1790314000000,
+  "description": "🤝 Propagación y Herencia Automática de Módulos para Vaqueros y Trabajadores"
 }

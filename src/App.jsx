@@ -39,6 +39,7 @@ import { calculateWeightMetrics } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
+import { useActiveModules, MODULE_KEYS } from './services/moduleService';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -239,12 +240,23 @@ export default function App() {
 
   const userId = effectiveUserId || currentUser?.id;
 
-  // Redirigir a vista permitida si un trabajador intenta acceder a finanzas
+  const { isModuleActive } = useActiveModules();
+
+  // Redirigir a vista permitida si un trabajador o usuario intenta acceder a un módulo inactivo
   useEffect(() => {
-    if (isWorker && currentView === 'finances') {
+    if (isWorker && (currentView === 'finances' || currentView === 'accounting')) {
       setCurrentView('dashboard');
     }
-  }, [isWorker, currentView]);
+    if (currentView === 'batches' && !isModuleActive(MODULE_KEYS.CEBA_BATCHES)) {
+      setCurrentView('dashboard');
+    }
+    if ((currentView === 'weights' || currentView === 'quickWeigh') && !isModuleActive(MODULE_KEYS.WEIGHTS)) {
+      setCurrentView('dashboard');
+    }
+    if ((currentView === 'palpation' || currentView === 'females') && !isModuleActive(MODULE_KEYS.REPRODUCTION) && !isModuleActive(MODULE_KEYS.DAIRY)) {
+      setCurrentView('dashboard');
+    }
+  }, [isWorker, currentView, isModuleActive]);
 
   // Sincronización automática con la nube multi-dispositivo en tiempo real
   useEffect(() => {

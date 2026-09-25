@@ -155,10 +155,34 @@ export const DEFAULT_MODULES = {
 };
 
 /**
- * Obtiene el mapa actual de módulos activos
+ * Obtiene el ID efectivo de la finca (el ID del dueño si es trabajador, o el ID propio si es admin)
+ */
+export function getEffectiveFarmId() {
+  try {
+    const raw = localStorage.getItem('ganado_current_user_session');
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    if (!user) return null;
+    return user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Obtiene el mapa actual de módulos activos para la finca en sesión
  */
 export function getActiveModules() {
   try {
+    const farmId = getEffectiveFarmId();
+    if (farmId) {
+      const scopedRaw = localStorage.getItem(`${STORAGE_KEY}_${farmId}`);
+      if (scopedRaw) {
+        const parsedScoped = JSON.parse(scopedRaw);
+        return { ...DEFAULT_MODULES, ...parsedScoped };
+      }
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_MODULES };
     const parsed = JSON.parse(raw);
@@ -169,12 +193,31 @@ export function getActiveModules() {
 }
 
 /**
- * Guarda y emite la actualización de módulos activos
+ * Guarda y emite la actualización de módulos activos para la finca
  */
-export function setActiveModules(modules) {
+export function setActiveModules(modules, customFarmId = null) {
   try {
+    const farmId = customFarmId || getEffectiveFarmId();
     const updated = { ...getActiveModules(), ...modules };
+    
+    // Guardar en clave global y clave con ámbito de finca
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    if (farmId) {
+      localStorage.setItem(`${STORAGE_KEY}_${farmId}`, JSON.stringify(updated));
+    }
+
+    // Actualizar sesión en memoria local si corresponde
+    try {
+      const rawUser = localStorage.getItem('ganado_current_user_session');
+      if (rawUser) {
+        const user = JSON.parse(rawUser);
+        if (user && user.role !== 'worker') {
+          user.activeModules = updated;
+          localStorage.setItem('ganado_current_user_session', JSON.stringify(user));
+        }
+      }
+    } catch (uErr) {}
+
     window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: updated }));
     return updated;
   } catch (e) {
@@ -201,7 +244,7 @@ export function applyFarmPreset(presetKey) {
 }
 
 /**
- * Verifica si un módulo específico está activo
+ * Verifica si un módulo específico está activo en la finca actual
  */
 export function isModuleActive(moduleKey) {
   const modules = getActiveModules();
@@ -221,7 +264,7 @@ export function useActiveModules() {
 
     window.addEventListener(EVENT_NAME, handleUpdate);
     window.addEventListener('storage', (e) => {
-      if (e.key === STORAGE_KEY) {
+      if (e.key === STORAGE_KEY || (e.key && e.key.startsWith(STORAGE_KEY))) {
         setModules(getActiveModules());
       }
     });

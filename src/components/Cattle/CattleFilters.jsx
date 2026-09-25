@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Search, X, RefreshCw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { PRODUCTION_TYPES } from '../../types/cattle';
 import { useAuth } from '../../context/AuthContext';
+import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
 
 export function CattleFilters({ filters, setFilters, owners = [], breeds = [], entryBatches = [] }) {
   const { isWorker } = useAuth();
+  const { isModuleActive } = useActiveModules();
   const [showDateFilters, setShowDateFilters] = useState(false);
 
   const handleClear = () => {
@@ -85,7 +87,7 @@ export function CattleFilters({ filters, setFilters, owners = [], breeds = [], e
       </div>
 
       {/* Píldoras de Filtro Rápido de Rendimiento y Meta 480 kg */}
-      {filters.status === 'Activo' && (
+      {filters.status === 'Activo' && (isModuleActive(MODULE_KEYS.WEIGHTS) || isModuleActive(MODULE_KEYS.CEBA_BATCHES)) && (
         <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs">
           <span className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1">
             <span>🎯 Filtros de Ceba & GDP:</span>
@@ -300,16 +302,18 @@ export function CattleFilters({ filters, setFilters, owners = [], breeds = [], e
         </select>
 
         {/* Estado Reproductivo */}
-        <select
-          value={filters.reproductiveStatus}
-          onChange={(e) => setFilters(prev => ({ ...prev, reproductiveStatus: e.target.value }))}
-          className="px-2.5 sm:px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 min-h-[40px]"
-        >
-          <option value="">Cualquier Reprod.</option>
-          <option value="Preñada">🤰 Preñadas</option>
-          <option value="Vacía">⭕ Vacías</option>
-          <option value="En Servicio">⏳ En Servicio</option>
-        </select>
+        {isModuleActive(MODULE_KEYS.REPRODUCTION) && (
+          <select
+            value={filters.reproductiveStatus}
+            onChange={(e) => setFilters(prev => ({ ...prev, reproductiveStatus: e.target.value }))}
+            className="px-2.5 sm:px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 min-h-[40px]"
+          >
+            <option value="">Cualquier Reprod.</option>
+            <option value="Preñada">🤰 Preñadas</option>
+            <option value="Vacía">⭕ Vacías</option>
+            <option value="En Servicio">⏳ En Servicio</option>
+          </select>
+        )}
 
         {/* Dueño / Propietario */}
         <select
@@ -340,15 +344,17 @@ export function CattleFilters({ filters, setFilters, owners = [], breeds = [], e
 
       {/* Checkbox solo de cría y limpiar filtros */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-        <label className="flex items-center gap-2 cursor-pointer text-purple-700 dark:text-purple-300 font-medium py-1">
-          <input
-            type="checkbox"
-            checked={filters.isBreedingOnly}
-            onChange={(e) => setFilters(prev => ({ ...prev, isBreedingOnly: e.target.checked }))}
-            className="w-4 h-4 rounded border-purple-400 text-purple-600 focus:ring-purple-500"
-          />
-          <span>Mostrar solo hembras de cría / vientres reproductoras</span>
-        </label>
+        {isModuleActive(MODULE_KEYS.REPRODUCTION) ? (
+          <label className="flex items-center gap-2 cursor-pointer text-purple-700 dark:text-purple-300 font-medium py-1">
+            <input
+              type="checkbox"
+              checked={filters.isBreedingOnly}
+              onChange={(e) => setFilters(prev => ({ ...prev, isBreedingOnly: e.target.checked }))}
+              className="w-4 h-4 rounded border-purple-400 text-purple-600 focus:ring-purple-500"
+            />
+            <span>Mostrar solo hembras de cría / vientres reproductoras</span>
+          </label>
+        ) : <div />}
 
         {isFiltered && (
           <button
