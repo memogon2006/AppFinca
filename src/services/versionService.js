@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.68";
+export const CURRENT_APP_VERSION = "2.14.69";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.69",
+    date: "24/09/2026",
+    title: "🧹 Depuración de Términos: Eliminación total de 'Pedigrí' en Favor de 'Genealogía'",
+    highlights: [
+      "Eliminación Integral de Textos de 'Pedigrí': Ajustadas todas las vistas, fichas técnicas, modales de ingreso y políticas.",
+      "Consistencia con Vocabulario de Campo: Se estandariza todo el sistema bajo 'Genealogía', 'Árbol Genealógico' y 'Linaje de Crías'.",
+      "Formularios Optimizados: Depurados botones y etiquetas obsoletas de ingreso de padres y madres."
+    ]
+  },
   {
     version: "2.14.68",
     date: "24/09/2026",

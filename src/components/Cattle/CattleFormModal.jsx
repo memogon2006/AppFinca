@@ -2268,19 +2268,6 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
             </div>
           )}
 
-          {formData.entryType !== 'Nacimiento' && !showGenealogyManual && !formData.motherTag && !formData.fatherTag && (
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowGenealogyManual(true)}
-                className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer py-1"
-              >
-                <Dna className="w-3.5 h-3.5" />
-                <span>+ ¿Conoces los padres de este animal? Registrar genealogía / pedigrí (Opcional)</span>
-              </button>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">

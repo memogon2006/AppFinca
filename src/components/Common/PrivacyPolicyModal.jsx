@@ -275,7 +275,7 @@ export function PrivacyPolicyModal({
                     <span>4. Propiedad Absoluta e Inalienable de la Información Ganadera</span>
                   </div>
                   <p className="font-semibold text-emerald-950 dark:text-emerald-200">
-                    Usted como ganadero o propietario es el <strong>único y absoluto titular de todos los datos pecuarios</strong> ingresados (números de chapas, pesos, pedigrí, registros reproductivos, inventarios, compras, ventas y balances económicos).
+                    Usted como ganadero o propietario es el <strong>único y absoluto titular de todos los datos pecuarios</strong> ingresados (números de chapas, pesos, genealogía, registros reproductivos, inventarios, compras, ventas y balances económicos).
                   </p>
                   <p className="text-xs">
                     INVENTARIO BOVINO APP no ostenta ningún derecho de propiedad sobre su ganado ni sobre su información comercial, y garantiza que jamás comercializará, venderá ni compartirá sus registros con terceros.

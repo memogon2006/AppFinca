@@ -68,7 +68,7 @@ export function CattleDetailModal({
 }) {
   const { isWorker } = useAuth();
   const [ancestorModalAnimal, setAncestorModalAnimal] = useState(null);
-  const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'pedigree' | 'financials' | 'sanitary' | 'general'
+  const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'genealogy' | 'financials' | 'sanitary' | 'general'
 
   const allCattle = cattleList.length > 0 ? cattleList : cattle;
 
@@ -458,17 +458,17 @@ export function CattleDetailModal({
             </button>
           )}
 
-          {/* PESTAÑA DE GENEALOGÍA & PEDIGRÍ */}
+          {/* PESTAÑA DE GENEALOGÍA */}
           <button
-            onClick={() => setActiveTab('pedigree')}
+            onClick={() => setActiveTab('genealogy')}
             className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition min-h-[38px] cursor-pointer ${
-              activeTab === 'pedigree'
+              activeTab === 'genealogy'
                 ? 'bg-amber-600 text-white shadow-md'
                 : 'text-amber-800 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-100 hover:bg-amber-50 dark:hover:bg-amber-950/40'
             }`}
           >
             <Dna className="w-4 h-4" />
-            <span>Genealogía & Pedigrí {offspring.length > 0 ? `(${offspring.length} crías)` : ''}</span>
+            <span>Genealogía {offspring.length > 0 ? `(${offspring.length} crías)` : ''}</span>
           </button>
 
           {!isWorker && (
@@ -1124,11 +1124,11 @@ export function CattleDetailModal({
           </div>
         )}
 
-        {/* PESTAÑA DE GENEALOGÍA & PEDIGRÍ */}
-        {activeTab === 'pedigree' && (
+        {/* PESTAÑA DE GENEALOGÍA */}
+        {activeTab === 'genealogy' && (
           <div className="space-y-5 animate-in fade-in duration-200">
             
-            {/* Banner Destacado de Pedigrí */}
+            {/* Banner Destacado de Genealogía */}
             <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-300 dark:border-amber-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-amber-600 text-white shadow-md shadow-amber-600/30">
@@ -1136,7 +1136,7 @@ export function CattleDetailModal({
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-amber-950 dark:text-amber-100 uppercase tracking-wide">
-                    Árbol Genealógico & Pedigrí (3 Generaciones)
+                    Árbol Genealógico (3 Generaciones)
                   </h4>
                   <p className="text-xs text-amber-900/80 dark:text-amber-300/90 font-medium">
                     Trazabilidad de padres del hato, toros externos, inseminación artificial y madres.
@@ -1158,7 +1158,7 @@ export function CattleDetailModal({
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-4">
               <h5 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Estructura de Pedigrí: Animal → Padres → Abuelos</span>
+                <span>Estructura Genealógica: Animal → Padres → Abuelos</span>
               </h5>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
