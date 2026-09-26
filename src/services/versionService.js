@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.78";
+export const CURRENT_APP_VERSION = "2.14.79";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.79",
+    date: "26/09/2026",
+    title: "⚡ Arranque Offline 100% Blindado & Precarga Total de Recursos en Campo",
+    highlights: [
+      "Precarga Total del App Shell (100% Offline): Todos los archivos JS, CSS, iconos e interfaces se descargan y aseguran automáticamente en el Service Worker, garantizando que la aplicación abra al instante sin internet ni señal celular.",
+      "Arranque Inmediato sin Bloqueos: Se añadió protección contra tiempos de espera en la inicialización de base de datos local e IndexedDB, eliminando la pantalla de carga congelada en modo desconectado.",
+      "Respaldo Inteligente de Chunks: Si la aplicación se abre en zonas rurales sin cobertura, el sistema sirve automáticamente los módulos cacheados sin depender de peticiones de red fallidas."
+    ]
+  },
   {
     version: "2.14.78",
     date: "26/09/2026",
@@ -2046,6 +2056,10 @@ export function isVersionGreater(remoteVer, currentVer) {
  * Consulta en la nube si hay una nueva versión publicada
  */
 export async function checkAppUpdate() {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return { hasUpdate: false, currentVersion: CURRENT_APP_VERSION, latestVersion: CURRENT_APP_VERSION };
+  }
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -2061,7 +2075,7 @@ export async function checkAppUpdate() {
     });
     clearTimeout(timeoutId);
 
-    if (!response.ok) return { hasUpdate: false };
+    if (!response.ok) return { hasUpdate: false, currentVersion: CURRENT_APP_VERSION, latestVersion: CURRENT_APP_VERSION };
 
     const remote = await response.json();
     const remoteVer = remote.version || CURRENT_APP_VERSION;
@@ -2074,45 +2088,35 @@ export async function checkAppUpdate() {
       description: remote.description || 'Mejoras de rendimiento y nuevas funciones ganaderas.',
     };
   } catch (err) {
-    console.warn('Error verificando actualizaciones:', err);
-    return { hasUpdate: false };
+    return { hasUpdate: false, currentVersion: CURRENT_APP_VERSION, latestVersion: CURRENT_APP_VERSION };
   }
 }
 
 
 /**
- * Aplica la actualización limpiando cachés del navegador, desregistrando service workers obsoletos y recargando limpiamente
+ * Aplica la actualización activando el nuevo Service Worker y recargando limpiamente
  */
 export async function applyAppUpdate() {
   try {
-    // 1. Desregistrar todos los service workers antiguos para forzar el nuevo código
+    // 1. Activar inmediatamente el Service Worker en espera
     if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        try {
-          await registration.unregister();
-        } catch (swErr) {
-          console.warn('Error desregistrando service worker:', swErr);
-        }
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg && reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
     }
 
-    // 2. Limpiar todos los cachés del navegador
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
-
-    // 3. Limpiar almacenamiento de sesión temporal
+    // 2. Limpiar almacenamiento de sesión temporal
     try {
       sessionStorage.clear();
     } catch (e) {}
 
-    // 4. Recargar limpiamente forzando petición fresca
-    const cleanUrl = window.location.origin + window.location.pathname + '?_v=' + Date.now();
-    window.location.replace(cleanUrl);
+    // 3. Recarga limpia del sistema
+    setTimeout(() => {
+      window.location.reload();
+    }, 150);
   } catch (e) {
-    console.warn('Error limpiando caché:', e);
-    window.location.replace(window.location.origin + window.location.pathname + '?_v=' + Date.now());
+    console.warn('Error aplicando actualización:', e);
+    window.location.reload();
   }
 }

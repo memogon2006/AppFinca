@@ -56,10 +56,19 @@
         </div>
         <div style="text-align: center;">
           <h2 style="font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 4px 0;">INVENTARIO GANADERO</h2>
-          <p style="font-size: 12px; color: #94a3b8; margin: 0;">Iniciando sistema seguro...</p>
+          <p id="splash-status" style="font-size: 12px; color: #94a3b8; margin: 0;">Iniciando sistema seguro...</p>
         </div>
       </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Asistencia automática para arranque offline o conexión intermitente en campo
+      setTimeout(function() {
+        var statusEl = document.getElementById('splash-status');
+        if (statusEl && document.getElementById('root') && document.getElementById('root').querySelector('#splash-status')) {
+          statusEl.innerHTML = '<span style="color:#10b981;">Listo para el campo.</span> Si no avanza, <a href="javascript:location.reload()" style="color:#38bdf8;text-decoration:underline;font-weight:bold;">toca aquí para recargar</a>';
+        }
+      }, 4000);
+    </script>
   </body>
 </html>

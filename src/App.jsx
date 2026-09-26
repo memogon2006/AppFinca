@@ -122,13 +122,26 @@ export default function App() {
     }
   }, []);
 
-  // Inicializar base de datos
+  // Inicializar base de datos con salvaguarda de timeout para arranque offline instantáneo
   useEffect(() => {
+    let isMounted = true;
     async function init() {
-      await initializeDatabase();
-      setIsInitialized(true);
+      try {
+        const initPromise = initializeDatabase();
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 800));
+        await Promise.race([initPromise, timeoutPromise]);
+      } catch (err) {
+        console.warn('Nota: inicialización de almacenamiento local:', err);
+      } finally {
+        if (isMounted) {
+          setIsInitialized(true);
+        }
+      }
     }
     init();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Restaurar vista y modal activo al recargar la aplicación si ya hay sesión previa
