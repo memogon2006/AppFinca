@@ -131,7 +131,7 @@ db.version(12).stores({
   settings: 'key, userId'
 });
 
-db.version(13).stores({
+db.version(14).stores({
   users: 'id, email, username, farmName, name, role, ownerId, createdAt',
   cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, motherId, motherTag, fatherId, fatherTag, fatherType, userId',
   weighings: '++id, cattleId, date, weight, userId',
@@ -144,6 +144,8 @@ db.version(13).stores({
   activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
   calendarNotes: '++id, date, title, category, completed, userId, createdAt',
   paddocks: '++id, name, areaHa, pastureType, waterSource, status, currentBatchId, currentBatchName, entryDate, exitDate, lastRestStartDate, targetRestDays, targetGrazingDays, notes, userId, createdAt',
+  milkRecords: '++id, date, cattleId, tagNumber, milkingSession, amLiters, pmLiters, totalLiters, lactationNumber, daysInMilk, userId, createdAt',
+  milkDeliveries: '++id, date, totalLiters, pricePerLiter, totalValue, buyer, milkDestination, destination, rejectedLiters, temperature, paymentStatus, userId, createdAt',
   settings: 'key, userId'
 });
 
@@ -285,6 +287,8 @@ export async function clearAllData(userId) {
   if (db.farmExpenses) tables.push(db.farmExpenses);
   if (db.farmIncomes) tables.push(db.farmIncomes);
   if (db.paddocks) tables.push(db.paddocks);
+  if (db.milkRecords) tables.push(db.milkRecords);
+  if (db.milkDeliveries) tables.push(db.milkDeliveries);
   await db.transaction('rw', tables, async () => {
     await db.cattle.where('userId').equals(userId).delete();
     await db.weighings.where('userId').equals(userId).delete();
@@ -312,6 +316,12 @@ export async function clearAllData(userId) {
     }
     if (db.paddocks) {
       await db.paddocks.where('userId').equals(userId).delete();
+    }
+    if (db.milkRecords) {
+      await db.milkRecords.where('userId').equals(userId).delete();
+    }
+    if (db.milkDeliveries) {
+      await db.milkDeliveries.where('userId').equals(userId).delete();
     }
   });
 }
@@ -558,6 +568,9 @@ export async function exportBackupData(userId, userDetails = {}) {
   let audits = [];
   let activityLogs = [];
   let calendarNotes = [];
+  let paddocks = [];
+  let milkRecords = [];
+  let milkDeliveries = [];
 
   if (userId) {
     cattle = await db.cattle.where('userId').equals(userId).toArray();
@@ -587,6 +600,12 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.paddocks) {
       paddocks = await db.paddocks.where('userId').equals(userId).toArray();
     }
+    if (db.milkRecords) {
+      milkRecords = await db.milkRecords.where('userId').equals(userId).toArray();
+    }
+    if (db.milkDeliveries) {
+      milkDeliveries = await db.milkDeliveries.where('userId').equals(userId).toArray();
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
@@ -599,10 +618,12 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.farmExpenses) farmExpenses = await db.farmExpenses.toArray();
     if (db.farmIncomes) farmIncomes = await db.farmIncomes.toArray();
     if (db.paddocks) paddocks = await db.paddocks.toArray();
+    if (db.milkRecords) milkRecords = await db.milkRecords.toArray();
+    if (db.milkDeliveries) milkDeliveries = await db.milkDeliveries.toArray();
   }
 
   const backup = {
-    version: 7,
+    version: 8,
     appName: "INVENTARIO BOVINO APP",
     exportDate: new Date().toISOString(),
     farmName: userDetails.farmName || "Mi Finca Ganadera",
@@ -619,6 +640,8 @@ export async function exportBackupData(userId, userDetails = {}) {
     activityLogs,
     calendarNotes,
     paddocks: paddocks || [],
+    milkRecords: milkRecords || [],
+    milkDeliveries: milkDeliveries || [],
   };
 
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
@@ -648,6 +671,8 @@ export async function importBackupData(jsonData, userId) {
     if (db.farmExpenses) tables.push(db.farmExpenses);
     if (db.farmIncomes) tables.push(db.farmIncomes);
     if (db.paddocks) tables.push(db.paddocks);
+    if (db.milkRecords) tables.push(db.milkRecords);
+    if (db.milkDeliveries) tables.push(db.milkDeliveries);
 
     await db.transaction('rw', tables, async () => {
       if (userId) {
@@ -662,6 +687,8 @@ export async function importBackupData(jsonData, userId) {
         if (db.farmExpenses) await db.farmExpenses.where('userId').equals(userId).delete();
         if (db.farmIncomes) await db.farmIncomes.where('userId').equals(userId).delete();
         if (db.paddocks) await db.paddocks.where('userId').equals(userId).delete();
+        if (db.milkRecords) await db.milkRecords.where('userId').equals(userId).delete();
+        if (db.milkDeliveries) await db.milkDeliveries.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
@@ -674,6 +701,8 @@ export async function importBackupData(jsonData, userId) {
         if (db.farmExpenses) await db.farmExpenses.clear();
         if (db.farmIncomes) await db.farmIncomes.clear();
         if (db.paddocks) await db.paddocks.clear();
+        if (db.milkRecords) await db.milkRecords.clear();
+        if (db.milkDeliveries) await db.milkDeliveries.clear();
       }
 
       if (data.cattle?.length) {
@@ -754,6 +783,20 @@ export async function importBackupData(jsonData, userId) {
         }));
         await db.paddocks.bulkPut(cleanedPad);
       }
+      if (data.milkRecords?.length && db.milkRecords) {
+        const cleanedMR = data.milkRecords.map(m => ({
+          ...m,
+          userId: userId || m.userId || 'default',
+        }));
+        await db.milkRecords.bulkPut(cleanedMR);
+      }
+      if (data.milkDeliveries?.length && db.milkDeliveries) {
+        const cleanedMD = data.milkDeliveries.map(d => ({
+          ...d,
+          userId: userId || d.userId || 'default',
+        }));
+        await db.milkDeliveries.bulkPut(cleanedMD);
+      }
     });
 
     return { success: true, message: `Importados ${data.cattle.length} bovinos exitosamente.` };
@@ -762,3 +805,154 @@ export async function importBackupData(jsonData, userId) {
     return { success: false, message: error.message };
   }
 }
+
+// ==================== MÓDULO DE LECHERÍA & CONTROL LECHERO ====================
+
+/**
+ * Obtiene los registros de pesaje de leche de una fecha o rango
+ */
+export async function getMilkRecords(userId, date = null) {
+  try {
+    if (!db.milkRecords) return [];
+    let query = db.milkRecords.filter(m => !m.userId || m.userId === userId);
+    if (date) {
+      query = query.filter(m => m.date === date);
+    }
+    const list = await query.toArray();
+    return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+  } catch (err) {
+    console.warn('Error obteniendo registros de leche:', err);
+    return [];
+  }
+}
+
+/**
+ * Guarda o actualiza un registro de pesaje de leche individual
+ */
+export async function saveMilkRecord(record) {
+  try {
+    if (!db.milkRecords) return null;
+    const am = parseFloat(record.amLiters) || 0;
+    const pm = parseFloat(record.pmLiters) || 0;
+    const total = parseFloat(record.totalLiters) || (am + pm);
+
+    const item = {
+      ...record,
+      id: record.id || ('mr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
+      amLiters: am,
+      pmLiters: pm,
+      totalLiters: total,
+      date: record.date || new Date().toISOString().split('T')[0],
+      createdAt: record.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await db.milkRecords.put(item);
+    return item;
+  } catch (err) {
+    console.error('Error guardando registro de leche:', err);
+    throw err;
+  }
+}
+
+/**
+ * Guarda en lote los registros de pesaje de leche de una jornada
+ */
+export async function saveBatchMilkRecords(records = [], userId = 'default') {
+  try {
+    if (!db.milkRecords || records.length === 0) return [];
+    const formatted = records.map(r => {
+      const am = parseFloat(r.amLiters) || 0;
+      const pm = parseFloat(r.pmLiters) || 0;
+      const total = parseFloat(r.totalLiters) || (am + pm);
+      return {
+        ...r,
+        id: r.id || ('mr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
+        userId: r.userId || userId,
+        amLiters: am,
+        pmLiters: pm,
+        totalLiters: total,
+        date: r.date || new Date().toISOString().split('T')[0],
+        createdAt: r.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    await db.milkRecords.bulkPut(formatted);
+    return formatted;
+  } catch (err) {
+    console.error('Error guardando lote de leche:', err);
+    throw err;
+  }
+}
+
+/**
+ * Elimina un registro de pesaje de leche
+ */
+export async function deleteMilkRecord(id) {
+  try {
+    if (!db.milkRecords || !id) return false;
+    await db.milkRecords.delete(id);
+    return true;
+  } catch (err) {
+    console.error('Error eliminando registro de leche:', err);
+    return false;
+  }
+}
+
+/**
+ * Obtiene las entregas de leche a tanque frío o acopio
+ */
+export async function getMilkDeliveries(userId) {
+  try {
+    if (!db.milkDeliveries) return [];
+    const list = await db.milkDeliveries
+      .filter(d => !d.userId || d.userId === userId)
+      .toArray();
+    return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+  } catch (err) {
+    console.warn('Error obteniendo entregas de leche:', err);
+    return [];
+  }
+}
+
+/**
+ * Guarda o actualiza un despacho o entrega a tanque frío / venta
+ */
+export async function saveMilkDelivery(delivery) {
+  try {
+    if (!db.milkDeliveries) return null;
+    const liters = parseFloat(delivery.totalLiters) || 0;
+    const price = parseFloat(delivery.pricePerLiter) || 0;
+    const total = parseFloat(delivery.totalValue) || (liters * price);
+
+    const item = {
+      ...delivery,
+      id: delivery.id || ('md_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
+      totalLiters: liters,
+      pricePerLiter: price,
+      totalValue: total,
+      date: delivery.date || new Date().toISOString().split('T')[0],
+      createdAt: delivery.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await db.milkDeliveries.put(item);
+    return item;
+  } catch (err) {
+    console.error('Error guardando entrega de leche:', err);
+    throw err;
+  }
+}
+
+/**
+ * Elimina una entrega de leche a tanque
+ */
+export async function deleteMilkDelivery(id) {
+  try {
+    if (!db.milkDeliveries || !id) return false;
+    await db.milkDeliveries.delete(id);
+    return true;
+  } catch (err) {
+    console.error('Error eliminando entrega de leche:', err);
+    return false;
+  }
+}
+

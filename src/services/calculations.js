@@ -616,3 +616,182 @@ export function calculateMilkMetrics(animal) {
     cycleAvgDaily: Number(cycleAvgDaily.toFixed(1)),
   };
 }
+
+/**
+ * Calcula los Días en Leche (DEL) de una vaca
+ */
+export function calculateDaysInMilk(cow, milkRecords = []) {
+  if (!cow || cow.sex !== 'Hembra') return 0;
+  
+  // 1. Si tiene fecha de último parto registrada
+  if (cow.lastCalvingDate) {
+    const del = getDaysDifference(cow.lastCalvingDate, new Date());
+    return Math.max(0, del);
+  }
+
+  // 2. Si tiene registros de pesaje de leche, tomar el primer registro del ciclo actual
+  const cowRecords = milkRecords
+    .filter(r => String(r.cattleId) === String(cow.id) && (parseFloat(r.totalLiters) > 0 || parseFloat(r.amLiters) > 0 || parseFloat(r.pmLiters) > 0))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (cowRecords.length > 0) {
+    const firstDate = cowRecords[0].date;
+    const del = getDaysDifference(firstDate, new Date());
+    return Math.max(0, del);
+  }
+
+  // 3. Fallback a días de lactancia configurados o 60 días por defecto
+  return parseInt(cow.lactationDays, 10) || 60;
+}
+
+/**
+ * Calcula la curva de lactancia, picos y proyección a 305 días
+ */
+export function calculateLactationCurve(cow, milkRecords = []) {
+  const cowRecords = milkRecords
+    .filter(r => String(r.cattleId) === String(cow.id))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  let peakLiters = 0;
+  let peakDate = null;
+  let peakDEL = 0;
+  let totalRecordedLiters = 0;
+
+  const dataPoints = cowRecords.map((r, idx) => {
+    const total = parseFloat(r.totalLiters) || ((parseFloat(r.amLiters) || 0) + (parseFloat(r.pmLiters) || 0));
+    if (total > peakLiters) {
+      peakLiters = total;
+      peakDate = r.date;
+      peakDEL = r.daysInMilk || (idx * 15 + 10);
+    }
+    totalRecordedLiters += total;
+    return {
+      date: formatDate(r.date),
+      rawDate: r.date,
+      am: parseFloat(r.amLiters) || 0,
+      pm: parseFloat(r.pmLiters) || 0,
+      total: Number(total.toFixed(1)),
+      del: r.daysInMilk || (idx * 15 + 10),
+    };
+  });
+
+  const currentDEL = calculateDaysInMilk(cow, milkRecords);
+  const avgDaily = dataPoints.length > 0 ? totalRecordedLiters / dataPoints.length : (parseFloat(cow.dailyMilkLiters) || 0);
+
+  // Proyección técnica a 305 días (Standard 305-day lactation)
+  const projected305 = Number((avgDaily * 305).toFixed(0));
+
+  // Cálculo de Secado Ideal (60 días antes del parto previsto o a los 220 días de gestación)
+  const pregnancyDays = parseInt(cow.pregnancyDays, 10) || 0;
+  const daysToDryOff = Math.max(0, 220 - pregnancyDays);
+  const isDryOffDue = pregnancyDays >= 220;
+
+  return {
+    dataPoints,
+    currentDEL,
+    peakLiters: Number(peakLiters.toFixed(1)),
+    peakDate: peakDate ? formatDate(peakDate) : '-',
+    peakDEL,
+    avgDaily: Number(avgDaily.toFixed(1)),
+    totalRecordedLiters: Number(totalRecordedLiters.toFixed(1)),
+    projected305,
+    pregnancyDays,
+    daysToDryOff,
+    isDryOffDue,
+    recordsCount: dataPoints.length,
+  };
+}
+
+/**
+ * Calcula las métricas globales del hato lechero en una fecha o acumulado del mes
+ */
+export function calculateHerdMilkMetrics(cattle = [], milkRecords = [], milkDeliveries = [], targetDate = null) {
+  const todayStr = targetDate || new Date().toISOString().split('T')[0];
+
+  const females = cattle.filter(c => c.sex === 'Hembra' && c.status === 'Activo');
+  
+  // Vacas en ordeño activas
+  const milkingCows = females.filter(c => 
+    c.milkingStatus === 'En ordeño' || 
+    (Array.isArray(c.femaleStatuses) && c.femaleStatuses.includes('Producción de leche')) ||
+    c.femaleStatus === 'Producción de leche' ||
+    (parseFloat(c.dailyMilkLiters) > 0)
+  );
+
+  // Vacas secas
+  const dryCows = females.filter(c => 
+    c.milkingStatus === 'Seca' || 
+    (c.category === 'Vaca' && !milkingCows.some(m => m.id === c.id))
+  );
+
+  // Registros de la fecha seleccionada
+  const todayRecords = milkRecords.filter(r => r.date === todayStr);
+
+  let todayAmLiters = 0;
+  let todayPmLiters = 0;
+  let todayTotalLiters = 0;
+
+  if (todayRecords.length > 0) {
+    todayRecords.forEach(r => {
+      const am = parseFloat(r.amLiters) || 0;
+      const pm = parseFloat(r.pmLiters) || 0;
+      const total = parseFloat(r.totalLiters) || (am + pm);
+      todayAmLiters += am;
+      todayPmLiters += pm;
+      todayTotalLiters += total;
+    });
+  } else {
+    // Si no hay pesaje específico para hoy, estimar con los litros diarios configurados
+    milkingCows.forEach(c => {
+      const daily = parseFloat(c.dailyMilkLiters) || 0;
+      todayAmLiters += daily * 0.6;
+      todayPmLiters += daily * 0.4;
+      todayTotalLiters += daily;
+    });
+  }
+
+  const activeMilkingCount = todayRecords.length > 0 ? todayRecords.length : milkingCows.length;
+  const avgPerMilkingCow = activeMilkingCount > 0 ? (todayTotalLiters / activeMilkingCount) : 0;
+  const avgPerTotalCow = females.length > 0 ? (todayTotalLiters / females.length) : 0;
+  const milkingPercentage = females.length > 0 ? ((milkingCows.length / females.length) * 100) : 0;
+
+  // Entregas y despachos del mes actual
+  const currentMonthPrefix = todayStr.slice(0, 7); // YYYY-MM
+  const monthDeliveries = milkDeliveries.filter(d => d.date && d.date.startsWith(currentMonthPrefix));
+  
+  const monthDeliveredLiters = monthDeliveries.reduce((sum, d) => sum + (parseFloat(d.totalLiters) || 0), 0);
+  const monthTotalRevenue = monthDeliveries.reduce((sum, d) => sum + (parseFloat(d.totalValue) || 0), 0);
+  const avgPricePerLiter = monthDeliveredLiters > 0 ? (monthTotalRevenue / monthDeliveredLiters) : 0;
+
+  // Vacas próximas a secado (Preñez >= 210 días)
+  const dryOffAlerts = females.filter(c => {
+    const pDays = parseInt(c.pregnancyDays, 10) || 0;
+    return pDays >= 210 && c.milkingStatus !== 'Seca';
+  }).map(c => {
+    const pDays = parseInt(c.pregnancyDays, 10) || 0;
+    const daysLeft = Math.max(0, 220 - pDays);
+    return {
+      cow: c,
+      pregnancyDays: pDays,
+      daysLeft,
+      isOverdue: pDays >= 220,
+    };
+  });
+
+  return {
+    todayAmLiters: Number(todayAmLiters.toFixed(1)),
+    todayPmLiters: Number(todayPmLiters.toFixed(1)),
+    todayTotalLiters: Number(todayTotalLiters.toFixed(1)),
+    milkingCowsCount: milkingCows.length,
+    dryCowsCount: dryCows.length,
+    totalFemalesCount: females.length,
+    milkingPercentage: Number(milkingPercentage.toFixed(1)),
+    avgPerMilkingCow: Number(avgPerMilkingCow.toFixed(1)),
+    avgPerTotalCow: Number(avgPerTotalCow.toFixed(1)),
+    monthDeliveredLiters: Number(monthDeliveredLiters.toFixed(1)),
+    monthTotalRevenue: Number(monthTotalRevenue.toFixed(0)),
+    avgPricePerLiter: Number(avgPricePerLiter.toFixed(0)),
+    dryOffAlerts,
+  };
+}
+

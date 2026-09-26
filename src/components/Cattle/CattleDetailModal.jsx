@@ -8,8 +8,11 @@ import {
   calculateWeightMetrics, 
   calculateFinancials, 
   calculateReproduction,
-  calculateMilkMetrics 
+  calculateMilkMetrics,
+  calculateDaysInMilk,
+  calculateLactationCurve
 } from '../../services/calculations';
+import { DairyLactationChart } from '../Dairy/DairyLactationChart';
 import { 
   Scale, 
   DollarSign, 
@@ -58,6 +61,7 @@ export function CattleDetailModal({
   cattleList = [],
   weighings = [], 
   vaccinations = [],
+  milkRecords = [],
   onOpenAddWeight, 
   onOpenSell, 
   onOpenEdit, 
@@ -890,6 +894,79 @@ export function CattleDetailModal({
               </div>
 
             </div>
+
+            {/* CURVA DE LACTANCIA & HISTORIAL DE ORDEÑOS */}
+            {(() => {
+              const cowRecords = (milkRecords || []).filter(r => String(r.cattleId) === String(animal.id));
+              const curve = calculateLactationCurve(animal, milkRecords);
+
+              if (cowRecords.length === 0 && !milkMetrics.isMilking) return null;
+
+              return (
+                <div className="space-y-4">
+                  {cowRecords.length > 0 && (
+                    <DairyLactationChart
+                      dataPoints={curve.dataPoints}
+                      cowName={animal.name}
+                      tagNumber={animal.tagNumber}
+                    />
+                  )}
+
+                  {cowRecords.length > 0 && (
+                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                          <Milk className="w-4 h-4 text-blue-600" />
+                          <span>Historial de Pesajes de Leche ({cowRecords.length} registros)</span>
+                        </h4>
+                        <span className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                          Pico: {curve.peakLiters} L • DEL: {curve.currentDEL}d
+                        </span>
+                      </div>
+
+                      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 shadow-sm max-h-48 overflow-y-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase font-black text-[10px] sticky top-0">
+                            <tr>
+                              <th className="p-2.5">Fecha</th>
+                              <th className="p-2.5 text-center">DEL</th>
+                              <th className="p-2.5 text-right text-amber-500">AM (L)</th>
+                              <th className="p-2.5 text-right text-blue-500">PM (L)</th>
+                              <th className="p-2.5 text-right text-emerald-500 font-bold">Total (L)</th>
+                              <th className="p-2.5">Notas</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+                            {cowRecords.map(r => (
+                              <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td className="p-2.5 font-mono font-bold text-slate-900 dark:text-white">
+                                  {formatDate(r.date)}
+                                </td>
+                                <td className="p-2.5 text-center font-mono text-slate-500">
+                                  {r.daysInMilk ? `${r.daysInMilk}d` : '-'}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-black text-amber-600 dark:text-amber-300">
+                                  {parseFloat(r.amLiters || 0).toFixed(1)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-black text-blue-600 dark:text-blue-300">
+                                  {parseFloat(r.pmLiters || 0).toFixed(1)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                                  {parseFloat(r.totalLiters || 0).toFixed(1)} L
+                                </td>
+                                <td className="p-2.5 text-slate-500 italic text-[11px]">
+                                  {r.notes || '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* HISTORIAL DE CRÍAS Y NACIMIENTOS DE ESTA VACA */}
             <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3 shadow-sm">

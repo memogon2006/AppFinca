@@ -47,6 +47,8 @@ export function DashboardView({
   calendarNotes = [],
   farmExpenses = [],
   farmIncomes = [],
+  milkRecords = [],
+  milkDeliveries = [],
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -68,6 +70,11 @@ export function DashboardView({
   const { isModuleActive } = useActiveModules();
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
+
+  // Métricas de lechería en el día de hoy
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayMilkRecords = milkRecords.filter(m => m.date === todayStr);
+  const todayMilkLiters = todayMilkRecords.reduce((sum, r) => sum + (parseFloat(r.totalLiters) || (parseFloat(r.amLiters) || 0) + (parseFloat(r.pmLiters) || 0)), 0);
 
   // Conteo de sexos
   const malesCount = activeCattle.filter(c => c.sex === 'Macho').length;
@@ -288,6 +295,17 @@ export function DashboardView({
               </button>
             )}
 
+            {isModuleActive(MODULE_KEYS.MILK) && (
+              <button
+                onClick={() => onNavigate('dairy')}
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-blue-950/40 border border-blue-400/40 transition cursor-pointer"
+                title="Abrir planilla de pesajes AM/PM, curvas DEL y entregas a tanque"
+              >
+                <Milk className="w-4 h-4 text-blue-200" />
+                <span>🥛 Lechería & Ordeño</span>
+              </button>
+            )}
+
             {isModuleActive(MODULE_KEYS.WEIGHTS) && (
               <button
                 onClick={() => onNavigate('quickWeigh')}
@@ -399,15 +417,19 @@ export function DashboardView({
 
         {isModuleActive(MODULE_KEYS.DAIRY) && (
           <div 
-            onClick={() => onNavigate('females')}
+            onClick={() => onNavigate('dairy')}
             className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-600/50 transition cursor-pointer group shadow-sm"
           >
             <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider">En Ordeño / Leche</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Lechería & Ordeño</span>
               <Milk className="w-4 h-4 group-hover:scale-110 transition" />
             </div>
-            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{milkingCount}</p>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Hembras en producción</span>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+              {todayMilkLiters > 0 ? `${formatNumber(todayMilkLiters, 1)} L` : milkingCount}
+            </p>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              {todayMilkLiters > 0 ? `${todayMilkRecords.length} vacas hoy` : `${milkingCount} hembras en ordeño`}
+            </span>
           </div>
         )}
 

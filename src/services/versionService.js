@@ -1,10 +1,23 @@
-export const CURRENT_APP_VERSION = "2.14.80";
+export const CURRENT_APP_VERSION = "2.15.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.0",
+    date: "26/09/2026",
+    title: "🥛 Módulo Integral de Lechería & Control Lechero Especializado",
+    highlights: [
+      "Planilla Rápida de Ordeño AM / PM: Registro táctil optimizado para sala y corral con cálculo en vivo de totales diarios y comparativas contra pesajes previos.",
+      "Curvas de Lactancia & DEL (Días en Leche): Monitoreo de curva de producción por semana, detección automática de pico lechero y proyección estandarizada a 305 días.",
+      "Semáforo de Secado Preparto (60 días): Alerta automática a los 220 días de preñez para secado terapéutico y descanso de ubre antes del parto.",
+      "Tanque Frío & Despachos a Planta: Control de volumen en tanque, litros rechazados por mastitis/antibiótico y liquidación económica vinculada automáticamente a la contabilidad.",
+      "Ranking Top 10 & Exportación Excel: Tabla de mejores productoras del hato, exportación de planilla lechera formateada en Excel y resumen diario para WhatsApp.",
+      "100% Offline & Sincronización Nube: Funciona en sala de ordeño sin internet y sincroniza con Firebase en tiempo real al conectarse."
+    ]
+  },
   {
     version: "2.14.80",
     date: "26/09/2026",

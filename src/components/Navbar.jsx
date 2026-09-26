@@ -25,7 +25,8 @@ import {
   Users,
   ChevronRight,
   Wallet,
-  Leaf
+  Leaf,
+  Milk
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -107,7 +108,9 @@ export function Navbar({
       badge: 'Campo',
       badgeClass: 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 border border-purple-300/40',
       items: [
-        { id: 'paddocks', label: 'Potreros & Pastoreo', icon: Leaf, desc: 'Aforos 1m², descansos y rotación de lotes' },
+        ...(isModuleActive(MODULE_KEYS.MILK) ? [
+          { id: 'dairy', label: 'Lechería & Control Ordeño', icon: Milk, desc: 'Pesajes AM/PM, DEL, curvas y tanque' }
+        ] : []),
         ...(isModuleActive(MODULE_KEYS.REPRODUCTION) || isModuleActive(MODULE_KEYS.DAIRY) ? [
           { id: 'females', label: 'Hembras & Reproducción', icon: Stethoscope, desc: 'Gestación, partos, secado y ordeño' }
         ] : []),

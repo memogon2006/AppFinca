@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, initializeDatabase, deleteDemoData, isDemoAnimal, logActivity } from './services/db';
+import { 
+  db, 
+  initializeDatabase, 
+  deleteDemoData, 
+  isDemoAnimal, 
+  logActivity,
+  saveMilkRecord,
+  saveBatchMilkRecords,
+  deleteMilkRecord,
+  saveMilkDelivery,
+  deleteMilkDelivery
+} from './services/db';
 import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
@@ -11,6 +22,7 @@ import { WeightsView } from './components/Weights/WeightsView';
 import { QuickWeighinView } from './components/Weights/QuickWeighinView';
 import { FemalesView } from './components/Females/FemalesView';
 import { QuickPalpationView } from './components/Females/QuickPalpationView';
+import { DairyView } from './components/Dairy/DairyView';
 import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { PaddocksView } from './components/Paddocks/PaddocksView';
 import { FinancesView } from './components/Finances/FinancesView';
@@ -35,7 +47,7 @@ import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCen
 import { InventoryChecklistModal } from './components/Checklist/InventoryChecklistModal';
 import { ForcePasswordChangeModal } from './components/Auth/ForcePasswordChangeModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
-import { calculateWeightMetrics } from './services/calculations';
+import { calculateWeightMetrics, formatCurrency, formatNumber } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
@@ -274,6 +286,9 @@ export default function App() {
     if ((currentView === 'palpation' || currentView === 'females') && !isModuleActive(MODULE_KEYS.REPRODUCTION) && !isModuleActive(MODULE_KEYS.DAIRY)) {
       setCurrentView('dashboard');
     }
+    if (currentView === 'dairy' && !isModuleActive(MODULE_KEYS.MILK) && !isModuleActive(MODULE_KEYS.DAIRY)) {
+      setCurrentView('dashboard');
+    }
   }, [isWorker, currentView, isModuleActive]);
 
   // Sincronización automática con la nube multi-dispositivo en tiempo real
@@ -429,6 +444,22 @@ export default function App() {
     () => {
       if (!userId && !currentUser?.id) return [];
       return db.paddocks ? db.paddocks.filter(p => !p.userId || allowedUserIds.has(p.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const milkRecords = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.milkRecords ? db.milkRecords.filter(m => !m.userId || allowedUserIds.has(m.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const milkDeliveries = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.milkDeliveries ? db.milkDeliveries.filter(d => !d.userId || allowedUserIds.has(d.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -1508,6 +1539,143 @@ export default function App() {
     showToast('Ingreso eliminado de la contabilidad 🗑️');
   };
 
+  const handleSaveMilkRecord = async (recordData) => {
+    if (!userId) return;
+    const record = await saveMilkRecord({
+      ...recordData,
+      userId
+    });
+    if (record) {
+      markPendingSync(userId, record.id);
+      
+      await logActivity({
+        action: 'milk_record_saved',
+        description: `Registró pesaje de leche para chapa ${record.tagNumber || 'Bovino'} (${record.totalLiters} L: AM ${record.amLiters || 0}L / PM ${record.pmLiters || 0}L)`,
+        tagNumber: record.tagNumber || '',
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+
+      cloudPushData(userId);
+      triggerFeedback('success');
+      showToast(`Pesaje de leche guardado (${record.totalLiters} L) 🥛☁️`);
+    }
+  };
+
+  const handleSaveBatchMilkRecords = async (records) => {
+    if (!userId || !records || records.length === 0) return;
+    const saved = await saveBatchMilkRecords(records, userId);
+    if (saved && saved.length > 0) {
+      const ids = saved.map(s => s.id);
+      markPendingSync(userId, ...ids);
+
+      const totalLitersBatch = saved.reduce((sum, r) => sum + (parseFloat(r.totalLiters) || 0), 0);
+      await logActivity({
+        action: 'milk_batch_saved',
+        description: `Registró jornada de ordeño para ${saved.length} vacas (Total: ${formatNumber(totalLitersBatch, 1)} Litros)`,
+        tagNumber: `${saved.length} vacas`,
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+
+      cloudPushData(userId);
+      triggerFeedback('success');
+      showToast(`¡${saved.length} registros de ordeño guardados y sincronizados! 🥛☁️`);
+    }
+  };
+
+  const handleDeleteMilkRecord = async (recordId) => {
+    if (!userId) return;
+    await deleteMilkRecord(recordId);
+    markPendingDelete(userId, 'milkRecords', recordId);
+    
+    await logActivity({
+      action: 'milk_record_deleted',
+      description: `Eliminó registro de pesaje de leche ID ${recordId}`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Registro de leche eliminado 🗑️');
+  };
+
+  const handleSaveMilkDelivery = async (deliveryData) => {
+    if (!userId) return;
+    const saved = await saveMilkDelivery({
+      ...deliveryData,
+      userId
+    });
+    if (saved) {
+      markPendingSync(userId, saved.id);
+
+      // Si se liquidó a ingreso contable, registrar automáticamente en farmIncomes
+      if (saved.registerIncome && saved.totalValue > 0) {
+        const incomeId = 'inc_milk_' + saved.id;
+        const incomeRecord = {
+          id: incomeId,
+          date: saved.date,
+          concept: `Venta de Leche (${saved.totalLiters} L @ ${formatCurrency(saved.pricePerLiter)}) - ${saved.buyer || 'Tanque / Planta'}`,
+          category: 'Venta de Leche',
+          amount: saved.totalValue,
+          paymentMethod: 'Transferencia',
+          notes: `Generado automáticamente desde Entrega a Tanque ID: ${saved.id}. Comprador: ${saved.buyer || 'N/A'}`,
+          userId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        if (db.farmIncomes) {
+          await db.farmIncomes.put(incomeRecord);
+          markPendingSync(userId, incomeId);
+        }
+      }
+
+      await logActivity({
+        action: 'milk_delivery_saved',
+        description: `Registró despacho a tanque/venta: ${saved.totalLiters} L a ${formatCurrency(saved.pricePerLiter)}/L (${formatCurrency(saved.totalValue)}) para "${saved.buyer || 'Planta'}"`,
+        tagNumber: '',
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+
+      cloudPushData(userId);
+      triggerFeedback('success');
+      showToast(`Entrega de ${saved.totalLiters} L a tanque guardada con éxito 🧊☁️`);
+    }
+  };
+
+  const handleDeleteMilkDelivery = async (deliveryId) => {
+    if (!userId) return;
+    await deleteMilkDelivery(deliveryId);
+    markPendingDelete(userId, 'milkDeliveries', deliveryId);
+    
+    // Si tenía un ingreso contable asociado, eliminarlo también
+    const linkedIncomeId = 'inc_milk_' + deliveryId;
+    if (db.farmIncomes) {
+      await db.farmIncomes.delete(linkedIncomeId);
+      markPendingDelete(userId, 'farmIncomes', linkedIncomeId);
+    }
+
+    await logActivity({
+      action: 'milk_delivery_deleted',
+      description: `Eliminó despacho a tanque ID ${deliveryId}`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Despacho de leche a tanque eliminado 🗑️');
+  };
+
   // ==================== POTREROS & PASTOREO ROTACIONAL ====================
 
   const handleSavePaddock = async (paddockData) => {
@@ -1822,6 +1990,8 @@ export default function App() {
             }}
             farmExpenses={farmExpenses}
             farmIncomes={farmIncomes}
+            milkRecords={milkRecords}
+            milkDeliveries={milkDeliveries}
           />
         )}
 
@@ -1962,6 +2132,23 @@ export default function App() {
           />
         )}
 
+        {currentView === 'dairy' && (
+          <DairyView
+            cattle={cattle}
+            milkRecords={milkRecords}
+            milkDeliveries={milkDeliveries}
+            onSaveMilkRecord={handleSaveMilkRecord}
+            onSaveBatchMilkRecords={handleSaveBatchMilkRecords}
+            onDeleteMilkRecord={handleDeleteMilkRecord}
+            onSaveMilkDelivery={handleSaveMilkDelivery}
+            onDeleteMilkDelivery={handleDeleteMilkDelivery}
+            onSelectAnimal={handleSelectAnimal}
+            onOpenNewAnimal={handleOpenNew}
+            farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
+            currentUser={currentUser}
+          />
+        )}
+
       </main>
 
       {/* MODALES */}
@@ -1974,6 +2161,7 @@ export default function App() {
         cattleList={cattle}
         weighings={weighings}
         vaccinations={vaccinations}
+        milkRecords={milkRecords}
         onOpenEdit={handleOpenEdit}
         onOpenSell={handleOpenSell}
         onOpenAddWeight={handleOpenAddWeight}
