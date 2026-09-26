@@ -68,8 +68,10 @@ export function DairyView({
   // Pestaña activa principal
   const [activeTab, setActiveTab] = useState('periods'); // 'periods', 'settlements', 'sheet', 'curves', 'tank', 'secado'
   
-  // Períodos de lechería
-  const [periodType, setPeriodType] = useState('first_fortnight'); // 'first_fortnight', 'second_fortnight', 'full_month', 'current_week', 'custom'
+  // Períodos de lechería: dinámico según el día actual (1-15: 1ª Quincena, 16+: 2ª Quincena)
+  const [periodType, setPeriodType] = useState(() => {
+    return new Date().getDate() <= 15 ? 'first_fortnight' : 'second_fortnight';
+  });
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth()); // 0-11
   const [customStart, setCustomStart] = useState(() => new Date().toISOString().split('T')[0]);

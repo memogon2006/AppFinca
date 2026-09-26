@@ -1,5 +1,5 @@
 {
-  "version": "2.15.2",
-  "buildTime": 1790462000000,
-  "description": "🥛 Módulo de Lechería Optimizado: Botón Despacho Arriba, Registro de Ordeño por Día con Carga Automática y Botones de Alto Contraste"
+  "version": "2.15.3",
+  "buildTime": 1790463000000,
+  "description": "🥛 Selección Inteligente de Quincena Activa (1ª o 2ª Quincena según la fecha actual)"
 }

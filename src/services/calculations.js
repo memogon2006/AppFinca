@@ -798,10 +798,13 @@ export function calculateHerdMilkMetrics(cattle = [], milkRecords = [], milkDeli
 /**
  * Genera rangos de fechas comunes para control de lechería (Quincenas, Mes, Semana)
  */
-export function getMilkPeriodRange(periodType = 'first_fortnight', refYear = null, refMonth = null) {
+export function getMilkPeriodRange(periodType = null, refYear = null, refMonth = null) {
   const now = new Date();
   const year = refYear !== null ? refYear : now.getFullYear();
   const month = refMonth !== null ? refMonth : now.getMonth(); // 0-indexed
+  
+  // Si no se especifica, predeterminar a la quincena correspondiente según el día actual
+  const effectivePeriod = periodType || (now.getDate() <= 15 ? 'first_fortnight' : 'second_fortnight');
 
   const yStr = String(year);
   const mStr = String(month + 1).padStart(2, '0');
@@ -809,7 +812,7 @@ export function getMilkPeriodRange(periodType = 'first_fortnight', refYear = nul
   // Último día del mes
   const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
 
-  if (periodType === 'first_fortnight') {
+  if (effectivePeriod === 'first_fortnight') {
     return {
       periodType: 'first_fortnight',
       label: `1ª Quincena (1 - 15 de ${getMonthName(month)})`,
@@ -820,7 +823,7 @@ export function getMilkPeriodRange(periodType = 'first_fortnight', refYear = nul
     };
   }
 
-  if (periodType === 'second_fortnight') {
+  if (effectivePeriod === 'second_fortnight') {
     return {
       periodType: 'second_fortnight',
       label: `2ª Quincena (16 - ${lastDayOfMonth} de ${getMonthName(month)})`,
@@ -831,7 +834,7 @@ export function getMilkPeriodRange(periodType = 'first_fortnight', refYear = nul
     };
   }
 
-  if (periodType === 'full_month') {
+  if (effectivePeriod === 'full_month') {
     return {
       periodType: 'full_month',
       label: `Mes Completo (${getMonthName(month)} ${year})`,
@@ -842,7 +845,7 @@ export function getMilkPeriodRange(periodType = 'first_fortnight', refYear = nul
     };
   }
 
-  if (periodType === 'current_week') {
+  if (effectivePeriod === 'current_week') {
     const curr = new Date(now);
     const first = curr.getDate() - (curr.getDay() === 0 ? 6 : curr.getDay() - 1); // Lunes
     const last = first + 6; // Domingo

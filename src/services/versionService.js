@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.15.2";
+export const CURRENT_APP_VERSION = "2.15.3";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.3",
+    date: "26/09/2026",
+    title: "📅 Selección Inteligente de Quincena Activa según Fecha Actual",
+    highlights: [
+      "Quincena Predeterminada Dinámica: Al entrar al módulo de lechería, el sistema selecciona automáticamente la 1ª Quincena (si estamos entre los días 1 y 15) o la 2ª Quincena (si estamos del día 16 en adelante).",
+      "Control de Períodos Preciso: Consulta inmediata de los litros y balance económico de la quincena en curso sin necesidad de cambiar manualmente el filtro."
+    ]
+  },
   {
     version: "2.15.2",
     date: "26/09/2026",
