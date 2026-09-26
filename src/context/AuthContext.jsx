@@ -86,10 +86,24 @@ export function AuthProvider({ children }) {
           remoteUser = await cloudFindUser(`${cleanEmail}@finca.local`);
         }
 
-        if (remoteUser && remoteUser.isDeleted) {
+        // Si el usuario ya no existe en la nube (fue eliminado remotamente) o fue marcado como eliminado
+        if (!remoteUser || remoteUser.isDeleted) {
+          console.warn('⚠️ La cuenta del usuario no existe en la nube o fue eliminada.');
           logoutUser();
           localStorage.removeItem('ganado_current_user_session');
           if (db.users && session.id) await db.users.delete(session.id).catch(() => null);
+          if (cleanEmail) {
+            try {
+              const allU = await db.users.toArray().catch(() => []);
+              for (const u of allU) {
+                const uEmail = (u.email || '').toLowerCase().trim();
+                const uUser = (u.username || '').toLowerCase().trim();
+                if (uEmail === cleanEmail || uUser === cleanEmail || u.id === session.id) {
+                  await db.users.delete(u.id).catch(() => null);
+                }
+              }
+            } catch (e) {}
+          }
           setCurrentUser(null);
           return null;
         }

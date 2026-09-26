@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.15.7";
+export const CURRENT_APP_VERSION = "2.15.8";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.8",
+    date: "26/09/2026",
+    title: "🔒 Validación Estricta de Cuentas y Cierre Inmediato de Sesiones Eliminadas",
+    highlights: [
+      "Revocación Inmediata de Cuentas Eliminadas: Al detectar que una cuenta ya no existe en la nube Firebase, el sistema cierra la sesión y purga automáticamente los datos locales de caché e IndexedDB.",
+      "Verificación Previa en Inicio de Sesión: Al ingresar credenciales estando en línea, se comprueba en tiempo real la existencia de la cuenta en el servidor antes de permitir el acceso local."
+    ]
+  },
   {
     version: "2.15.7",
     date: "26/09/2026",

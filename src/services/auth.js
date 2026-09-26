@@ -370,7 +370,53 @@ export async function loginUser({ email, password }) {
     console.warn('Nota: consulta local de usuario:', e);
   }
 
-  // Si el usuario existe localmente y la contraseña coincide
+  // 1. Si hay conexión a internet, verificar primero que la cuenta exista y esté activa en la nube Firebase
+  const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+  if (isOnline) {
+    const [remoteUser, isDeletedRemote] = await Promise.all([
+      cloudFindUser(cleanInput).catch(() => null),
+      cloudIsWorkerDeleted(cleanInput).catch(() => false)
+    ]);
+
+    if (isDeletedRemote || (remoteUser && remoteUser.isDeleted)) {
+      if (localUser) {
+        try {
+          await db.users.delete(localUser.id).catch(() => null);
+          for (const u of allUsers) {
+            const uEmail = (u.email || '').toLowerCase().trim();
+            const uUser = (u.username || '').toLowerCase().trim();
+            if (uEmail === cleanInput || uEmail === `${rawAlias}@finca.local` || uUser === rawAlias || u.id === localUser.id) {
+              await db.users.delete(u.id).catch(() => null);
+            }
+          }
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {}
+      }
+      recordFailedLoginAttempt(cleanInput);
+      throw new Error(`⚠️ La cuenta "${cleanInput}" ha sido eliminada.`);
+    }
+
+    if (!remoteUser) {
+      // La cuenta no existe en la nube (fue eliminada remotamente o nunca existió)
+      if (localUser) {
+        try {
+          await db.users.delete(localUser.id).catch(() => null);
+          for (const u of allUsers) {
+            const uEmail = (u.email || '').toLowerCase().trim();
+            const uUser = (u.username || '').toLowerCase().trim();
+            if (uEmail === cleanInput || uEmail === `${rawAlias}@finca.local` || uUser === rawAlias || u.id === localUser.id) {
+              await db.users.delete(u.id).catch(() => null);
+            }
+          }
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {}
+      }
+      recordFailedLoginAttempt(cleanInput);
+      throw new Error('Usuario o contraseña incorrectos. Esta cuenta no existe.');
+    }
+  }
+
+  // 2. Si el usuario existe localmente y la contraseña coincide (Modo Offline o coincidencia local validada)
   if (localUser && localUser.passwordHash === inputHash) {
     if (localUser.role === 'worker' && localUser.isActive === false) {
       throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
