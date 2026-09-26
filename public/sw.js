@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   "/favicon.png",
   "/favicon.ico",
   "/assets/index-ByAnmtgz.css",
-  "/assets/index-D_jISgcP.js",
+  "/assets/index-ZVX9TYfl.js",
   "/assets/vendor-charts-DljG-sht.js",
   "/assets/vendor-db-DLsAzhYJ.js",
   "/assets/vendor-export-BKvfhyNn.js",
@@ -76,38 +76,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Fallback Offline a Caché
+  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Timeout y Fallback Offline
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
+      (async () => {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const response = await fetch(request, { signal: controller.signal });
+          clearTimeout(timeoutId);
           if (response && response.status === 200) {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(request, responseClone);
               cache.put('/index.html', response.clone());
             });
+            return response;
           }
-          return response;
-        })
-        .catch(async () => {
-          const cachedResponse = await caches.match(request);
-          if (cachedResponse) return cachedResponse;
-          const indexFallback = await caches.match('/index.html');
-          if (indexFallback) return indexFallback;
-          const rootFallback = await caches.match('/');
-          if (rootFallback) return rootFallback;
-          return new Response('Modo Sin Conexión Ganadero', { headers: { 'Content-Type': 'text/html' } });
-        })
+        } catch (e) {}
+
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) return cachedResponse;
+        const indexFallback = await caches.match('/index.html');
+        if (indexFallback) return indexFallback;
+        const rootFallback = await caches.match('/');
+        if (rootFallback) return rootFallback;
+        return new Response('Modo Sin Conexión Ganadero', { headers: { 'Content-Type': 'text/html' } });
+      })()
     );
     return;
   }
 
   // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First con Network Fallback y Revalidación
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
+    (async () => {
+      const cachedResponse = await caches.match(request);
       if (cachedResponse) {
-        // En segundo plano revalidar si hay conexión
         if (typeof navigator !== 'undefined' && navigator.onLine) {
           fetch(request)
             .then((networkResponse) => {
@@ -121,47 +125,44 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
 
-      return fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
+      try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
           return networkResponse;
-        })
-        .catch(async () => {
-          // Si la red falla (offline), buscar en caché por URL limpia o fallback de tipo
-          const fallback = await caches.match(request);
-          if (fallback) return fallback;
+        }
+      } catch (err) {}
 
-          const cleanUrl = request.url.split('?')[0];
-          const cleanMatch = await caches.match(cleanUrl);
-          if (cleanMatch) return cleanMatch;
+      // Si la red falla (offline), buscar en cualquier caché activa
+      const fallback = await caches.match(request);
+      if (fallback) return fallback;
 
-          // Si es JS del bundle y cambió el hash
-          if (request.url.includes('/assets/index-') && request.url.endsWith('.js')) {
-            const cache = await caches.open(CACHE_NAME);
-            const keys = await cache.keys();
-            const jsKey = keys.find(k => k.url.includes('/assets/index-') && k.url.endsWith('.js'));
-            if (jsKey) {
-              const jsResp = await cache.match(jsKey);
-              if (jsResp) return jsResp;
-            }
-          }
+      const cleanUrl = request.url.split('?')[0];
+      const cleanMatch = await caches.match(cleanUrl);
+      if (cleanMatch) return cleanMatch;
 
-          // Si es CSS del bundle
-          if (request.url.includes('/assets/index-') && request.url.endsWith('.css')) {
-            const cache = await caches.open(CACHE_NAME);
-            const keys = await cache.keys();
-            const cssKey = keys.find(k => k.url.includes('/assets/index-') && k.url.endsWith('.css'));
-            if (cssKey) {
-              const cssResp = await cache.match(cssKey);
-              if (cssResp) return cssResp;
-            }
-          }
+      // Coincidencias de chunks dinámicos
+      const cache = await caches.open(CACHE_NAME);
+      const keys = await cache.keys();
+      const reqUrl = request.url;
+      const matchedKey = keys.find(k => {
+        const kUrl = k.url;
+        if (reqUrl.includes('/assets/index-') && kUrl.includes('/assets/index-') && reqUrl.endsWith('.js') && kUrl.endsWith('.js')) return true;
+        if (reqUrl.includes('/assets/index-') && kUrl.includes('/assets/index-') && reqUrl.endsWith('.css') && kUrl.endsWith('.css')) return true;
+        if (reqUrl.includes('/assets/vendor-icons-') && kUrl.includes('/assets/vendor-icons-')) return true;
+        if (reqUrl.includes('/assets/vendor-db-') && kUrl.includes('/assets/vendor-db-')) return true;
+        if (reqUrl.includes('/assets/vendor-charts-') && kUrl.includes('/assets/vendor-charts-')) return true;
+        if (reqUrl.includes('/assets/vendor-export-') && kUrl.includes('/assets/vendor-export-')) return true;
+        return false;
+      });
 
-          return new Response('', { status: 503, statusText: 'Offline' });
-        });
-    })
+      if (matchedKey) {
+        const matchedResp = await cache.match(matchedKey);
+        if (matchedResp) return matchedResp;
+      }
+
+      return new Response('', { status: 503, statusText: 'Offline' });
+    })()
   );
 });

@@ -62,13 +62,31 @@
     </div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Asistencia automática para arranque offline o conexión intermitente en campo
-      setTimeout(function() {
-        var statusEl = document.getElementById('splash-status');
-        if (statusEl && document.getElementById('root') && document.getElementById('root').querySelector('#splash-status')) {
-          statusEl.innerHTML = '<span style="color:#10b981;">Listo para el campo.</span> Si no avanza, <a href="javascript:location.reload()" style="color:#38bdf8;text-decoration:underline;font-weight:bold;">toca aquí para recargar</a>';
-        }
-      }, 4000);
+      (function() {
+        // Asistencia automática para arranque offline o actualización inmediata en campo
+        setTimeout(function() {
+          var rootEl = document.getElementById('root');
+          var statusEl = document.getElementById('splash-status');
+          if (statusEl && rootEl && rootEl.querySelector('#splash-status')) {
+            statusEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:8px;">' +
+              '<span style="color:#34d399;font-weight:600;font-size:12px;">⚡ Optimizando carga...</span>' +
+              '<button onclick="window.location.reload()" style="background:#10b981;color:#020617;font-weight:800;font-size:13px;padding:8px 18px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.35);display:flex;align-items:center;gap:6px;">' +
+              '<span>🔄 Entrar a la Finca</span>' +
+              '</button>' +
+              '</div>';
+
+            // Auto-recarga única si el Service Worker o el navegador requiere refresco de caché
+            if (!sessionStorage.getItem('ganado_boot_autoreload')) {
+              sessionStorage.setItem('ganado_boot_autoreload', 'true');
+              setTimeout(function() {
+                if (rootEl.querySelector('#splash-status')) {
+                  window.location.reload();
+                }
+              }, 1200);
+            }
+          }
+        }, 2200);
+      })();
     </script>
   </body>
 </html>

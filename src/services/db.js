@@ -12,6 +12,16 @@ export { isDemoAnimal };
 
 export const db = new Dexie('GanadoProDB');
 
+if (typeof db.on === 'function') {
+  db.on('versionchange', function() {
+    console.warn('⚠️ Nueva versión de base de datos detectada; cerrando conexión para permitir actualización limpia.');
+    db.close();
+  });
+  db.on('blocked', function() {
+    console.warn('⚠️ Actualización de base de datos bloqueada temporalmente por otra pestaña abierta.');
+  });
+}
+
 db.version(3).stores({
   users: 'id, email, username, farmName, name, createdAt',
   cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, userId',

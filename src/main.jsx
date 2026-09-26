@@ -6,6 +6,20 @@ import { AuthProvider } from './context/AuthContext'
 import { ErrorBoundary } from './components/Common/ErrorBoundary'
 import './index.css'
 
+try {
+  sessionStorage.removeItem('ganado_boot_autoreload');
+} catch (e) {}
+
+// Auto-recuperación ante actualización de módulos compilados (Vite chunks)
+window.addEventListener('error', (event) => {
+  if (event?.message && (event.message.includes('dynamically imported module') || event.message.includes('Loading chunk') || event.message.includes('text/html'))) {
+    if (!sessionStorage.getItem('chunk_reload_done')) {
+      sessionStorage.setItem('chunk_reload_done', 'true');
+      window.location.reload();
+    }
+  }
+});
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
