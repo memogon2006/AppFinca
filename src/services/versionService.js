@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.79";
+export const CURRENT_APP_VERSION = "2.14.80";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.80",
+    date: "26/09/2026",
+    title: "🧪 Actualización de Prueba • Verificación de Notificación & Actualización en 1 Clic",
+    highlights: [
+      "Prueba de Notificación en Vivo: Verificación del banner flotante con detección automática instantánea en la nube.",
+      "Actualización Fluida en 1 Clic: Activación del nuevo Service Worker sin pérdida de datos locales ni formularios.",
+      "Garantía de Modo Offline: Verificación del rendimiento y persistencia en IndexedDB."
+    ]
+  },
   {
     version: "2.14.79",
     date: "26/09/2026",
