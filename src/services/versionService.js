@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.15.8";
+export const CURRENT_APP_VERSION = "2.15.9";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.9",
+    date: "26/09/2026",
+    title: "🔒 Blindaje de Sincronización en la Nube & Purga Definitiva de Cuentas",
+    highlights: [
+      "Blindaje contra Nodos Huérfanos: Los escuchadores de sincronización en segundo plano ahora verifican la existencia previa de la cuenta en Firebase antes de emitir actualizaciones.",
+      "Purga Total Garantizada: Cuentas eliminadas quedan 100% limpias en la nube y en dispositivos locales."
+    ]
+  },
   {
     version: "2.15.8",
     date: "26/09/2026",

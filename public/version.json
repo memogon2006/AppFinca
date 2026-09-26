@@ -1,5 +1,5 @@
 {
-  "version": "2.15.8",
-  "buildTime": 1790468000000,
-  "description": "🔒 Validación Estricta de Cuentas y Revocación Automática de Sesiones Eliminadas"
+  "version": "2.15.9",
+  "buildTime": 1790469000000,
+  "description": "🔒 Blindaje de Sincronización en la Nube & Purga Definitiva de Cuentas"
 }
