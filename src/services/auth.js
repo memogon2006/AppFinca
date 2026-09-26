@@ -15,6 +15,7 @@ import {
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 import { setActiveModules, getActiveModules, DEFAULT_MODULES, FARM_PRESETS } from './moduleService';
+import { setSoundProfile, setSoundEnabled, getSoundProfile, isSoundEnabled } from './soundService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
 const LOCKOUT_PREFIX = 'ganado_login_lockout_';
@@ -411,6 +412,25 @@ export async function loginUser({ email, password }) {
     } catch (e) {}
     setActiveModules(effectiveModules, effectiveFarmId);
 
+    // Reconciliar perfil y estado de sonido de la finca
+    let effectiveSoundProfile = localUser.soundProfile;
+    let effectiveSoundEnabled = localUser.soundEnabled;
+    if (localUser.role === 'worker') {
+      const owner = allUsers.find(u => u.id === effectiveFarmId || u.email === localUser.ownerEmail);
+      if (owner) {
+        effectiveSoundProfile = owner.soundProfile || effectiveSoundProfile;
+        effectiveSoundEnabled = owner.soundEnabled !== undefined ? owner.soundEnabled : effectiveSoundEnabled;
+      }
+    }
+    if (!effectiveSoundProfile) {
+      effectiveSoundProfile = getSoundProfile(effectiveFarmId);
+    }
+    if (effectiveSoundEnabled === undefined) {
+      effectiveSoundEnabled = isSoundEnabled(effectiveFarmId);
+    }
+    setSoundProfile(effectiveSoundProfile, effectiveFarmId, false);
+    setSoundEnabled(effectiveSoundEnabled, effectiveFarmId, false);
+
     const sessionUser = {
       id: localUser.id,
       name: localUser.name,
@@ -422,6 +442,8 @@ export async function loginUser({ email, password }) {
       ownerEmail: localUser.ownerEmail || null,
       farmPreset: localUser.farmPreset || null,
       activeModules: effectiveModules,
+      soundProfile: effectiveSoundProfile,
+      soundEnabled: effectiveSoundEnabled,
       isActive: localUser.isActive !== false,
       createdAt: localUser.createdAt,
       mustChangePassword: !!localUser.mustChangePassword,
@@ -544,6 +566,27 @@ export async function loginUser({ email, password }) {
   } catch (e) {}
   setActiveModules(remoteModules, effectiveFarmId);
 
+  // Reconciliar perfil y estado de sonido de la finca
+  let effectiveSoundProfile = user.soundProfile;
+  let effectiveSoundEnabled = user.soundEnabled;
+  if (user.role === 'worker' && user.ownerEmail) {
+    try {
+      const ownerRecord = await cloudFindUser(user.ownerEmail);
+      if (ownerRecord) {
+        effectiveSoundProfile = ownerRecord.soundProfile || effectiveSoundProfile;
+        effectiveSoundEnabled = ownerRecord.soundEnabled !== undefined ? ownerRecord.soundEnabled : effectiveSoundEnabled;
+      }
+    } catch (e) {}
+  }
+  if (!effectiveSoundProfile) {
+    effectiveSoundProfile = getSoundProfile(effectiveFarmId);
+  }
+  if (effectiveSoundEnabled === undefined) {
+    effectiveSoundEnabled = isSoundEnabled(effectiveFarmId);
+  }
+  setSoundProfile(effectiveSoundProfile, effectiveFarmId, false);
+  setSoundEnabled(effectiveSoundEnabled, effectiveFarmId, false);
+
   const sessionUser = {
     id: user.id,
     name: user.name,
@@ -555,6 +598,8 @@ export async function loginUser({ email, password }) {
     ownerEmail: user.ownerEmail || null,
     farmPreset: user.farmPreset || null,
     activeModules: remoteModules,
+    soundProfile: effectiveSoundProfile,
+    soundEnabled: effectiveSoundEnabled,
     isActive: user.isActive !== false,
     createdAt: user.createdAt,
     mustChangePassword: !!user.mustChangePassword,
@@ -578,12 +623,13 @@ export function logoutUser() {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem('ganado_active_modules');
   window.dispatchEvent(new CustomEvent('ganado_modules_changed', { detail: { ...DEFAULT_MODULES } }));
+  window.dispatchEvent(new CustomEvent('ganado_sound_changed', { detail: { profile: 'chime', enabled: true, syncToCloud: false } }));
 }
 
 /**
- * Actualiza el perfil del usuario (nombre de propietario, nombre de finca, correo)
+ * Actualiza el perfil del usuario (nombre de propietario, nombre de finca, correo, sonido)
  */
-export async function updateUserProfile(userId, { name, farmName, email }) {
+export async function updateUserProfile(userId, { name, farmName, email, soundProfile, soundEnabled }) {
   const cleanName = (name || '').trim();
   const cleanFarm = (farmName || '').trim();
   const cleanEmail = (email || '').trim().toLowerCase();
@@ -623,8 +669,17 @@ export async function updateUserProfile(userId, { name, farmName, email }) {
     name: cleanName,
     farmName: cleanFarm,
     email: cleanEmail,
+    ...(soundProfile ? { soundProfile } : {}),
+    ...(soundEnabled !== undefined ? { soundEnabled: !!soundEnabled } : {}),
     updatedAt: new Date().toISOString(),
   };
+
+  if (soundProfile) {
+    setSoundProfile(soundProfile, userId, false);
+  }
+  if (soundEnabled !== undefined) {
+    setSoundEnabled(soundEnabled, userId, false);
+  }
 
   await db.users.put(updates);
   await cloudSaveUser(updates);

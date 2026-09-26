@@ -18,7 +18,7 @@ import {
 } from '../services/auth';
 import { db } from '../services/db';
 import { cloudFindUser, syncCloudAndLocal, cloudIsWorkerDeleted } from '../services/cloudSync';
-import { triggerFeedback } from '../services/soundService';
+import { triggerFeedback, setSoundProfile, setSoundEnabled, getSoundProfile, isSoundEnabled } from '../services/soundService';
 import { setActiveModules, getActiveModules, getModulesUpdatedAt } from '../services/moduleService';
 
 const AuthContext = createContext();
@@ -106,7 +106,13 @@ export function AuthProvider({ children }) {
           let farmName = remoteUser.farmName || session.farmName;
           const ownerEmail = remoteUser.ownerEmail || session.ownerEmail;
           let activeModules = remoteUser.activeModules || session.activeModules || null;
-          
+          const effectiveFarmId = (remoteUser.role === 'worker' || session.role === 'worker')
+            ? (remoteUser.ownerId || session.ownerId || remoteUser.id || session.id)
+            : (remoteUser.id || session.id);
+
+          let soundProfile = remoteUser.soundProfile || session.soundProfile;
+          let soundEnabled = remoteUser.soundEnabled !== undefined ? remoteUser.soundEnabled : session.soundEnabled;
+
           if ((remoteUser.role === 'worker' || session.role === 'worker') && ownerEmail) {
             try {
               const ownerRecord = await cloudFindUser(ownerEmail);
@@ -117,6 +123,12 @@ export function AuthProvider({ children }) {
                 if (ownerRecord.activeModules) {
                   activeModules = ownerRecord.activeModules;
                   setActiveModules(ownerRecord.activeModules, ownerRecord.id);
+                }
+                if (ownerRecord.soundProfile) {
+                  soundProfile = ownerRecord.soundProfile;
+                }
+                if (ownerRecord.soundEnabled !== undefined) {
+                  soundEnabled = ownerRecord.soundEnabled;
                 }
               }
             } catch (e) {}
@@ -130,6 +142,13 @@ export function AuthProvider({ children }) {
             }
           }
 
+          if (soundProfile) {
+            setSoundProfile(soundProfile, effectiveFarmId, false);
+          }
+          if (soundEnabled !== undefined) {
+            setSoundEnabled(soundEnabled, effectiveFarmId, false);
+          }
+
           const merged = {
             ...session,
             ...remoteUser,
@@ -140,6 +159,8 @@ export function AuthProvider({ children }) {
             ownerId: remoteUser.ownerId || session.ownerId || null,
             ownerEmail: ownerEmail || null,
             activeModules: activeModules || session.activeModules || null,
+            soundProfile: soundProfile || getSoundProfile(effectiveFarmId),
+            soundEnabled: soundEnabled !== undefined ? soundEnabled : isSoundEnabled(effectiveFarmId),
             isActive: remoteUser.isActive !== false,
           };
           localStorage.setItem('ganado_current_user_session', JSON.stringify(merged));

@@ -55,28 +55,32 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
 
   const { modules, isModuleActive: checkModuleActive, toggleModule: handleToggleModule, applyFarmPreset: handleApplyFarmPreset } = useActiveModules();
 
-  // Configuración de Sonido y Selección de Perfil
-  const [soundEnabled, setSoundState] = useState(() => isSoundEnabled());
-  const [activeSoundProfile, setActiveSoundProfile] = useState(() => getSoundProfile());
+  // Configuración de Sonido y Selección de Perfil Aislada por Finca
+  const currentFarmId = currentUser?.role === 'worker' ? (currentUser?.ownerId || currentUser?.id) : currentUser?.id;
+  const [soundEnabled, setSoundState] = useState(() => isSoundEnabled(currentFarmId));
+  const [activeSoundProfile, setActiveSoundProfile] = useState(() => getSoundProfile(currentFarmId));
 
   const handleToggleSound = () => {
+    const targetId = currentUser?.role === 'worker' ? (currentUser?.ownerId || currentUser?.id) : currentUser?.id;
     const next = !soundEnabled;
     setSoundState(next);
-    setSoundEnabled(next);
+    setSoundEnabled(next, targetId, true);
     if (next) {
-      playConfirmationSound(activeSoundProfile, true);
+      playConfirmationSound(activeSoundProfile, true, targetId);
     }
   };
 
   const handleSelectSoundProfile = (profileId) => {
+    const targetId = currentUser?.role === 'worker' ? (currentUser?.ownerId || currentUser?.id) : currentUser?.id;
     setActiveSoundProfile(profileId);
-    setSoundProfile(profileId);
-    playConfirmationSound(profileId, true);
+    setSoundProfile(profileId, targetId, true);
+    playConfirmationSound(profileId, true, targetId);
   };
 
   const handlePreviewSoundProfile = (e, profileId) => {
     e.stopPropagation();
-    playConfirmationSound(profileId, true);
+    const targetId = currentUser?.role === 'worker' ? (currentUser?.ownerId || currentUser?.id) : currentUser?.id;
+    playConfirmationSound(profileId, true, targetId);
   };
 
   // Perfil form
@@ -119,6 +123,9 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
         farmName: currentUser.farmName || '',
         email: currentUser.email || '',
       });
+      const targetId = currentUser.role === 'worker' ? (currentUser.ownerId || currentUser.id) : currentUser.id;
+      setSoundState(isSoundEnabled(targetId));
+      setActiveSoundProfile(getSoundProfile(targetId));
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -140,8 +147,12 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
     setProfileMsg(null);
     try {
       setLoadingProfile(true);
-      await updateProfile(profileData);
-      setProfileMsg({ type: 'success', text: '¡Datos del perfil y nombre de finca actualizados con éxito!' });
+      await updateProfile({
+        ...profileData,
+        soundProfile: activeSoundProfile,
+        soundEnabled: soundEnabled,
+      });
+      setProfileMsg({ type: 'success', text: '¡Datos del perfil, nombre de finca y preferencias guardados con éxito!' });
     } catch (err) {
       setProfileMsg({ type: 'error', text: err.message });
     } finally {

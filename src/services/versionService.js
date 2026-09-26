@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.14.77";
+export const CURRENT_APP_VERSION = "2.14.78";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.14.78",
+    date: "26/09/2026",
+    title: "🔔 Aislamiento e Independencia Total de Efectos de Sonido por Finca",
+    highlights: [
+      "Sonido Exclusivo por Finca: El tono de confirmación seleccionado (Campana, Marimba, Báscula Digital, Pop, Clic o Triunfal) queda guardado de forma 100% aislada para cada cuenta y predio ganadero.",
+      "Sin Cruces entre Cuentas: Cambiar el sonido en una finca (ej. La Julia) no altera ni afecta la configuración de otras fincas en el mismo u otros dispositivos.",
+      "Sincronización en la Nube y Herencia: Las preferencias sonoras se guardan en el perfil de Firebase y los trabajadores asignados a la finca disfrutan automáticamente del tono configurado por su administrador."
+    ]
+  },
   {
     version: "2.14.77",
     date: "24/09/2026",

@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
+
 /**
  * Servicio de Feedback Sonoro para Finca Ganadera
- * 100% Offline mediante Web Audio API nativo.
+ * 100% Offline mediante Web Audio API nativo con aislamiento estricto por finca/usuario.
  */
 
 const STORAGE_KEY_SOUND = 'bovina_feedback_sound_enabled';
@@ -97,9 +99,43 @@ export const SOUND_PROFILES = [
   }
 ];
 
-export function isSoundEnabled() {
+/**
+ * Obtiene el ID de finca efectivo para aislar configuraciones
+ */
+export function getEffectiveFarmId(sessionUser = null) {
+  try {
+    const user = sessionUser || (() => {
+      const raw = localStorage.getItem('ganado_current_user_session');
+      return raw ? JSON.parse(raw) : null;
+    })();
+    if (!user) return null;
+    return user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Consulta si el sonido está habilitado para la finca actual
+ */
+export function isSoundEnabled(targetFarmId = null) {
   if (typeof window === 'undefined') return true;
   try {
+    const farmId = targetFarmId || getEffectiveFarmId();
+    if (farmId) {
+      const scoped = localStorage.getItem(`${STORAGE_KEY_SOUND}_${farmId}`);
+      if (scoped !== null) return scoped === 'true';
+
+      const rawUser = localStorage.getItem('ganado_current_user_session');
+      if (rawUser) {
+        const user = JSON.parse(rawUser);
+        const userFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+        if (userFarmId === farmId && user.soundEnabled !== undefined) {
+          localStorage.setItem(`${STORAGE_KEY_SOUND}_${farmId}`, user.soundEnabled ? 'true' : 'false');
+          return !!user.soundEnabled;
+        }
+      }
+    }
     const val = localStorage.getItem(STORAGE_KEY_SOUND);
     return val === null ? true : val === 'true';
   } catch {
@@ -107,15 +143,65 @@ export function isSoundEnabled() {
   }
 }
 
-export function setSoundEnabled(enabled) {
+/**
+ * Activa o desactiva el sonido guardándolo de forma aislada para esta finca
+ */
+export function setSoundEnabled(enabled, targetFarmId = null, syncToCloud = true) {
   try {
-    localStorage.setItem(STORAGE_KEY_SOUND, enabled ? 'true' : 'false');
+    const farmId = targetFarmId || getEffectiveFarmId();
+    const strVal = enabled ? 'true' : 'false';
+    if (farmId) {
+      localStorage.setItem(`${STORAGE_KEY_SOUND}_${farmId}`, strVal);
+    }
+    localStorage.setItem(STORAGE_KEY_SOUND, strVal);
+
+    // Actualizar sesión activa si corresponde
+    const rawUser = localStorage.getItem('ganado_current_user_session');
+    if (rawUser) {
+      const user = JSON.parse(rawUser);
+      const userFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+      if (!farmId || userFarmId === farmId) {
+        user.soundEnabled = !!enabled;
+        localStorage.setItem('ganado_current_user_session', JSON.stringify(user));
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ganado_sound_changed', {
+        detail: {
+          enabled: !!enabled,
+          profile: getSoundProfile(farmId),
+          farmId,
+          syncToCloud
+        }
+      }));
+    }
   } catch {}
 }
 
-export function getSoundProfile() {
+/**
+ * Obtiene el perfil de tono de confirmación configurado para la finca
+ */
+export function getSoundProfile(targetFarmId = null) {
   if (typeof window === 'undefined') return 'chime';
   try {
+    const farmId = targetFarmId || getEffectiveFarmId();
+    if (farmId) {
+      const scoped = localStorage.getItem(`${STORAGE_KEY_PROFILE}_${farmId}`);
+      if (scoped && SOUND_PROFILES.some(p => p.id === scoped)) {
+        return scoped;
+      }
+
+      const rawUser = localStorage.getItem('ganado_current_user_session');
+      if (rawUser) {
+        const user = JSON.parse(rawUser);
+        const userFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+        if (userFarmId === farmId && user.soundProfile && SOUND_PROFILES.some(p => p.id === user.soundProfile)) {
+          localStorage.setItem(`${STORAGE_KEY_PROFILE}_${farmId}`, user.soundProfile);
+          return user.soundProfile;
+        }
+      }
+    }
     const val = localStorage.getItem(STORAGE_KEY_PROFILE);
     if (val && SOUND_PROFILES.some(p => p.id === val)) {
       return val;
@@ -126,12 +212,75 @@ export function getSoundProfile() {
   }
 }
 
-export function setSoundProfile(profileId) {
+/**
+ * Establece el perfil de tono guardándolo de forma 100% aislada para la finca
+ */
+export function setSoundProfile(profileId, targetFarmId = null, syncToCloud = true) {
   try {
-    if (SOUND_PROFILES.some(p => p.id === profileId)) {
-      localStorage.setItem(STORAGE_KEY_PROFILE, profileId);
+    if (!SOUND_PROFILES.some(p => p.id === profileId)) return;
+    const farmId = targetFarmId || getEffectiveFarmId();
+    if (farmId) {
+      localStorage.setItem(`${STORAGE_KEY_PROFILE}_${farmId}`, profileId);
+    }
+    localStorage.setItem(STORAGE_KEY_PROFILE, profileId);
+
+    // Actualizar sesión activa
+    const rawUser = localStorage.getItem('ganado_current_user_session');
+    if (rawUser) {
+      const user = JSON.parse(rawUser);
+      const userFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+      if (!farmId || userFarmId === farmId) {
+        user.soundProfile = profileId;
+        localStorage.setItem('ganado_current_user_session', JSON.stringify(user));
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ganado_sound_changed', {
+        detail: {
+          profile: profileId,
+          enabled: isSoundEnabled(farmId),
+          farmId,
+          syncToCloud
+        }
+      }));
     }
   } catch {}
+}
+
+/**
+ * Hook reactivo para usar y sincronizar ajustes de sonido por finca
+ */
+export function useSoundSettings(customFarmId = null) {
+  const [farmId, setFarmId] = useState(() => customFarmId || getEffectiveFarmId());
+  const [enabled, setEnabled] = useState(() => isSoundEnabled(customFarmId || getEffectiveFarmId()));
+  const [profile, setProfile] = useState(() => getSoundProfile(customFarmId || getEffectiveFarmId()));
+
+  useEffect(() => {
+    const currentId = customFarmId || getEffectiveFarmId();
+    setFarmId(currentId);
+    setEnabled(isSoundEnabled(currentId));
+    setProfile(getSoundProfile(currentId));
+
+    const handleSoundChange = (e) => {
+      const detail = e.detail;
+      const effectiveId = customFarmId || getEffectiveFarmId();
+      if (!detail?.farmId || detail.farmId === effectiveId) {
+        if (detail?.enabled !== undefined) setEnabled(detail.enabled);
+        if (detail?.profile) setProfile(detail.profile);
+      }
+    };
+
+    window.addEventListener('ganado_sound_changed', handleSoundChange);
+    return () => window.removeEventListener('ganado_sound_changed', handleSoundChange);
+  }, [customFarmId]);
+
+  return {
+    soundEnabled: enabled,
+    soundProfile: profile,
+    toggleSound: (val) => setSoundEnabled(val !== undefined ? val : !enabled, farmId),
+    selectSoundProfile: (newProfile) => setSoundProfile(newProfile, farmId),
+  };
 }
 
 /**
@@ -295,14 +444,15 @@ function playTriumph(ctx, now) {
 /**
  * Ejecuta el tono de confirmación según el perfil seleccionado (o forzando un perfil específico para preview)
  */
-export function playConfirmationSound(specificProfileId = null, bypassEnabledCheck = false) {
-  if (!bypassEnabledCheck && !isSoundEnabled()) return;
+export function playConfirmationSound(specificProfileId = null, bypassEnabledCheck = false, customFarmId = null) {
+  const farmId = customFarmId || getEffectiveFarmId();
+  if (!bypassEnabledCheck && !isSoundEnabled(farmId)) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
   try {
     const now = ctx.currentTime;
-    const profile = specificProfileId || getSoundProfile();
+    const profile = specificProfileId || getSoundProfile(farmId);
 
     switch (profile) {
       case 'digital':
@@ -336,8 +486,9 @@ export const playScaleBeep = playConfirmationSound;
 /**
  * Genera acorde armónico de bienvenida / ingreso a la finca ganadera
  */
-export function playLoginSound() {
-  if (!isSoundEnabled()) return;
+export function playLoginSound(customFarmId = null) {
+  const farmId = customFarmId || getEffectiveFarmId();
+  if (!isSoundEnabled(farmId)) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -370,8 +521,9 @@ export function playLoginSound() {
 /**
  * Genera sonido melódico para guardado en lote / masivo
  */
-export function playBatchSuccessSound() {
-  if (!isSoundEnabled()) return;
+export function playBatchSuccessSound(customFarmId = null) {
+  const farmId = customFarmId || getEffectiveFarmId();
+  if (!isSoundEnabled(farmId)) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -403,8 +555,9 @@ export function playBatchSuccessSound() {
 /**
  * Genera tono de advertencia o error sutil
  */
-export function playWarningSound() {
-  if (!isSoundEnabled()) return;
+export function playWarningSound(customFarmId = null) {
+  const farmId = customFarmId || getEffectiveFarmId();
+  if (!isSoundEnabled(farmId)) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -432,8 +585,9 @@ export function playWarningSound() {
 /**
  * Genera tono de campana armoniosa para actualización o novedad importante
  */
-export function playUpdateChime() {
-  if (!isSoundEnabled()) return;
+export function playUpdateChime(customFarmId = null) {
+  const farmId = customFarmId || getEffectiveFarmId();
+  if (!isSoundEnabled(farmId)) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -474,17 +628,18 @@ export function playUpdateChime() {
 /**
  * Función integral que ejecuta el sonido correspondiente según la acción realizada
  */
-export function triggerFeedback(type = 'single') {
+export function triggerFeedback(type = 'single', customFarmId = null) {
+  const farmId = customFarmId || getEffectiveFarmId();
   if (type === 'batch') {
-    playBatchSuccessSound();
+    playBatchSuccessSound(farmId);
   } else if (type === 'login') {
-    playLoginSound();
+    playLoginSound(farmId);
   } else if (type === 'update') {
-    playUpdateChime();
+    playUpdateChime(farmId);
   } else if (type === 'warning') {
-    playWarningSound();
+    playWarningSound(farmId);
   } else {
-    playConfirmationSound();
+    playConfirmationSound(null, false, farmId);
   }
 }
 

@@ -41,6 +41,34 @@ if (typeof window !== 'undefined') {
       }
     }
   });
+
+  // Listener para auto-subida inmediata cuando el perfil de sonido cambia
+  window.addEventListener('ganado_sound_changed', (e) => {
+    const detail = e.detail;
+    if (detail && detail.syncToCloud !== false) {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        try {
+          const raw = localStorage.getItem('ganado_current_user_session');
+          if (raw) {
+            const u = JSON.parse(raw);
+            if (u && u.role !== 'worker' && u.email) {
+              const safeEmail = toSafeEmailKey(u.email);
+              const soundPayload = {
+                soundProfile: detail.profile || 'chime',
+                soundEnabled: detail.enabled !== undefined ? !!detail.enabled : true,
+                updatedAt: new Date().toISOString()
+              };
+              safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(soundPayload),
+              }).catch(() => null);
+            }
+          }
+        } catch (uErr) {}
+      }
+    }
+  });
 }
 
 /**
@@ -92,6 +120,12 @@ export async function cloudSaveUser(user) {
     updatedAt: new Date().toISOString(),
   };
 
+  if (user.soundProfile) {
+    userPayload.soundProfile = user.soundProfile;
+  }
+  if (user.soundEnabled !== undefined) {
+    userPayload.soundEnabled = !!user.soundEnabled;
+  }
   if (user.passwordHash) {
     userPayload.passwordHash = user.passwordHash;
   }
