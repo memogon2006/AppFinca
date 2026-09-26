@@ -13,11 +13,10 @@ import {
   CheckCircle2, 
   Trash2,
   Clock,
-  HelpCircle,
-  Plus,
-  Minus
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { formatNumber, formatCurrency } from '../../services/calculations';
+import { formatNumber, formatCurrency, formatDate } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
 
 export function DailyMilkLogModal({
@@ -26,6 +25,7 @@ export function DailyMilkLogModal({
   onSave,
   onDelete,
   initialData = null,
+  dailyMilkLogs = [],
   activeMilkingCowsCount = 0,
   defaultPricePerLiter = 0,
   zIndex = 'z-50'
@@ -41,37 +41,58 @@ export function DailyMilkLogModal({
   const [salesLiters, setSalesLiters] = useState('');
   const [pricePerLiter, setPricePerLiter] = useState('');
   const [notes, setNotes] = useState('');
+  const [existingRecordId, setExistingRecordId] = useState(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Sincronizar datos al abrir o cambiar de registro
+  // Cargar automáticamente los datos según la fecha seleccionada
+  const loadDataForDate = (targetDate, fallbackData = null) => {
+    const existing = fallbackData?.id 
+      ? fallbackData 
+      : dailyMilkLogs.find(l => l.date === targetDate);
+
+    if (existing) {
+      setExistingRecordId(existing.id || null);
+      setAmLiters(existing.amLiters ? String(existing.amLiters) : '');
+      setPmLiters(existing.pmLiters ? String(existing.pmLiters) : '');
+      setTotalLiters(existing.totalLiters ? String(existing.totalLiters) : '');
+      setCowsMilked(existing.cowsMilked ? String(existing.cowsMilked) : '');
+      setCalvesLiters(existing.calvesLiters !== undefined ? String(existing.calvesLiters) : '0');
+      setFarmLiters(existing.farmLiters !== undefined ? String(existing.farmLiters) : '0');
+      setRejectedLiters(existing.rejectedLiters !== undefined ? String(existing.rejectedLiters) : '0');
+      setSalesLiters(existing.salesLiters !== undefined ? String(existing.salesLiters) : '');
+      setPricePerLiter(existing.pricePerLiter ? String(existing.pricePerLiter) : (defaultPricePerLiter > 0 ? String(defaultPricePerLiter) : ''));
+      setNotes(existing.notes || '');
+      if (parseFloat(existing.calvesLiters) > 0 || parseFloat(existing.farmLiters) > 0 || parseFloat(existing.rejectedLiters) > 0) {
+        setShowAdvanced(true);
+      }
+    } else {
+      setExistingRecordId(null);
+      setAmLiters('');
+      setPmLiters('');
+      setTotalLiters('');
+      setCowsMilked(activeMilkingCowsCount > 0 ? String(activeMilkingCowsCount) : '');
+      setCalvesLiters('0');
+      setFarmLiters('0');
+      setRejectedLiters('0');
+      setSalesLiters('');
+      setPricePerLiter(defaultPricePerLiter > 0 ? String(defaultPricePerLiter) : '');
+      setNotes('');
+      setShowAdvanced(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      if (initialData) {
-        setDate(initialData.date || new Date().toISOString().split('T')[0]);
-        setAmLiters(initialData.amLiters ? String(initialData.amLiters) : '');
-        setPmLiters(initialData.pmLiters ? String(initialData.pmLiters) : '');
-        setTotalLiters(initialData.totalLiters ? String(initialData.totalLiters) : '');
-        setCowsMilked(initialData.cowsMilked ? String(initialData.cowsMilked) : '');
-        setCalvesLiters(initialData.calvesLiters !== undefined ? String(initialData.calvesLiters) : '0');
-        setFarmLiters(initialData.farmLiters !== undefined ? String(initialData.farmLiters) : '0');
-        setRejectedLiters(initialData.rejectedLiters !== undefined ? String(initialData.rejectedLiters) : '0');
-        setSalesLiters(initialData.salesLiters !== undefined ? String(initialData.salesLiters) : '');
-        setPricePerLiter(initialData.pricePerLiter ? String(initialData.pricePerLiter) : (defaultPricePerLiter > 0 ? String(defaultPricePerLiter) : ''));
-        setNotes(initialData.notes || '');
-      } else {
-        setDate(new Date().toISOString().split('T')[0]);
-        setAmLiters('');
-        setPmLiters('');
-        setTotalLiters('');
-        setCowsMilked(activeMilkingCowsCount > 0 ? String(activeMilkingCowsCount) : '');
-        setCalvesLiters('0');
-        setFarmLiters('0');
-        setRejectedLiters('0');
-        setSalesLiters('');
-        setPricePerLiter(defaultPricePerLiter > 0 ? String(defaultPricePerLiter) : '');
-        setNotes('');
-      }
+      const targetDate = initialData?.date || new Date().toISOString().split('T')[0];
+      setDate(targetDate);
+      loadDataForDate(targetDate, initialData);
     }
-  }, [isOpen, initialData, activeMilkingCowsCount, defaultPricePerLiter]);
+  }, [isOpen, initialData, dailyMilkLogs, activeMilkingCowsCount, defaultPricePerLiter]);
+
+  const handleDateChange = (newDate) => {
+    setDate(newDate);
+    loadDataForDate(newDate);
+  };
 
   // Recalcular total automáticamente al cambiar AM o PM
   const handleAmChange = (val) => {
@@ -81,7 +102,6 @@ export function DailyMilkLogModal({
     const tot = am + pm;
     setTotalLiters(tot > 0 ? String(Number(tot.toFixed(1))) : '');
     
-    // Auto-calcular venta descontando terneros, finca y descarte
     const cal = parseFloat(calvesLiters) || 0;
     const frm = parseFloat(farmLiters) || 0;
     const rej = parseFloat(rejectedLiters) || 0;
@@ -122,7 +142,6 @@ export function DailyMilkLogModal({
     setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : '');
   };
 
-  // Botones rápidos de incremento
   const addLiters = (setter, getter, amount) => {
     const cur = parseFloat(getter) || 0;
     const next = Math.max(0, Number((cur + amount).toFixed(1)));
@@ -140,7 +159,7 @@ export function DailyMilkLogModal({
     }
 
     if (tot <= 0) {
-      alert('Por favor ingresa al menos la cantidad de litros producidos en la mañana (AM), tarde (PM) o el total del día.');
+      alert('Por favor ingresa los litros producidos en la mañana (AM), tarde (PM) o el total del día.');
       return;
     }
 
@@ -156,6 +175,7 @@ export function DailyMilkLogModal({
 
     const record = {
       ...(initialData || {}),
+      id: existingRecordId || initialData?.id || undefined,
       date,
       amLiters: am,
       pmLiters: pm,
@@ -177,23 +197,37 @@ export function DailyMilkLogModal({
   const currentSales = parseFloat(salesLiters) || Math.max(0, currentTotal - (parseFloat(calvesLiters) || 0) - (parseFloat(farmLiters) || 0) - (parseFloat(rejectedLiters) || 0));
   const currentCows = parseInt(cowsMilked, 10) || 0;
   const avgPerCow = currentCows > 0 ? (currentTotal / currentCows) : 0;
-  const currentPrice = parseFloat(pricePerLiter) || 0;
-  const estimatedDayValue = currentSales * currentPrice;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={initialData ? "Editar Producción Diaria General" : "🥛 Registrar Producción General del Día"}
+      title="🥛 Registro de Producción del Día"
       zIndex={zIndex}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         
-        {/* Encabezado / Fecha y Vacas Ordeñadas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Banner de Estado de Carga Automática */}
+        <div className={`p-3 rounded-2xl border flex items-center justify-between text-xs font-bold ${
+          existingRecordId 
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300' 
+            : 'bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+        }`}>
+          <div className="flex items-center gap-2">
+            {existingRecordId ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Sparkles className="w-4 h-4 text-blue-500" />}
+            <span>
+              {existingRecordId 
+                ? `Cargado: Ya existe producción registrada para este día (Modo edición)`
+                : `Nuevo Registro para el ${formatDate(date)}`}
+            </span>
+          </div>
+        </div>
+
+        {/* 1. Selector de Fecha y Vacas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Fecha del Ordeño *</span>
             </label>
@@ -201,15 +235,15 @@ export function DailyMilkLogModal({
               type="date"
               required
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-sm focus:ring-2 focus:ring-emerald-500 transition"
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-emerald-500 transition"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
               <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span>Vacas Ordeñadas Hoy</span>
+              <span>Vacas Ordeñadas</span>
             </label>
             <div className="relative">
               <input
@@ -219,45 +253,33 @@ export function DailyMilkLogModal({
                 placeholder="Ej. 18"
                 value={cowsMilked}
                 onChange={(e) => setCowsMilked(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-emerald-500 transition pr-16"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-emerald-500 transition pr-16"
               />
-              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                cabezas
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                vacas
               </span>
             </div>
-            {activeMilkingCowsCount > 0 && !cowsMilked && (
-              <button
-                type="button"
-                onClick={() => setCowsMilked(String(activeMilkingCowsCount))}
-                className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline mt-1 font-semibold block"
-              >
-                ⚡ Usar {activeMilkingCowsCount} vacas en ordeño del inventario
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Sección 1: Pesaje de Ordeño AM y PM */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-emerald-500/10 border border-blue-500/20 space-y-4">
+        {/* 2. Litros Producidos: AM, PM y Total */}
+        <div className="p-4 rounded-3xl bg-slate-900 text-white border border-slate-800 space-y-3 shadow-lg">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+            <span className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
               <Milk className="w-4 h-4" />
-              <span>Volumen de Leche Producido (Litros)</span>
-            </h4>
+              <span>Litros de Leche Producidos</span>
+            </span>
             {avgPerCow > 0 && (
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-300/40">
-                Prom: {formatNumber(avgPerCow, 1)} L/vaca
+              <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                {formatNumber(avgPerCow, 1)} L/vaca
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            {/* Ordeño Mañana (AM) */}
-            <div className="p-3 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-600 dark:text-amber-400">
-                <span>🌅 Mañana (AM)</span>
-                <Clock className="w-3.5 h-3.5" />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* AM */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+              <span className="text-[11px] font-bold text-amber-400 block">🌅 Mañana (AM)</span>
               <div className="relative">
                 <input
                   type="number"
@@ -266,34 +288,30 @@ export function DailyMilkLogModal({
                   placeholder="0.0"
                   value={amLiters}
                   onChange={(e) => handleAmChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white font-black text-lg focus:ring-2 focus:ring-amber-500 transition pr-8"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-black text-xl text-center outline-none focus:border-amber-500"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">L</span>
               </div>
               <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={() => addLiters(setAmLiters, amLiters, 5)}
-                  className="flex-1 py-1 rounded bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/50 text-[10px] font-bold text-slate-700 dark:text-slate-300 transition"
+                  className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
-                  +5 L
+                  +5
                 </button>
                 <button
                   type="button"
                   onClick={() => addLiters(setAmLiters, amLiters, 10)}
-                  className="flex-1 py-1 rounded bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/50 text-[10px] font-bold text-slate-700 dark:text-slate-300 transition"
+                  className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
-                  +10 L
+                  +10
                 </button>
               </div>
             </div>
 
-            {/* Ordeño Tarde (PM) */}
-            <div className="p-3 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                <span>🌇 Tarde (PM)</span>
-                <Clock className="w-3.5 h-3.5" />
-              </div>
+            {/* PM */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+              <span className="text-[11px] font-bold text-blue-400 block">🌇 Tarde (PM)</span>
               <div className="relative">
                 <input
                   type="number"
@@ -302,34 +320,30 @@ export function DailyMilkLogModal({
                   placeholder="0.0"
                   value={pmLiters}
                   onChange={(e) => handlePmChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white font-black text-lg focus:ring-2 focus:ring-indigo-500 transition pr-8"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-black text-xl text-center outline-none focus:border-blue-500"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">L</span>
               </div>
               <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={() => addLiters(setPmLiters, pmLiters, 5)}
-                  className="flex-1 py-1 rounded bg-slate-100 dark:bg-slate-700 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-[10px] font-bold text-slate-700 dark:text-slate-300 transition"
+                  className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-blue-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
-                  +5 L
+                  +5
                 </button>
                 <button
                   type="button"
                   onClick={() => addLiters(setPmLiters, pmLiters, 10)}
-                  className="flex-1 py-1 rounded bg-slate-100 dark:bg-slate-700 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-[10px] font-bold text-slate-700 dark:text-slate-300 transition"
+                  className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-blue-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
-                  +10 L
+                  +10
                 </button>
               </div>
             </div>
 
-            {/* Total Litros del Día */}
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-2 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs font-extrabold text-emerald-700 dark:text-emerald-300">
-                <span>🥛 TOTAL DÍA</span>
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
+            {/* TOTAL */}
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-950/80 to-slate-950 border border-emerald-500/40 flex flex-col justify-between">
+              <span className="text-[11px] font-black text-emerald-400 block uppercase">🥛 Total Día</span>
               <div className="relative">
                 <input
                   type="number"
@@ -338,171 +352,130 @@ export function DailyMilkLogModal({
                   placeholder="0.0"
                   value={totalLiters}
                   onChange={(e) => handleTotalChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-emerald-400/50 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 font-black text-xl focus:ring-2 focus:ring-emerald-500 transition pr-8"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-emerald-500 text-emerald-400 font-black text-2xl text-center outline-none"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-600 dark:text-emerald-400">L</span>
               </div>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 block text-center font-medium">
-                Auto-suma AM + PM o directo
+              <span className="text-[10px] text-slate-400 block text-center font-medium">
+                Auto-suma AM + PM
               </span>
             </div>
           </div>
         </div>
 
-        {/* Sección 2: Destino de la Leche (Venta vs Terneros vs Queso/Finca) */}
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3.5">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Store className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Distribución & Destino de la Leche</span>
-            </h4>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              Venta: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{formatNumber(currentSales, 1)} L</strong>
-            </span>
-          </div>
+        {/* 3. Distribución / Opciones Avanzadas (Colapsable para no complicar) */}
+        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between transition cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <Store className="w-4 h-4 text-emerald-500" />
+              <span>Destino de Leche (Venta: {formatNumber(currentSales, 1)} L)</span>
+            </div>
+            <div className="flex items-center gap-1 text-slate-400">
+              <span className="text-[11px] font-normal">{showAdvanced ? 'Ocultar' : 'Terneros / Queso / Descarte'}</span>
+              {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </button>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* Litros a Venta / Tanque */}
-            <div>
-              <label className="block text-[11px] font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-                🧊 Venta / Tanque *
-              </label>
-              <div className="relative">
+          {showAdvanced && (
+            <div className="p-4 bg-white dark:bg-slate-900 space-y-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                    🧊 Venta / Tanque
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={salesLiters}
+                    onChange={(e) => setSalesLiters(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-purple-600 dark:text-purple-400 mb-1">
+                    🍼 Terneros
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={calvesLiters}
+                    onChange={(e) => {
+                      setCalvesLiters(e.target.value);
+                      handleDeductionChange(e.target.value, undefined, undefined);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1">
+                    🧀 Queso / Finca
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={farmLiters}
+                    onChange={(e) => {
+                      setFarmLiters(e.target.value);
+                      handleDeductionChange(undefined, e.target.value, undefined);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-rose-600 dark:text-rose-400 mb-1">
+                    ⚠️ Descarte
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={rejectedLiters}
+                    onChange={(e) => {
+                      setRejectedLiters(e.target.value);
+                      handleDeductionChange(undefined, undefined, e.target.value);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  Notas / Observación
+                </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  required
-                  value={salesLiters}
-                  onChange={(e) => setSalesLiters(e.target.value)}
-                  className="w-full px-2.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-emerald-500 transition pr-6"
+                  type="text"
+                  placeholder="Ej. Lluvia, pasto nuevo, cambio de ordeñador..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
                 />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">L</span>
               </div>
             </div>
-
-            {/* Litros Terneros */}
-            <div>
-              <label className="block text-[11px] font-bold text-purple-700 dark:text-purple-300 mb-1 flex items-center gap-1">
-                <Baby className="w-3 h-3" />
-                <span>Terneros</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={calvesLiters}
-                  onChange={(e) => {
-                    setCalvesLiters(e.target.value);
-                    handleDeductionChange(e.target.value, undefined, undefined);
-                  }}
-                  className="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium text-sm focus:ring-2 focus:ring-purple-500 transition pr-6"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">L</span>
-              </div>
-            </div>
-
-            {/* Litros Consumo / Quesería */}
-            <div>
-              <label className="block text-[11px] font-bold text-amber-700 dark:text-amber-300 mb-1 flex items-center gap-1">
-                <Store className="w-3 h-3" />
-                <span>Queso / Finca</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={farmLiters}
-                  onChange={(e) => {
-                    setFarmLiters(e.target.value);
-                    handleDeductionChange(undefined, e.target.value, undefined);
-                  }}
-                  className="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium text-sm focus:ring-2 focus:ring-amber-500 transition pr-6"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">L</span>
-              </div>
-            </div>
-
-            {/* Litros Descarte / Rechazo */}
-            <div>
-              <label className="block text-[11px] font-bold text-rose-700 dark:text-rose-300 mb-1 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                <span>Descarte / Mastitis</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={rejectedLiters}
-                  onChange={(e) => {
-                    setRejectedLiters(e.target.value);
-                    handleDeductionChange(undefined, undefined, e.target.value);
-                  }}
-                  className="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium text-sm focus:ring-2 focus:ring-rose-500 transition pr-6"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">L</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Sección 3: Precio / Facturación Estimada & Notas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Precio Base por Litro (Opcional)</span>
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                min="0"
-                step="50"
-                placeholder="Ej. 2100"
-                value={pricePerLiter}
-                onChange={(e) => setPricePerLiter(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-emerald-500 transition pr-16"
-              />
-              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
-                $/Litro
-              </span>
-            </div>
-            {estimatedDayValue > 0 && (
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 block">
-                Valor estimado día: {formatCurrency(estimatedDayValue)}
-              </span>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-              Observaciones / Novedades
-            </label>
-            <input
-              type="text"
-              placeholder="Ej. Lluvia fuerte en la tarde, pasto nuevo..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 transition"
-            />
-          </div>
-        </div>
-
-        {/* Botones de Acción */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-          {initialData?.id && onDelete ? (
+        {/* 4. Botones de Acción Destacados */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+          {existingRecordId && onDelete ? (
             <button
               type="button"
               onClick={() => {
-                if (confirm('¿Deseas eliminar este registro de producción diaria?')) {
-                  onDelete(initialData.id);
+                if (confirm(`¿Deseas eliminar el registro de producción del día ${formatDate(date)}?`)) {
+                  onDelete(existingRecordId);
                   onClose();
                 }
               }}
-              className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-sm flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
               <span>Eliminar</span>
@@ -519,7 +492,7 @@ export function DailyMilkLogModal({
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/30 transition cursor-pointer active:scale-95"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition cursor-pointer active:scale-95"
             >
               <Save className="w-4 h-4" />
               <span>Guardar Producción</span>

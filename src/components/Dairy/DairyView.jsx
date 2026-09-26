@@ -23,9 +23,8 @@ import {
   Store,
   Receipt,
   FileText,
-  Layers,
-  Check,
-  ChevronLeft
+  Save,
+  Check
 } from 'lucide-react';
 import { QuickMilkingModal } from './QuickMilkingModal';
 import { TankDeliveryModal } from './TankDeliveryModal';
@@ -66,15 +65,22 @@ export function DairyView({
   farmName = 'Mi Finca Ganadera',
   currentUser = null
 }) {
-  // Navegación de pestañas principales
+  // Pestaña activa principal
   const [activeTab, setActiveTab] = useState('periods'); // 'periods', 'settlements', 'sheet', 'curves', 'tank', 'secado'
   
-  // Estado de navegación temporal de períodos de lechería
+  // Períodos de lechería
   const [periodType, setPeriodType] = useState('first_fortnight'); // 'first_fortnight', 'second_fortnight', 'full_month', 'current_week', 'custom'
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth()); // 0-11
   const [customStart, setCustomStart] = useState(() => new Date().toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Registrador Rápido de Día Integrado (con auto-carga según fecha)
+  const [quickDate, setQuickDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [quickAm, setQuickAm] = useState('');
+  const [quickPm, setQuickPm] = useState('');
+  const [quickTotal, setQuickTotal] = useState('');
+  const [quickCows, setQuickCows] = useState('');
 
   // Planilla individual
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -100,6 +106,9 @@ export function DairyView({
   const females = cattle.filter(c => c.sex === 'Hembra' && c.status === 'Activo');
   const batches = Array.from(new Set(females.map(c => c.entryBatch || c.paddock || 'Sin Lote'))).filter(Boolean);
 
+  // Métricas del hato
+  const metrics = calculateHerdMilkMetrics(cattle, milkRecords, milkDeliveries, selectedDate);
+
   // Rango de fechas del período actual
   const periodRange = periodType === 'custom' 
     ? {
@@ -111,30 +120,67 @@ export function DairyView({
       }
     : getMilkPeriodRange(periodType, selectedYear, selectedMonth);
 
-  // Resumen del período calculado con la fórmula zootécnica
+  // Resumen del período calculado
   const periodSummary = calculatePeriodMilkSummary(
     dailyMilkLogs,
     milkRecords,
     periodRange.startDate,
     periodRange.endDate,
-    2100 // Precio de referencia
+    2100
   );
 
-  // Métricas globales del hato
-  const metrics = calculateHerdMilkMetrics(cattle, milkRecords, milkDeliveries, selectedDate);
+  // Sincronizar auto-carga del Registrador Rápido de Día
+  const syncQuickDayForm = (targetDate) => {
+    setQuickDate(targetDate);
+    const existing = dailyMilkLogs.find(l => l.date === targetDate);
+    if (existing) {
+      setQuickAm(existing.amLiters ? String(existing.amLiters) : '');
+      setQuickPm(existing.pmLiters ? String(existing.pmLiters) : '');
+      setQuickTotal(existing.totalLiters ? String(existing.totalLiters) : '');
+      setQuickCows(existing.cowsMilked ? String(existing.cowsMilked) : '');
+    } else {
+      setQuickAm('');
+      setQuickPm('');
+      setQuickTotal('');
+      setQuickCows(metrics.milkingCowsCount > 0 ? String(metrics.milkingCowsCount) : '');
+    }
+  };
 
-  // Registros de la fecha seleccionada para planilla individual
-  const dateRecords = milkRecords.filter(r => r.date === selectedDate);
-  const dateRecordMap = new Map(dateRecords.map(r => [String(r.cattleId), r]));
+  // Guardar desde el Registrador Rápido Integrado
+  const handleQuickDaySave = (e) => {
+    e.preventDefault();
+    const am = parseFloat(quickAm) || 0;
+    const pm = parseFloat(quickPm) || 0;
+    let tot = parseFloat(quickTotal) || 0;
+    if (tot === 0 && (am > 0 || pm > 0)) {
+      tot = am + pm;
+    }
 
-  // Filtrado de vacas para la planilla individual
-  const filteredFemales = females.filter(cow => {
-    const matchesSearch = 
-      (cow.tagNumber && cow.tagNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (cow.name && cow.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesBatch = selectedBatchFilter === 'all' || (cow.entryBatch || cow.paddock || 'Sin Lote') === selectedBatchFilter;
-    return matchesSearch && matchesBatch;
-  });
+    if (tot <= 0) {
+      alert('Por favor ingresa los litros de la mañana (AM), tarde (PM) o el total del día.');
+      return;
+    }
+
+    const cows = parseInt(quickCows, 10) || 0;
+    const existing = dailyMilkLogs.find(l => l.date === quickDate);
+
+    const record = {
+      ...(existing || {}),
+      date: quickDate,
+      amLiters: am,
+      pmLiters: pm,
+      totalLiters: tot,
+      cowsMilked: cows,
+      salesLiters: existing?.salesLiters !== undefined ? existing.salesLiters : tot,
+      calvesLiters: existing?.calvesLiters || 0,
+      farmLiters: existing?.farmLiters || 0,
+      rejectedLiters: existing?.rejectedLiters || 0,
+      pricePerLiter: existing?.pricePerLiter || 2100,
+      notes: existing?.notes || '',
+    };
+
+    onSaveDailyMilkLog(record);
+  };
 
   // Generación de lista completa de días en el rango del período seleccionado
   const generatePeriodDaysList = () => {
@@ -149,7 +195,6 @@ export function DairyView({
       const dateStr = d.toISOString().split('T')[0];
       const log = logsMap.get(dateStr);
       
-      // Fallback a pesajes individuales si no hay log general
       const indRecords = milkRecords.filter(r => r.date === dateStr);
       let indAm = 0, indPm = 0, indTot = 0;
       indRecords.forEach(r => {
@@ -166,8 +211,6 @@ export function DairyView({
         dayNumber: d.getDate(),
         log: log || null,
         hasLog: !!log,
-        hasIndRecords: indRecords.length > 0,
-        indRecordsCount: indRecords.length,
         amLiters: log ? log.amLiters : indAm,
         pmLiters: log ? log.pmLiters : indPm,
         totalLiters: log ? log.totalLiters : indTot,
@@ -177,7 +220,6 @@ export function DairyView({
         farmLiters: log ? log.farmLiters : 0,
         rejectedLiters: log ? log.rejectedLiters : 0,
         isSettled: log ? log.isSettled : false,
-        settlementId: log ? log.settlementId : null,
       });
     }
 
@@ -186,7 +228,18 @@ export function DairyView({
 
   const periodDays = generatePeriodDaysList();
 
-  // Exportar reporte lechero completo a Excel
+  // Filtrado de vacas para la planilla individual
+  const dateRecords = milkRecords.filter(r => r.date === selectedDate);
+  const dateRecordMap = new Map(dateRecords.map(r => [String(r.cattleId), r]));
+
+  const filteredFemales = females.filter(cow => {
+    const matchesSearch = 
+      (cow.tagNumber && cow.tagNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (cow.name && cow.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesBatch = selectedBatchFilter === 'all' || (cow.entryBatch || cow.paddock || 'Sin Lote') === selectedBatchFilter;
+    return matchesSearch && matchesBatch;
+  });
+
   const handleExportExcel = () => {
     exportDairyReportToExcel({
       cattle,
@@ -202,28 +255,19 @@ export function DairyView({
     triggerFeedback('single');
   };
 
-  // Enviar Reporte del Período por WhatsApp
   const handleSharePeriodWhatsApp = () => {
     const lines = [
-      `🥛 *REPORTE DE CONTROL LECHERO POR PERÍODO*`,
+      `🥛 *REPORTE DE CONTROL LECHERO*`,
       `🏡 *Finca:* ${farmName}`,
       `📅 *Período:* ${periodRange.label}`,
       `━━━━━━━━━━━━━━━━━━━━`,
-      `🥛 *Producción Total Período:* ${formatNumber(periodSummary.totalLiters, 1)} Litros`,
-      `🌅 *Total Ordeño AM:* ${formatNumber(periodSummary.totalAmLiters, 1)} L`,
-      `🌇 *Total Ordeño PM:* ${formatNumber(periodSummary.totalPmLiters, 1)} L`,
+      `🥛 *Producción Total:* ${formatNumber(periodSummary.totalLiters, 1)} Litros`,
+      `🌅 *Mañana (AM):* ${formatNumber(periodSummary.totalAmLiters, 1)} L | 🌇 *Tarde (PM):* ${formatNumber(periodSummary.totalPmLiters, 1)} L`,
       `📊 *Promedio Diario:* ${formatNumber(periodSummary.avgDailyLiters, 1)} L/día (${periodSummary.daysLogged} días)`,
       `🐄 *Promedio Vacas:* ${formatNumber(periodSummary.avgCowsMilked, 1)} vacas (${formatNumber(periodSummary.avgLitersPerCow, 1)} L/vaca)`,
       `━━━━━━━━━━━━━━━━━━━━`,
-      `📦 *DESTINO DE LA LECHE:*`,
-      `🧊 *Venta / Tanque:* ${formatNumber(periodSummary.totalSalesLiters, 1)} L`,
-      `🍼 *Terneros:* ${formatNumber(periodSummary.totalCalvesLiters, 1)} L`,
-      `🧀 *Queso / Finca:* ${formatNumber(periodSummary.totalFarmLiters, 1)} L`,
-      `⚠️ *Descarte / Mastitis:* ${formatNumber(periodSummary.totalRejectedLiters, 1)} L`,
-      `━━━━━━━━━━━━━━━━━━━━`,
-      `💰 *Valor Estimado Venta:* ${formatCurrency(periodSummary.estimatedRevenue)}`,
-      `🟢 *Litros Liquidados:* ${formatNumber(periodSummary.settledLiters, 1)} L`,
-      `🟡 *Litros Pendientes:* ${formatNumber(periodSummary.unsettledLiters, 1)} L`,
+      `🧊 *A Venta:* ${formatNumber(periodSummary.totalSalesLiters, 1)} L | 💰 *Valor Est:* ${formatCurrency(periodSummary.estimatedRevenue)}`,
+      `🍼 *Terneros:* ${formatNumber(periodSummary.totalCalvesLiters, 1)} L | 🧀 *Queso/Finca:* ${formatNumber(periodSummary.totalFarmLiters, 1)} L`,
       `━━━━━━━━━━━━━━━━━━━━`,
       `_Generado por GanadoPro App_ 📱`,
     ];
@@ -238,69 +282,100 @@ export function DairyView({
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
+  const quickLogExists = dailyMilkLogs.some(l => l.date === quickDate);
+
   return (
     <div className="space-y-6 animate-fade-in">
       
-      {/* 1. Cabecera Principal & Acciones */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. Cabecera Principal con los 3 Botones de Acción Arriba */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-900/60 dark:bg-slate-900/90 p-5 rounded-3xl border border-slate-800 shadow-xl">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-            <span className="p-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+          <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+            <span className="p-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
               <Milk className="w-6 h-6" />
             </span>
-            <span>Módulo de Lechería & Liquidaciones</span>
+            <span>Módulo de Lechería & Control de Ordeño</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Control diario general, períodos quincenales/mensuales, liquidaciones de venta, curvas y tanque frío.
+          <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+            Registro diario simple, control quincenal/mensual, liquidaciones y tanque frío.
           </p>
         </div>
 
-        {/* Botones de Acción Rápida */}
+        {/* Barra Superior con los Botones de Acción (Reubicados todos arriba) */}
         <div className="flex items-center gap-2 flex-wrap">
+          
+          {/* Botón 1: + Producción Diaria General */}
           <button
             onClick={() => {
               setEditingDailyLog(null);
               setIsDailyLogModalOpen(true);
             }}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition active:scale-95 cursor-pointer min-h-[44px]"
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition active:scale-95 cursor-pointer min-h-[44px]"
+            title="Registrar litros generales del día"
           >
             <PlusCircle className="w-4 h-4" />
             <span>+ Producción Diaria</span>
           </button>
 
+          {/* Botón 2: + Nuevo Despacho a Tanque (Colocado arriba) */}
+          <button
+            onClick={() => {
+              setEditingDelivery(null);
+              setIsTankModalOpen(true);
+            }}
+            className="px-4 py-2.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-cyan-950/40 transition active:scale-95 cursor-pointer min-h-[44px]"
+            title="Registrar despacho o entrega de leche a tanque"
+          >
+            <Truck className="w-4 h-4" />
+            <span>+ Nuevo Despacho</span>
+          </button>
+
+          {/* Botón 3: + Liquidar Leche */}
           <button
             onClick={() => {
               setEditingSettlement(null);
               setIsSettlementModalOpen(true);
             }}
-            className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md transition active:scale-95 cursor-pointer min-h-[44px]"
+            className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 transition active:scale-95 cursor-pointer min-h-[44px]"
+            title="Generar liquidación de venta por período"
           >
             <DollarSign className="w-4 h-4" />
             <span>+ Liquidar Leche</span>
           </button>
 
+          {/* Botón 4: Planilla Individual por Vaca */}
+          <button
+            onClick={() => setIsQuickMilkingOpen(true)}
+            className="px-3.5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-emerald-400 font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-slate-700 transition cursor-pointer min-h-[44px]"
+            title="Planilla de pesaje individual vaca por vaca"
+          >
+            <Zap className="w-4 h-4 text-emerald-400" />
+            <span>Vaca a Vaca</span>
+          </button>
+
+          {/* Excel & WhatsApp */}
           <button
             onClick={handleExportExcel}
-            className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition cursor-pointer"
-            title="Exportar a Excel"
+            className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+            title="Descargar Libro Excel"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
           </button>
 
           <button
             onClick={handleSharePeriodWhatsApp}
-            className="p-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition cursor-pointer"
-            title="Compartir Período por WhatsApp"
+            className="p-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition cursor-pointer"
+            title="Compartir por WhatsApp"
           >
             <Share2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* 2. Tarjetas KPI Superiores */}
+      {/* 2. Tarjetas Resumen Principales */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
-        {/* KPI 1: Producción Período */}
+        {/* KPI 1: Litros del Período */}
         <div className="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 p-4 rounded-3xl border border-emerald-500/30 shadow-lg space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-black text-emerald-400 uppercase tracking-wider">
@@ -312,15 +387,15 @@ export function DairyView({
             <span className="text-2xl sm:text-3xl font-black text-white font-mono">
               {formatNumber(periodSummary.totalLiters, 1)}
             </span>
-            <span className="text-xs font-black text-slate-400">LITROS</span>
+            <span className="text-xs font-black text-slate-400">L</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
-            <span>Prom: <strong className="text-emerald-300">{periodSummary.avgDailyLiters} L/día</strong></span>
+            <span>Prom: <strong className="text-emerald-300">{periodSummary.avgDailyLiters} L/d</strong></span>
             <span>Días: <strong className="text-white">{periodSummary.daysLogged}</strong></span>
           </div>
         </div>
 
-        {/* KPI 2: Valor Estimado / Facturación */}
+        {/* KPI 2: Valor Estimado */}
         <div className="bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-950 p-4 rounded-3xl border border-amber-500/30 shadow-lg space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider">
@@ -335,15 +410,14 @@ export function DairyView({
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
             <span>A Venta: <strong className="text-amber-300">{formatNumber(periodSummary.totalSalesLiters, 1)} L</strong></span>
-            <span>Ref: <strong className="text-slate-300">$2.100/L</strong></span>
           </div>
         </div>
 
-        {/* KPI 3: Promedio Vacas & Rendimiento */}
+        {/* KPI 3: Promedio Vacas */}
         <div className="bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-950 p-4 rounded-3xl border border-purple-500/30 shadow-lg space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-black text-purple-400 uppercase tracking-wider">
-              Vacas & Rendimiento
+              Vacas & Promedio
             </span>
             <span className="p-1.5 rounded-xl bg-purple-500/20 text-purple-400 text-xs">🐄</span>
           </div>
@@ -351,18 +425,18 @@ export function DairyView({
             <span className="text-2xl sm:text-3xl font-black text-white font-mono">
               {formatNumber(periodSummary.avgLitersPerCow, 1)}
             </span>
-            <span className="text-xs font-black text-slate-400">L / vaca / día</span>
+            <span className="text-xs font-black text-slate-400">L / vaca</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
-            <span>Prom. Ordeñadas: <strong className="text-purple-300">{formatNumber(periodSummary.avgCowsMilked, 1)} vacas</strong></span>
+            <span>Ordeñadas: <strong className="text-purple-300">{formatNumber(periodSummary.avgCowsMilked, 0)} vacas</strong></span>
           </div>
         </div>
 
-        {/* KPI 4: Balance Liquidaciones */}
+        {/* KPI 4: Liquidaciones */}
         <div className="bg-gradient-to-br from-cyan-950/40 via-slate-900 to-slate-950 p-4 rounded-3xl border border-cyan-500/30 shadow-lg space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-black text-cyan-400 uppercase tracking-wider">
-              Estado Liquidación
+              Liquidado
             </span>
             <span className="p-1.5 rounded-xl bg-cyan-500/20 text-cyan-400 text-xs">📦</span>
           </div>
@@ -370,11 +444,9 @@ export function DairyView({
             <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
               {formatNumber(periodSummary.settledLiters, 1)} L
             </span>
-            <span className="text-xs text-slate-400">liquidados</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
             <span>Pendientes: <strong className="text-amber-400">{formatNumber(periodSummary.unsettledLiters, 1)} L</strong></span>
-            <span>{milkSettlements.length} cierres</span>
           </div>
         </div>
 
@@ -390,7 +462,7 @@ export function DairyView({
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <span>📅 Control Diario & Períodos</span>
+          <span>📅 1. Control Diario & Quincenas</span>
         </button>
 
         <button
@@ -401,7 +473,7 @@ export function DairyView({
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <span>💰 Liquidaciones & Ventas ({milkSettlements.length})</span>
+          <span>💰 2. Liquidaciones & Ventas ({milkSettlements.length})</span>
         </button>
 
         <button
@@ -412,18 +484,7 @@ export function DairyView({
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <span>🐄 Pesaje Individual por Vaca</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('curves')}
-          className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black flex items-center gap-2 transition cursor-pointer shrink-0 ${
-            activeTab === 'curves'
-              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <span>📈 Curvas & Ranking</span>
+          <span>🐄 3. Pesaje por Vaca (Individual)</span>
         </button>
 
         <button
@@ -434,7 +495,18 @@ export function DairyView({
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <span>🧊 Tanque Frío ({milkDeliveries.length})</span>
+          <span>🧊 4. Tanque Frío ({milkDeliveries.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('curves')}
+          className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black flex items-center gap-2 transition cursor-pointer shrink-0 ${
+            activeTab === 'curves'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <span>📈 5. Curvas & Ranking</span>
         </button>
 
         <button
@@ -445,23 +517,199 @@ export function DairyView({
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <span>🔔 Secado ({metrics.dryOffAlerts.length})</span>
+          <span>🔔 6. Secado ({metrics.dryOffAlerts.length})</span>
         </button>
       </div>
 
-      {/* 4. Contenido según la pestaña activa */}
-
-      {/* ==================== PESTAÑA 1: CONTROL DIARIO & PERÍODOS ==================== */}
+      {/* ==================== PESTAÑA 1: CONTROL DIARIO & QUINCENAS ==================== */}
       {activeTab === 'periods' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           
-          {/* Barra de Control de Períodos & Navegador */}
-          <div className="bg-slate-900/60 dark:bg-slate-900/90 p-4 rounded-3xl border border-slate-800 space-y-4">
+          {/* PANEL DESTACADO: REGISTRO RÁPIDO DEL DÍA CON AUTO-CARGA */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-5 rounded-3xl border-2 border-emerald-500/40 shadow-2xl space-y-4">
             
-            {/* Fila 1: Selector de Año, Mes y Botones de Período */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black shadow-md shadow-emerald-500/30">
+                  <Milk className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-black text-white">
+                    Registrar Ordeño por Día (Carga Automática)
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Selecciona el día para ver o guardar los litros producidos al instante.
+                  </p>
+                </div>
+              </div>
+
+              {/* Selector de Fecha Rápido */}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-700 rounded-2xl px-3 py-1.5">
+                  <Calendar className="w-4 h-4 text-emerald-400" />
+                  <input
+                    type="date"
+                    value={quickDate}
+                    onChange={(e) => syncQuickDayForm(e.target.value)}
+                    className="bg-transparent text-xs text-white font-bold outline-none cursor-pointer"
+                  />
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    syncQuickDayForm(yesterday.toISOString().split('T')[0]);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer"
+                >
+                  Ayer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => syncQuickDayForm(new Date().toISOString().split('T')[0])}
+                  className="px-2.5 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-400 font-bold text-xs transition cursor-pointer"
+                >
+                  Hoy
+                </button>
+              </div>
+            </div>
+
+            {/* Formulario Rápido de 3 Cajas Grandes */}
+            <form onSubmit={handleQuickDaySave} className="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
+              
+              {/* AM */}
+              <div className="space-y-1">
+                <label className="text-xs font-black text-amber-400 flex items-center gap-1">
+                  <span>🌅 Mañana (AM)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={quickAm}
+                    onChange={(e) => {
+                      setQuickAm(e.target.value);
+                      const am = parseFloat(e.target.value) || 0;
+                      const pm = parseFloat(quickPm) || 0;
+                      const tot = am + pm;
+                      setQuickTotal(tot > 0 ? String(Number(tot.toFixed(1))) : '');
+                    }}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-slate-950 border border-slate-700 text-white font-black text-lg focus:border-amber-400 outline-none pr-7"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">L</span>
+                </div>
+              </div>
+
+              {/* PM */}
+              <div className="space-y-1">
+                <label className="text-xs font-black text-blue-400 flex items-center gap-1">
+                  <span>🌇 Tarde (PM)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={quickPm}
+                    onChange={(e) => {
+                      setQuickPm(e.target.value);
+                      const am = parseFloat(quickAm) || 0;
+                      const pm = parseFloat(e.target.value) || 0;
+                      const tot = am + pm;
+                      setQuickTotal(tot > 0 ? String(Number(tot.toFixed(1))) : '');
+                    }}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-slate-950 border border-slate-700 text-white font-black text-lg focus:border-blue-400 outline-none pr-7"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">L</span>
+                </div>
+              </div>
+
+              {/* Total Día */}
+              <div className="space-y-1">
+                <label className="text-xs font-black text-emerald-400 flex items-center gap-1">
+                  <span>🥛 Total Día</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={quickTotal}
+                    onChange={(e) => setQuickTotal(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-slate-950 border border-emerald-500 text-emerald-400 font-black text-xl outline-none pr-7"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-400">L</span>
+                </div>
+              </div>
+
+              {/* Vacas */}
+              <div className="space-y-1">
+                <label className="text-xs font-black text-purple-400 flex items-center gap-1">
+                  <span>🐄 Vacas Ordeñadas</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="18"
+                    value={quickCows}
+                    onChange={(e) => setQuickCows(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-slate-950 border border-slate-700 text-white font-bold text-base outline-none pr-8"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">cab</span>
+                </div>
+              </div>
+
+              {/* Botón Guardar Día (Gran botón visible de alto impacto) */}
+              <div className="col-span-2 sm:col-span-1">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/60 transition active:scale-95 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{quickLogExists ? 'Actualizar Día' : 'Guardar Día'}</span>
+                </button>
+              </div>
+
+            </form>
+
+            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+              <span className="flex items-center gap-1.5 font-medium">
+                {quickLogExists ? (
+                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Día {formatDate(quickDate)} ya registrado ({quickTotal} L)
+                  </span>
+                ) : (
+                  <span>⚪ Sin registrar para el día {formatDate(quickDate)}</span>
+                )}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDailyLog({ date: quickDate });
+                  setIsDailyLogModalOpen(true);
+                }}
+                className="text-xs text-emerald-400 hover:underline font-bold flex items-center gap-1"
+              >
+                <span>+ Más detalles (Terneros, Queso, Descarte)</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* SELECTOR DE PERÍODOS (QUINCENAL / MENSUAL) */}
+          <div className="bg-slate-900/60 dark:bg-slate-900/90 p-4 rounded-3xl border border-slate-800 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               
-              {/* Año y Mes */}
+              {/* Selector Mes y Año */}
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-2xl px-3 py-1.5">
                   <Calendar className="w-4 h-4 text-emerald-400" />
@@ -489,14 +737,14 @@ export function DairyView({
                   </select>
                 </div>
 
-                {/* Botones de Selección Rápida de Período */}
+                {/* Botones de Quincena / Mes */}
                 <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-2xl border border-slate-800 flex-wrap">
                   <button
                     type="button"
                     onClick={() => setPeriodType('first_fortnight')}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
                       periodType === 'first_fortnight'
-                        ? 'bg-emerald-600 text-white shadow-sm'
+                        ? 'bg-emerald-600 text-white shadow-md'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -506,9 +754,9 @@ export function DairyView({
                   <button
                     type="button"
                     onClick={() => setPeriodType('second_fortnight')}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
                       periodType === 'second_fortnight'
-                        ? 'bg-emerald-600 text-white shadow-sm'
+                        ? 'bg-emerald-600 text-white shadow-md'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -518,9 +766,9 @@ export function DairyView({
                   <button
                     type="button"
                     onClick={() => setPeriodType('full_month')}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
                       periodType === 'full_month'
-                        ? 'bg-emerald-600 text-white shadow-sm'
+                        ? 'bg-emerald-600 text-white shadow-md'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -530,9 +778,9 @@ export function DairyView({
                   <button
                     type="button"
                     onClick={() => setPeriodType('current_week')}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
                       periodType === 'current_week'
-                        ? 'bg-emerald-600 text-white shadow-sm'
+                        ? 'bg-emerald-600 text-white shadow-md'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -542,9 +790,9 @@ export function DairyView({
                   <button
                     type="button"
                     onClick={() => setPeriodType('custom')}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
                       periodType === 'custom'
-                        ? 'bg-emerald-600 text-white shadow-sm'
+                        ? 'bg-emerald-600 text-white shadow-md'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -553,20 +801,19 @@ export function DairyView({
                 </div>
               </div>
 
-              {/* Botón de Generar Liquidación del Período */}
+              {/* Botón Liquidar Período */}
               <button
                 onClick={() => {
                   setEditingSettlement(null);
                   setIsSettlementModalOpen(true);
                 }}
-                className="px-4 py-2 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition cursor-pointer active:scale-95"
+                className="px-4 py-2 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Liquidar Este Período</span>
               </button>
             </div>
 
-            {/* Fila 2 (Si es personalizado): Inputs de Fecha Inicio y Fin */}
             {periodType === 'custom' && (
               <div className="flex items-center gap-3 pt-2 border-t border-slate-800 text-xs">
                 <span className="font-bold text-slate-400">Desde:</span>
@@ -587,16 +834,14 @@ export function DairyView({
             )}
           </div>
 
-          {/* Tabla Día a Día del Período */}
+          {/* TABLA DE DÍAS DEL PERÍODO (CON BOTONES DE REGISTRAR DE ALTA VISIBILIDAD) */}
           <div className="bg-slate-900/60 dark:bg-slate-900/90 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
             <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
-                  📋 Control Diario del Período: {periodRange.label}
-                </span>
-              </div>
+              <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
+                📋 Tabla Día a Día: {periodRange.label}
+              </span>
               <span className="text-xs text-slate-400">
-                Mostrando <strong>{periodDays.length} días</strong>
+                {periodDays.length} días en el período
               </span>
             </div>
 
@@ -610,28 +855,29 @@ export function DairyView({
                     <th className="p-3.5 text-right text-emerald-400 font-bold">Total (L)</th>
                     <th className="p-3.5 text-center">Vacas</th>
                     <th className="p-3.5 text-right text-cyan-300 font-bold">Venta (L)</th>
-                    <th className="p-3.5 text-right text-purple-300">Terneros</th>
-                    <th className="p-3.5 text-right text-amber-300">Queso/Finca</th>
-                    <th className="p-3.5 text-right text-rose-400">Descarte</th>
-                    <th className="p-3.5 text-center">Liquidación</th>
-                    <th className="p-3.5 text-right pr-5">Acciones</th>
+                    <th className="p-3.5 text-center">Estado</th>
+                    <th className="p-3.5 text-right pr-5">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {periodDays.map((day) => {
                     const isToday = day.date === new Date().toISOString().split('T')[0];
+                    const isSelectedInQuick = day.date === quickDate;
+
                     return (
                       <tr 
                         key={day.date} 
                         className={`hover:bg-slate-800/40 transition ${
-                          isToday ? 'bg-emerald-500/5' : ''
+                          isSelectedInQuick ? 'bg-emerald-500/10' : (isToday ? 'bg-emerald-500/5' : '')
                         }`}
                       >
-                        {/* Fecha */}
+                        {/* Fecha y Día */}
                         <td className="p-3.5 pl-5 font-mono">
                           <div className="flex items-center gap-2">
-                            <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
-                              day.hasLog ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
+                              day.hasLog 
+                                ? 'bg-emerald-500 text-slate-950 font-black shadow-sm' 
+                                : 'bg-slate-800 text-slate-400'
                             }`}>
                               {day.dayNumber}
                             </span>
@@ -664,83 +910,66 @@ export function DairyView({
                           {day.totalLiters > 0 ? `${day.totalLiters.toFixed(1)} L` : '-'}
                         </td>
 
-                        {/* Vacas Ordeñadas */}
+                        {/* Vacas */}
                         <td className="p-3.5 text-center font-mono text-slate-300">
                           {day.cowsMilked > 0 ? `${day.cowsMilked}` : '-'}
                         </td>
 
-                        {/* Venta / Tanque */}
+                        {/* Venta */}
                         <td className="p-3.5 text-right font-mono font-black text-cyan-300 text-sm">
                           {day.salesLiters > 0 ? `${day.salesLiters.toFixed(1)} L` : '-'}
                         </td>
 
-                        {/* Terneros */}
-                        <td className="p-3.5 text-right font-mono text-purple-300">
-                          {day.calvesLiters > 0 ? `${day.calvesLiters.toFixed(1)} L` : '-'}
-                        </td>
-
-                        {/* Queso / Finca */}
-                        <td className="p-3.5 text-right font-mono text-amber-300">
-                          {day.farmLiters > 0 ? `${day.farmLiters.toFixed(1)} L` : '-'}
-                        </td>
-
-                        {/* Descarte */}
-                        <td className="p-3.5 text-right font-mono text-rose-400">
-                          {day.rejectedLiters > 0 ? `${day.rejectedLiters.toFixed(1)} L` : '-'}
-                        </td>
-
-                        {/* Estado Liquidación */}
+                        {/* Estado */}
                         <td className="p-3.5 text-center">
                           {day.totalLiters > 0 ? (
                             day.isSettled ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                                 🟢 Liquidado
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30">
                                 🟡 Pendiente
                               </span>
                             )
                           ) : (
-                            <span className="text-slate-600 text-[10px]">Sin datos</span>
+                            <span className="text-slate-500 text-[10px] italic">Sin registro</span>
                           )}
                         </td>
 
-                        {/* Acciones */}
+                        {/* Botón de Registrar / Editar (Gran visibilidad y contraste) */}
                         <td className="p-3.5 text-right pr-5">
                           {day.hasLog ? (
                             <div className="flex items-center justify-end gap-1.5">
                               <button
-                                onClick={() => {
-                                  setEditingDailyLog(day.log);
-                                  setIsDailyLogModalOpen(true);
-                                }}
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-emerald-400 transition cursor-pointer"
-                                title="Editar producción del día"
+                                onClick={() => syncQuickDayForm(day.date)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-white font-bold text-xs border border-emerald-500/30 transition cursor-pointer flex items-center gap-1"
+                                title="Editar día en el formulario superior"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
+                                <span>Editar</span>
                               </button>
+
                               <button
                                 onClick={() => {
-                                  if (confirm(`¿Deseas eliminar el registro de producción del día ${formatDate(day.date)}?`)) {
+                                  if (confirm(`¿Deseas eliminar la producción del ${formatDate(day.date)}?`)) {
                                     onDeleteDailyMilkLog(day.log.id);
                                   }
                                 }}
-                                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition cursor-pointer"
-                                title="Eliminar registro"
+                                className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition cursor-pointer"
+                                title="Eliminar"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ) : (
+                            /* Botón Registrar ALTAMENTE VISIBLE con fondo verde esmeralda sólido */
                             <button
-                              onClick={() => {
-                                setEditingDailyLog({ date: day.date });
-                                setIsDailyLogModalOpen(true);
-                              }}
-                              className="px-2.5 py-1 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 text-xs font-bold transition cursor-pointer"
+                              onClick={() => syncQuickDayForm(day.date)}
+                              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md shadow-emerald-950/40 transition active:scale-95 cursor-pointer flex items-center gap-1.5 ml-auto"
                             >
-                              + Registrar
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              <span>+ Registrar</span>
                             </button>
                           )}
                         </td>
@@ -749,11 +978,11 @@ export function DairyView({
                   })}
                 </tbody>
 
-                {/* Pie de Totales del Período */}
+                {/* Fila de Totales */}
                 <tfoot>
                   <tr className="bg-slate-950 font-black text-white border-t-2 border-slate-800 text-xs">
                     <td className="p-4 pl-5">
-                      <span className="text-emerald-400 font-mono uppercase">TOTALES PERÍODO</span>
+                      <span className="text-emerald-400 font-mono uppercase">TOTAL PERÍODO</span>
                     </td>
                     <td className="p-4 text-right font-mono text-amber-300">
                       {formatNumber(periodSummary.totalAmLiters, 1)} L
@@ -765,19 +994,10 @@ export function DairyView({
                       {formatNumber(periodSummary.totalLiters, 1)} L
                     </td>
                     <td className="p-4 text-center font-mono text-slate-300">
-                      {formatNumber(periodSummary.avgCowsMilked, 1)} prom.
+                      {formatNumber(periodSummary.avgCowsMilked, 0)} prom.
                     </td>
                     <td className="p-4 text-right font-mono text-cyan-300 text-base">
                       {formatNumber(periodSummary.totalSalesLiters, 1)} L
-                    </td>
-                    <td className="p-4 text-right font-mono text-purple-300">
-                      {formatNumber(periodSummary.totalCalvesLiters, 1)} L
-                    </td>
-                    <td className="p-4 text-right font-mono text-amber-300">
-                      {formatNumber(periodSummary.totalFarmLiters, 1)} L
-                    </td>
-                    <td className="p-4 text-right font-mono text-rose-400">
-                      {formatNumber(periodSummary.totalRejectedLiters, 1)} L
                     </td>
                     <td className="p-4 text-center">
                       <span className="text-slate-400 text-[11px] font-mono">
@@ -794,7 +1014,7 @@ export function DairyView({
         </div>
       )}
 
-      {/* ==================== PESTAÑA 2: HISTORIAL DE LIQUIDACIONES ==================== */}
+      {/* ==================== PESTAÑA 2: LIQUIDACIONES & VENTAS ==================== */}
       {activeTab === 'settlements' && (
         <div className="space-y-4">
           
@@ -835,7 +1055,7 @@ export function DairyView({
                   {milkSettlements.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="p-8 text-center text-slate-400">
-                        No hay liquidaciones registradas aún. Pulsa <strong>"+ Nueva Liquidación"</strong> para liquidar una quincena o mes.
+                        No hay liquidaciones registradas aún. Pulsa <strong>"+ Liquidar Leche"</strong> arriba para generar la primera.
                       </td>
                     </tr>
                   ) : (
@@ -922,11 +1142,10 @@ export function DairyView({
         </div>
       )}
 
-      {/* ==================== PESTAÑA 3: PLANILLA INDIVIDUAL POR VACA ==================== */}
+      {/* ==================== PESTAÑA 3: PLANILLA INDIVIDUAL ==================== */}
       {activeTab === 'sheet' && (
         <div className="space-y-4">
           
-          {/* Barra de Filtros & Botón de Planilla Rápida */}
           <div className="bg-slate-900/60 dark:bg-slate-900/90 p-4 rounded-3xl border border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 flex-wrap">
               <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-2xl px-3 py-1.5">
@@ -976,7 +1195,6 @@ export function DairyView({
             </div>
           </div>
 
-          {/* Tabla de Ordeño Individual */}
           <div className="bg-slate-900/60 dark:bg-slate-900/90 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -1071,11 +1289,107 @@ export function DairyView({
         </div>
       )}
 
-      {/* ==================== PESTAÑA 4: CURVAS DE LACTANCIA & RANKING ==================== */}
+      {/* ==================== PESTAÑA 4: TANQUE FRÍO & DESPACHOS ==================== */}
+      {activeTab === 'tank' && (
+        <div className="space-y-4">
+          
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+              <Truck className="w-5 h-5 text-cyan-400" />
+              <span>Historial de Despachos & Entregas a Tanque Frío</span>
+            </h3>
+
+            <button
+              onClick={() => {
+                setEditingDelivery(null);
+                setIsTankModalOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>+ Nuevo Despacho</span>
+            </button>
+          </div>
+
+          <div className="bg-slate-900/60 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono uppercase text-[11px]">
+                    <th className="p-3.5 pl-5">Fecha</th>
+                    <th className="p-3.5">Comprador / Acopio</th>
+                    <th className="p-3.5 text-right text-cyan-300">Litros (L)</th>
+                    <th className="p-3.5 text-right text-slate-300">Precio/L</th>
+                    <th className="p-3.5 text-right text-emerald-400 font-bold">Total Liquidado</th>
+                    <th className="p-3.5 text-center">Destino</th>
+                    <th className="p-3.5 text-center">Estado</th>
+                    <th className="p-3.5 text-right pr-5">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {milkDeliveries.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-slate-400">
+                        No hay registros de despachos a tanque registrados aún. Pulsa <strong>"+ Nuevo Despacho"</strong> arriba para agregar el primero.
+                      </td>
+                    </tr>
+                  ) : (
+                    milkDeliveries.map(deliv => (
+                      <tr key={deliv.id} className="hover:bg-slate-800/40 transition">
+                        <td className="p-3.5 pl-5 font-mono font-bold text-white">
+                          {formatDate(deliv.date)}
+                        </td>
+                        <td className="p-3.5 font-bold text-slate-200">
+                          {deliv.buyer || 'Acopio Lechero'}
+                        </td>
+                        <td className="p-3.5 text-right font-mono font-black text-cyan-300 text-sm">
+                          {parseFloat(deliv.totalLiters || 0).toFixed(1)} L
+                        </td>
+                        <td className="p-3.5 text-right font-mono text-slate-300">
+                          ${parseFloat(deliv.pricePerLiter || 0).toLocaleString('es-CO')}
+                        </td>
+                        <td className="p-3.5 text-right font-mono font-black text-emerald-400 text-sm">
+                          {formatCurrency(deliv.totalValue || (deliv.totalLiters * deliv.pricePerLiter))}
+                        </td>
+                        <td className="p-3.5 text-center text-slate-400">
+                          {deliv.milkDestination || deliv.destination || 'Planta'}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            deliv.paymentStatus === 'Pagado'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          }`}>
+                            {deliv.paymentStatus || 'Pagado'}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-right pr-5">
+                          <button
+                            onClick={() => {
+                              if (window.confirm('¿Deseas eliminar este registro de despacho?')) {
+                                onDeleteMilkDelivery(deliv.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition cursor-pointer"
+                            title="Eliminar despacho"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* ==================== PESTAÑA 5: CURVAS & RANKING ==================== */}
       {activeTab === 'curves' && (
         <div className="space-y-6">
-          
-          {/* Selector de Vaca para Curva */}
           <div className="bg-slate-900/60 p-4 rounded-3xl border border-slate-800 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-400">Vaca Seleccionada:</span>
@@ -1104,7 +1418,6 @@ export function DairyView({
             )}
           </div>
 
-          {/* Componente Gráfico de Curva de Lactancia */}
           {selectedCowForCurve && (
             <DairyLactationChart
               dataPoints={calculateLactationCurve(selectedCowForCurve, milkRecords).dataPoints}
@@ -1113,7 +1426,6 @@ export function DairyView({
             />
           )}
 
-          {/* Ranking Top 10 Vacas Más Productoras */}
           <div className="bg-slate-900/60 p-5 rounded-3xl border border-slate-800 space-y-4">
             <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
               <Award className="w-5 h-5 text-amber-400" />
@@ -1172,112 +1484,12 @@ export function DairyView({
                 ))}
             </div>
           </div>
-
         </div>
       )}
 
-      {/* ==================== PESTAÑA 5: TANQUE FRÍO & DESPACHOS ==================== */}
-      {activeTab === 'tank' && (
-        <div className="space-y-4">
-          
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
-              <Truck className="w-5 h-5 text-cyan-400" />
-              <span>Historial de Despachos & Entregas a Tanque</span>
-            </h3>
-
-            <button
-              onClick={() => {
-                setEditingDelivery(null);
-                setIsTankModalOpen(true);
-              }}
-              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>+ Nuevo Despacho</span>
-            </button>
-          </div>
-
-          <div className="bg-slate-900/60 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono uppercase text-[11px]">
-                    <th className="p-3.5 pl-5">Fecha</th>
-                    <th className="p-3.5">Comprador / Acopio</th>
-                    <th className="p-3.5 text-right text-cyan-300">Litros (L)</th>
-                    <th className="p-3.5 text-right text-slate-300">Precio/L</th>
-                    <th className="p-3.5 text-right text-emerald-400 font-bold">Total Liquidado</th>
-                    <th className="p-3.5 text-center">Destino</th>
-                    <th className="p-3.5 text-center">Estado</th>
-                    <th className="p-3.5 text-right pr-5">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {milkDeliveries.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="p-8 text-center text-slate-400">
-                        No hay registros de despachos a tanque registrados aún. Pulsa <strong>"+ Despacho Tanque"</strong> para agregar el primero.
-                      </td>
-                    </tr>
-                  ) : (
-                    milkDeliveries.map(deliv => (
-                      <tr key={deliv.id} className="hover:bg-slate-800/40 transition">
-                        <td className="p-3.5 pl-5 font-mono font-bold text-white">
-                          {formatDate(deliv.date)}
-                        </td>
-                        <td className="p-3.5 font-bold text-slate-200">
-                          {deliv.buyer || 'Acopio Lechero'}
-                        </td>
-                        <td className="p-3.5 text-right font-mono font-black text-cyan-300 text-sm">
-                          {parseFloat(deliv.totalLiters || 0).toFixed(1)} L
-                        </td>
-                        <td className="p-3.5 text-right font-mono text-slate-300">
-                          ${parseFloat(deliv.pricePerLiter || 0).toLocaleString('es-CO')}
-                        </td>
-                        <td className="p-3.5 text-right font-mono font-black text-emerald-400 text-sm">
-                          {formatCurrency(deliv.totalValue || (deliv.totalLiters * deliv.pricePerLiter))}
-                        </td>
-                        <td className="p-3.5 text-center text-slate-400">
-                          {deliv.milkDestination || deliv.destination || 'Planta'}
-                        </td>
-                        <td className="p-3.5 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                            deliv.paymentStatus === 'Pagado'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                          }`}>
-                            {deliv.paymentStatus || 'Pagado'}
-                          </span>
-                        </td>
-                        <td className="p-3.5 text-right pr-5">
-                          <button
-                            onClick={() => {
-                              if (window.confirm('¿Deseas eliminar este registro de despacho?')) {
-                                onDeleteMilkDelivery(deliv.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition cursor-pointer"
-                            title="Eliminar despacho"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div>
-      )}
-
-      {/* ==================== PESTAÑA 6: SEMÁFORO DE SECADO PREPARTO ==================== */}
+      {/* ==================== PESTAÑA 6: SECADO ==================== */}
       {activeTab === 'secado' && (
         <div className="space-y-4">
-          
           <div className="bg-amber-950/40 border border-amber-500/40 p-4 sm:p-5 rounded-3xl space-y-2">
             <h3 className="text-sm sm:text-base font-black text-amber-300 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-400" />
@@ -1353,9 +1565,7 @@ export function DairyView({
         </div>
       )}
 
-      {/* ==================== MODALES DEL MÓDULO ==================== */}
-
-      {/* 1. Modal de Registro de Producción Diaria General */}
+      {/* ==================== MODALES ==================== */}
       <DailyMilkLogModal
         isOpen={isDailyLogModalOpen}
         onClose={() => {
@@ -1365,11 +1575,11 @@ export function DairyView({
         onSave={onSaveDailyMilkLog}
         onDelete={onDeleteDailyMilkLog}
         initialData={editingDailyLog}
+        dailyMilkLogs={dailyMilkLogs}
         activeMilkingCowsCount={metrics.milkingCowsCount}
         defaultPricePerLiter={2100}
       />
 
-      {/* 2. Modal de Generación de Liquidación de Leche */}
       <MilkSettlementModal
         isOpen={isSettlementModalOpen}
         onClose={() => {
@@ -1385,7 +1595,6 @@ export function DairyView({
         farmName={farmName}
       />
 
-      {/* 3. Modal de Volante de Recibo / Comprobante de Liquidación */}
       <MilkSettlementReceiptModal
         isOpen={isReceiptModalOpen}
         onClose={() => {
@@ -1396,7 +1605,6 @@ export function DairyView({
         farmName={farmName}
       />
 
-      {/* 4. Planilla Rápida de Pesaje Individual */}
       <QuickMilkingModal
         isOpen={isQuickMilkingOpen}
         onClose={() => setIsQuickMilkingOpen(false)}
@@ -1406,7 +1614,6 @@ export function DairyView({
         defaultDate={selectedDate}
       />
 
-      {/* 5. Despacho a Tanque Frío */}
       <TankDeliveryModal
         isOpen={isTankModalOpen}
         onClose={() => setIsTankModalOpen(false)}

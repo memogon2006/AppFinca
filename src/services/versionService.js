@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.15.1";
+export const CURRENT_APP_VERSION = "2.15.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.2",
+    date: "26/09/2026",
+    title: "🥛 Módulo de Lechería Simplificado & Registro Rápido por Día",
+    highlights: [
+      "Botón '+ Nuevo Despacho' Arriba: Unificado en la barra de acciones superior junto a '+ Producción Diaria', '+ Liquidar Leche' y '⚡ Vaca a Vaca'.",
+      "Registro de Ordeño por Día con Carga Automática: Tarjeta interactiva con selector de fecha y botones directos [Ayer] / [Hoy]. Al elegir cualquier día, carga automáticamente sus datos existentes (AM, PM, Total, Vacas) para consulta o edición instantánea.",
+      "Botón '+ Registrar' de Alto Contraste: Botones verde esmeralda sólidos y vibrantes en la tabla de días para una visibilidad perfecta.",
+      "Interfaz Simple y Clara: Flujo optimizado para registrar litros diarios sin complicaciones, apto para computador, tablet o celular en campo."
+    ]
+  },
   {
     version: "2.15.1",
     date: "26/09/2026",
