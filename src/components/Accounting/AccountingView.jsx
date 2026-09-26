@@ -1287,25 +1287,40 @@ export function AccountingView({
                   {filteredIncomesList.length > 0 ? (
                     filteredIncomesList.map(inc => {
                       const catObj = INCOME_CATEGORIES.find(c => c.id === inc.category);
+                      const isMilk = inc.category === 'leche' || inc.category === 'Venta de Leche' || inc.id?.startsWith('inc_milk_') || inc.isMilkSettlement;
                       return (
                         <tr key={inc.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                           <td className="p-3 whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
                             {formatDate(inc.date)}
                           </td>
                           <td className="p-3 whitespace-nowrap">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                              <span>{catObj ? catObj.icon : '💰'}</span>
-                              <span>{catObj ? catObj.label : (inc.category || 'Otros')}</span>
-                            </span>
+                            {isMilk ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 shadow-xs">
+                                <span>🥛</span>
+                                <span>Liquidación Leche</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                <span>{catObj ? catObj.icon : '💰'}</span>
+                                <span>{catObj ? catObj.label : (inc.category || 'Otros')}</span>
+                              </span>
+                            )}
                           </td>
                           <td className="p-3">
-                            <div className="font-bold text-slate-900 dark:text-white">{inc.concept}</div>
-                            {inc.notes && <div className="text-[10px] text-slate-400 truncate max-w-xs">{inc.notes}</div>}
+                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+                              <span>{inc.concept}</span>
+                              {inc.totalLiters && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-bold">
+                                  {formatNumber(inc.totalLiters, 1)} L
+                                </span>
+                              )}
+                            </div>
+                            {inc.notes && <div className="text-[10px] text-slate-400 truncate max-w-md mt-0.5">{inc.notes}</div>}
                           </td>
                           <td className="p-3 whitespace-nowrap text-slate-500 text-[11px]">
                             {inc.paymentMethod || 'Transferencia'}
                           </td>
-                          <td className="p-3 whitespace-nowrap text-right font-black text-emerald-600 dark:text-emerald-400">
+                          <td className="p-3 whitespace-nowrap text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
                             + {formatCurrency(inc.amount)}
                           </td>
                           <td className="p-3 whitespace-nowrap text-center">

@@ -534,6 +534,58 @@ export default function App() {
     cleanupDuplicateWeighings().catch(err => console.warn('Error en auto-reparación de pesajes:', err));
   }, [userId, cattle.length, weighings.length]);
 
+  // Sincronización Automática de Liquidaciones de Leche existentes hacia Contabilidad (farmIncomes)
+  useEffect(() => {
+    if (!userId || !milkSettlements || milkSettlements.length === 0 || !db.farmIncomes) return;
+
+    const syncMissingMilkIncomes = async () => {
+      try {
+        let syncedCount = 0;
+        for (const st of milkSettlements) {
+          if (st.registerIncome !== false && st.totalValue > 0) {
+            const incId = 'inc_milk_' + st.id;
+            const existingInc = await db.farmIncomes.get(incId);
+            if (!existingInc) {
+              const incomeRecord = {
+                id: incId,
+                date: st.paymentDate || st.endDate || new Date().toISOString().split('T')[0],
+                concept: `Venta de Leche - Liquidación ${st.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(st.totalLiters, 1)} L @ ${formatCurrency(st.pricePerLiter)}) - ${st.buyer || 'Planta'}`,
+                category: 'leche',
+                amount: st.totalValue,
+                paymentMethod: 'Transferencia',
+                notes: `Liquidación período ${formatDate(st.startDate)} al ${formatDate(st.endDate)}. Comprador: ${st.buyer || 'N/A'}. Bonificaciones: ${formatCurrency(st.bonuses || 0)}, Deducciones: ${formatCurrency(st.deductions || 0)}`,
+                settlementId: st.id,
+                totalLiters: st.totalLiters,
+                pricePerLiter: st.pricePerLiter,
+                buyer: st.buyer,
+                periodType: st.periodType,
+                startDate: st.startDate,
+                endDate: st.endDate,
+                bonuses: st.bonuses || 0,
+                deductions: st.deductions || 0,
+                deductionsBreakdown: st.deductionsBreakdown || null,
+                isMilkSettlement: true,
+                userId: st.userId || userId,
+                createdAt: st.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              await db.farmIncomes.put(incomeRecord);
+              markPendingSync(userId, incId);
+              syncedCount++;
+            }
+          }
+        }
+        if (syncedCount > 0) {
+          cloudPushData(userId);
+        }
+      } catch (e) {
+        console.warn('Error auto-syncing milk settlements to farmIncomes:', e);
+      }
+    };
+
+    syncMissingMilkIncomes();
+  }, [userId, milkSettlements?.length]);
+
   if (authLoading || !isInitialized) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white space-y-4">
@@ -1748,25 +1800,41 @@ export default function App() {
     if (saved) {
       markPendingSync(userId, saved.id);
 
-      // Si tiene marcado registrar ingreso contable, crear o actualizar entrada en farmIncomes
-      if (saved.registerIncome && saved.totalValue > 0) {
-        const incomeId = saved.incomeId || ('inc_milk_' + saved.id);
+      const incomeId = saved.incomeId || ('inc_milk_' + saved.id);
+
+      // Si tiene marcado registrar ingreso contable (por defecto true), crear o actualizar entrada en farmIncomes
+      if (saved.registerIncome !== false && saved.totalValue > 0) {
         const incomeRecord = {
           id: incomeId,
           date: saved.paymentDate || saved.endDate || new Date().toISOString().split('T')[0],
           concept: `Venta de Leche - Liquidación ${saved.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(saved.totalLiters, 1)} L @ ${formatCurrency(saved.pricePerLiter)}) - ${saved.buyer || 'Planta'}`,
-          category: 'Venta de Leche',
+          category: 'leche',
           amount: saved.totalValue,
           paymentMethod: 'Transferencia',
           notes: `Liquidación período ${formatDate(saved.startDate)} al ${formatDate(saved.endDate)}. Comprador: ${saved.buyer || 'N/A'}. Bonificaciones: ${formatCurrency(saved.bonuses || 0)}, Deducciones: ${formatCurrency(saved.deductions || 0)}`,
+          settlementId: saved.id,
+          totalLiters: saved.totalLiters,
+          pricePerLiter: saved.pricePerLiter,
+          buyer: saved.buyer,
+          periodType: saved.periodType,
+          startDate: saved.startDate,
+          endDate: saved.endDate,
+          bonuses: saved.bonuses || 0,
+          deductions: saved.deductions || 0,
+          deductionsBreakdown: saved.deductionsBreakdown || null,
+          isMilkSettlement: true,
           userId,
-          createdAt: new Date().toISOString(),
+          createdAt: saved.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
         if (db.farmIncomes) {
           await db.farmIncomes.put(incomeRecord);
           markPendingSync(userId, incomeId);
         }
+      } else if (db.farmIncomes) {
+        // Si se desmarcó registrar ingreso, remover el ingreso asociado
+        await db.farmIncomes.delete(incomeId);
+        markPendingDelete(userId, 'farmIncomes', incomeId);
       }
 
       await logActivity({
@@ -1780,7 +1848,7 @@ export default function App() {
 
       cloudPushData(userId);
       triggerFeedback('success');
-      showToast(`¡Liquidación de ${formatCurrency(saved.totalValue)} guardada exitosamente! 💰☁️`);
+      showToast(`¡Liquidación de ${formatCurrency(saved.totalValue)} guardada y cargada en Contabilidad! 💰📊`);
     }
   };
 
@@ -1807,7 +1875,7 @@ export default function App() {
 
     cloudPushData(userId);
     triggerFeedback('warning');
-    showToast('Liquidación de leche eliminada 🗑️');
+    showToast('Liquidación de leche eliminada de Lechería y Contabilidad 🗑️');
   };
 
   // ==================== POTREROS & PASTOREO ROTACIONAL ====================

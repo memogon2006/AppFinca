@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.15.6";
+export const CURRENT_APP_VERSION = "2.15.7";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.7",
+    date: "26/09/2026",
+    title: "🥛 Integración Automática de Liquidaciones de Leche en Contabilidad & Finanzas Ganaderas",
+    highlights: [
+      "Conexión Total al Momento de Liquidar: Al generar o guardar una liquidación de leche en el módulo de lechería, el ingreso neto queda asentado y cargado automáticamente en el Libro de Ingresos & Ventas de Contabilidad & Finanzas.",
+      "Desglose Completo & Trazabilidad: El registro contable almacena automáticamente el comprador/empresa láctea, período liquidado, precio por litro, volumen entregado, bonificaciones y deducciones aplicadas.",
+      "Sincronización Bidireccional & Edición Inteligente: Al modificar o anular una liquidación en lechería, el registro de ingresos contable se actualiza o elimina automáticamente para mantener un balance exacto.",
+      "Distintivo Visual '🥛 Liquidación Leche': Etiquetas destacadas en el Libro de Ingresos y en el modal de detalle mensual con badge de litros entregados."
+    ]
+  },
   {
     version: "2.15.6",
     date: "26/09/2026",
