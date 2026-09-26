@@ -341,20 +341,7 @@ export function DairyView({
             <span>+ Producción Diaria</span>
           </button>
 
-          {/* Botón 2: + Nuevo Despacho a Tanque (Colocado arriba) */}
-          <button
-            onClick={() => {
-              setEditingDelivery(null);
-              setIsTankModalOpen(true);
-            }}
-            className="px-4 py-2.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-cyan-950/40 transition active:scale-95 cursor-pointer min-h-[44px]"
-            title="Registrar despacho o entrega de leche a tanque"
-          >
-            <Truck className="w-4 h-4" />
-            <span>+ Nuevo Despacho</span>
-          </button>
-
-          {/* Botón 3: + Liquidar Leche */}
+          {/* Botón 2: + Liquidar Leche */}
           <button
             onClick={() => {
               setEditingSettlement(null);

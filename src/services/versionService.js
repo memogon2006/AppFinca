@@ -1,10 +1,18 @@
-export const CURRENT_APP_VERSION = "2.15.5";
+export const CURRENT_APP_VERSION = "2.15.6";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.6",
+    date: "26/09/2026",
+    title: "🧹 Cabecera de Lechería Limpia & Simplificada",
+    highlights: [
+      "Barra Superior Simplificada: Se eliminó el botón '+ Nuevo Despacho' de la cabecera principal para dejar una vista mucho más limpia, directa y enfocada en las dos acciones fundamentales: '+ Producción Diaria' y '+ Liquidar Leche'."
+    ]
+  },
   {
     version: "2.15.5",
     date: "26/09/2026",
