@@ -1,5 +1,5 @@
 import XLSX from 'xlsx-js-style';
-import { formatDate, formatCurrency, formatNumber, calculateDaysInMilk, calculateLactationCurve, calculateHerdMilkMetrics } from './calculations';
+import { formatDate, formatCurrency, formatNumber, calculateDaysInMilk, calculateLactationCurve, calculateHerdMilkMetrics, calculatePeriodMilkSummary } from './calculations';
 
 /**
  * Estilos estándar contables y de encabezado verde esmeralda
@@ -66,12 +66,16 @@ const TOTAL_STYLE = {
 };
 
 /**
- * Genera y descarga el libro Excel completo de Control Lechero y Tanque
+ * Genera y descarga el libro Excel completo de Control Lechero, Períodos y Liquidaciones
  */
 export function exportDairyReportToExcel({
   cattle = [],
   milkRecords = [],
   milkDeliveries = [],
+  dailyMilkLogs = [],
+  milkSettlements = [],
+  periodSummary = null,
+  periodRange = null,
   farmName = 'Finca Ganadera',
   selectedDate = new Date().toISOString().split('T')[0]
 }) {
@@ -80,9 +84,201 @@ export function exportDairyReportToExcel({
   const females = cattle.filter(c => c.sex === 'Hembra' && c.status === 'Activo');
   const metrics = calculateHerdMilkMetrics(cattle, milkRecords, milkDeliveries, selectedDate);
 
-  // ==================== HOJA 1: PLANILLA DE CONTROL LECHERO ====================
+  // ==================== HOJA 1: CONTROL DIARIO & PERÍODO (QUINCENAL/MENSUAL) ====================
+  const pRange = periodRange || {
+    label: `Período Activo`,
+    startDate: selectedDate.slice(0, 7) + '-01',
+    endDate: selectedDate
+  };
+
+  const pSum = periodSummary || calculatePeriodMilkSummary(
+    dailyMilkLogs,
+    milkRecords,
+    pRange.startDate,
+    pRange.endDate,
+    2100
+  );
+
+  const wsDataPeriod = [
+    [{ v: `🥛 CONTROL DIARIO & PERIÓDICO DE LECHE • ${farmName.toUpperCase()}`, s: TITLE_STYLE }],
+    [{ v: `Período: ${pRange.label} | Generado: ${formatDate(new Date())}`, s: META_STYLE }],
+    [{ v: `Producción Total: ${formatNumber(pSum.totalLiters, 1)} L | A Venta: ${formatNumber(pSum.totalSalesLiters, 1)} L | Facturación Estimada: ${formatCurrency(pSum.estimatedRevenue)}`, s: META_STYLE }],
+    [],
+    [
+      { v: 'Fecha', s: HEADER_STYLE },
+      { v: 'Día', s: HEADER_STYLE },
+      { v: 'Ordeño AM (L)', s: HEADER_STYLE },
+      { v: 'Ordeño PM (L)', s: HEADER_STYLE },
+      { v: 'Total Día (L)', s: HEADER_STYLE },
+      { v: 'Vacas Ordeñadas', s: HEADER_STYLE },
+      { v: 'Venta / Tanque (L)', s: HEADER_STYLE },
+      { v: 'Terneros (L)', s: HEADER_STYLE },
+      { v: 'Queso / Finca (L)', s: HEADER_STYLE },
+      { v: 'Descarte / Mastitis (L)', s: HEADER_STYLE },
+      { v: 'Estado Liquidación', s: HEADER_STYLE },
+      { v: 'Observaciones', s: HEADER_STYLE },
+    ]
+  ];
+
+  let sumAm = 0;
+  let sumPm = 0;
+  let sumTot = 0;
+  let sumSales = 0;
+  let sumCalves = 0;
+  let sumFarm = 0;
+  let sumRej = 0;
+
+  pSum.dailyBreakdown.forEach(d => {
+    sumAm += d.amLiters;
+    sumPm += d.pmLiters;
+    sumTot += d.totalLiters;
+    sumSales += d.salesLiters;
+    sumCalves += d.calvesLiters;
+    sumFarm += d.farmLiters;
+    sumRej += d.rejectedLiters;
+
+    const dt = new Date(d.date + 'T00:00:00');
+    const dayName = dt.toLocaleDateString('es-CO', { weekday: 'short' });
+
+    wsDataPeriod.push([
+      { v: formatDate(d.date), s: CELL_CENTER },
+      { v: dayName.toUpperCase(), s: CELL_CENTER },
+      { v: d.amLiters > 0 ? Number(d.amLiters.toFixed(1)) : 0, s: CELL_NUM },
+      { v: d.pmLiters > 0 ? Number(d.pmLiters.toFixed(1)) : 0, s: CELL_NUM },
+      { v: d.totalLiters > 0 ? Number(d.totalLiters.toFixed(1)) : 0, s: CELL_NUM },
+      { v: d.cowsMilked || 0, s: CELL_CENTER },
+      { v: d.salesLiters > 0 ? Number(d.salesLiters.toFixed(1)) : 0, s: CELL_NUM },
+      { v: d.calvesLiters > 0 ? Number(d.calvesLiters.toFixed(1)) : 0, s: CELL_NUM },
+      { v: d.farmLiters > 0 ? Number(d.farmLiters.toFixed(1)) : 0, s: CELL_NUM },
+      { v: d.rejectedLiters > 0 ? Number(d.rejectedLiters.toFixed(1)) : 0, s: CELL_NUM },
+      { v: d.isSettled ? '🟢 Liquidado' : (d.totalLiters > 0 ? '🟡 Pendiente' : '-'), s: CELL_CENTER },
+      { v: d.notes || '', s: CELL_STYLE },
+    ]);
+  });
+
+  // Fila de Totales Hoja Período
+  wsDataPeriod.push([
+    { v: 'TOTALES PERÍODO', s: { ...TOTAL_STYLE, alignment: { horizontal: 'center' } } },
+    { v: `${pSum.daysLogged} Días`, s: { ...TOTAL_STYLE, alignment: { horizontal: 'center' } } },
+    { v: Number(sumAm.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(sumPm.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(sumTot.toFixed(1)), s: TOTAL_STYLE },
+    { v: pSum.avgCowsMilked > 0 ? `${Number(pSum.avgCowsMilked.toFixed(1))} prom.` : '-', s: TOTAL_STYLE },
+    { v: Number(sumSales.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(sumCalves.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(sumFarm.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(sumRej.toFixed(1)), s: TOTAL_STYLE },
+    { v: `${Number(pSum.settledLiters.toFixed(0))} L liq.`, s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+  ]);
+
+  const wsPeriod = XLSX.utils.aoa_to_sheet(wsDataPeriod);
+  wsPeriod['!cols'] = [
+    { wch: 15 }, // Fecha
+    { wch: 10 }, // Día
+    { wch: 15 }, // AM
+    { wch: 15 }, // PM
+    { wch: 16 }, // Total
+    { wch: 16 }, // Vacas
+    { wch: 18 }, // Venta
+    { wch: 15 }, // Terneros
+    { wch: 16 }, // Queso
+    { wch: 18 }, // Descarte
+    { wch: 18 }, // Estado
+    { wch: 28 }, // Notas
+  ];
+  XLSX.utils.book_append_sheet(wb, wsPeriod, 'Control Diario & Períodos');
+
+  // ==================== HOJA 2: LIQUIDACIONES & VENTAS DE LECHE ====================
+  const wsDataSettlements = [
+    [{ v: `💰 HISTORIAL DE LIQUIDACIONES & CIERRES DE LECHE • ${farmName.toUpperCase()}`, s: TITLE_STYLE }],
+    [{ v: `Total Liquidaciones Registradas: ${milkSettlements.length}`, s: META_STYLE }],
+    [],
+    [
+      { v: 'Período', s: HEADER_STYLE },
+      { v: 'Tipo Período', s: HEADER_STYLE },
+      { v: 'Fecha Inicio', s: HEADER_STYLE },
+      { v: 'Fecha Fin', s: HEADER_STYLE },
+      { v: 'Comprador / Planta', s: HEADER_STYLE },
+      { v: 'Litros Liquidados (L)', s: HEADER_STYLE },
+      { v: 'Precio Base ($/L)', s: HEADER_STYLE },
+      { v: 'Subtotal Base ($)', s: HEADER_STYLE },
+      { v: 'Bonificaciones ($)', s: HEADER_STYLE },
+      { v: 'Deducciones ($)', s: HEADER_STYLE },
+      { v: 'Total Neto Liquidado ($)', s: HEADER_STYLE },
+      { v: 'Estado de Pago', s: HEADER_STYLE },
+      { v: 'Fecha de Pago', s: HEADER_STYLE },
+      { v: 'Observaciones', s: HEADER_STYLE },
+    ]
+  ];
+
+  let sumSettleLiters = 0;
+  let sumSettleNet = 0;
+
+  milkSettlements.forEach(st => {
+    const l = parseFloat(st.totalLiters) || 0;
+    const net = parseFloat(st.totalValue) || 0;
+    sumSettleLiters += l;
+    sumSettleNet += net;
+
+    wsDataSettlements.push([
+      { v: `${formatDate(st.startDate)} al ${formatDate(st.endDate)}`, s: CELL_CENTER },
+      { v: (st.periodType || 'quincenal').toUpperCase(), s: CELL_CENTER },
+      { v: formatDate(st.startDate), s: CELL_CENTER },
+      { v: formatDate(st.endDate), s: CELL_CENTER },
+      { v: st.buyer || 'Planta / Acopio', s: CELL_STYLE },
+      { v: l, s: CELL_NUM },
+      { v: parseFloat(st.pricePerLiter) || 0, s: CELL_NUM },
+      { v: parseFloat(st.baseAmount) || (l * (parseFloat(st.pricePerLiter) || 0)), s: CELL_NUM },
+      { v: parseFloat(st.bonuses) || 0, s: CELL_NUM },
+      { v: parseFloat(st.deductions) || 0, s: CELL_NUM },
+      { v: net, s: CELL_NUM },
+      { v: st.paymentStatus || 'Pagada', s: CELL_CENTER },
+      { v: st.paymentDate ? formatDate(st.paymentDate) : '-', s: CELL_CENTER },
+      { v: st.notes || '', s: CELL_STYLE },
+    ]);
+  });
+
+  // Totales de Liquidaciones
+  wsDataSettlements.push([
+    { v: 'TOTALES LIQUIDADOS', s: { ...TOTAL_STYLE, alignment: { horizontal: 'center' } } },
+    { v: `${milkSettlements.length} Liquidaciones`, s: { ...TOTAL_STYLE, alignment: { horizontal: 'center' } } },
+    { v: '', s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: Number(sumSettleLiters.toFixed(1)), s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: Number(sumSettleNet.toFixed(0)), s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+    { v: '', s: TOTAL_STYLE },
+  ]);
+
+  const wsSettlements = XLSX.utils.aoa_to_sheet(wsDataSettlements);
+  wsSettlements['!cols'] = [
+    { wch: 24 }, // Período
+    { wch: 14 }, // Tipo
+    { wch: 14 }, // Inicio
+    { wch: 14 }, // Fin
+    { wch: 22 }, // Comprador
+    { wch: 18 }, // Litros
+    { wch: 16 }, // Precio/L
+    { wch: 18 }, // Subtotal
+    { wch: 16 }, // Bonos
+    { wch: 16 }, // Deduc
+    { wch: 22 }, // Neto
+    { wch: 16 }, // Estado
+    { wch: 14 }, // Fecha Pago
+    { wch: 28 }, // Notas
+  ];
+  XLSX.utils.book_append_sheet(wb, wsSettlements, 'Liquidaciones & Ventas');
+
+  // ==================== HOJA 3: PLANILLA INDIVIDUAL POR VACA ====================
   const wsData1 = [
-    [{ v: `🥛 PLANILLA DE CONTROL LECHERO • ${farmName.toUpperCase()}`, s: TITLE_STYLE }],
+    [{ v: `🐄 PLANILLA DE CONTROL LECHERO INDIVIDUAL • ${farmName.toUpperCase()}`, s: TITLE_STYLE }],
     [{ v: `Fecha de Pesaje: ${formatDate(selectedDate)} | Generado: ${formatDate(new Date())}`, s: META_STYLE }],
     [{ v: `Producción Día: ${metrics.todayTotalLiters} L (AM: ${metrics.todayAmLiters} L / PM: ${metrics.todayPmLiters} L) | Promedio: ${metrics.avgPerMilkingCow} L/vaca`, s: META_STYLE }],
     [],
@@ -101,9 +297,9 @@ export function exportDairyReportToExcel({
     ]
   ];
 
-  let sumAm = 0;
-  let sumPm = 0;
-  let sumTotal = 0;
+  let indSumAm = 0;
+  let indSumPm = 0;
+  let indSumTotal = 0;
 
   females.forEach(cow => {
     const record = milkRecords.find(r => String(r.cattleId) === String(cow.id) && r.date === selectedDate);
@@ -114,9 +310,9 @@ export function exportDairyReportToExcel({
     const pDays = parseInt(cow.pregnancyDays, 10) || 0;
     const daysToDry = pDays > 0 ? Math.max(0, 220 - pDays) : '-';
 
-    sumAm += am;
-    sumPm += pm;
-    sumTotal += total;
+    indSumAm += am;
+    indSumPm += pm;
+    indSumTotal += total;
 
     wsData1.push([
       { v: `#${cow.tagNumber || 'S/N'}`, s: CELL_CENTER },
@@ -139,9 +335,9 @@ export function exportDairyReportToExcel({
     { v: `${females.length} Hembras`, s: { ...TOTAL_STYLE, alignment: { horizontal: 'center' } } },
     { v: '', s: TOTAL_STYLE },
     { v: '', s: TOTAL_STYLE },
-    { v: Number(sumAm.toFixed(1)), s: TOTAL_STYLE },
-    { v: Number(sumPm.toFixed(1)), s: TOTAL_STYLE },
-    { v: Number(sumTotal.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(indSumAm.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(indSumPm.toFixed(1)), s: TOTAL_STYLE },
+    { v: Number(indSumTotal.toFixed(1)), s: TOTAL_STYLE },
     { v: '', s: TOTAL_STYLE },
     { v: '', s: TOTAL_STYLE },
     { v: '', s: TOTAL_STYLE },
@@ -162,9 +358,9 @@ export function exportDairyReportToExcel({
     { wch: 18 }, // Secado
     { wch: 28 }, // Notas
   ];
-  XLSX.utils.book_append_sheet(wb, ws1, 'Planilla Control Lechero');
+  XLSX.utils.book_append_sheet(wb, ws1, 'Pesaje Individual');
 
-  // ==================== HOJA 2: DESPACHOS & TANQUE FRÍO ====================
+  // ==================== HOJA 4: DESPACHOS & TANQUE FRÍO ====================
   const wsData2 = [
     [{ v: `🧊 REGISTRO DE DESPACHOS A TANQUE & VENTAS • ${farmName.toUpperCase()}`, s: TITLE_STYLE }],
     [{ v: `Total Litros Despachados Mes: ${metrics.monthDeliveredLiters} L | Facturación Acumulada: ${formatCurrency(metrics.monthTotalRevenue)}`, s: META_STYLE }],
@@ -211,7 +407,7 @@ export function exportDairyReportToExcel({
     ]);
   });
 
-  // Fila de Totales Hoja 2
+  // Fila de Totales Hoja 4
   wsData2.push([
     { v: 'TOTALES DESPACHADOS', s: { ...TOTAL_STYLE, alignment: { horizontal: 'center' } } },
     { v: Number(sumDelivLiters.toFixed(1)), s: TOTAL_STYLE },
@@ -240,7 +436,7 @@ export function exportDairyReportToExcel({
   ];
   XLSX.utils.book_append_sheet(wb, ws2, 'Despachos & Tanque');
 
-  // ==================== HOJA 3: RANKING & CURVAS DE LACTANCIA ====================
+  // ==================== HOJA 5: RANKING & CURVAS DE LACTANCIA ====================
   const rankingList = females.map(cow => {
     const curve = calculateLactationCurve(cow, milkRecords);
     return {
@@ -296,7 +492,7 @@ export function exportDairyReportToExcel({
     { wch: 24 }, // Proy 305
     { wch: 26 }, // Salud
   ];
-  XLSX.utils.book_append_sheet(wb, ws3, 'Ranking & Proyección 305d');
+  XLSX.utils.book_append_sheet(wb, ws3, 'Ranking & Curvas 305d');
 
   // Descarga del archivo Excel
   const cleanName = farmName.toLowerCase().replace(/[^a-z0-9]/g, '_');

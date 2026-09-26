@@ -159,6 +159,26 @@ db.version(14).stores({
   settings: 'key, userId'
 });
 
+db.version(15).stores({
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, motherId, motherTag, fatherId, fatherTag, fatherType, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  farmExpenses: '++id, date, type, category, concept, amount, isRecurring, recurrenceFrequency, paymentMethod, userId, createdAt',
+  farmIncomes: '++id, date, type, category, concept, amount, paymentMethod, userId, createdAt',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  calendarNotes: '++id, date, title, category, completed, userId, createdAt',
+  paddocks: '++id, name, areaHa, pastureType, waterSource, status, currentBatchId, currentBatchName, entryDate, exitDate, lastRestStartDate, targetRestDays, targetGrazingDays, notes, userId, createdAt',
+  milkRecords: '++id, date, cattleId, tagNumber, milkingSession, amLiters, pmLiters, totalLiters, lactationNumber, daysInMilk, userId, createdAt',
+  milkDeliveries: '++id, date, totalLiters, pricePerLiter, totalValue, buyer, milkDestination, destination, rejectedLiters, temperature, paymentStatus, userId, createdAt',
+  dailyMilkLogs: '++id, date, amLiters, pmLiters, totalLiters, cowsMilked, calvesLiters, farmLiters, salesLiters, rejectedLiters, pricePerLiter, settlementId, isSettled, notes, userId, createdAt',
+  milkSettlements: '++id, startDate, endDate, periodType, totalLiters, pricePerLiter, baseAmount, bonuses, deductions, totalValue, buyer, paymentStatus, paymentDate, registerIncome, incomeId, notes, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Registrar una acción en la bitácora de auditoría
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {
@@ -616,6 +636,12 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.milkDeliveries) {
       milkDeliveries = await db.milkDeliveries.where('userId').equals(userId).toArray();
     }
+    if (db.dailyMilkLogs) {
+      dailyMilkLogs = await db.dailyMilkLogs.where('userId').equals(userId).toArray();
+    }
+    if (db.milkSettlements) {
+      milkSettlements = await db.milkSettlements.where('userId').equals(userId).toArray();
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
@@ -630,10 +656,12 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.paddocks) paddocks = await db.paddocks.toArray();
     if (db.milkRecords) milkRecords = await db.milkRecords.toArray();
     if (db.milkDeliveries) milkDeliveries = await db.milkDeliveries.toArray();
+    if (db.dailyMilkLogs) dailyMilkLogs = await db.dailyMilkLogs.toArray();
+    if (db.milkSettlements) milkSettlements = await db.milkSettlements.toArray();
   }
 
   const backup = {
-    version: 8,
+    version: 9,
     appName: "INVENTARIO BOVINO APP",
     exportDate: new Date().toISOString(),
     farmName: userDetails.farmName || "Mi Finca Ganadera",
@@ -652,6 +680,8 @@ export async function exportBackupData(userId, userDetails = {}) {
     paddocks: paddocks || [],
     milkRecords: milkRecords || [],
     milkDeliveries: milkDeliveries || [],
+    dailyMilkLogs: dailyMilkLogs || [],
+    milkSettlements: milkSettlements || [],
   };
 
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
@@ -683,6 +713,8 @@ export async function importBackupData(jsonData, userId) {
     if (db.paddocks) tables.push(db.paddocks);
     if (db.milkRecords) tables.push(db.milkRecords);
     if (db.milkDeliveries) tables.push(db.milkDeliveries);
+    if (db.dailyMilkLogs) tables.push(db.dailyMilkLogs);
+    if (db.milkSettlements) tables.push(db.milkSettlements);
 
     await db.transaction('rw', tables, async () => {
       if (userId) {
@@ -699,6 +731,8 @@ export async function importBackupData(jsonData, userId) {
         if (db.paddocks) await db.paddocks.where('userId').equals(userId).delete();
         if (db.milkRecords) await db.milkRecords.where('userId').equals(userId).delete();
         if (db.milkDeliveries) await db.milkDeliveries.where('userId').equals(userId).delete();
+        if (db.dailyMilkLogs) await db.dailyMilkLogs.where('userId').equals(userId).delete();
+        if (db.milkSettlements) await db.milkSettlements.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
@@ -713,6 +747,8 @@ export async function importBackupData(jsonData, userId) {
         if (db.paddocks) await db.paddocks.clear();
         if (db.milkRecords) await db.milkRecords.clear();
         if (db.milkDeliveries) await db.milkDeliveries.clear();
+        if (db.dailyMilkLogs) await db.dailyMilkLogs.clear();
+        if (db.milkSettlements) await db.milkSettlements.clear();
       }
 
       if (data.cattle?.length) {
@@ -806,6 +842,20 @@ export async function importBackupData(jsonData, userId) {
           userId: userId || d.userId || 'default',
         }));
         await db.milkDeliveries.bulkPut(cleanedMD);
+      }
+      if (data.dailyMilkLogs?.length && db.dailyMilkLogs) {
+        const cleanedDML = data.dailyMilkLogs.map(l => ({
+          ...l,
+          userId: userId || l.userId || 'default',
+        }));
+        await db.dailyMilkLogs.bulkPut(cleanedDML);
+      }
+      if (data.milkSettlements?.length && db.milkSettlements) {
+        const cleanedMS = data.milkSettlements.map(s => ({
+          ...s,
+          userId: userId || s.userId || 'default',
+        }));
+        await db.milkSettlements.bulkPut(cleanedMS);
       }
     });
 
@@ -965,4 +1015,184 @@ export async function deleteMilkDelivery(id) {
     return false;
   }
 }
+
+// ==================== PRODUCCIÓN GENERAL DIARIA & CONTROL POR PERÍODOS ====================
+
+/**
+ * Obtiene los registros diarios generales de producción de leche
+ */
+export async function getDailyMilkLogs(userId) {
+  try {
+    if (!db.dailyMilkLogs) return [];
+    const list = await db.dailyMilkLogs
+      .filter(l => !l.userId || l.userId === userId)
+      .toArray();
+    return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+  } catch (err) {
+    console.warn('Error obteniendo registros diarios de leche:', err);
+    return [];
+  }
+}
+
+/**
+ * Guarda o actualiza un registro general de producción diaria de leche
+ */
+export async function saveDailyMilkLog(logData) {
+  try {
+    if (!db.dailyMilkLogs) return null;
+    const am = parseFloat(logData.amLiters) || 0;
+    const pm = parseFloat(logData.pmLiters) || 0;
+    const total = parseFloat(logData.totalLiters) || (am + pm);
+    const cows = parseInt(logData.cowsMilked) || 0;
+    const sales = logData.salesLiters !== undefined ? parseFloat(logData.salesLiters) : total;
+    const calves = parseFloat(logData.calvesLiters) || 0;
+    const farm = parseFloat(logData.farmLiters) || 0;
+    const rejected = parseFloat(logData.rejectedLiters) || 0;
+    const price = parseFloat(logData.pricePerLiter) || 0;
+
+    const item = {
+      ...logData,
+      id: logData.id || ('dml_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
+      date: logData.date || new Date().toISOString().split('T')[0],
+      amLiters: am,
+      pmLiters: pm,
+      totalLiters: total,
+      cowsMilked: cows,
+      salesLiters: sales,
+      calvesLiters: calves,
+      farmLiters: farm,
+      rejectedLiters: rejected,
+      pricePerLiter: price,
+      isSettled: !!logData.isSettled,
+      settlementId: logData.settlementId || null,
+      notes: logData.notes || '',
+      createdAt: logData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await db.dailyMilkLogs.put(item);
+    return item;
+  } catch (err) {
+    console.error('Error guardando producción diaria de leche:', err);
+    throw err;
+  }
+}
+
+/**
+ * Elimina un registro diario general de leche
+ */
+export async function deleteDailyMilkLog(id) {
+  try {
+    if (!db.dailyMilkLogs || !id) return false;
+    await db.dailyMilkLogs.delete(id);
+    return true;
+  } catch (err) {
+    console.error('Error eliminando producción diaria de leche:', err);
+    return false;
+  }
+}
+
+// ==================== LIQUIDACIONES & VENTA DE LECHE POR PERÍODOS ====================
+
+/**
+ * Obtiene el historial de liquidaciones periódicas de leche
+ */
+export async function getMilkSettlements(userId) {
+  try {
+    if (!db.milkSettlements) return [];
+    const list = await db.milkSettlements
+      .filter(s => !s.userId || s.userId === userId)
+      .toArray();
+    return list.sort((a, b) => new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt));
+  } catch (err) {
+    console.warn('Error obteniendo liquidaciones de leche:', err);
+    return [];
+  }
+}
+
+/**
+ * Guarda o actualiza una liquidación periódica de leche y vincula los días liquidados
+ */
+export async function saveMilkSettlement(settlementData) {
+  try {
+    if (!db.milkSettlements) return null;
+    const liters = parseFloat(settlementData.totalLiters) || 0;
+    const price = parseFloat(settlementData.pricePerLiter) || 0;
+    const base = parseFloat(settlementData.baseAmount) || (liters * price);
+    const bonuses = parseFloat(settlementData.bonuses) || 0;
+    const deductions = parseFloat(settlementData.deductions) || 0;
+    const total = parseFloat(settlementData.totalValue) || (base + bonuses - deductions);
+
+    const settlementId = settlementData.id || ('ms_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+    const item = {
+      ...settlementData,
+      id: settlementId,
+      totalLiters: liters,
+      pricePerLiter: price,
+      baseAmount: base,
+      bonuses: bonuses,
+      deductions: deductions,
+      totalValue: total,
+      periodType: settlementData.periodType || 'quincenal',
+      startDate: settlementData.startDate || new Date().toISOString().split('T')[0],
+      endDate: settlementData.endDate || new Date().toISOString().split('T')[0],
+      paymentStatus: settlementData.paymentStatus || 'Pagada',
+      paymentDate: settlementData.paymentDate || new Date().toISOString().split('T')[0],
+      registerIncome: settlementData.registerIncome !== false,
+      incomeId: settlementData.incomeId || ('inc_milk_' + settlementId),
+      notes: settlementData.notes || '',
+      createdAt: settlementData.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.milkSettlements.put(item);
+
+    // Marcar los registros diarios dentro del rango de fechas como liquidados
+    if (db.dailyMilkLogs && item.startDate && item.endDate) {
+      const logsInRange = await db.dailyMilkLogs
+        .filter(l => (!l.userId || l.userId === item.userId) && l.date >= item.startDate && l.date <= item.endDate)
+        .toArray();
+      
+      for (const log of logsInRange) {
+        await db.dailyMilkLogs.update(log.id, {
+          isSettled: true,
+          settlementId: settlementId,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    return item;
+  } catch (err) {
+    console.error('Error guardando liquidación de leche:', err);
+    throw err;
+  }
+}
+
+/**
+ * Elimina una liquidación de leche y desvincula los días liquidados
+ */
+export async function deleteMilkSettlement(id) {
+  try {
+    if (!db.milkSettlements || !id) return false;
+    const settlement = await db.milkSettlements.get(id);
+    if (settlement && db.dailyMilkLogs) {
+      const linkedLogs = await db.dailyMilkLogs
+        .filter(l => l.settlementId === id)
+        .toArray();
+      for (const log of linkedLogs) {
+        await db.dailyMilkLogs.update(log.id, {
+          isSettled: false,
+          settlementId: null,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+    await db.milkSettlements.delete(id);
+    return true;
+  } catch (err) {
+    console.error('Error eliminando liquidación de leche:', err);
+    return false;
+  }
+}
+
 

@@ -1,5 +1,5 @@
 {
-  "version": "2.15.0",
-  "buildTime": 1790442000000,
-  "description": "🥛 Módulo Integral de Lechería: Ordeños AM/PM, Curvas DEL, Tanque Frío, Semáforo de Secado & Liquidaciones"
+  "version": "2.15.1",
+  "buildTime": 1790450000000,
+  "description": "🥛 Control Diario de Leche, Períodos (Quincenal/Semanal/Mensual) & Generador de Liquidaciones de Venta"
 }

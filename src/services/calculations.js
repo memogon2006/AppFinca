@@ -795,3 +795,245 @@ export function calculateHerdMilkMetrics(cattle = [], milkRecords = [], milkDeli
   };
 }
 
+/**
+ * Genera rangos de fechas comunes para control de lechería (Quincenas, Mes, Semana)
+ */
+export function getMilkPeriodRange(periodType = 'first_fortnight', refYear = null, refMonth = null) {
+  const now = new Date();
+  const year = refYear !== null ? refYear : now.getFullYear();
+  const month = refMonth !== null ? refMonth : now.getMonth(); // 0-indexed
+
+  const yStr = String(year);
+  const mStr = String(month + 1).padStart(2, '0');
+
+  // Último día del mes
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+
+  if (periodType === 'first_fortnight') {
+    return {
+      periodType: 'first_fortnight',
+      label: `1ª Quincena (1 - 15 de ${getMonthName(month)})`,
+      shortLabel: `1ª Quincena • ${getMonthName(month).slice(0, 3)} ${year}`,
+      startDate: `${yStr}-${mStr}-01`,
+      endDate: `${yStr}-${mStr}-15`,
+      daysInPeriod: 15,
+    };
+  }
+
+  if (periodType === 'second_fortnight') {
+    return {
+      periodType: 'second_fortnight',
+      label: `2ª Quincena (16 - ${lastDayOfMonth} de ${getMonthName(month)})`,
+      shortLabel: `2ª Quincena • ${getMonthName(month).slice(0, 3)} ${year}`,
+      startDate: `${yStr}-${mStr}-16`,
+      endDate: `${yStr}-${mStr}-${String(lastDayOfMonth).padStart(2, '0')}`,
+      daysInPeriod: lastDayOfMonth - 15,
+    };
+  }
+
+  if (periodType === 'full_month') {
+    return {
+      periodType: 'full_month',
+      label: `Mes Completo (${getMonthName(month)} ${year})`,
+      shortLabel: `${getMonthName(month)} ${year}`,
+      startDate: `${yStr}-${mStr}-01`,
+      endDate: `${yStr}-${mStr}-${String(lastDayOfMonth).padStart(2, '0')}`,
+      daysInPeriod: lastDayOfMonth,
+    };
+  }
+
+  if (periodType === 'current_week') {
+    const curr = new Date(now);
+    const first = curr.getDate() - (curr.getDay() === 0 ? 6 : curr.getDay() - 1); // Lunes
+    const last = first + 6; // Domingo
+
+    const firstDate = new Date(curr.setDate(first));
+    const lastDate = new Date(curr.setDate(last));
+
+    const sY = firstDate.getFullYear();
+    const sM = String(firstDate.getMonth() + 1).padStart(2, '0');
+    const sD = String(firstDate.getDate()).padStart(2, '0');
+
+    const eY = lastDate.getFullYear();
+    const eM = String(lastDate.getMonth() + 1).padStart(2, '0');
+    const eD = String(lastDate.getDate()).padStart(2, '0');
+
+    return {
+      periodType: 'current_week',
+      label: `Esta Semana (${sD}/${sM} - ${eD}/${eM})`,
+      shortLabel: `Semana ${sD}/${sM} - ${eD}/${eM}`,
+      startDate: `${sY}-${sM}-${sD}`,
+      endDate: `${eY}-${eM}-${eD}`,
+      daysInPeriod: 7,
+    };
+  }
+
+  return {
+    periodType: 'custom',
+    label: `Rango Personalizado`,
+    shortLabel: `Personalizado`,
+    startDate: `${yStr}-${mStr}-01`,
+    endDate: `${yStr}-${mStr}-${String(lastDayOfMonth).padStart(2, '0')}`,
+    daysInPeriod: lastDayOfMonth,
+  };
+}
+
+function getMonthName(monthIndex) {
+  const names = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  return names[monthIndex] || 'Mes';
+}
+
+/**
+ * Calcula el resumen zootécnico y económico de un período de lechería (Quincenal / Mensual / Semanal)
+ */
+export function calculatePeriodMilkSummary(
+  dailyMilkLogs = [], 
+  milkRecords = [], 
+  startDate, 
+  endDate, 
+  pricePerLiter = 0
+) {
+  if (!startDate || !endDate) {
+    return {
+      totalLiters: 0,
+      totalAmLiters: 0,
+      totalPmLiters: 0,
+      totalSalesLiters: 0,
+      totalCalvesLiters: 0,
+      totalFarmLiters: 0,
+      totalRejectedLiters: 0,
+      daysLogged: 0,
+      avgDailyLiters: 0,
+      avgCowsMilked: 0,
+      avgLitersPerCow: 0,
+      estimatedRevenue: 0,
+      unsettledLiters: 0,
+      settledLiters: 0,
+      dailyBreakdown: [],
+    };
+  }
+
+  // Filtrar registros del rango
+  const logsInRange = dailyMilkLogs.filter(l => l.date >= startDate && l.date <= endDate);
+  const recordsInRange = milkRecords.filter(r => r.date >= startDate && r.date <= endDate);
+
+  // Mapa por fecha
+  const dateMap = new Map();
+
+  // 1. Agregar registros de Producción General Diaria
+  logsInRange.forEach(l => {
+    dateMap.set(l.date, {
+      id: l.id,
+      date: l.date,
+      amLiters: parseFloat(l.amLiters) || 0,
+      pmLiters: parseFloat(l.pmLiters) || 0,
+      totalLiters: parseFloat(l.totalLiters) || 0,
+      cowsMilked: parseInt(l.cowsMilked) || 0,
+      salesLiters: l.salesLiters !== undefined ? parseFloat(l.salesLiters) : (parseFloat(l.totalLiters) || 0),
+      calvesLiters: parseFloat(l.calvesLiters) || 0,
+      farmLiters: parseFloat(l.farmLiters) || 0,
+      rejectedLiters: parseFloat(l.rejectedLiters) || 0,
+      pricePerLiter: parseFloat(l.pricePerLiter) || pricePerLiter,
+      isSettled: !!l.isSettled,
+      settlementId: l.settlementId || null,
+      notes: l.notes || '',
+      source: 'daily_log',
+    });
+  });
+
+  // 2. Si hay pesajes individuales de vacas en días donde no hubo registro general, agregarlos como respaldo
+  recordsInRange.forEach(r => {
+    if (!dateMap.has(r.date)) {
+      const existing = dateMap.get(r.date) || {
+        id: 'auto_' + r.date,
+        date: r.date,
+        amLiters: 0,
+        pmLiters: 0,
+        totalLiters: 0,
+        cowsMilked: 0,
+        salesLiters: 0,
+        calvesLiters: 0,
+        farmLiters: 0,
+        rejectedLiters: 0,
+        pricePerLiter: pricePerLiter,
+        isSettled: false,
+        settlementId: null,
+        notes: '',
+        source: 'individual_records',
+      };
+
+      const am = parseFloat(r.amLiters) || 0;
+      const pm = parseFloat(r.pmLiters) || 0;
+      const tot = parseFloat(r.totalLiters) || (am + pm);
+
+      existing.amLiters += am;
+      existing.pmLiters += pm;
+      existing.totalLiters += tot;
+      existing.salesLiters += tot;
+      existing.cowsMilked += 1;
+      dateMap.set(r.date, existing);
+    }
+  });
+
+  // Ordenar días cronológicamente
+  const dailyBreakdown = Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  let totalLiters = 0;
+  let totalAmLiters = 0;
+  let totalPmLiters = 0;
+  let totalSalesLiters = 0;
+  let totalCalvesLiters = 0;
+  let totalFarmLiters = 0;
+  let totalRejectedLiters = 0;
+  let totalCowsSum = 0;
+  let unsettledLiters = 0;
+  let settledLiters = 0;
+
+  dailyBreakdown.forEach(day => {
+    totalLiters += day.totalLiters;
+    totalAmLiters += day.amLiters;
+    totalPmLiters += day.pmLiters;
+    totalSalesLiters += day.salesLiters;
+    totalCalvesLiters += day.calvesLiters;
+    totalFarmLiters += day.farmLiters;
+    totalRejectedLiters += day.rejectedLiters;
+    totalCowsSum += day.cowsMilked;
+
+    if (day.isSettled) {
+      settledLiters += day.salesLiters;
+    } else {
+      unsettledLiters += day.salesLiters;
+    }
+  });
+
+  const daysLogged = dailyBreakdown.length;
+  const avgDailyLiters = daysLogged > 0 ? totalLiters / daysLogged : 0;
+  const avgCowsMilked = daysLogged > 0 ? totalCowsSum / daysLogged : 0;
+  const avgLitersPerCow = avgCowsMilked > 0 ? avgDailyLiters / avgCowsMilked : 0;
+
+  const effectivePrice = pricePerLiter > 0 ? pricePerLiter : 0;
+  const estimatedRevenue = totalSalesLiters * effectivePrice;
+
+  return {
+    totalLiters: Number(totalLiters.toFixed(1)),
+    totalAmLiters: Number(totalAmLiters.toFixed(1)),
+    totalPmLiters: Number(totalPmLiters.toFixed(1)),
+    totalSalesLiters: Number(totalSalesLiters.toFixed(1)),
+    totalCalvesLiters: Number(totalCalvesLiters.toFixed(1)),
+    totalFarmLiters: Number(totalFarmLiters.toFixed(1)),
+    totalRejectedLiters: Number(totalRejectedLiters.toFixed(1)),
+    daysLogged,
+    avgDailyLiters: Number(avgDailyLiters.toFixed(1)),
+    avgCowsMilked: Number(avgCowsMilked.toFixed(1)),
+    avgLitersPerCow: Number(avgLitersPerCow.toFixed(1)),
+    estimatedRevenue: Number(estimatedRevenue.toFixed(0)),
+    unsettledLiters: Number(unsettledLiters.toFixed(1)),
+    settledLiters: Number(settledLiters.toFixed(1)),
+    dailyBreakdown,
+  };
+}
+
+

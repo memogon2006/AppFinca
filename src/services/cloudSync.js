@@ -416,6 +416,8 @@ export async function cloudPushData(userId) {
     const paddocks = db.paddocks ? await db.paddocks.filter(isTarget).toArray() : [];
     const milkRecords = db.milkRecords ? await db.milkRecords.filter(isTarget).toArray() : [];
     const milkDeliveries = db.milkDeliveries ? await db.milkDeliveries.filter(isTarget).toArray() : [];
+    const dailyMilkLogs = db.dailyMilkLogs ? await db.dailyMilkLogs.filter(isTarget).toArray() : [];
+    const milkSettlements = db.milkSettlements ? await db.milkSettlements.filter(isTarget).toArray() : [];
     const transactions = db.transactions ? await db.transactions.filter(isTarget).toArray() : [];
     const farmExpenses = db.farmExpenses ? await db.farmExpenses.filter(isTarget).toArray() : [];
     const farmIncomes = db.farmIncomes ? await db.farmIncomes.filter(isTarget).toArray() : [];
@@ -439,6 +441,8 @@ export async function cloudPushData(userId) {
       paddocks,
       milkRecords,
       milkDeliveries,
+      dailyMilkLogs,
+      milkSettlements,
       transactions,
       activityLogs,
       calendarNotes,
@@ -588,6 +592,8 @@ export async function cloudPullData(userId) {
           'paddocks',
           'milkRecords',
           'milkDeliveries',
+          'dailyMilkLogs',
+          'milkSettlements',
           'transactions',
           'activityLogs',
           'calendarNotes'

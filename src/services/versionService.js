@@ -1,10 +1,23 @@
-export const CURRENT_APP_VERSION = "2.15.0";
+export const CURRENT_APP_VERSION = "2.15.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.1",
+    date: "26/09/2026",
+    title: "🥛 Control Diario General, Períodos (Quincenal / Semanal / Mensual) & Liquidaciones de Leche",
+    highlights: [
+      "Producción Diaria General: Formulario táctil rápido para registrar el volumen general del día (Ordeño AM, PM, Total, Vacas ordeñadas) y su distribución exacta: Venta/Tanque, Terneros, Consumo de Finca/Quesería y Descarte por mastitis.",
+      "Control de Períodos Dinámico: Navegación intuitiva por 1ª Quincena (1-15), 2ª Quincena (16-fin), Mes Completo, Esta Semana o Rango Personalizado con resumen zootécnico y económico en vivo.",
+      "Generador de Liquidaciones & Ventas: Cierre de períodos con cálculo de precio por litro, bonificaciones por calidad/frío y deducciones por flete con estado de pago (Pagada / Pendiente).",
+      "Conexión Contable Automática: Las liquidaciones se asientan directamente en los Ingresos Contables de la Finca ('farmIncomes') manteniendo la Utilidad Neta Real al día.",
+      "Comprobante & Recibo de Venta: Volante imprimible con desglose financiero completo y botón de compartir directamente a WhatsApp.",
+      "Exportación Excel Multiuso: Hoja de control día a día del período, historial de liquidaciones, planilla individual y tanque frío en un solo libro Excel (.xlsx)."
+    ]
+  },
   {
     version: "2.15.0",
     date: "26/09/2026",

@@ -10,7 +10,11 @@ import {
   saveBatchMilkRecords,
   deleteMilkRecord,
   saveMilkDelivery,
-  deleteMilkDelivery
+  deleteMilkDelivery,
+  saveDailyMilkLog,
+  deleteDailyMilkLog,
+  saveMilkSettlement,
+  deleteMilkSettlement
 } from './services/db';
 import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete } from './services/cloudSync';
@@ -460,6 +464,22 @@ export default function App() {
     () => {
       if (!userId && !currentUser?.id) return [];
       return db.milkDeliveries ? db.milkDeliveries.filter(d => !d.userId || allowedUserIds.has(d.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const dailyMilkLogs = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.dailyMilkLogs ? db.dailyMilkLogs.filter(l => !l.userId || allowedUserIds.has(l.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const milkSettlements = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.milkSettlements ? db.milkSettlements.filter(s => !s.userId || allowedUserIds.has(s.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -1676,6 +1696,120 @@ export default function App() {
     showToast('Despacho de leche a tanque eliminado 🗑️');
   };
 
+  const handleSaveDailyMilkLog = async (logData) => {
+    if (!userId) return;
+    const saved = await saveDailyMilkLog({
+      ...logData,
+      userId
+    });
+    if (saved) {
+      markPendingSync(userId, saved.id);
+
+      await logActivity({
+        action: 'daily_milk_log_saved',
+        description: `Registró producción diaria general: ${saved.totalLiters} L (AM: ${saved.amLiters || 0}L, PM: ${saved.pmLiters || 0}L) para el día ${saved.date}`,
+        tagNumber: '',
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+
+      cloudPushData(userId);
+      triggerFeedback('success');
+      showToast(`Producción diaria de ${saved.totalLiters} L guardada y sincronizada 🥛☁️`);
+    }
+  };
+
+  const handleDeleteDailyMilkLog = async (logId) => {
+    if (!userId) return;
+    await deleteDailyMilkLog(logId);
+    markPendingDelete(userId, 'dailyMilkLogs', logId);
+
+    await logActivity({
+      action: 'daily_milk_log_deleted',
+      description: `Eliminó registro de producción diaria ID ${logId}`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Registro de producción diaria eliminado 🗑️');
+  };
+
+  const handleSaveMilkSettlement = async (settlementData) => {
+    if (!userId) return;
+    const saved = await saveMilkSettlement({
+      ...settlementData,
+      userId
+    });
+    if (saved) {
+      markPendingSync(userId, saved.id);
+
+      // Si tiene marcado registrar ingreso contable, crear o actualizar entrada en farmIncomes
+      if (saved.registerIncome && saved.totalValue > 0) {
+        const incomeId = saved.incomeId || ('inc_milk_' + saved.id);
+        const incomeRecord = {
+          id: incomeId,
+          date: saved.paymentDate || saved.endDate || new Date().toISOString().split('T')[0],
+          concept: `Venta de Leche - Liquidación ${saved.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(saved.totalLiters, 1)} L @ ${formatCurrency(saved.pricePerLiter)}) - ${saved.buyer || 'Planta'}`,
+          category: 'Venta de Leche',
+          amount: saved.totalValue,
+          paymentMethod: 'Transferencia',
+          notes: `Liquidación período ${formatDate(saved.startDate)} al ${formatDate(saved.endDate)}. Comprador: ${saved.buyer || 'N/A'}. Bonificaciones: ${formatCurrency(saved.bonuses || 0)}, Deducciones: ${formatCurrency(saved.deductions || 0)}`,
+          userId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        if (db.farmIncomes) {
+          await db.farmIncomes.put(incomeRecord);
+          markPendingSync(userId, incomeId);
+        }
+      }
+
+      await logActivity({
+        action: 'milk_settlement_saved',
+        description: `Registró liquidación de leche: ${formatNumber(saved.totalLiters, 1)} L por ${formatCurrency(saved.totalValue)} (${saved.buyer || 'Planta'}) - Período ${saved.startDate} a ${saved.endDate}`,
+        tagNumber: '',
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+
+      cloudPushData(userId);
+      triggerFeedback('success');
+      showToast(`¡Liquidación de ${formatCurrency(saved.totalValue)} guardada exitosamente! 💰☁️`);
+    }
+  };
+
+  const handleDeleteMilkSettlement = async (settlementId) => {
+    if (!userId) return;
+    await deleteMilkSettlement(settlementId);
+    markPendingDelete(userId, 'milkSettlements', settlementId);
+
+    // Si tenía un ingreso contable asociado, eliminarlo también
+    const linkedIncomeId = 'inc_milk_' + settlementId;
+    if (db.farmIncomes) {
+      await db.farmIncomes.delete(linkedIncomeId);
+      markPendingDelete(userId, 'farmIncomes', linkedIncomeId);
+    }
+
+    await logActivity({
+      action: 'milk_settlement_deleted',
+      description: `Eliminó liquidación de leche ID ${settlementId}`,
+      tagNumber: '',
+      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId,
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    triggerFeedback('warning');
+    showToast('Liquidación de leche eliminada 🗑️');
+  };
+
   // ==================== POTREROS & PASTOREO ROTACIONAL ====================
 
   const handleSavePaddock = async (paddockData) => {
@@ -2137,11 +2271,17 @@ export default function App() {
             cattle={cattle}
             milkRecords={milkRecords}
             milkDeliveries={milkDeliveries}
+            dailyMilkLogs={dailyMilkLogs}
+            milkSettlements={milkSettlements}
             onSaveMilkRecord={handleSaveMilkRecord}
             onSaveBatchMilkRecords={handleSaveBatchMilkRecords}
             onDeleteMilkRecord={handleDeleteMilkRecord}
             onSaveMilkDelivery={handleSaveMilkDelivery}
             onDeleteMilkDelivery={handleDeleteMilkDelivery}
+            onSaveDailyMilkLog={handleSaveDailyMilkLog}
+            onDeleteDailyMilkLog={handleDeleteDailyMilkLog}
+            onSaveMilkSettlement={handleSaveMilkSettlement}
+            onDeleteMilkSettlement={handleDeleteMilkSettlement}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
             farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
