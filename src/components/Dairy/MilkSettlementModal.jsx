@@ -29,6 +29,7 @@ export function MilkSettlementModal({
   dailyMilkLogs = [],
   milkRecords = [],
   currentPeriodRange = null,
+  defaultPricePerLiter = 2100,
   farmName = 'Mi Finca Ganadera',
   zIndex = 'z-50'
 }) {
@@ -54,7 +55,7 @@ export function MilkSettlementModal({
         setStartDate(initialData.startDate || new Date().toISOString().split('T')[0]);
         setEndDate(initialData.endDate || new Date().toISOString().split('T')[0]);
         setTotalLiters(initialData.totalLiters ? String(initialData.totalLiters) : '');
-        setPricePerLiter(initialData.pricePerLiter ? String(initialData.pricePerLiter) : '');
+        setPricePerLiter(initialData.pricePerLiter ? String(initialData.pricePerLiter) : (defaultPricePerLiter ? String(defaultPricePerLiter) : '2100'));
         setBonuses(initialData.bonuses !== undefined ? String(initialData.bonuses) : '0');
         setDeductions(initialData.deductions !== undefined ? String(initialData.deductions) : '0');
         setBuyer(initialData.buyer || '');
@@ -73,7 +74,7 @@ export function MilkSettlementModal({
         const summary = calculatePeriodMilkSummary(dailyMilkLogs, milkRecords, sDate, eDate, 0);
         const lit = summary.totalSalesLiters > 0 ? summary.totalSalesLiters : summary.totalLiters;
         setTotalLiters(lit > 0 ? String(lit) : '');
-        setPricePerLiter('2100');
+        setPricePerLiter(defaultPricePerLiter ? String(defaultPricePerLiter) : '2100');
         setBonuses('0');
         setDeductions('0');
         setBuyer('');
@@ -83,7 +84,7 @@ export function MilkSettlementModal({
         setNotes('');
       }
     }
-  }, [isOpen, initialData, currentPeriodRange, dailyMilkLogs, milkRecords]);
+  }, [isOpen, initialData, currentPeriodRange, dailyMilkLogs, milkRecords, defaultPricePerLiter]);
 
   // Al cambiar rango de fechas en nuevo registro, recalcular litros de venta
   const handleRangeChange = (newStart, newEnd) => {

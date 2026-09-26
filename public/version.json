@@ -1,5 +1,5 @@
 {
-  "version": "2.15.3",
-  "buildTime": 1790463000000,
-  "description": "🥛 Selección Inteligente de Quincena Activa (1ª o 2ª Quincena según la fecha actual)"
+  "version": "2.15.4",
+  "buildTime": 1790464000000,
+  "description": "🥛 Configuración Personalizada del Precio de Leche por Litro ($/L) con Recálculo Financiero en Vivo"
 }

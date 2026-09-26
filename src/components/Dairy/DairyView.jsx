@@ -122,13 +122,35 @@ export function DairyView({
       }
     : getMilkPeriodRange(periodType, selectedYear, selectedMonth);
 
-  // Resumen del período calculado
+  // Precio de venta por litro personalizado por finca (con persistencia en localStorage)
+  const [milkPricePerLiter, setMilkPricePerLiter] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`finca_milk_price_${farmName.replace(/\s+/g, '_').toLowerCase()}`) 
+        || localStorage.getItem('finca_milk_price_per_liter');
+      return saved !== null && saved !== '' ? Number(saved) : 2100;
+    } catch (e) {
+      return 2100;
+    }
+  });
+
+  const handleMilkPriceChange = (val) => {
+    const num = val === '' ? '' : Number(val);
+    setMilkPricePerLiter(num);
+    if (num !== '' && !isNaN(num)) {
+      try {
+        localStorage.setItem(`finca_milk_price_${farmName.replace(/\s+/g, '_').toLowerCase()}`, String(num));
+        localStorage.setItem('finca_milk_price_per_liter', String(num));
+      } catch (e) {}
+    }
+  };
+
+  // Resumen del período calculado con el precio de leche ingresado
   const periodSummary = calculatePeriodMilkSummary(
     dailyMilkLogs,
     milkRecords,
     periodRange.startDate,
     periodRange.endDate,
-    2100
+    typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100
   );
 
   // Sincronizar auto-carga del Registrador Rápido de Día
@@ -177,7 +199,7 @@ export function DairyView({
       calvesLiters: existing?.calvesLiters || 0,
       farmLiters: existing?.farmLiters || 0,
       rejectedLiters: existing?.rejectedLiters || 0,
-      pricePerLiter: existing?.pricePerLiter || 2100,
+      pricePerLiter: existing?.pricePerLiter || (typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100),
       notes: existing?.notes || '',
     };
 
@@ -412,6 +434,9 @@ export function DairyView({
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
             <span>A Venta: <strong className="text-amber-300">{formatNumber(periodSummary.totalSalesLiters, 1)} L</strong></span>
+            <span className="text-[10px] text-slate-400 font-mono">
+              @ <strong className="text-amber-300">${(typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100).toLocaleString('es-CO')}</strong>/L
+            </span>
           </div>
         </div>
 
@@ -800,6 +825,27 @@ export function DairyView({
                   >
                     Personalizado
                   </button>
+                </div>
+              </div>
+
+              {/* Espacio para Introducir el Precio de Venta por Litro ($/L) */}
+              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-2xl border border-amber-500/50 shadow-inner" title="Precio por litro al que vendes la leche en tu finca (COP/L)">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                  <DollarSign className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline">Precio Leche:</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-mono font-black text-amber-400">$</span>
+                  <input
+                    type="number"
+                    value={milkPricePerLiter}
+                    onChange={(e) => handleMilkPriceChange(e.target.value)}
+                    className="w-16 sm:w-20 bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-2 py-1 text-right text-xs font-mono font-black text-white outline-none transition"
+                    placeholder="2100"
+                    step="50"
+                    min="0"
+                  />
+                  <span className="text-[11px] font-black text-slate-400">/L</span>
                 </div>
               </div>
 
@@ -1579,7 +1625,7 @@ export function DairyView({
         initialData={editingDailyLog}
         dailyMilkLogs={dailyMilkLogs}
         activeMilkingCowsCount={metrics.milkingCowsCount}
-        defaultPricePerLiter={2100}
+        defaultPricePerLiter={typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100}
       />
 
       <MilkSettlementModal
@@ -1594,6 +1640,7 @@ export function DairyView({
         dailyMilkLogs={dailyMilkLogs}
         milkRecords={milkRecords}
         currentPeriodRange={periodRange}
+        defaultPricePerLiter={typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100}
         farmName={farmName}
       />
 
@@ -1622,6 +1669,7 @@ export function DairyView({
         onSaveDelivery={onSaveMilkDelivery}
         editingDelivery={editingDelivery}
         suggestedLiters={metrics.todayTotalLiters}
+        defaultPricePerLiter={typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100}
         defaultDate={selectedDate}
       />
 

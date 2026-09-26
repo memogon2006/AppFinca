@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.15.3";
+export const CURRENT_APP_VERSION = "2.15.4";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.4",
+    date: "26/09/2026",
+    title: "💵 Precio de Leche por Litro ($/L) Personalizable & Recálculo Exacto en Vivo",
+    highlights: [
+      "Espacio para Ingresar el Precio de Leche: Campo editable ubicado directamente en la barra de control de períodos y en la tarjeta de Venta Estimada para digitar el precio exacto al que se vende la leche en la finca.",
+      "Recálculo Financiero en Tiempo Real: Las ventas estimadas del período, liquidaciones, comprobantes y reportes se actualizan instantáneamente con el valor digitado.",
+      "Persistencia Automática por Finca: El precio ingresado queda guardado automáticamente en el dispositivo para no tener que digitarlo cada vez.",
+      "Pre-llenado en Formularios: Al generar una liquidación o despacho a tanque, el formulario adopta automáticamente el precio fijado."
+    ]
+  },
   {
     version: "2.15.3",
     date: "26/09/2026",

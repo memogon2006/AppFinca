@@ -9,13 +9,14 @@ export function TankDeliveryModal({
   onSaveDelivery,
   editingDelivery = null,
   suggestedLiters = 0,
+  defaultPricePerLiter = 2100,
   defaultDate = new Date().toISOString().split('T')[0]
 }) {
   if (!isOpen) return null;
 
   const [date, setDate] = useState(defaultDate);
   const [totalLiters, setTotalLiters] = useState('');
-  const [pricePerLiter, setPricePerLiter] = useState('2100'); // Precio base orientativo común
+  const [pricePerLiter, setPricePerLiter] = useState(() => String(defaultPricePerLiter || 2100)); // Precio base orientativo común
   const [buyer, setBuyer] = useState('');
   const [milkDestination, setMilkDestination] = useState('Planta / Industria');
   const [rejectedLiters, setRejectedLiters] = useState('0');
@@ -28,7 +29,7 @@ export function TankDeliveryModal({
     if (editingDelivery) {
       setDate(editingDelivery.date || defaultDate);
       setTotalLiters(String(editingDelivery.totalLiters || ''));
-      setPricePerLiter(String(editingDelivery.pricePerLiter || '2100'));
+      setPricePerLiter(String(editingDelivery.pricePerLiter || defaultPricePerLiter || '2100'));
       setBuyer(editingDelivery.buyer || '');
       setMilkDestination(editingDelivery.milkDestination || editingDelivery.destination || 'Planta / Industria');
       setRejectedLiters(String(editingDelivery.rejectedLiters || '0'));
@@ -39,7 +40,7 @@ export function TankDeliveryModal({
     } else {
       setDate(defaultDate);
       setTotalLiters(suggestedLiters > 0 ? String(suggestedLiters) : '');
-      setPricePerLiter('2100');
+      setPricePerLiter(defaultPricePerLiter ? String(defaultPricePerLiter) : '2100');
       setBuyer('');
       setMilkDestination('Planta / Industria');
       setRejectedLiters('0');
@@ -48,7 +49,7 @@ export function TankDeliveryModal({
       setNotes('');
       setSyncToAccounting(true);
     }
-  }, [editingDelivery, isOpen, suggestedLiters]);
+  }, [editingDelivery, isOpen, suggestedLiters, defaultPricePerLiter]);
 
   const numLiters = parseFloat(totalLiters) || 0;
   const numPrice = parseFloat(pricePerLiter) || 0;
