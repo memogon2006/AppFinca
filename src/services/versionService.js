@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.15.4";
+export const CURRENT_APP_VERSION = "2.15.5";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.15.5",
+    date: "26/09/2026",
+    title: "🧾 Liquidación con Suma Automática de Litros & Deducciones por Porcentaje (%) y Fletes ($/L)",
+    highlights: [
+      "Suma Automática del Período en Liquidación: El formulario detecta y suma al instante los litros de los días registrados en la quincena/mes/semana seleccionada, con botón rápido para recargar o sincronizar el volumen.",
+      "Deducción de Flete / Transporte ($/L o $ Total): Descuento calculado automáticamente multiplicando el flete por litro por los litros entregados o mediante monto global.",
+      "Deducción de Fondo Ganadero / Fomento (% o $ Total): Cálculo porcentual directo sobre la base de venta (ej. 0.75% o 1% FNG / Fedegán).",
+      "Otras Retenciones & Comprobante Detallado: Desglose completo de descuentos en el volante de recibo y mensaje para compartir en WhatsApp."
+    ]
+  },
   {
     version: "2.15.4",
     date: "26/09/2026",

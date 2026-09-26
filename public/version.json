@@ -1,5 +1,5 @@
 {
-  "version": "2.15.4",
-  "buildTime": 1790464000000,
-  "description": "🥛 Configuración Personalizada del Precio de Leche por Litro ($/L) con Recálculo Financiero en Vivo"
+  "version": "2.15.5",
+  "buildTime": 1790465000000,
+  "description": "🥛 Liquidación de Leche: Suma Automática de Litros del Período y Deducciones Desglosadas por Porcentaje (%) y Flete ($/L)"
 }

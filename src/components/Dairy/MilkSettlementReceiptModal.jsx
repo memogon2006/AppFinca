@@ -35,21 +35,36 @@ export function MilkSettlementReceiptModal({
       `━━━━━━━━━━━━━━━━━━━━`,
       `🥛 *Litros Entregados:* ${formatNumber(settlement.totalLiters, 1)} Litros`,
       `💵 *Precio Base:* ${formatCurrency(settlement.pricePerLiter)} / Litro`,
-      `📊 *Monto Base:* ${formatCurrency(settlement.baseAmount || (settlement.totalLiters * settlement.pricePerLiter))}`,
+      `📊 *Subtotal Bruto:* ${formatCurrency(settlement.baseAmount || (settlement.totalLiters * settlement.pricePerLiter))}`,
     ];
 
     if (settlement.bonuses > 0) {
       lines.push(`✨ *Bonificaciones (+):* ${formatCurrency(settlement.bonuses)}`);
     }
-    if (settlement.deductions > 0) {
-      lines.push(`🔻 *Deducciones / Fletes (-):* ${formatCurrency(settlement.deductions)}`);
+
+    const brk = settlement.deductionsBreakdown;
+    if (brk) {
+      if (brk.fleteAmount > 0) {
+        lines.push(`🚛 *Flete / Transporte (-):* -${formatCurrency(brk.fleteAmount)}${brk.fleteMode === 'per_liter' ? ` ($${brk.fletePerLiter}/L)` : ''}`);
+      }
+      if (brk.fondoAmount > 0) {
+        lines.push(`🏛️ *Fondo Ganadero FNG (-):* -${formatCurrency(brk.fondoAmount)}${brk.fondoMode === 'percent' ? ` (${brk.fondoPercent}%)` : ''}`);
+      }
+      if (brk.otherDeductions > 0) {
+        lines.push(`🔻 *Otras Deducciones (-):* -${formatCurrency(brk.otherDeductions)}`);
+      }
+    } else if (settlement.deductions > 0) {
+      lines.push(`🔻 *Deducciones Totales (-):* -${formatCurrency(settlement.deductions)}`);
     }
 
     lines.push(`━━━━━━━━━━━━━━━━━━━━`);
-    lines.push(`💰 *TOTAL NETO A PAGAR:* ${formatCurrency(settlement.totalValue)}`);
+    lines.push(`💰 *TOTAL NETO A COBRAR:* ${formatCurrency(settlement.totalValue)}`);
+    if (settlement.totalLiters > 0) {
+      lines.push(`📈 *Precio Real Neto:* ${formatCurrency(settlement.totalValue / settlement.totalLiters)} / Litro`);
+    }
     lines.push(`📌 *Estado:* ${settlement.paymentStatus === 'Pagada' ? '✅ PAGADA' : '🟡 PENDIENTE DE COBRO'}`);
     if (settlement.paymentDate) {
-      lines.push(`🗓️ *Fecha:* ${formatDate(settlement.paymentDate)}`);
+      lines.push(`🗓️ *Fecha de Pago:* ${formatDate(settlement.paymentDate)}`);
     }
     if (settlement.notes) {
       lines.push(`📝 *Notas:* ${settlement.notes}`);
@@ -63,6 +78,8 @@ export function MilkSettlementReceiptModal({
   const handlePrint = () => {
     window.print();
   };
+
+  const brk = settlement.deductionsBreakdown;
 
   return (
     <Modal
@@ -132,7 +149,7 @@ export function MilkSettlementReceiptModal({
           </div>
 
           <div className="p-3.5 flex items-center justify-between text-sm bg-slate-50/50 dark:bg-slate-900/40">
-            <span className="text-slate-600 dark:text-slate-400 font-medium">Subtotal Base</span>
+            <span className="text-slate-600 dark:text-slate-400 font-medium">Subtotal Bruto</span>
             <span className="text-slate-900 dark:text-white font-bold tabular-nums">
               {formatCurrency(settlement.baseAmount || (settlement.totalLiters * settlement.pricePerLiter))}
             </span>
@@ -150,16 +167,57 @@ export function MilkSettlementReceiptModal({
             </div>
           )}
 
-          {settlement.deductions > 0 && (
-            <div className="p-3.5 flex items-center justify-between text-sm text-rose-600 dark:text-rose-400">
-              <span className="font-medium flex items-center gap-1.5">
-                <ArrowDownLeft className="w-4 h-4" />
-                <span>Deducciones (Fletes, Retenciones, Pruebas)</span>
-              </span>
-              <strong className="font-black tabular-nums">
-                - {formatCurrency(settlement.deductions)}
-              </strong>
-            </div>
+          {/* Desglose de Deducciones */}
+          {brk ? (
+            <>
+              {brk.fleteAmount > 0 && (
+                <div className="p-3.5 flex items-center justify-between text-sm text-rose-600 dark:text-rose-400">
+                  <span className="font-medium flex items-center gap-1.5">
+                    <ArrowDownLeft className="w-4 h-4" />
+                    <span>Flete / Transporte {brk.fleteMode === 'per_liter' ? `($${brk.fletePerLiter}/L)` : ''}</span>
+                  </span>
+                  <strong className="font-black tabular-nums">
+                    - {formatCurrency(brk.fleteAmount)}
+                  </strong>
+                </div>
+              )}
+
+              {brk.fondoAmount > 0 && (
+                <div className="p-3.5 flex items-center justify-between text-sm text-amber-600 dark:text-amber-400">
+                  <span className="font-medium flex items-center gap-1.5">
+                    <ArrowDownLeft className="w-4 h-4" />
+                    <span>Fondo Ganadero (FNG) {brk.fondoMode === 'percent' ? `(${brk.fondoPercent}%)` : ''}</span>
+                  </span>
+                  <strong className="font-black tabular-nums">
+                    - {formatCurrency(brk.fondoAmount)}
+                  </strong>
+                </div>
+              )}
+
+              {brk.otherDeductions > 0 && (
+                <div className="p-3.5 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+                  <span className="font-medium flex items-center gap-1.5">
+                    <ArrowDownLeft className="w-4 h-4" />
+                    <span>Otras Deducciones / Retenciones</span>
+                  </span>
+                  <strong className="font-black tabular-nums">
+                    - {formatCurrency(brk.otherDeductions)}
+                  </strong>
+                </div>
+              )}
+            </>
+          ) : (
+            settlement.deductions > 0 && (
+              <div className="p-3.5 flex items-center justify-between text-sm text-rose-600 dark:text-rose-400">
+                <span className="font-medium flex items-center gap-1.5">
+                  <ArrowDownLeft className="w-4 h-4" />
+                  <span>Deducciones Totales (Fletes, Retenciones, Pruebas)</span>
+                </span>
+                <strong className="font-black tabular-nums">
+                  - {formatCurrency(settlement.deductions)}
+                </strong>
+              </div>
+            )
           )}
 
           {/* TOTAL NETO */}
