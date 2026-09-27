@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.15.9";
+export const CURRENT_APP_VERSION = "2.16.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.0",
+    date: "26/09/2026",
+    title: "✨ Módulo de Lechería Simplificado: Liquidaciones Directas por Período",
+    highlights: [
+      "Eliminación de Botones Duplicados: Se retiró el botón redundante de la cabecera superior para evitar confusiones y dejar un flujo de trabajo 100% intuitivo y directo.",
+      "Liquidación Clara por Período: La acción de liquidar se realiza directamente desde la barra de control de períodos ('Liquidar Este Período'), precargando automáticamente la quincena/mes/semana seleccionada, el total acumulado de litros y el precio fijado por litro.",
+      "Interfaz Limpia y Ágil: Cabecera superior enfocada exclusivamente en '+ Producción Diaria' y 'Vaca a Vaca'."
+    ]
+  },
   {
     version: "2.15.9",
     date: "26/09/2026",

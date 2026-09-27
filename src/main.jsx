@@ -49,7 +49,7 @@ if ('serviceWorker' in navigator) {
           if (installingWorker) {
             installingWorker.addEventListener('statechange', () => {
               if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                window.dispatchEvent(new CustomEvent('app-update-available', { detail: { version: '2.15.9' } }));
+                window.dispatchEvent(new CustomEvent('app-update-available', { detail: { version: '2.16.0' } }));
               }
             });
           }

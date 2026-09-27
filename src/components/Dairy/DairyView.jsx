@@ -325,7 +325,7 @@ export function DairyView({
           </p>
         </div>
 
-        {/* Barra Superior con los Botones de Acción (Reubicados todos arriba) */}
+        {/* Barra Superior con los Botones de Acción */}
         <div className="flex items-center gap-2 flex-wrap">
           
           {/* Botón 1: + Producción Diaria General */}
@@ -341,20 +341,7 @@ export function DairyView({
             <span>+ Producción Diaria</span>
           </button>
 
-          {/* Botón 2: + Liquidar Leche */}
-          <button
-            onClick={() => {
-              setEditingSettlement(null);
-              setIsSettlementModalOpen(true);
-            }}
-            className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 transition active:scale-95 cursor-pointer min-h-[44px]"
-            title="Generar liquidación de venta por período"
-          >
-            <DollarSign className="w-4 h-4" />
-            <span>+ Liquidar Leche</span>
-          </button>
-
-          {/* Botón 4: Planilla Individual por Vaca */}
+          {/* Botón 2: Planilla Individual por Vaca */}
           <button
             onClick={() => setIsQuickMilkingOpen(true)}
             className="px-3.5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-emerald-400 font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-slate-700 transition cursor-pointer min-h-[44px]"
