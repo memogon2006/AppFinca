@@ -49,6 +49,7 @@ export function DashboardView({
   farmIncomes = [],
   milkRecords = [],
   milkDeliveries = [],
+  milkSettlements = [],
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -70,6 +71,28 @@ export function DashboardView({
   const { isModuleActive } = useActiveModules();
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
+
+  // Unificación de Ingresos: farmIncomes + liquidaciones de leche
+  const effectiveIncomes = useMemo(() => {
+    const list = [...(farmIncomes || [])];
+    const existingSettlementIds = new Set(
+      list.filter(i => i.settlementId || i.id?.startsWith('inc_milk_')).map(i => i.settlementId || i.id?.replace('inc_milk_', ''))
+    );
+
+    (milkSettlements || []).forEach(st => {
+      if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id)) {
+        list.push({
+          id: 'inc_milk_' + st.id,
+          date: st.paymentDate || st.endDate || st.createdAt?.slice(0, 10) || '',
+          amount: parseFloat(st.totalValue) || 0,
+          category: 'leche',
+          isMilkSettlement: true
+        });
+      }
+    });
+
+    return list;
+  }, [farmIncomes, milkSettlements]);
 
   // Métricas de lechería en el día de hoy
   const todayStr = new Date().toISOString().split('T')[0];
@@ -107,9 +130,9 @@ export function DashboardView({
     totalRealizedProfit += fin.netProfit;
   });
 
-  // Cálculos Financieros Integrales de la Finca (Contabilidad + Ventas)
+  // Cálculos Financieros Integrales de la Finca (Contabilidad + Ventas + Lechería)
   const totalFarmExpenses = farmExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-  const totalOtherIncomes = farmIncomes.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
+  const totalOtherIncomes = effectiveIncomes.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
   const totalCattleSalesRevenue = soldCattle.reduce((sum, c) => sum + (parseFloat(c.exitPrice) || 0), 0);
   const totalGrossIncome = totalCattleSalesRevenue + totalOtherIncomes;
   const realNetProfit = totalRealizedProfit + totalOtherIncomes - totalFarmExpenses;
@@ -119,8 +142,8 @@ export function DashboardView({
   const currentMonthExpenses = farmExpenses
     .filter(e => (e.date || '').startsWith(currentMonthPrefix))
     .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-  const currentMonthIncomes = farmIncomes
-    .filter(i => (i.date || '').startsWith(currentMonthPrefix))
+  const currentMonthIncomes = effectiveIncomes
+    .filter(i => (i.date || i.createdAt?.slice(0, 10) || '').startsWith(currentMonthPrefix))
     .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
   const currentMonthCattleProfit = soldCattle
     .filter(c => (c.exitDate || c.updatedAt || '').startsWith(currentMonthPrefix))

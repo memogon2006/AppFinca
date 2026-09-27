@@ -22,25 +22,18 @@ if (typeof window !== 'undefined') {
           const raw = localStorage.getItem('ganado_current_user_session');
           if (raw) {
             const u = JSON.parse(raw);
-            if (u && u.role !== 'worker' && u.email && u.id && u.id !== 'default') {
+            if (u && u.role !== 'worker' && u.email) {
               const safeEmail = toSafeEmailKey(u.email);
-              // Verificar si el usuario aún existe antes de parchar
-              safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json?_t=${Date.now()}`)
-                .then(r => r.json())
-                .then(exist => {
-                  if (exist && (exist.id || exist.email)) {
-                    const modulesPayload = {
-                      activeModules: detail.modules || detail,
-                      activeModulesUpdatedAt: Date.now(),
-                      updatedAt: new Date().toISOString()
-                    };
-                    safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(modulesPayload),
-                    }).catch(() => null);
-                  }
-                }).catch(() => null);
+              const modulesPayload = {
+                activeModules: detail.modules || detail,
+                activeModulesUpdatedAt: Date.now(),
+                updatedAt: new Date().toISOString()
+              };
+              safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(modulesPayload),
+              }).catch(() => null);
             }
           }
         } catch (uErr) {}
@@ -58,24 +51,18 @@ if (typeof window !== 'undefined') {
           const raw = localStorage.getItem('ganado_current_user_session');
           if (raw) {
             const u = JSON.parse(raw);
-            if (u && u.role !== 'worker' && u.email && u.id && u.id !== 'default') {
+            if (u && u.role !== 'worker' && u.email) {
               const safeEmail = toSafeEmailKey(u.email);
-              safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json?_t=${Date.now()}`)
-                .then(r => r.json())
-                .then(exist => {
-                  if (exist && (exist.id || exist.email)) {
-                    const soundPayload = {
-                      soundProfile: detail.profile || 'chime',
-                      soundEnabled: detail.enabled !== undefined ? !!detail.enabled : true,
-                      updatedAt: new Date().toISOString()
-                    };
-                    safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(soundPayload),
-                    }).catch(() => null);
-                  }
-                }).catch(() => null);
+              const soundPayload = {
+                soundProfile: detail.profile || 'chime',
+                soundEnabled: detail.enabled !== undefined ? !!detail.enabled : true,
+                updatedAt: new Date().toISOString()
+              };
+              safeFetch(`${FIREBASE_URL}/users/${safeEmail}.json`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(soundPayload),
+              }).catch(() => null);
             }
           }
         } catch (uErr) {}

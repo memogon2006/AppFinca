@@ -2194,6 +2194,7 @@ export default function App() {
             farmIncomes={farmIncomes}
             milkRecords={milkRecords}
             milkDeliveries={milkDeliveries}
+            milkSettlements={milkSettlements}
           />
         )}
 
@@ -2312,6 +2313,7 @@ export default function App() {
             weighings={weighings}
             farmExpenses={farmExpenses}
             farmIncomes={farmIncomes}
+            milkSettlements={milkSettlements}
             onOpenAddExpense={() => {
               setEditingExpense(null);
               setIsExpenseModalOpen(true);

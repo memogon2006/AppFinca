@@ -72,6 +72,7 @@ export function AccountingView({
   weighings = [], 
   farmExpenses = [], 
   farmIncomes = [], 
+  milkSettlements = [],
   onOpenAddExpense, 
   onOpenEditExpense, 
   onDeleteExpense, 
@@ -82,6 +83,43 @@ export function AccountingView({
 }) {
   const { currentUser, isWorker } = useAuth();
   
+  // Unificación de Ingresos: farmIncomes + liquidaciones de leche registradas
+  const effectiveIncomes = useMemo(() => {
+    const list = [...(farmIncomes || [])];
+    const existingSettlementIds = new Set(
+      list.filter(i => i.settlementId || i.id?.startsWith('inc_milk_')).map(i => i.settlementId || i.id?.replace('inc_milk_', ''))
+    );
+
+    (milkSettlements || []).forEach(st => {
+      if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id)) {
+        list.push({
+          id: 'inc_milk_' + st.id,
+          date: st.paymentDate || st.endDate || st.createdAt?.slice(0, 10) || '',
+          concept: `Venta de Leche - Liquidación ${st.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(st.totalLiters, 1)} L @ ${formatCurrency(st.pricePerLiter)}) - ${st.buyer || 'Planta'}`,
+          category: 'leche',
+          amount: parseFloat(st.totalValue) || 0,
+          paymentMethod: 'Transferencia',
+          notes: `Liquidación período ${formatDate(st.startDate)} al ${formatDate(st.endDate)}. Comprador: ${st.buyer || 'N/A'}. Bonificaciones: ${formatCurrency(st.bonuses || 0)}, Deducciones: ${formatCurrency(st.deductions || 0)}`,
+          settlementId: st.id,
+          totalLiters: st.totalLiters,
+          pricePerLiter: st.pricePerLiter,
+          buyer: st.buyer,
+          periodType: st.periodType,
+          startDate: st.startDate,
+          endDate: st.endDate,
+          bonuses: st.bonuses || 0,
+          deductions: st.deductions || 0,
+          deductionsBreakdown: st.deductionsBreakdown || null,
+          isMilkSettlement: true,
+          userId: st.userId,
+          createdAt: st.createdAt,
+        });
+      }
+    });
+
+    return list;
+  }, [farmIncomes, milkSettlements]);
+
   // Estados de navegación interna
   const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'expenses' | 'incomes' | 'unit_costs'
   const [selectedMonthForDetail, setSelectedMonthForDetail] = useState(null);
@@ -155,11 +193,11 @@ export function AccountingView({
 
   // 2. Filtrar Ingresos Adicionales en el período
   const periodIncomes = useMemo(() => {
-    return farmIncomes.filter(inc => {
+    return effectiveIncomes.filter(inc => {
       const d = inc.date || inc.createdAt?.slice(0, 10) || '';
       return d >= dateRange.start && d <= dateRange.end;
     });
-  }, [farmIncomes, dateRange]);
+  }, [effectiveIncomes, dateRange]);
 
   // 3. Filtrar Ventas de Ganado en el período
   const periodSoldCattle = useMemo(() => {
@@ -361,9 +399,9 @@ export function AccountingView({
           return sum + (exitPrice - purchasePrice);
         }, 0);
 
-      // Otros ingresos del mes
-      const monthOtherInc = farmIncomes
-        .filter(inc => (inc.date || '').startsWith(monthPrefix))
+      // Otros ingresos del mes (incluyendo liquidaciones de leche)
+      const monthOtherInc = effectiveIncomes
+        .filter(inc => (inc.date || inc.createdAt?.slice(0, 10) || '').startsWith(monthPrefix))
         .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
 
       const monthIncome = monthCattleProfit + monthOtherInc;
@@ -383,7 +421,7 @@ export function AccountingView({
     }
 
     return data;
-  }, [farmExpenses, farmIncomes, cattle]);
+  }, [farmExpenses, effectiveIncomes, cattle]);
 
   // ==========================================
   // FILTRADO DE TABLAS
@@ -1370,7 +1408,8 @@ export function AccountingView({
         onClose={() => setSelectedMonthForDetail(null)}
         monthData={selectedMonthForDetail}
         farmExpenses={farmExpenses}
-        farmIncomes={farmIncomes}
+        farmIncomes={effectiveIncomes}
+        milkSettlements={milkSettlements}
         cattle={cattle}
         onOpenAddExpense={onOpenAddExpense}
         onOpenEditExpense={onOpenEditExpense}

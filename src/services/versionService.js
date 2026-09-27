@@ -8,10 +8,11 @@ export const CURRENT_BUILD_TIME = Date.now();
   {
     version: "2.15.9",
     date: "26/09/2026",
-    title: "🔒 Blindaje de Sincronización en la Nube & Purga Definitiva de Cuentas",
+    title: "🥛 Carga y Unificación Automática de Liquidaciones de Leche en Contabilidad & Gastos",
     highlights: [
-      "Blindaje contra Nodos Huérfanos: Los escuchadores de sincronización en segundo plano ahora verifican la existencia previa de la cuenta en Firebase antes de emitir actualizaciones.",
-      "Purga Total Garantizada: Cuentas eliminadas quedan 100% limpias en la nube y en dispositivos locales."
+      "Unificación Directa en Contabilidad & Gastos: El módulo de finanzas y el modal de detalle mensual ahora unifican e integran de inmediato cualquier liquidación de leche activa sin depender de demoras de sincronización.",
+      "Sincronización Inmediata en la Nube: Sincronizadas las liquidaciones existentes directamente al Libro de Ingresos en Firebase para visualización transparente en todos los dispositivos.",
+      "Integración en el Dashboard Principal: Las liquidaciones de leche quedan consolidadas en el balance general, coberturas y utilidades operativas de la finca."
     ]
   },
   {

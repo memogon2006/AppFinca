@@ -55,6 +55,7 @@ export function MonthAccountingDetailModal({
   monthData, // { monthPrefix: '2026-07', fullLabel: 'Julio 2026', monthName: 'Julio', year: '2026', ... }
   farmExpenses = [],
   farmIncomes = [],
+  milkSettlements = [],
   cattle = [],
   onOpenAddExpense,
   onOpenEditExpense,
@@ -75,6 +76,43 @@ export function MonthAccountingDetailModal({
   const [expenseCatFilter, setExpenseCatFilter] = useState('all');
   const [incomeSearch, setIncomeSearch] = useState('');
   const [cattleSearch, setCattleSearch] = useState('');
+
+  // Unificación de Ingresos: farmIncomes + liquidaciones de leche
+  const effectiveIncomes = useMemo(() => {
+    const list = [...(farmIncomes || [])];
+    const existingSettlementIds = new Set(
+      list.filter(i => i.settlementId || i.id?.startsWith('inc_milk_')).map(i => i.settlementId || i.id?.replace('inc_milk_', ''))
+    );
+
+    (milkSettlements || []).forEach(st => {
+      if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id)) {
+        list.push({
+          id: 'inc_milk_' + st.id,
+          date: st.paymentDate || st.endDate || st.createdAt?.slice(0, 10) || '',
+          concept: `Venta de Leche - Liquidación ${st.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(st.totalLiters, 1)} L @ ${formatCurrency(st.pricePerLiter)}) - ${st.buyer || 'Planta'}`,
+          category: 'leche',
+          amount: parseFloat(st.totalValue) || 0,
+          paymentMethod: 'Transferencia',
+          notes: `Liquidación período ${formatDate(st.startDate)} al ${formatDate(st.endDate)}. Comprador: ${st.buyer || 'N/A'}. Bonificaciones: ${formatCurrency(st.bonuses || 0)}, Deducciones: ${formatCurrency(st.deductions || 0)}`,
+          settlementId: st.id,
+          totalLiters: st.totalLiters,
+          pricePerLiter: st.pricePerLiter,
+          buyer: st.buyer,
+          periodType: st.periodType,
+          startDate: st.startDate,
+          endDate: st.endDate,
+          bonuses: st.bonuses || 0,
+          deductions: st.deductions || 0,
+          deductionsBreakdown: st.deductionsBreakdown || null,
+          isMilkSettlement: true,
+          userId: st.userId,
+          createdAt: st.createdAt,
+        });
+      }
+    });
+
+    return list;
+  }, [farmIncomes, milkSettlements]);
 
   // 1. Gastos del mes
   const monthExpenses = useMemo(() => {
@@ -108,10 +146,10 @@ export function MonthAccountingDetailModal({
     }, 0);
   }, [monthSoldCattle]);
 
-  // 3. Otros ingresos del mes
+  // 3. Otros ingresos del mes (incluyendo liquidaciones de leche)
   const monthIncomes = useMemo(() => {
-    return farmIncomes.filter(inc => (inc.date || '').startsWith(monthPrefix));
-  }, [farmIncomes, monthPrefix]);
+    return effectiveIncomes.filter(inc => (inc.date || inc.createdAt?.slice(0, 10) || '').startsWith(monthPrefix));
+  }, [effectiveIncomes, monthPrefix]);
 
   const totalMonthOtherIncomes = useMemo(() => {
     return monthIncomes.reduce((sum, inc) => sum + (parseFloat(inc.amount) || 0), 0);
