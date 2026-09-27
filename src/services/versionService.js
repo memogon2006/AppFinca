@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.6";
+export const CURRENT_APP_VERSION = "2.16.7";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.7",
+    date: "26/09/2026",
+    title: "🗑️ Eliminación y Sincronización Blindada de Ingresos Contables & Liquidaciones de Leche",
+    highlights: [
+      "Eliminación Instantánea en Libro de Ingresos: Al eliminar cualquier registro de venta o liquidación de leche desde Contabilidad & Finanzas, el sistema borra de forma simultánea y permanente el ingreso y su liquidación asociada.",
+      "Cero Resurrección de Ingresos Eliminados: Se eliminó la regeneración en cascada que volvía a recrear el ingreso tras haber sido borrado de la tabla.",
+      "Sincronización Total con la Nube (Firebase & Dexie): Borrado sincronizado en tiempo real a través de lápidas (tombstones) garantizando que ningún otro dispositivo vuelva a insertar liquidaciones eliminadas."
+    ]
+  },
   {
     version: "2.16.6",
     date: "26/09/2026",

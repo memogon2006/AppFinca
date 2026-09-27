@@ -1591,11 +1591,61 @@ export default function App() {
   };
 
   const handleDeleteFarmIncome = async (incId) => {
-    if (!userId || !db.farmIncomes) return;
-    const inc = await db.farmIncomes.get(incId) || await db.farmIncomes.get(Number(incId));
+    if (!userId) return;
+    
+    // 1. Buscar el ingreso en db.farmIncomes por string, number, o formato raw
+    let inc = null;
+    if (db.farmIncomes) {
+      inc = await db.farmIncomes.get(incId) || 
+            await db.farmIncomes.get(Number(incId)) || 
+            await db.farmIncomes.get(String(incId));
+    }
     const targetId = inc ? inc.id : incId;
-    await db.farmIncomes.delete(targetId);
-    markPendingDelete(userId, 'farmIncomes', targetId);
+
+    // 2. Eliminar de farmIncomes
+    if (db.farmIncomes) {
+      await db.farmIncomes.delete(targetId);
+      if (typeof targetId === 'string' && !isNaN(targetId)) {
+        await db.farmIncomes.delete(Number(targetId));
+      } else if (typeof targetId === 'number') {
+        await db.farmIncomes.delete(String(targetId));
+      }
+      markPendingDelete(userId, 'farmIncomes', targetId);
+    }
+
+    // 3. Si el ingreso está enlazado a una liquidación de leche (settlementId o prefijo inc_milk_):
+    const settlementId = inc?.settlementId || (typeof targetId === 'string' && targetId.startsWith('inc_milk_') ? targetId.replace('inc_milk_', '') : null);
+    if (settlementId) {
+      if (db.milkSettlements) {
+        await db.milkSettlements.delete(settlementId);
+        await db.milkSettlements.delete(Number(settlementId));
+        await db.milkSettlements.delete(String(settlementId));
+      }
+      await deleteMilkSettlement(settlementId).catch(() => null);
+      markPendingDelete(userId, 'milkSettlements', settlementId);
+    }
+
+    // 4. Si targetId coincide directamente con el ID de una liquidación de leche
+    if (db.milkSettlements) {
+      const directSettlement = await db.milkSettlements.get(targetId) || await db.milkSettlements.get(Number(targetId));
+      if (directSettlement) {
+        await db.milkSettlements.delete(directSettlement.id);
+        await deleteMilkSettlement(directSettlement.id).catch(() => null);
+        markPendingDelete(userId, 'milkSettlements', directSettlement.id);
+      }
+    }
+
+    // 5. Si el ingreso está enlazado a una entrega/despacho de leche a tanque
+    const deliveryId = inc?.deliveryId || (typeof targetId === 'string' && targetId.startsWith('inc_tank_') ? targetId.replace('inc_tank_', '') : null);
+    if (deliveryId) {
+      if (db.milkDeliveries) {
+        await db.milkDeliveries.delete(deliveryId);
+        await db.milkDeliveries.delete(Number(deliveryId));
+        await db.milkDeliveries.delete(String(deliveryId));
+      }
+      await deleteMilkDelivery(deliveryId).catch(() => null);
+      markPendingDelete(userId, 'milkDeliveries', deliveryId);
+    }
 
     await logActivity({
       action: 'farm_income_deleted',

@@ -1,5 +1,5 @@
 {
-  "version": "2.16.6",
-  "buildTime": 1790491000000,
-  "description": "🥛 Blindaje de Entradas Numéricas en Registro Diario de Lechería (AM, PM, Total Día)"
+  "version": "2.16.7",
+  "buildTime": 1790492000000,
+  "description": "🗑️ Eliminación y Sincronización Blindada de Ingresos Contables & Liquidaciones de Leche"
 }
