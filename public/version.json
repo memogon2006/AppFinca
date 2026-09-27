@@ -1,5 +1,5 @@
 {
-  "version": "2.16.5",
-  "buildTime": 1790490000000,
-  "description": "💰 Precios Independientes por Finca: Litro de Leche ($/L) y Kilo de Carne ($/Kg)"
+  "version": "2.16.6",
+  "buildTime": 1790491000000,
+  "description": "🥛 Blindaje de Entradas Numéricas en Registro Diario de Lechería (AM, PM, Total Día)"
 }

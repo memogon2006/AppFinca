@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.5";
+export const CURRENT_APP_VERSION = "2.16.6";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.6",
+    date: "26/09/2026",
+    title: "🥛 Blindaje de Entradas de Litros en Registro Diario de Lechería (AM, PM, Total Día)",
+    highlights: [
+      "Persistencia de Valores al Digitar: Se aisló el ciclo de renderizado del modal para evitar que los campos de litros producidos (Mañana AM, Tarde PM, Total Día) se limpien o vuelvan a cero mientras el usuario escribe.",
+      "Sincronización Total en Botones Rápidos (+5, +10): Al presionar los botones de incremento rápido, el sistema actualiza inmediatamente los litros de la jornada, la auto-suma del total diario y el destino estimado para venta.",
+      "Protección contra Re-renderizados en Segundo Plano: Los datos ingresados en el formulario quedan blindados contra sincronizaciones o actualizaciones externas mientras el modal permanezca abierto."
+    ]
+  },
   {
     version: "2.16.5",
     date: "26/09/2026",

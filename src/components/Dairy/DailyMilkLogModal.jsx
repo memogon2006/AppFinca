@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../Common/Modal';
 import { 
   Milk, 
@@ -44,6 +44,8 @@ export function DailyMilkLogModal({
   const [existingRecordId, setExistingRecordId] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const prevOpenRef = useRef(false);
+
   // Cargar automáticamente los datos según la fecha seleccionada
   const loadDataForDate = (targetDate, fallbackData = null) => {
     const existing = fallbackData?.id 
@@ -52,9 +54,9 @@ export function DailyMilkLogModal({
 
     if (existing) {
       setExistingRecordId(existing.id || null);
-      setAmLiters(existing.amLiters ? String(existing.amLiters) : '');
-      setPmLiters(existing.pmLiters ? String(existing.pmLiters) : '');
-      setTotalLiters(existing.totalLiters ? String(existing.totalLiters) : '');
+      setAmLiters(existing.amLiters !== undefined && existing.amLiters !== null ? String(existing.amLiters) : '');
+      setPmLiters(existing.pmLiters !== undefined && existing.pmLiters !== null ? String(existing.pmLiters) : '');
+      setTotalLiters(existing.totalLiters !== undefined && existing.totalLiters !== null ? String(existing.totalLiters) : '');
       setCowsMilked(existing.cowsMilked ? String(existing.cowsMilked) : '');
       setCalvesLiters(existing.calvesLiters !== undefined ? String(existing.calvesLiters) : '0');
       setFarmLiters(existing.farmLiters !== undefined ? String(existing.farmLiters) : '0');
@@ -67,27 +69,29 @@ export function DailyMilkLogModal({
       }
     } else {
       setExistingRecordId(null);
-      setAmLiters('');
-      setPmLiters('');
-      setTotalLiters('');
-      setCowsMilked(activeMilkingCowsCount > 0 ? String(activeMilkingCowsCount) : '');
-      setCalvesLiters('0');
-      setFarmLiters('0');
-      setRejectedLiters('0');
-      setSalesLiters('');
+      setAmLiters(fallbackData?.amLiters !== undefined && fallbackData?.amLiters !== null ? String(fallbackData.amLiters) : '');
+      setPmLiters(fallbackData?.pmLiters !== undefined && fallbackData?.pmLiters !== null ? String(fallbackData.pmLiters) : '');
+      setTotalLiters(fallbackData?.totalLiters !== undefined && fallbackData?.totalLiters !== null ? String(fallbackData.totalLiters) : '');
+      setCowsMilked(fallbackData?.cowsMilked ? String(fallbackData.cowsMilked) : (activeMilkingCowsCount > 0 ? String(activeMilkingCowsCount) : ''));
+      setCalvesLiters(fallbackData?.calvesLiters !== undefined ? String(fallbackData.calvesLiters) : '0');
+      setFarmLiters(fallbackData?.farmLiters !== undefined ? String(fallbackData.farmLiters) : '0');
+      setRejectedLiters(fallbackData?.rejectedLiters !== undefined ? String(fallbackData.rejectedLiters) : '0');
+      setSalesLiters(fallbackData?.salesLiters !== undefined ? String(fallbackData.salesLiters) : '');
       setPricePerLiter(defaultPricePerLiter > 0 ? String(defaultPricePerLiter) : '');
-      setNotes('');
+      setNotes(fallbackData?.notes || '');
       setShowAdvanced(false);
     }
   };
 
+  // Sincronizar ÚNICAMENTE al abrir el modal para no sobreescribir lo que el usuario digita
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevOpenRef.current) {
       const targetDate = initialData?.date || getLocalDateString(new Date());
       setDate(targetDate);
       loadDataForDate(targetDate, initialData);
     }
-  }, [isOpen, initialData, dailyMilkLogs, activeMilkingCowsCount, defaultPricePerLiter]);
+    prevOpenRef.current = isOpen;
+  }, [isOpen, initialData]);
 
   const handleDateChange = (newDate) => {
     setDate(newDate);
@@ -100,13 +104,13 @@ export function DailyMilkLogModal({
     const am = parseFloat(val) || 0;
     const pm = parseFloat(pmLiters) || 0;
     const tot = am + pm;
-    setTotalLiters(tot > 0 ? String(Number(tot.toFixed(1))) : '');
+    setTotalLiters(tot > 0 ? String(Number(tot.toFixed(1))) : (val === '' && pm === 0 ? '' : '0'));
     
     const cal = parseFloat(calvesLiters) || 0;
     const frm = parseFloat(farmLiters) || 0;
     const rej = parseFloat(rejectedLiters) || 0;
     const sal = Math.max(0, tot - cal - frm - rej);
-    setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : (tot > 0 ? String(Number(tot.toFixed(1))) : ''));
+    setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : '');
   };
 
   const handlePmChange = (val) => {
@@ -114,13 +118,13 @@ export function DailyMilkLogModal({
     const am = parseFloat(amLiters) || 0;
     const pm = parseFloat(val) || 0;
     const tot = am + pm;
-    setTotalLiters(tot > 0 ? String(Number(tot.toFixed(1))) : '');
+    setTotalLiters(tot > 0 ? String(Number(tot.toFixed(1))) : (val === '' && am === 0 ? '' : '0'));
 
     const cal = parseFloat(calvesLiters) || 0;
     const frm = parseFloat(farmLiters) || 0;
     const rej = parseFloat(rejectedLiters) || 0;
     const sal = Math.max(0, tot - cal - frm - rej);
-    setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : (tot > 0 ? String(Number(tot.toFixed(1))) : ''));
+    setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : '');
   };
 
   const handleTotalChange = (val) => {
@@ -130,7 +134,7 @@ export function DailyMilkLogModal({
     const frm = parseFloat(farmLiters) || 0;
     const rej = parseFloat(rejectedLiters) || 0;
     const sal = Math.max(0, tot - cal - frm - rej);
-    setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : (tot > 0 ? String(Number(tot.toFixed(1))) : ''));
+    setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : '');
   };
 
   const handleDeductionChange = (calVal, frmVal, rejVal) => {
@@ -142,10 +146,17 @@ export function DailyMilkLogModal({
     setSalesLiters(sal > 0 ? String(Number(sal.toFixed(1))) : '');
   };
 
-  const addLiters = (setter, getter, amount) => {
-    const cur = parseFloat(getter) || 0;
+  const handleAddAm = (amount) => {
+    const cur = parseFloat(amLiters) || 0;
     const next = Math.max(0, Number((cur + amount).toFixed(1)));
-    setter(String(next));
+    handleAmChange(String(next));
+    triggerFeedback('click');
+  };
+
+  const handleAddPm = (amount) => {
+    const cur = parseFloat(pmLiters) || 0;
+    const next = Math.max(0, Number((cur + amount).toFixed(1)));
+    handlePmChange(String(next));
     triggerFeedback('click');
   };
 
@@ -294,14 +305,14 @@ export function DailyMilkLogModal({
               <div className="flex gap-1">
                 <button
                   type="button"
-                  onClick={() => addLiters(setAmLiters, amLiters, 5)}
+                  onClick={() => handleAddAm(5)}
                   className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
                   +5
                 </button>
                 <button
                   type="button"
-                  onClick={() => addLiters(setAmLiters, amLiters, 10)}
+                  onClick={() => handleAddAm(10)}
                   className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
                   +10
@@ -326,14 +337,14 @@ export function DailyMilkLogModal({
               <div className="flex gap-1">
                 <button
                   type="button"
-                  onClick={() => addLiters(setPmLiters, pmLiters, 5)}
+                  onClick={() => handleAddPm(5)}
                   className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-blue-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
                   +5
                 </button>
                 <button
                   type="button"
-                  onClick={() => addLiters(setPmLiters, pmLiters, 10)}
+                  onClick={() => handleAddPm(10)}
                   className="flex-1 py-1 rounded-lg bg-slate-800 hover:bg-blue-500 hover:text-slate-950 text-[10px] font-black transition cursor-pointer"
                 >
                   +10

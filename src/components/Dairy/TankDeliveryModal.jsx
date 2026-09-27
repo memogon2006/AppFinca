@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Milk, X, CheckCircle2, DollarSign, Truck, AlertTriangle, Sparkles, Building2 } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
 import { formatCurrency, getLocalDateString } from '../../services/calculations';
@@ -25,31 +25,36 @@ export function TankDeliveryModal({
   const [notes, setNotes] = useState('');
   const [syncToAccounting, setSyncToAccounting] = useState(true);
 
+  const prevOpenRef = useRef(false);
+
   useEffect(() => {
-    if (editingDelivery) {
-      setDate(editingDelivery.date || defaultDate);
-      setTotalLiters(String(editingDelivery.totalLiters || ''));
-      setPricePerLiter(String(editingDelivery.pricePerLiter || defaultPricePerLiter || '2100'));
-      setBuyer(editingDelivery.buyer || '');
-      setMilkDestination(editingDelivery.milkDestination || editingDelivery.destination || 'Planta / Industria');
-      setRejectedLiters(String(editingDelivery.rejectedLiters || '0'));
-      setTemperature(String(editingDelivery.temperature || '4'));
-      setPaymentStatus(editingDelivery.paymentStatus || 'Pagado');
-      setNotes(editingDelivery.notes || '');
-      setSyncToAccounting(false);
-    } else {
-      setDate(defaultDate);
-      setTotalLiters(suggestedLiters > 0 ? String(suggestedLiters) : '');
-      setPricePerLiter(defaultPricePerLiter ? String(defaultPricePerLiter) : '2100');
-      setBuyer('');
-      setMilkDestination('Planta / Industria');
-      setRejectedLiters('0');
-      setTemperature('4');
-      setPaymentStatus('Pendiente');
-      setNotes('');
-      setSyncToAccounting(true);
+    if (isOpen && !prevOpenRef.current) {
+      if (editingDelivery) {
+        setDate(editingDelivery.date || defaultDate);
+        setTotalLiters(String(editingDelivery.totalLiters || ''));
+        setPricePerLiter(String(editingDelivery.pricePerLiter || defaultPricePerLiter || '2100'));
+        setBuyer(editingDelivery.buyer || '');
+        setMilkDestination(editingDelivery.milkDestination || editingDelivery.destination || 'Planta / Industria');
+        setRejectedLiters(String(editingDelivery.rejectedLiters || '0'));
+        setTemperature(String(editingDelivery.temperature || '4'));
+        setPaymentStatus(editingDelivery.paymentStatus || 'Pagado');
+        setNotes(editingDelivery.notes || '');
+        setSyncToAccounting(false);
+      } else {
+        setDate(defaultDate);
+        setTotalLiters(suggestedLiters > 0 ? String(suggestedLiters) : '');
+        setPricePerLiter(defaultPricePerLiter ? String(defaultPricePerLiter) : '2100');
+        setBuyer('');
+        setMilkDestination('Planta / Industria');
+        setRejectedLiters('0');
+        setTemperature('4');
+        setPaymentStatus('Pendiente');
+        setNotes('');
+        setSyncToAccounting(true);
+      }
     }
-  }, [editingDelivery, isOpen, suggestedLiters, defaultPricePerLiter]);
+    prevOpenRef.current = isOpen;
+  }, [editingDelivery, isOpen]);
 
   const numLiters = parseFloat(totalLiters) || 0;
   const numPrice = parseFloat(pricePerLiter) || 0;
