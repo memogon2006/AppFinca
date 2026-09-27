@@ -1,5 +1,5 @@
 {
-  "version": "2.16.7",
-  "buildTime": 1790492000000,
-  "description": "🗑️ Eliminación y Sincronización Blindada de Ingresos Contables & Liquidaciones de Leche"
+  "version": "2.16.8",
+  "buildTime": 1790493000000,
+  "description": "🟢 Estado 'Liquidado / Pagado' Automático en Días Liquidados & Control Anti-Duplicados en Período"
 }

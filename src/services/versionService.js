@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.7";
+export const CURRENT_APP_VERSION = "2.16.8";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.8",
+    date: "26/09/2026",
+    title: "🟢 Estado 'Liquidado / Pagado' Automático en Días Liquidados & Control Anti-Duplicados en Período",
+    highlights: [
+      "Detección Automática de Días Liquidados: Los días comprendidos en una liquidación de leche activa pasan inmediatamente a mostrar su estado '🟢 Liquidado' o '🟢 Pagado' con icono de confirmación.",
+      "Bloqueo Inteligente de Período Ya Liquidado: El botón cambia automáticamente a '✅ Período Liquidado' / '✅ Período Pagado' evitando crear liquidaciones duplicadas del mismo lapso por error.",
+      "Habilitación Dinámica para Reliquidar: Si el usuario edita o agrega litros en un día del período, el sistema detecta los litros pendientes y activa el botón '🔄 Reliquidar (+X L)' para actualizar la liquidación existente."
+    ]
+  },
   {
     version: "2.16.7",
     date: "26/09/2026",

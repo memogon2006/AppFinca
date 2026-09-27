@@ -953,7 +953,8 @@ export function calculatePeriodMilkSummary(
   milkRecords = [], 
   startDate, 
   endDate, 
-  pricePerLiter = 0
+  pricePerLiter = 0,
+  milkSettlements = []
 ) {
   if (!startDate || !endDate) {
     return {
@@ -984,6 +985,9 @@ export function calculatePeriodMilkSummary(
 
   // 1. Agregar registros de Producción General Diaria
   logsInRange.forEach(l => {
+    const matchingSettlement = (milkSettlements || []).find(s => s.startDate <= l.date && l.date <= s.endDate);
+    const isSettled = Boolean(l.isSettled || matchingSettlement);
+
     dateMap.set(l.date, {
       id: l.id,
       date: l.date,
@@ -996,8 +1000,9 @@ export function calculatePeriodMilkSummary(
       farmLiters: parseFloat(l.farmLiters) || 0,
       rejectedLiters: parseFloat(l.rejectedLiters) || 0,
       pricePerLiter: parseFloat(l.pricePerLiter) || pricePerLiter,
-      isSettled: !!l.isSettled,
-      settlementId: l.settlementId || null,
+      isSettled,
+      settlementId: l.settlementId || matchingSettlement?.id || null,
+      settlementStatus: matchingSettlement ? (matchingSettlement.paymentStatus || 'Liquidada') : (isSettled ? 'Liquidada' : null),
       notes: l.notes || '',
       source: 'daily_log',
     });
@@ -1006,6 +1011,9 @@ export function calculatePeriodMilkSummary(
   // 2. Si hay pesajes individuales de vacas en días donde no hubo registro general, agregarlos como respaldo
   recordsInRange.forEach(r => {
     if (!dateMap.has(r.date)) {
+      const matchingSettlement = (milkSettlements || []).find(s => s.startDate <= r.date && r.date <= s.endDate);
+      const isSettled = Boolean(matchingSettlement);
+
       const existing = dateMap.get(r.date) || {
         id: 'auto_' + r.date,
         date: r.date,
@@ -1018,8 +1026,9 @@ export function calculatePeriodMilkSummary(
         farmLiters: 0,
         rejectedLiters: 0,
         pricePerLiter: pricePerLiter,
-        isSettled: false,
-        settlementId: null,
+        isSettled,
+        settlementId: matchingSettlement?.id || null,
+        settlementStatus: matchingSettlement ? (matchingSettlement.paymentStatus || 'Liquidada') : null,
         notes: '',
         source: 'individual_records',
       };

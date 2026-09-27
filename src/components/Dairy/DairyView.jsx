@@ -141,13 +141,14 @@ export function DairyView({
     }
   };
 
-  // Resumen del período calculado con el precio de leche ingresado
+  // Resumen del período calculado con el precio de leche ingresado y liquidaciones
   const periodSummary = calculatePeriodMilkSummary(
     dailyMilkLogs,
     milkRecords,
     periodRange.startDate,
     periodRange.endDate,
-    typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100
+    typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100,
+    milkSettlements
   );
 
   // Sincronizar auto-carga del Registrador Rápido de Día
@@ -216,6 +217,13 @@ export function DairyView({
     onSaveDailyMilkLog(record);
   };
 
+  // Comprobar si existe una liquidación para el período actual
+  const existingPeriodSettlement = (milkSettlements || []).find(
+    s => s.startDate === periodRange.startDate && s.endDate === periodRange.endDate
+  ) || (milkSettlements || []).find(
+    s => s.startDate <= periodRange.startDate && periodRange.endDate <= s.endDate
+  );
+
   // Generación de lista completa de días en el rango del período seleccionado
   const generatePeriodDaysList = () => {
     const days = [];
@@ -241,6 +249,11 @@ export function DairyView({
         indTot += (parseFloat(r.totalLiters) || (am + pm));
       });
 
+      // Comprobar si existe una liquidación activa que cubra este día
+      const matchingSettlement = (milkSettlements || []).find(s => s.startDate <= dateStr && dateStr <= s.endDate);
+      const isSettled = Boolean(log?.isSettled || matchingSettlement);
+      const settlementStatus = matchingSettlement ? (matchingSettlement.paymentStatus || 'Liquidada') : (log?.isSettled ? 'Liquidada' : null);
+
       days.push({
         date: dateStr,
         dayOfWeek: d.toLocaleDateString('es-CO', { weekday: 'short' }),
@@ -255,7 +268,9 @@ export function DairyView({
         calvesLiters: log ? log.calvesLiters : 0,
         farmLiters: log ? log.farmLiters : 0,
         rejectedLiters: log ? log.rejectedLiters : 0,
-        isSettled: log ? log.isSettled : false,
+        isSettled,
+        settlement: matchingSettlement || null,
+        settlementStatus,
       });
     }
 
@@ -835,17 +850,53 @@ export function DairyView({
                 </div>
               </div>
 
-              {/* Botón Liquidar Período */}
-              <button
-                onClick={() => {
-                  setEditingSettlement(null);
-                  setIsSettlementModalOpen(true);
-                }}
-                className="px-4 py-2 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
-              >
-                <DollarSign className="w-4 h-4" />
-                <span>Liquidar Este Período</span>
-              </button>
+              {/* Botón Liquidar Período con Control Inteligente de Estado */}
+              {existingPeriodSettlement ? (
+                periodSummary.unsettledLiters > 0 ? (
+                  <button
+                    onClick={() => {
+                      setEditingSettlement(existingPeriodSettlement);
+                      setIsSettlementModalOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
+                    title="Hay litros nuevos o modificados en este período. Pulsa para reliquidar y actualizar la liquidación."
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>🔄 Reliquidar (+{formatNumber(periodSummary.unsettledLiters, 1)} L)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setEditingSettlement(existingPeriodSettlement);
+                      setIsSettlementModalOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-2xl bg-emerald-700/80 hover:bg-emerald-600 text-white font-black text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer border border-emerald-500/40"
+                    title="Este período ya fue liquidado. Pulsa para consultar o editar la liquidación."
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                    <span>{existingPeriodSettlement.paymentStatus === 'Pagada' ? '✅ Período Pagado' : '✅ Período Liquidado'}</span>
+                  </button>
+                )
+              ) : (
+                <button
+                  onClick={() => {
+                    if (periodSummary.totalSalesLiters <= 0) {
+                      alert('No hay producción registrada en este período para liquidar. Ingresa primero los litros de los días en la tabla.');
+                      return;
+                    }
+                    setEditingSettlement(null);
+                    setIsSettlementModalOpen(true);
+                  }}
+                  className={`px-4 py-2 rounded-2xl text-white font-black text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer ${
+                    periodSummary.totalSalesLiters > 0 
+                      ? 'bg-amber-600 hover:bg-amber-500' 
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  }`}
+                >
+                  <DollarSign className="w-4 h-4" />
+                  <span>Liquidar Este Período</span>
+                </button>
+              )}
             </div>
 
             {periodType === 'custom' && (
@@ -958,12 +1009,14 @@ export function DairyView({
                         <td className="p-3.5 text-center">
                           {day.totalLiters > 0 ? (
                             day.isSettled ? (
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                🟢 Liquidado
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1 mx-auto">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>{day.settlementStatus === 'Pagada' ? '🟢 Pagado' : '🟢 Liquidado'}</span>
                               </span>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                🟡 Pendiente
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 inline-flex items-center gap-1 mx-auto">
+                                <Clock className="w-3 h-3" />
+                                <span>🟡 Pendiente</span>
                               </span>
                             )
                           ) : (
