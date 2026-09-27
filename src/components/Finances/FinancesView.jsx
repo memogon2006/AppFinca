@@ -15,11 +15,13 @@ import {
   ArrowUpRight 
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
+import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import { OwnerFinancialDetailModal } from './OwnerFinancialDetailModal';
 
 export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRevertSale, onDeleteAnimal, onOpenPartnershipModal }) {
-  const { isWorker } = useAuth();
+  const { isWorker, currentUser } = useAuth();
+  const { meatPricePerKg } = useFarmPrices(currentUser);
   const [searchQuery, setSearchQuery] = useState('');
   const [saleStartDate, setSaleStartDate] = useState('');
   const [saleEndDate, setSaleEndDate] = useState('');
@@ -86,7 +88,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
   let totalRealizedProfit = 0;
 
   filteredSoldCattle.forEach(c => {
-    const fin = calculateFinancials(c);
+    const fin = calculateFinancials(c, 0, meatPricePerKg);
     totalSalesRevenue += parseFloat(c.exitPrice) || 0;
     totalCostSold += fin.totalInvested;
     totalRealizedProfit += fin.netProfit;
@@ -95,7 +97,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
   const overallRealizedRoi = totalCostSold > 0 ? (totalRealizedProfit / totalCostSold) * 100 : 0;
 
   const totalActiveInvestment = activeCattle.reduce((sum, c) => {
-    const fin = calculateFinancials(c);
+    const fin = calculateFinancials(c, 0, meatPricePerKg);
     return sum + fin.totalInvested;
   }, 0);
 
@@ -115,7 +117,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         netProfit: 0,
       };
     }
-    const fin = calculateFinancials(c);
+    const fin = calculateFinancials(c, 0, meatPricePerKg);
     profitByOwner[owner].totalHeads++;
     profitByOwner[owner].totalInvested += fin.totalInvested;
     if (c.status === 'Activo') {
@@ -418,7 +420,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {filteredSoldCattle.map(animal => {
-                  const fin = calculateFinancials(animal);
+                  const fin = calculateFinancials(animal, 0, meatPricePerKg);
                   const isPart = animal.exitType === 'En Compañía' || animal.partnershipDetails;
 
                   return (

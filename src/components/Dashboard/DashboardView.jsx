@@ -36,6 +36,7 @@ import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, getSafeDateString, getLocalDateString } from '../../services/calculations';
+import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
 
@@ -67,8 +68,9 @@ export function DashboardView({
   onOpenAddExpense,
   onOpenAddIncome
 }) {
-  const { isWorker } = useAuth();
+  const { isWorker, currentUser } = useAuth();
   const { isModuleActive } = useActiveModules();
+  const { meatPricePerKg } = useFarmPrices(currentUser);
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
 
@@ -117,7 +119,7 @@ export function DashboardView({
   let totalRealizedProfit = 0;
 
   activeCattle.forEach(animal => {
-    const fin = calculateFinancials(animal);
+    const fin = calculateFinancials(animal, 0, meatPricePerKg);
     totalInvestedActive += fin.totalInvested;
 
     const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
@@ -126,7 +128,7 @@ export function DashboardView({
   });
 
   soldCattle.forEach(animal => {
-    const fin = calculateFinancials(animal);
+    const fin = calculateFinancials(animal, 0, meatPricePerKg);
     totalRealizedProfit += fin.netProfit;
   });
 
@@ -147,7 +149,7 @@ export function DashboardView({
     .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
   const currentMonthCattleProfit = soldCattle
     .filter(c => (c.exitDate || c.updatedAt || '').startsWith(currentMonthPrefix))
-    .reduce((sum, c) => sum + calculateFinancials(c).netProfit, 0);
+    .reduce((sum, c) => sum + calculateFinancials(c, 0, meatPricePerKg).netProfit, 0);
   const currentMonthNetProfit = currentMonthCattleProfit + currentMonthIncomes - currentMonthExpenses;
 
   // Cobertura de Gastos del Mes

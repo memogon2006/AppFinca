@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
+import { getFarmMeatPrice } from '../../services/farmPriceService';
 import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -18,7 +19,8 @@ export function CattleCard({
   const { isWorker } = useAuth();
   const animalWeighings = weighings.filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
-  const financials = calculateFinancials(animal);
+  const farmMeatPrice = getFarmMeatPrice(animal?.owner);
+  const financials = calculateFinancials(animal, 0, farmMeatPrice);
   const repro = calculateReproduction(animal);
   const milk = calculateMilkMetrics(animal);
 

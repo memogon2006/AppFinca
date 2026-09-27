@@ -45,6 +45,7 @@ import {
   getLocalDateString,
   parseDateOnly
 } from '../../services/calculations';
+import { getFarmMilkPrice, setFarmMilkPrice } from '../../services/farmPriceService';
 import { triggerFeedback } from '../../services/soundService';
 
 export function DairyView({
@@ -124,25 +125,19 @@ export function DairyView({
       }
     : getMilkPeriodRange(periodType, selectedYear, selectedMonth);
 
-  // Precio de venta por litro personalizado por finca (con persistencia en localStorage)
-  const [milkPricePerLiter, setMilkPricePerLiter] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`finca_milk_price_${farmName.replace(/\s+/g, '_').toLowerCase()}`) 
-        || localStorage.getItem('finca_milk_price_per_liter');
-      return saved !== null && saved !== '' ? Number(saved) : 2100;
-    } catch (e) {
-      return 2100;
-    }
-  });
+  // Precio de venta por litro personalizado por finca (independiente para cada predio)
+  const [milkPricePerLiter, setMilkPricePerLiter] = useState(() => getFarmMilkPrice(farmName));
+
+  // Sincronizar si cambia de finca
+  React.useEffect(() => {
+    setMilkPricePerLiter(getFarmMilkPrice(farmName));
+  }, [farmName]);
 
   const handleMilkPriceChange = (val) => {
     const num = val === '' ? '' : Number(val);
     setMilkPricePerLiter(num);
-    if (num !== '' && !isNaN(num)) {
-      try {
-        localStorage.setItem(`finca_milk_price_${farmName.replace(/\s+/g, '_').toLowerCase()}`, String(num));
-        localStorage.setItem('finca_milk_price_per_liter', String(num));
-      } catch (e) {}
+    if (num !== '' && !isNaN(num) && num > 0) {
+      setFarmMilkPrice(farmName, num);
     }
   };
 

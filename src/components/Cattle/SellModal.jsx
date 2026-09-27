@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../Common/Modal';
 import { formatCurrency, formatNumber, getLocalDateString } from '../../services/calculations';
+import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
 import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -9,6 +10,8 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
   const entryWeight = parseFloat(animal?.entryWeight) || 0;
   const currentWeight = parseFloat(animal?.currentWeight || entryWeight);
   const additionalCosts = parseFloat(animal?.additionalCosts) || 0;
+
+  const farmMeatPrice = getFarmMeatPrice(animal?.owner);
 
   const [saleData, setSaleData] = useState({
     exitDate: getLocalDateString(),
@@ -19,7 +22,19 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
   });
 
   const [calcMode, setCalcMode] = useState('total');
-  const [pricePerKg, setPricePerKg] = useState('9200');
+  const [pricePerKg, setPricePerKg] = useState(() => String(farmMeatPrice));
+
+  useEffect(() => {
+    if (isOpen && animal) {
+      const pMeat = getFarmMeatPrice(animal?.owner);
+      setPricePerKg(String(pMeat));
+      const w = parseFloat(animal?.currentWeight || animal?.entryWeight) || 0;
+      setSaleData(prev => ({
+        ...prev,
+        exitWeight: w > 0 ? w.toString() : prev.exitWeight,
+      }));
+    }
+  }, [isOpen, animal]);
 
   // Modalidad: 'direct' (Solo yo / 100% utilidad finca) | 'partnership' (En compañía 50/50)
   const [settlementMode, setSettlementMode] = useState('direct');

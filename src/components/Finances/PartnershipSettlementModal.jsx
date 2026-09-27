@@ -22,6 +22,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, getLocalDateString } from '../../services/calculations';
+import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
 import confetti from 'canvas-confetti';
 
 export function PartnershipSettlementModal({ 
@@ -56,7 +57,7 @@ export function PartnershipSettlementModal({
   // Parámetros comerciales de la venta / liquidación
   const [saleDate, setSaleDate] = useState(getLocalDateString());
   const [buyerName, setBuyerName] = useState('');
-  const [pricePerKg, setPricePerKg] = useState('9200');
+  const [pricePerKg, setPricePerKg] = useState(() => String(getFarmMeatPrice(selectedOwnerFilter || null)));
   const [farmPercent, setFarmPercent] = useState(50); // % para la Finca en los que son en compañía
   const [partnerPercent, setPartnerPercent] = useState(50); // % para el Dueño del Animal
   const [activeTab, setActiveTab] = useState('selection'); // 'selection' | 'preview' | 'report'

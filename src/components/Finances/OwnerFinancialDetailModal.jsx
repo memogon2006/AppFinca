@@ -21,6 +21,7 @@ import {
   BadgeCheck
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateFinancials, getLocalDateString } from '../../services/calculations';
+import { getFarmMeatPrice } from '../../services/farmPriceService';
 import * as XLSX from 'xlsx-js-style';
 
 export function OwnerFinancialDetailModal({
@@ -80,14 +81,16 @@ export function OwnerFinancialDetailModal({
   const totalSoldRevenue = soldOwnerCattle.reduce((sum, c) => sum + (parseFloat(c.exitPrice) || 0), 0);
   const averageSoldRevenue = totalSoldCount > 0 ? totalSoldRevenue / totalSoldCount : 0;
   
+  const ownerMeatPrice = getFarmMeatPrice(ownerName);
+
   const totalSoldCost = soldOwnerCattle.reduce((sum, c) => {
-    const fin = calculateFinancials(c);
+    const fin = calculateFinancials(c, 0, ownerMeatPrice);
     return sum + fin.totalInvested;
   }, 0);
   const averageSoldCost = totalSoldCount > 0 ? totalSoldCost / totalSoldCount : 0;
 
   const totalSoldNetProfit = soldOwnerCattle.reduce((sum, c) => {
-    const fin = calculateFinancials(c);
+    const fin = calculateFinancials(c, 0, ownerMeatPrice);
     return sum + fin.netProfit;
   }, 0);
   const soldRoi = totalSoldCost > 0 ? (totalSoldNetProfit / totalSoldCost) * 100 : 0;
@@ -183,7 +186,7 @@ export function OwnerFinancialDetailModal({
     ];
 
     soldOwnerCattle.forEach(a => {
-      const fin = calculateFinancials(a);
+      const fin = calculateFinancials(a, 0, ownerMeatPrice);
       const exitW = parseFloat(a.exitWeight) || 0;
       const exitP = parseFloat(a.exitPrice) || 0;
       const pricePerKg = exitW > 0 ? (exitP / exitW) : 0;
@@ -617,7 +620,7 @@ export function OwnerFinancialDetailModal({
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                       {filteredSoldList.map(animal => {
-                        const fin = calculateFinancials(animal);
+                        const fin = calculateFinancials(animal, 0, ownerMeatPrice);
                         const exitW = parseFloat(animal.exitWeight) || 0;
                         const exitP = parseFloat(animal.exitPrice) || 0;
 

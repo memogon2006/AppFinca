@@ -481,7 +481,7 @@ export function calculateCebaProjection(currentWeight, gdp, lastWeighDate, targe
 /**
  * Calcula las métricas financieras y utilidades del animal
  */
-export function calculateFinancials(animal, additionalExpenses = 0) {
+export function calculateFinancials(animal, additionalExpenses = 0, customMarketPricePerKg = null) {
   const entryPrice = parseFloat(animal.entryPrice) || 0;
   const exitPrice = parseFloat(animal.exitPrice) || 0;
   const expenses = (parseFloat(animal.additionalCosts) || 0) + additionalExpenses;
@@ -501,7 +501,9 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
     pricePerKgEntry = entryPrice / entryWeight;
   }
 
-  const estimatedMarketPricePerKg = 8500;
+  const estimatedMarketPricePerKg = (customMarketPricePerKg !== null && !isNaN(Number(customMarketPricePerKg)) && Number(customMarketPricePerKg) > 0)
+    ? Number(customMarketPricePerKg)
+    : 9200;
   let pricePerKgUsed = 0;
 
   if (isSold) {
@@ -516,7 +518,7 @@ export function calculateFinancials(animal, additionalExpenses = 0) {
     roi = -100;
     pricePerKgUsed = 0;
   } else {
-    // Estimación proyectada basada en peso actual ($8,500/kg) o valor invertido en caso de vientres sin pesaje
+    // Estimación proyectada basada en peso actual ($/kg según precio fijado en finca) o valor invertido en caso de vientres sin pesaje
     const estimatedCurrentValue = currentWeight > 0 ? currentWeight * estimatedMarketPricePerKg : totalInvested;
     const projectedProfit = estimatedCurrentValue - totalInvested;
     netProfit = projectedProfit;

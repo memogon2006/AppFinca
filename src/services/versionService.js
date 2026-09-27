@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.4";
+export const CURRENT_APP_VERSION = "2.16.5";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.5",
+    date: "26/09/2026",
+    title: "💰 Precios Comerciales Independientes por Finca (Leche $/L & Carne $/Kg)",
+    highlights: [
+      "Valores Comerciales Propios por Finca: Cada predio o hacienda ahora puede fijar y guardar de forma 100% independiente su precio por litro de leche ($/L) y su precio de referencia por kilo de carne en pie ($/Kg).",
+      "Configuración Directa en Perfil & Módulos: Se integró una tarjeta de ajuste de precios en el Perfil de la Finca, sincronizada automáticamente con el módulo de Lechería, Ventas individuales y Liquidaciones en Compañía.",
+      "Cálculos Financieros Personalizados: Las valoraciones de inventario, ganancias estimadas y liquidaciones reflejan exactamente las tarifas comerciales de cada predio sin interferir entre diferentes cuentas o fincas."
+    ]
+  },
   {
     version: "2.16.4",
     date: "26/09/2026",

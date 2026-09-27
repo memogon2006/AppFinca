@@ -51,6 +51,7 @@ import {
   calculateWeightMetrics, 
   calculateFinancials 
 } from '../../services/calculations';
+import { getFarmMeatPrice } from '../../services/farmPriceService';
 import { exportBatchComparisonExcel, getAnimalGroupKey } from '../../services/batchExcelService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -178,7 +179,7 @@ export function BatchAnalyticsView({
       groupAnimals.forEach(animal => {
         const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
         const wm = calculateWeightMetrics(animal, animalWeighs);
-        const fin = calculateFinancials(animal);
+        const fin = calculateFinancials(animal, 0, getFarmMeatPrice(animal.owner));
 
         const entryPrice = parseFloat(animal.entryPrice) || 0;
         const addCost = parseFloat(animal.additionalCosts) || 0;
@@ -329,7 +330,7 @@ export function BatchAnalyticsView({
       cattle.forEach(animal => {
         const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
         const wm = calculateWeightMetrics(animal, animalWeighs);
-        const fin = calculateFinancials(animal);
+        const fin = calculateFinancials(animal, 0, getFarmMeatPrice(animal.owner));
 
         const entryPrice = parseFloat(animal.entryPrice) || 0;
         const addCost = parseFloat(animal.additionalCosts) || 0;
@@ -497,7 +498,7 @@ export function BatchAnalyticsView({
     filteredGroupAnimals.forEach(c => {
       const animalWeighs = weighings.filter(w => String(w.cattleId) === String(c.id));
       const wm = calculateWeightMetrics(c, animalWeighs);
-      const fin = calculateFinancials(c);
+      const fin = calculateFinancials(c, 0, getFarmMeatPrice(c.owner));
 
       const eWeight = parseFloat(c.entryWeight) || 0;
       const ePrice = parseFloat(c.entryPrice) || 0;
@@ -1304,7 +1305,7 @@ export function BatchAnalyticsView({
                     {filteredGroupAnimals.map((animal, idx) => {
                       const animalWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
                       const wm = calculateWeightMetrics(animal, animalWeighs);
-                      const fin = calculateFinancials(animal);
+                      const fin = calculateFinancials(animal, 0, getFarmMeatPrice(animal.owner));
 
                       const entryWeight = parseFloat(animal.entryWeight) || 0;
                       const entryPrice = parseFloat(animal.entryPrice) || 0;

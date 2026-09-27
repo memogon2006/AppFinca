@@ -10,6 +10,7 @@ import {
   calculateFinancials, 
   calculateReproduction 
 } from '../../services/calculations';
+import { getFarmMeatPrice } from '../../services/farmPriceService';
 import { COMMON_BREEDS } from '../../types/cattle';
 import { 
   LayoutGrid, 
@@ -199,8 +200,8 @@ export function CattleListView({
       const bWeighs = weighings.filter(w => String(w.cattleId) === String(b.id));
       const aWeight = calculateWeightMetrics(a, aWeighs);
       const bWeight = calculateWeightMetrics(b, bWeighs);
-      const aFin = calculateFinancials(a);
-      const bFin = calculateFinancials(b);
+      const aFin = calculateFinancials(a, 0, getFarmMeatPrice(a.owner));
+      const bFin = calculateFinancials(b, 0, getFarmMeatPrice(b.owner));
 
       switch (filters.sortBy) {
         case 'weightDesc':
@@ -464,7 +465,7 @@ export function CattleListView({
                 {filteredCattle.map(animal => {
                   const aWeighs = weighings.filter(w => String(w.cattleId) === String(animal.id));
                   const wm = calculateWeightMetrics(animal, aWeighs);
-                  const fin = calculateFinancials(animal);
+                  const fin = calculateFinancials(animal, 0, getFarmMeatPrice(animal.owner));
                   const batch = animal.entryBatch || animal.paddock || '';
                   const isSold = animal.status === 'Vendido';
                   const isDead = animal.status === 'Muerto';

@@ -12,6 +12,7 @@ import {
   calculateDaysInMilk,
   calculateLactationCurve
 } from '../../services/calculations';
+import { getFarmMeatPrice } from '../../services/farmPriceService';
 import { DairyLactationChart } from '../Dairy/DairyLactationChart';
 import { 
   Scale, 
@@ -183,7 +184,7 @@ export function CattleDetailModal({
 
   const animalWeighings = (weighings || []).filter(w => String(w.cattleId) === String(animal.id));
   const weightMetrics = calculateWeightMetrics(animal, animalWeighings);
-  const financials = calculateFinancials(animal);
+  const financials = calculateFinancials(animal, 0, getFarmMeatPrice(animal?.owner));
   const repro = calculateReproduction(animal);
   const milkMetrics = calculateMilkMetrics(animal);
   const batchName = animal.entryBatch || animal.paddock || 'Ingreso #1';
