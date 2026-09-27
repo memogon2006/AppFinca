@@ -77,12 +77,21 @@ export function DashboardView({
   // Unificación de Ingresos: farmIncomes + liquidaciones de leche
   const effectiveIncomes = useMemo(() => {
     const list = [...(farmIncomes || [])];
-    const existingSettlementIds = new Set(
-      list.filter(i => i.settlementId || i.id?.startsWith('inc_milk_')).map(i => i.settlementId || i.id?.replace('inc_milk_', ''))
-    );
+    const existingSettlementIds = new Set();
+    list.forEach(i => {
+      if (i.settlementId) {
+        existingSettlementIds.add(String(i.settlementId));
+        existingSettlementIds.add(i.settlementId);
+      }
+      if (typeof i.id === 'string' && i.id.startsWith('inc_milk_')) {
+        const raw = i.id.replace('inc_milk_', '');
+        existingSettlementIds.add(raw);
+        existingSettlementIds.add(String(raw));
+      }
+    });
 
     (milkSettlements || []).forEach(st => {
-      if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id)) {
+      if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id) && !existingSettlementIds.has(String(st.id))) {
         list.push({
           id: 'inc_milk_' + st.id,
           date: st.paymentDate || st.endDate || getSafeDateString(st.date, st.createdAt),

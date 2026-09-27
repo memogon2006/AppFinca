@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.16.9";
+export const CURRENT_APP_VERSION = "2.17.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.17.0",
+    date: "26/09/2026",
+    title: "🔗 Sincronización & Eliminación Bi-Direccional Blindada entre Lechería y Contabilidad Financiera",
+    highlights: [
+      "Conexión Total de Eliminación Bi-Direccional: Al eliminar un ingreso de venta de leche desde el módulo de Contabilidad y Finanzas, se elimina automáticamente la liquidación en Lechería y se desvinculan los días del período para permitir su reliquidación.",
+      "Eliminación desde Lechería Sincronizada: Al borrar una liquidación en el módulo de Lechería, el ingreso asociado desaparece de forma instantánea de los libros contables sin dejar registros huérfanos.",
+      "Protección contra Resurrección de Registros: Se homogeneizó el manejo de tipos de claves (numéricas y de texto) y lápidas en Firebase Cloud y Dexie DB, evitando que liquidaciones eliminadas reaparezcan o re-inserten ingresos.",
+      "Reactivación Automática para Reliquidar: Al eliminar la liquidación o el ingreso, el período en Lechería regresa inmediatamente a su estado pendiente con el botón '💰 Liquidar Este Período' habilitado."
+    ]
+  },
   {
     version: "2.16.9",
     date: "26/09/2026",

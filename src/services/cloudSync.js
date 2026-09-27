@@ -493,11 +493,18 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
     .map(d => String(d.id));
   const pendingDeleteSet = new Set(pendingDeletes);
   const tombstones = getTombstones(userId);
-
   const isDeleted = (id) => {
     if (!id && id !== 0) return false;
     const strId = String(id);
-    return pendingDeleteSet.has(strId) || tombstones.has(`${tableName}_${strId}`);
+    const numId = !isNaN(Number(id)) ? Number(id) : null;
+    return pendingDeleteSet.has(strId) || 
+           (numId !== null && pendingDeleteSet.has(String(numId))) ||
+           tombstones.has(`${tableName}_${strId}`) ||
+           (numId !== null && tombstones.has(`${tableName}_${numId}`)) ||
+           (tableName === 'farmIncomes' && strId.startsWith('inc_milk_') && (tombstones.has(`milkSettlements_${strId.replace('inc_milk_', '')}`) || pendingDeleteSet.has(strId.replace('inc_milk_', '')))) ||
+           (tableName === 'farmIncomes' && strId.startsWith('inc_tank_') && (tombstones.has(`milkDeliveries_${strId.replace('inc_tank_', '')}`) || pendingDeleteSet.has(strId.replace('inc_tank_', '')))) ||
+           (tableName === 'milkSettlements' && (tombstones.has(`farmIncomes_inc_milk_${strId}`) || pendingDeleteSet.has(`inc_milk_${strId}`))) ||
+           (tableName === 'milkDeliveries' && (tombstones.has(`farmIncomes_inc_tank_${strId}`) || pendingDeleteSet.has(`inc_tank_${strId}`)));
   };
 
   // 1. Guardar o actualizar todos los registros recibidos en una sola operación batch ultrarrápida

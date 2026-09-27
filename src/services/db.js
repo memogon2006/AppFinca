@@ -1008,8 +1008,19 @@ export async function saveMilkDelivery(delivery) {
  */
 export async function deleteMilkDelivery(id) {
   try {
-    if (!db.milkDeliveries || !id) return false;
-    await db.milkDeliveries.delete(id);
+    if (!db.milkDeliveries || id === undefined || id === null) return false;
+    const numId = !isNaN(Number(id)) ? Number(id) : null;
+    const strId = String(id);
+    await db.milkDeliveries.delete(id).catch(() => null);
+    if (numId !== null) await db.milkDeliveries.delete(numId).catch(() => null);
+    await db.milkDeliveries.delete(strId).catch(() => null);
+
+    // Si tenía ingreso enlazado en contabilidad (inc_tank_):
+    if (db.farmIncomes) {
+      await db.farmIncomes.delete('inc_tank_' + id).catch(() => null);
+      if (numId !== null) await db.farmIncomes.delete('inc_tank_' + numId).catch(() => null);
+      await db.farmIncomes.delete('inc_tank_' + strId).catch(() => null);
+    }
     return true;
   } catch (err) {
     console.error('Error eliminando entrega de leche:', err);
@@ -1083,8 +1094,12 @@ export async function saveDailyMilkLog(logData) {
  */
 export async function deleteDailyMilkLog(id) {
   try {
-    if (!db.dailyMilkLogs || !id) return false;
-    await db.dailyMilkLogs.delete(id);
+    if (!db.dailyMilkLogs || id === undefined || id === null) return false;
+    const numId = !isNaN(Number(id)) ? Number(id) : null;
+    const strId = String(id);
+    await db.dailyMilkLogs.delete(id).catch(() => null);
+    if (numId !== null) await db.dailyMilkLogs.delete(numId).catch(() => null);
+    await db.dailyMilkLogs.delete(strId).catch(() => null);
     return true;
   } catch (err) {
     console.error('Error eliminando producción diaria de leche:', err);
@@ -1170,25 +1185,81 @@ export async function saveMilkSettlement(settlementData) {
 }
 
 /**
- * Elimina una liquidación de leche y desvincula los días liquidados
+ * Elimina una liquidación de leche, desvincula los días liquidados y limpia el ingreso contable asociado
  */
 export async function deleteMilkSettlement(id) {
   try {
-    if (!db.milkSettlements || !id) return false;
-    const settlement = await db.milkSettlements.get(id);
-    if (settlement && db.dailyMilkLogs) {
-      const linkedLogs = await db.dailyMilkLogs
-        .filter(l => l.settlementId === id)
-        .toArray();
-      for (const log of linkedLogs) {
-        await db.dailyMilkLogs.update(log.id, {
-          isSettled: false,
-          settlementId: null,
-          updatedAt: new Date().toISOString(),
-        });
+    if (!db.milkSettlements || id === undefined || id === null) return false;
+    const numId = !isNaN(Number(id)) ? Number(id) : null;
+    const strId = String(id);
+
+    // 1. Obtener la liquidación buscando por id exacto, numId o strId
+    let settlement = await db.milkSettlements.get(id);
+    if (!settlement && numId !== null) settlement = await db.milkSettlements.get(numId);
+    if (!settlement) settlement = await db.milkSettlements.get(strId);
+    if (!settlement) {
+      settlement = await db.milkSettlements.filter(s => s.id == id || s.id == numId || s.id == strId || (s.incomeId && s.incomeId == id)).first();
+    }
+
+    const effId = settlement?.id || id;
+    const effNumId = settlement?.id !== undefined && !isNaN(Number(settlement.id)) ? Number(settlement.id) : numId;
+    const effStrId = settlement?.id !== undefined ? String(settlement.id) : strId;
+
+    // 2. Desvincular registros diarios (dailyMilkLogs) asociados
+    if (db.dailyMilkLogs) {
+      const allLogs = await db.dailyMilkLogs.toArray();
+      for (const log of allLogs) {
+        const isMatchingLog = log.settlementId == effId || 
+                              (effNumId !== null && log.settlementId == effNumId) || 
+                              log.settlementId == effStrId ||
+                              (settlement && settlement.startDate && settlement.endDate && log.date >= settlement.startDate && log.date <= settlement.endDate);
+        if (isMatchingLog) {
+          await db.dailyMilkLogs.update(log.id, {
+            isSettled: false,
+            settlementId: null,
+            updatedAt: new Date().toISOString(),
+          });
+        }
       }
     }
-    await db.milkSettlements.delete(id);
+
+    // 3. Eliminar de farmIncomes el ingreso contable asociado
+    if (db.farmIncomes) {
+      const incPrefixes = ['inc_milk_' + effId, 'inc_milk_' + effStrId];
+      if (effNumId !== null) incPrefixes.push('inc_milk_' + effNumId);
+      if (settlement?.incomeId) {
+        incPrefixes.push(settlement.incomeId);
+        if (!isNaN(Number(settlement.incomeId))) incPrefixes.push(Number(settlement.incomeId));
+      }
+
+      for (const incKey of incPrefixes) {
+        await db.farmIncomes.delete(incKey).catch(() => null);
+      }
+
+      const matchingIncomes = await db.farmIncomes.filter(i => 
+        i.settlementId == effId || 
+        (effNumId !== null && i.settlementId == effNumId) || 
+        i.settlementId == effStrId ||
+        (typeof i.id === 'string' && (i.id.startsWith('inc_milk_' + effId) || i.id.startsWith('inc_milk_' + effStrId))) ||
+        (settlement && i.isMilkSettlement && i.startDate === settlement.startDate && i.endDate === settlement.endDate)
+      ).toArray();
+
+      for (const mi of matchingIncomes) {
+        await db.farmIncomes.delete(mi.id).catch(() => null);
+        if (typeof mi.id === 'string' && !isNaN(mi.id)) await db.farmIncomes.delete(Number(mi.id)).catch(() => null);
+      }
+    }
+
+    // 4. Eliminar de db.milkSettlements todas las variantes de ID
+    await db.milkSettlements.delete(effId).catch(() => null);
+    if (effNumId !== null) await db.milkSettlements.delete(effNumId).catch(() => null);
+    await db.milkSettlements.delete(effStrId).catch(() => null);
+    if (id !== effId) {
+      await db.milkSettlements.delete(id).catch(() => null);
+      if (numId !== null) await db.milkSettlements.delete(numId).catch(() => null);
+      await db.milkSettlements.delete(strId).catch(() => null);
+    }
+
     return true;
   } catch (err) {
     console.error('Error eliminando liquidación de leche:', err);

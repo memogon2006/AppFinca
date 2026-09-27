@@ -1597,54 +1597,66 @@ export default function App() {
     let inc = null;
     if (db.farmIncomes) {
       inc = await db.farmIncomes.get(incId) || 
-            await db.farmIncomes.get(Number(incId)) || 
+            (!isNaN(Number(incId)) ? await db.farmIncomes.get(Number(incId)) : null) || 
             await db.farmIncomes.get(String(incId));
+      if (!inc) {
+        inc = await db.farmIncomes.filter(i => i.id == incId || ('inc_milk_' + i.settlementId) === String(incId)).first();
+      }
     }
     const targetId = inc ? inc.id : incId;
 
     // 2. Eliminar de farmIncomes
     if (db.farmIncomes) {
-      await db.farmIncomes.delete(targetId);
+      await db.farmIncomes.delete(targetId).catch(() => null);
       if (typeof targetId === 'string' && !isNaN(targetId)) {
-        await db.farmIncomes.delete(Number(targetId));
+        await db.farmIncomes.delete(Number(targetId)).catch(() => null);
       } else if (typeof targetId === 'number') {
-        await db.farmIncomes.delete(String(targetId));
+        await db.farmIncomes.delete(String(targetId)).catch(() => null);
       }
-      markPendingDelete(userId, 'farmIncomes', targetId);
+      markPendingDelete(userId, 'farmIncomes', targetId, String(targetId));
     }
 
     // 3. Si el ingreso está enlazado a una liquidación de leche (settlementId o prefijo inc_milk_):
-    const settlementId = inc?.settlementId || (typeof targetId === 'string' && targetId.startsWith('inc_milk_') ? targetId.replace('inc_milk_', '') : null);
-    if (settlementId) {
-      if (db.milkSettlements) {
-        await db.milkSettlements.delete(settlementId);
-        await db.milkSettlements.delete(Number(settlementId));
-        await db.milkSettlements.delete(String(settlementId));
+    let settlementId = inc?.settlementId || (typeof targetId === 'string' && targetId.startsWith('inc_milk_') ? targetId.replace('inc_milk_', '') : null);
+
+    // Si aún no se encontró settlementId, buscar en db.milkSettlements por coincidencia de incomeId, ID, o fechas
+    if (!settlementId && db.milkSettlements) {
+      const matchSt = await db.milkSettlements.filter(s => 
+        s.id == targetId || 
+        s.incomeId == targetId || 
+        ('inc_milk_' + s.id) === String(targetId) ||
+        (inc && s.startDate === inc.startDate && s.endDate === inc.endDate)
+      ).first();
+      if (matchSt) {
+        settlementId = matchSt.id;
       }
-      await deleteMilkSettlement(settlementId).catch(() => null);
-      markPendingDelete(userId, 'milkSettlements', settlementId);
+    }
+
+    if (settlementId) {
+      await deleteMilkSettlement(settlementId);
+      markPendingDelete(userId, 'milkSettlements', settlementId, String(settlementId), !isNaN(Number(settlementId)) ? Number(settlementId) : null);
+      markPendingDelete(userId, 'farmIncomes', 'inc_milk_' + settlementId, targetId, String(targetId));
     }
 
     // 4. Si targetId coincide directamente con el ID de una liquidación de leche
     if (db.milkSettlements) {
-      const directSettlement = await db.milkSettlements.get(targetId) || await db.milkSettlements.get(Number(targetId));
+      const directSettlement = await db.milkSettlements.get(targetId) || (!isNaN(Number(targetId)) ? await db.milkSettlements.get(Number(targetId)) : null);
       if (directSettlement) {
-        await db.milkSettlements.delete(directSettlement.id);
-        await deleteMilkSettlement(directSettlement.id).catch(() => null);
-        markPendingDelete(userId, 'milkSettlements', directSettlement.id);
+        await deleteMilkSettlement(directSettlement.id);
+        markPendingDelete(userId, 'milkSettlements', directSettlement.id, String(directSettlement.id));
       }
     }
 
     // 5. Si el ingreso está enlazado a una entrega/despacho de leche a tanque
-    const deliveryId = inc?.deliveryId || (typeof targetId === 'string' && targetId.startsWith('inc_tank_') ? targetId.replace('inc_tank_', '') : null);
+    let deliveryId = inc?.deliveryId || (typeof targetId === 'string' && targetId.startsWith('inc_tank_') ? targetId.replace('inc_tank_', '') : null);
+    if (!deliveryId && db.milkDeliveries) {
+      const matchDel = await db.milkDeliveries.filter(d => d.id == targetId || ('inc_tank_' + d.id) === String(targetId)).first();
+      if (matchDel) deliveryId = matchDel.id;
+    }
     if (deliveryId) {
-      if (db.milkDeliveries) {
-        await db.milkDeliveries.delete(deliveryId);
-        await db.milkDeliveries.delete(Number(deliveryId));
-        await db.milkDeliveries.delete(String(deliveryId));
-      }
-      await deleteMilkDelivery(deliveryId).catch(() => null);
-      markPendingDelete(userId, 'milkDeliveries', deliveryId);
+      await deleteMilkDelivery(deliveryId);
+      markPendingDelete(userId, 'milkDeliveries', deliveryId, String(deliveryId));
+      markPendingDelete(userId, 'farmIncomes', 'inc_tank_' + deliveryId, targetId, String(targetId));
     }
 
     await logActivity({
@@ -1658,7 +1670,7 @@ export default function App() {
 
     cloudPushData(userId);
     triggerFeedback('warning');
-    showToast('Ingreso eliminado de la contabilidad 🗑️');
+    showToast('Ingreso eliminado de la contabilidad y liquidación desvinculada 🗑️');
   };
 
   const handleSaveMilkRecord = async (recordData) => {
@@ -1909,13 +1921,16 @@ export default function App() {
   const handleDeleteMilkSettlement = async (settlementId) => {
     if (!userId) return;
     await deleteMilkSettlement(settlementId);
-    markPendingDelete(userId, 'milkSettlements', settlementId);
+    markPendingDelete(userId, 'milkSettlements', settlementId, String(settlementId), !isNaN(Number(settlementId)) ? Number(settlementId) : null);
 
     // Si tenía un ingreso contable asociado, eliminarlo también
     const linkedIncomeId = 'inc_milk_' + settlementId;
     if (db.farmIncomes) {
-      await db.farmIncomes.delete(linkedIncomeId);
-      markPendingDelete(userId, 'farmIncomes', linkedIncomeId);
+      await db.farmIncomes.delete(linkedIncomeId).catch(() => null);
+      if (!isNaN(Number(settlementId))) {
+        await db.farmIncomes.delete('inc_milk_' + Number(settlementId)).catch(() => null);
+      }
+      markPendingDelete(userId, 'farmIncomes', linkedIncomeId, 'inc_milk_' + String(settlementId), String(settlementId));
     }
 
     await logActivity({
