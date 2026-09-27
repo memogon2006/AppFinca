@@ -1,5 +1,5 @@
 {
-  "version": "2.16.2",
-  "buildTime": 1790478000000,
-  "description": "⚡ Blindaje de Carga Inicial, Corrección de useMemo y Normalización Segura de Fechas"
+  "version": "2.16.3",
+  "buildTime": 1790480000000,
+  "description": "🥛 Activación Directa de Botones + Registrar y Editar en Tabla de Días de Lechería"
 }

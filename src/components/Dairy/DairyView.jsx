@@ -170,6 +170,19 @@ export function DairyView({
     }
   };
 
+  // Abrir modal de producción diaria para una fecha específica
+  const handleOpenDayLog = (targetDate, existingLog = null) => {
+    syncQuickDayForm(targetDate);
+    const existing = existingLog || dailyMilkLogs.find(l => l.date === targetDate);
+    const logData = existing ? { ...existing } : {
+      date: targetDate,
+      cowsMilked: metrics.milkingCowsCount > 0 ? metrics.milkingCowsCount : '',
+      pricePerLiter: typeof milkPricePerLiter === 'number' ? milkPricePerLiter : 2100
+    };
+    setEditingDailyLog(logData);
+    setIsDailyLogModalOpen(true);
+  };
+
   // Guardar desde el Registrador Rápido Integrado
   const handleQuickDaySave = (e) => {
     e.preventDefault();
@@ -964,21 +977,23 @@ export function DairyView({
                           {day.hasLog ? (
                             <div className="flex items-center justify-end gap-1.5">
                               <button
-                                onClick={() => syncQuickDayForm(day.date)}
-                                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-white font-bold text-xs border border-emerald-500/30 transition cursor-pointer flex items-center gap-1"
-                                title="Editar día en el formulario superior"
+                                type="button"
+                                onClick={() => handleOpenDayLog(day.date, day.log)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-white font-bold text-xs border border-emerald-500/30 transition cursor-pointer flex items-center gap-1 active:scale-95 shadow-xs"
+                                title="Editar producción del día"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                                 <span>Editar</span>
                               </button>
 
                               <button
+                                type="button"
                                 onClick={() => {
                                   if (confirm(`¿Deseas eliminar la producción del ${formatDate(day.date)}?`)) {
                                     onDeleteDailyMilkLog(day.log.id);
                                   }
                                 }}
-                                className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition cursor-pointer"
+                                className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition cursor-pointer active:scale-95"
                                 title="Eliminar"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -987,7 +1002,8 @@ export function DairyView({
                           ) : (
                             /* Botón Registrar ALTAMENTE VISIBLE con fondo verde esmeralda sólido */
                             <button
-                              onClick={() => syncQuickDayForm(day.date)}
+                              type="button"
+                              onClick={() => handleOpenDayLog(day.date, null)}
                               className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md shadow-emerald-950/40 transition active:scale-95 cursor-pointer flex items-center gap-1.5 ml-auto"
                             >
                               <PlusCircle className="w-3.5 h-3.5" />

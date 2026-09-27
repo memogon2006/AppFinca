@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.2";
+export const CURRENT_APP_VERSION = "2.16.3";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.3",
+    date: "26/09/2026",
+    title: "🥛 Activación Directa de Botones '+ Registrar' y 'Editar' en Tabla de Lechería",
+    highlights: [
+      "Apertura Inmediata del Formulario por Día: Al hacer clic en cualquier botón '+ Registrar' o 'Editar' en la lista de días del período, se abre de inmediato la ventana para digitar la producción de ese día.",
+      "Pre-carga Automática del Día Seleccionado: El modal carga automáticamente la fecha, vacas en ordeño y los litros existentes de la jornada seleccionada.",
+      "Interacción Táctil Ágil: Flujo directo e intuitivo para ingresar la producción quincenal o mensual día por día."
+    ]
+  },
   {
     version: "2.16.2",
     date: "26/09/2026",
