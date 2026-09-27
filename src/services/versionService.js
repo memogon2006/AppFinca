@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.0";
+export const CURRENT_APP_VERSION = "2.16.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.1",
+    date: "26/09/2026",
+    title: "🥛 Blindaje de Campos de Deducciones & Soporte de Comas Decimales en Liquidación de Leche",
+    highlights: [
+      "Persistencia de Valores al Digitar: Se aisló el ciclo de vida del modal para evitar que los campos de deducciones (Fondo Ganadero FNG, Flete, Bonificaciones) se limpien o vuelvan a cero mientras el usuario escribe.",
+      "Soporte Total para Comas y Puntos Decimales: Se añadió normalización automática para decimales colombianos (ej. 0,75% o 0.75%), calculando instantáneamente los subtotales, retenciones y el valor neto en tiempo real.",
+      "Teclado Numérico Decimal Optimizado: Campos numéricos configurados con inputMode decimal en dispositivos móviles y computadores."
+    ]
+  },
   {
     version: "2.16.0",
     date: "26/09/2026",

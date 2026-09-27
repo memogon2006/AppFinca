@@ -1,5 +1,5 @@
 {
-  "version": "2.16.0",
-  "buildTime": 1790474000000,
-  "description": "🥛 Módulo de Lechería Simplificado: Liquidaciones Directas por Período sin Botones Redundantes"
+  "version": "2.16.1",
+  "buildTime": 1790476000000,
+  "description": "🥛 Corrección de Deducciones y Soporte de Comas Decimales en Liquidación de Leche"
 }

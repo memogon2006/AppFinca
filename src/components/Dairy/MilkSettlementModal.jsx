@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../Common/Modal';
 import { 
   DollarSign, 
@@ -66,9 +66,19 @@ export function MilkSettlementModal({
   const [registerIncome, setRegisterIncome] = useState(true);
   const [notes, setNotes] = useState('');
 
-  // Sincronizar datos al abrir
+  const prevOpenRef = useRef(false);
+
+  // Helper para parsear números tolerando comas (0,75 -> 0.75)
+  const parseNum = (val) => {
+    if (val === null || val === undefined || val === '') return 0;
+    const clean = String(val).replace(/,/g, '.').trim();
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Sincronizar datos SOLO al abrir el modal (evita sobreescribir lo que el usuario está digitando)
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevOpenRef.current) {
       if (initialData) {
         setPeriodType(initialData.periodType || 'quincenal');
         setStartDate(initialData.startDate || new Date().toISOString().split('T')[0]);
@@ -129,7 +139,8 @@ export function MilkSettlementModal({
         setNotes('');
       }
     }
-  }, [isOpen, initialData, currentPeriodRange, dailyMilkLogs, milkRecords, defaultPricePerLiter]);
+    prevOpenRef.current = isOpen;
+  }, [isOpen, initialData]);
 
   // Al cambiar período mediante botones de acceso rápido
   const handlePeriodTypeClick = (type) => {
@@ -173,24 +184,24 @@ export function MilkSettlementModal({
   const detectedSummary = calculatePeriodMilkSummary(dailyMilkLogs, milkRecords, startDate, endDate, 0);
   const detectedLiters = detectedSummary.totalSalesLiters > 0 ? detectedSummary.totalSalesLiters : detectedSummary.totalLiters;
 
-  // Cálculos financieros en vivo
-  const litersNum = parseFloat(totalLiters) || 0;
-  const priceNum = parseFloat(pricePerLiter) || 0;
+  // Cálculos financieros en vivo con soporte de decimales por coma y punto
+  const litersNum = parseNum(totalLiters);
+  const priceNum = parseNum(pricePerLiter);
   const baseAmount = litersNum * priceNum;
-  const bonusesNum = parseFloat(bonuses) || 0;
+  const bonusesNum = parseNum(bonuses);
 
   // 1. Flete calculado
   const fleteVal = fleteMode === 'per_liter' 
-    ? (parseFloat(fletePerLiter) || 0) * litersNum 
-    : (parseFloat(fleteAmount) || 0);
+    ? parseNum(fletePerLiter) * litersNum 
+    : parseNum(fleteAmount);
 
   // 2. Fondo Ganadero calculado
   const fondoVal = fondoMode === 'percent'
-    ? (baseAmount * (parseFloat(fondoPercent) || 0)) / 100
-    : (parseFloat(fondoAmount) || 0);
+    ? (baseAmount * parseNum(fondoPercent)) / 100
+    : parseNum(fondoAmount);
 
   // 3. Otras deducciones
-  const otherDedVal = parseFloat(otherDeductions) || 0;
+  const otherDedVal = parseNum(otherDeductions);
 
   // Total deducciones
   const totalDeductions = fleteVal + fondoVal + otherDedVal;
@@ -221,10 +232,10 @@ export function MilkSettlementModal({
       deductions: totalDeductions,
       deductionsBreakdown: {
         fleteMode,
-        fletePerLiter: parseFloat(fletePerLiter) || 0,
+        fletePerLiter: parseNum(fletePerLiter),
         fleteAmount: fleteVal,
         fondoMode,
-        fondoPercent: parseFloat(fondoPercent) || 0,
+        fondoPercent: parseNum(fondoPercent),
         fondoAmount: fondoVal,
         otherDeductions: otherDedVal,
       },
@@ -318,7 +329,7 @@ export function MilkSettlementModal({
                 <Milk className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>Litros Totales a Liquidar *</span>
               </label>
-              {detectedLiters > 0 && parseFloat(totalLiters) !== detectedLiters && (
+              {detectedLiters > 0 && parseNum(totalLiters) !== detectedLiters && (
                 <button
                   type="button"
                   onClick={() => setTotalLiters(String(detectedLiters))}
@@ -333,9 +344,8 @@ export function MilkSettlementModal({
 
             <div className="relative">
               <input
-                type="number"
-                min="0.1"
-                step="0.1"
+                type="text"
+                inputMode="decimal"
                 required
                 placeholder="Ej. 2450"
                 value={totalLiters}
@@ -355,7 +365,7 @@ export function MilkSettlementModal({
                     <Sparkles className="w-3.5 h-3.5 shrink-0" />
                     <span>Suma del período: <strong>{formatNumber(detectedLiters, 1)} L</strong> ({detectedSummary.daysLogged} días con ordeño)</span>
                   </span>
-                  {parseFloat(totalLiters) === detectedLiters && (
+                  {parseNum(totalLiters) === detectedLiters && (
                     <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black">Exacto</span>
                   )}
                 </div>
@@ -374,9 +384,8 @@ export function MilkSettlementModal({
             </label>
             <div className="relative">
               <input
-                type="number"
-                min="100"
-                step="50"
+                type="text"
+                inputMode="decimal"
                 required
                 placeholder="Ej. 2100"
                 value={pricePerLiter}
@@ -419,9 +428,8 @@ export function MilkSettlementModal({
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-500">$</span>
               <input
-                type="number"
-                min="0"
-                step="1000"
+                type="text"
+                inputMode="decimal"
                 value={bonuses}
                 onChange={(e) => setBonuses(e.target.value)}
                 placeholder="0"
@@ -466,9 +474,8 @@ export function MilkSettlementModal({
                 <div>
                   <div className="relative">
                     <input
-                      type="number"
-                      min="0"
-                      step="5"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Ej. 80 (Flete por litro)"
                       value={fletePerLiter}
                       onChange={(e) => setFletePerLiter(e.target.value)}
@@ -484,9 +491,8 @@ export function MilkSettlementModal({
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-rose-500">$</span>
                     <input
-                      type="number"
-                      min="0"
-                      step="1000"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Ej. 150000"
                       value={fleteAmount}
                       onChange={(e) => setFleteAmount(e.target.value)}
@@ -501,7 +507,7 @@ export function MilkSettlementModal({
                 <strong className="font-mono font-black text-rose-600 dark:text-rose-400 text-sm">
                   - {formatCurrency(fleteVal)}
                 </strong>
-                {fleteMode === 'per_liter' && fletePerLiter > 0 && litersNum > 0 && (
+                {fleteMode === 'per_liter' && parseNum(fletePerLiter) > 0 && litersNum > 0 && (
                   <span className="text-[10px] text-slate-400 block">
                     (${fletePerLiter}/L × {formatNumber(litersNum, 0)} L)
                   </span>
@@ -546,10 +552,8 @@ export function MilkSettlementModal({
                 <div>
                   <div className="relative">
                     <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.05"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Ej. 0.75 ó 1.0 (%)"
                       value={fondoPercent}
                       onChange={(e) => setFondoPercent(e.target.value)}
@@ -565,9 +569,8 @@ export function MilkSettlementModal({
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-500">$</span>
                     <input
-                      type="number"
-                      min="0"
-                      step="1000"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Ej. 25000"
                       value={fondoAmount}
                       onChange={(e) => setFondoAmount(e.target.value)}
@@ -582,7 +585,7 @@ export function MilkSettlementModal({
                 <strong className="font-mono font-black text-amber-600 dark:text-amber-400 text-sm">
                   - {formatCurrency(fondoVal)}
                 </strong>
-                {fondoMode === 'percent' && fondoPercent > 0 && (
+                {fondoMode === 'percent' && parseNum(fondoPercent) > 0 && (
                   <span className="text-[10px] text-slate-400 block">
                     ({fondoPercent}% de {formatCurrency(baseAmount)})
                   </span>
@@ -605,9 +608,8 @@ export function MilkSettlementModal({
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">$</span>
               <input
-                type="number"
-                min="0"
-                step="1000"
+                type="text"
+                inputMode="decimal"
                 value={otherDeductions}
                 onChange={(e) => setOtherDeductions(e.target.value)}
                 placeholder="0"
