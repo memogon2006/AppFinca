@@ -156,15 +156,18 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
     setProfileMsg(null);
     try {
       setLoadingProfile(true);
+      const cleanMilk = parseFloat(milkPriceInput) || DEFAULT_MILK_PRICE;
+      const cleanMeat = parseFloat(meatPriceInput) || DEFAULT_MEAT_PRICE_PER_KG;
+
       await updateProfile({
         ...profileData,
         soundProfile: activeSoundProfile,
         soundEnabled: soundEnabled,
+        milkPrice: cleanMilk,
+        meatPricePerKg: cleanMeat,
       });
 
       // Guardar precios comerciales independientes de la finca
-      const cleanMilk = parseFloat(milkPriceInput) || DEFAULT_MILK_PRICE;
-      const cleanMeat = parseFloat(meatPriceInput) || DEFAULT_MEAT_PRICE_PER_KG;
       setFarmPrices(currentUser, { milkPrice: cleanMilk, meatPricePerKg: cleanMeat });
       if (profileData.farmName && profileData.farmName.trim()) {
         setFarmPrices(profileData.farmName.trim(), { milkPrice: cleanMilk, meatPricePerKg: cleanMeat });

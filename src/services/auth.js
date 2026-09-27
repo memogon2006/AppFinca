@@ -670,12 +670,13 @@ export function logoutUser() {
   localStorage.removeItem('ganado_active_modules');
   window.dispatchEvent(new CustomEvent('ganado_modules_changed', { detail: { ...DEFAULT_MODULES } }));
   window.dispatchEvent(new CustomEvent('ganado_sound_changed', { detail: { profile: 'chime', enabled: true, syncToCloud: false } }));
+  window.dispatchEvent(new CustomEvent('farm_prices_updated', { detail: {} }));
 }
 
 /**
  * Actualiza el perfil del usuario (nombre de propietario, nombre de finca, correo, sonido)
  */
-export async function updateUserProfile(userId, { name, farmName, email, soundProfile, soundEnabled }) {
+export async function updateUserProfile(userId, { name, farmName, email, soundProfile, soundEnabled, milkPrice, meatPricePerKg }) {
   const cleanName = (name || '').trim();
   const cleanFarm = (farmName || '').trim();
   const cleanEmail = (email || '').trim().toLowerCase();
@@ -717,6 +718,8 @@ export async function updateUserProfile(userId, { name, farmName, email, soundPr
     email: cleanEmail,
     ...(soundProfile ? { soundProfile } : {}),
     ...(soundEnabled !== undefined ? { soundEnabled: !!soundEnabled } : {}),
+    ...(milkPrice !== undefined && milkPrice !== null && !isNaN(Number(milkPrice)) ? { milkPrice: Number(milkPrice) } : {}),
+    ...(meatPricePerKg !== undefined && meatPricePerKg !== null && !isNaN(Number(meatPricePerKg)) ? { meatPricePerKg: Number(meatPricePerKg) } : {}),
     updatedAt: new Date().toISOString(),
   };
 

@@ -1,5 +1,5 @@
 {
-  "version": "2.16.8",
-  "buildTime": 1790493000000,
-  "description": "🟢 Estado 'Liquidado / Pagado' Automático en Días Liquidados & Control Anti-Duplicados en Período"
+  "version": "2.16.9",
+  "buildTime": 1790494000000,
+  "description": "🔒 Aislamiento 100% Estricto de Precios Comerciales por Cuenta de Ganadero (Leche $/L & Carne $/Kg)"
 }

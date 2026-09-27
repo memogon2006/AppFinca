@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.8";
+export const CURRENT_APP_VERSION = "2.16.9";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.9",
+    date: "26/09/2026",
+    title: "🔒 Aislamiento 100% Estricto de Precios Comerciales por Cuenta de Ganadero (Leche $/L & Carne $/Kg)",
+    highlights: [
+      "Aislamiento Total por Cuenta: Cada ganadero y usuario posee sus propios precios de venta independientes ($/L de leche y $/Kg de carne en pie). Los cambios realizados en una cuenta jamás afectan ni contaminan los precios de otra cuenta.",
+      "Eliminación de Claves Globales Residuales: Se eliminó cualquier fallback global no acotado en el almacenamiento local que pudiera compartir precios entre diferentes cuentas en el mismo navegador.",
+      "Sincronización Multicapa en Nube & Perfil: Los precios comerciales de cada ganadería quedan guardados en su perfil de usuario (Firebase Cloud & Dexie DB), cargándose de forma personalizada al iniciar sesión en cualquier dispositivo."
+    ]
+  },
   {
     version: "2.16.8",
     date: "26/09/2026",

@@ -126,18 +126,18 @@ export function DairyView({
     : getMilkPeriodRange(periodType, selectedYear, selectedMonth);
 
   // Precio de venta por litro personalizado por finca (independiente para cada predio)
-  const [milkPricePerLiter, setMilkPricePerLiter] = useState(() => getFarmMilkPrice(farmName));
+  const [milkPricePerLiter, setMilkPricePerLiter] = useState(() => getFarmMilkPrice(currentUser || farmName));
 
-  // Sincronizar si cambia de finca
+  // Sincronizar si cambia de finca o usuario
   React.useEffect(() => {
-    setMilkPricePerLiter(getFarmMilkPrice(farmName));
-  }, [farmName]);
+    setMilkPricePerLiter(getFarmMilkPrice(currentUser || farmName));
+  }, [currentUser, farmName]);
 
   const handleMilkPriceChange = (val) => {
     const num = val === '' ? '' : Number(val);
     setMilkPricePerLiter(num);
     if (num !== '' && !isNaN(num) && num > 0) {
-      setFarmMilkPrice(farmName, num);
+      setFarmMilkPrice(currentUser || farmName, num);
     }
   };
 
