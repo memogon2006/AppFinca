@@ -29,7 +29,7 @@ import {
   Info
 } from 'lucide-react';
 import { FemaleStatusBadge } from '../Common/Badge';
-import { BOVINE_GESTATION_DAYS, formatDate, parseDateOnly } from '../../services/calculations';
+import { BOVINE_GESTATION_DAYS, formatDate, parseDateOnly, getLocalDateString } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
 
 const DRAFT_PALPATION_KEY = 'bovina_quick_palpation_draft';
@@ -94,7 +94,7 @@ export function QuickPalpationView({
   }, [cattle]);
 
   // Fecha y veterinario de la jornada
-  const [sessionDate, setSessionDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [sessionDate, setSessionDate] = useState(() => getLocalDateString());
   const [vetName, setVetName] = useState(() => {
     return localStorage.getItem('bovina_last_vet_name') || 'Dr. Médico Veterinario';
   });

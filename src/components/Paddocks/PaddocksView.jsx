@@ -22,7 +22,7 @@ import {
   Info,
   Calendar
 } from 'lucide-react';
-import { formatDate } from '../../services/calculations';
+import { formatDate, getLocalDateString } from '../../services/calculations';
 import { PaddockFormModal } from './PaddockFormModal';
 import { RotateBatchModal } from './RotateBatchModal';
 import { ForageCalculatorModal } from './ForageCalculatorModal';
@@ -48,7 +48,7 @@ export function PaddocksView({
   const [isForageCalcOpen, setIsForageCalcOpen] = useState(false);
   const [calculatorPaddock, setCalculatorPaddock] = useState(null);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
 
   // Métricas zootécnicas de días de descanso / pastoreo
   const getPaddockMetrics = (p) => {

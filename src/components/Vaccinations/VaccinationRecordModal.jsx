@@ -23,7 +23,7 @@ import {
   Clock
 } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
-import { formatCurrency, formatDate } from '../../services/calculations';
+import { formatCurrency, formatDate, getLocalDateString } from '../../services/calculations';
 
 const VACCINE_OPTIONS = [
   {
@@ -107,7 +107,7 @@ export function VaccinationRecordModal({
 }) {
   if (!isOpen) return null;
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => getLocalDateString(new Date()), []);
 
   // Estado del Formulario: Multi-Selección de Vacunas (Array)
   const [selectedVaccineIds, setSelectedVaccineIds] = useState(['aftosa']);

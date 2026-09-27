@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { db, logActivity } from '../../services/db';
 import { triggerFeedback } from '../../services/soundService';
-import { formatNumber } from '../../services/calculations';
+import { formatNumber, getLocalDateString } from '../../services/calculations';
 
 const QUICK_NOTES = [
   { id: 'bichera', label: '🐛 Bichera / Gusanera', color: 'bg-rose-100 text-rose-800 border-rose-300' },
@@ -94,7 +94,7 @@ export function InventoryChecklistModal({
   const [infiltratedSearch, setInfiltratedSearch] = useState('');
 
   // Fecha y hora del arqueo
-  const [auditDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [auditDate] = useState(() => getLocalDateString());
   const [auditTime, setAuditTime] = useState('');
 
   const searchInputRef = useRef(null);

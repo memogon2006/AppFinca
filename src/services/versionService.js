@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.3";
+export const CURRENT_APP_VERSION = "2.16.4";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.4",
+    date: "26/09/2026",
+    title: "📅 Sincronización Exacta de Zona Horaria Local & Corrección de Fechas",
+    highlights: [
+      "Alineación Perfecta con la Hora Local de Colombia (UTC-5): Se corrigió el desfase de 1 día que ocurría en horas nocturnas (después de las 7:00 PM), asegurando que el día sábado se reconozca correctamente como sábado y 'HOY'.",
+      "Normalización en Módulos de Lechería, Potreros, Pesajes y Ganado: Todas las vistas y tablas de períodos respetan la fecha del calendario local sin desvíos a UTC.",
+      "Cálculos de Preñez y Fechas de Servicio Blindados: Sincronización precisa de los estimadores de partos y chequeos reproductivos."
+    ]
+  },
   {
     version: "2.16.3",
     date: "26/09/2026",

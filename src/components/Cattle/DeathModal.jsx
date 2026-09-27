@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../Common/Modal';
 import { Skull, AlertTriangle, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { getLocalDateString } from '../../services/calculations';
 
 const COMMON_DEATH_REASONS = [
   'Enfermedad general / Infección',
@@ -17,7 +18,7 @@ const COMMON_DEATH_REASONS = [
 
 export function DeathModal({ isOpen, onClose, animal, onConfirmDeath, zIndex = 'z-[60]' }) {
   const [formData, setFormData] = useState({
-    deathDate: new Date().toISOString().split('T')[0],
+    deathDate: getLocalDateString(),
     deathReason: 'Enfermedad general / Infección',
     deathNotes: '',
   });
@@ -27,7 +28,7 @@ export function DeathModal({ isOpen, onClose, animal, onConfirmDeath, zIndex = '
   useEffect(() => {
     if (animal) {
       setFormData({
-        deathDate: animal.deathDate || new Date().toISOString().split('T')[0],
+        deathDate: animal.deathDate || getLocalDateString(),
         deathReason: animal.deathReason || 'Enfermedad general / Infección',
         deathNotes: animal.deathNotes || '',
       });

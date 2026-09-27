@@ -22,7 +22,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight
 } from 'lucide-react';
-import { formatCurrency, formatNumber, formatDate, calculatePeriodMilkSummary, getMilkPeriodRange } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculatePeriodMilkSummary, getMilkPeriodRange, getLocalDateString } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
 
 export function MilkSettlementModal({
@@ -39,8 +39,8 @@ export function MilkSettlementModal({
   zIndex = 'z-50'
 }) {
   const [periodType, setPeriodType] = useState('quincenal');
-  const [startDate, setStartDate] = useState(() => currentPeriodRange?.startDate || new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(() => currentPeriodRange?.endDate || new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(() => currentPeriodRange?.startDate || getLocalDateString());
+  const [endDate, setEndDate] = useState(() => currentPeriodRange?.endDate || getLocalDateString());
   
   const [totalLiters, setTotalLiters] = useState('');
   const [pricePerLiter, setPricePerLiter] = useState(() => String(defaultPricePerLiter || 2100));
@@ -62,7 +62,7 @@ export function MilkSettlementModal({
 
   const [buyer, setBuyer] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('Pagada');
-  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [paymentDate, setPaymentDate] = useState(() => getLocalDateString());
   const [registerIncome, setRegisterIncome] = useState(true);
   const [notes, setNotes] = useState('');
 
@@ -81,8 +81,8 @@ export function MilkSettlementModal({
     if (isOpen && !prevOpenRef.current) {
       if (initialData) {
         setPeriodType(initialData.periodType || 'quincenal');
-        setStartDate(initialData.startDate || new Date().toISOString().split('T')[0]);
-        setEndDate(initialData.endDate || new Date().toISOString().split('T')[0]);
+        setStartDate(initialData.startDate || getLocalDateString());
+        setEndDate(initialData.endDate || getLocalDateString());
         setTotalLiters(initialData.totalLiters ? String(initialData.totalLiters) : '');
         setPricePerLiter(initialData.pricePerLiter ? String(initialData.pricePerLiter) : (defaultPricePerLiter ? String(defaultPricePerLiter) : '2100'));
         setBonuses(initialData.bonuses !== undefined ? String(initialData.bonuses) : '0');
@@ -109,12 +109,12 @@ export function MilkSettlementModal({
 
         setBuyer(initialData.buyer || '');
         setPaymentStatus(initialData.paymentStatus || 'Pagada');
-        setPaymentDate(initialData.paymentDate || new Date().toISOString().split('T')[0]);
+        setPaymentDate(initialData.paymentDate || getLocalDateString());
         setRegisterIncome(initialData.registerIncome !== false);
         setNotes(initialData.notes || '');
       } else {
-        const sDate = currentPeriodRange?.startDate || new Date().toISOString().split('T')[0];
-        const eDate = currentPeriodRange?.endDate || new Date().toISOString().split('T')[0];
+        const sDate = currentPeriodRange?.startDate || getLocalDateString();
+        const eDate = currentPeriodRange?.endDate || getLocalDateString();
         setPeriodType(currentPeriodRange?.periodType === 'full_month' ? 'mensual' : currentPeriodRange?.periodType === 'current_week' ? 'semanal' : 'quincenal');
         setStartDate(sDate);
         setEndDate(eDate);
@@ -134,7 +134,7 @@ export function MilkSettlementModal({
         setOtherDeductions('0');
         setBuyer('');
         setPaymentStatus('Pagada');
-        setPaymentDate(new Date().toISOString().split('T')[0]);
+        setPaymentDate(getLocalDateString());
         setRegisterIncome(true);
         setNotes('');
       }

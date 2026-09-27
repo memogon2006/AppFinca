@@ -16,7 +16,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { formatNumber, formatCurrency, formatDate } from '../../services/calculations';
+import { formatNumber, formatCurrency, formatDate, getLocalDateString } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
 
 export function DailyMilkLogModal({
@@ -30,7 +30,7 @@ export function DailyMilkLogModal({
   defaultPricePerLiter = 0,
   zIndex = 'z-50'
 }) {
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => getLocalDateString(new Date()));
   const [amLiters, setAmLiters] = useState('');
   const [pmLiters, setPmLiters] = useState('');
   const [totalLiters, setTotalLiters] = useState('');
@@ -83,7 +83,7 @@ export function DailyMilkLogModal({
 
   useEffect(() => {
     if (isOpen) {
-      const targetDate = initialData?.date || new Date().toISOString().split('T')[0];
+      const targetDate = initialData?.date || getLocalDateString(new Date());
       setDate(targetDate);
       loadDataForDate(targetDate, initialData);
     }

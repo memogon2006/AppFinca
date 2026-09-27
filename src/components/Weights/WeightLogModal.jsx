@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
 import { Scale, Flame } from 'lucide-react';
-import { formatNumber, formatDate, getDaysDifference, calculateWeightMetrics } from '../../services/calculations';
+import { formatNumber, formatDate, getDaysDifference, calculateWeightMetrics, getLocalDateString } from '../../services/calculations';
 import { triggerWeighingFeedback } from '../../services/soundService';
 
 export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight, zIndex = 'z-[60]' }) {
@@ -26,7 +26,7 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
   const lastRecordedWeight = metrics.currentWeight || parseFloat(animal?.entryWeight) || 0;
 
   const [weightData, setWeightData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(),
     weight: '',
     conditionScore: '3.5',
     notes: '',
@@ -34,7 +34,7 @@ export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSave
 
   useEffect(() => {
     setWeightData({
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
       weight: '',
       conditionScore: '3.5',
       notes: '',

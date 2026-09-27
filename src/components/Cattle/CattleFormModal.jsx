@@ -10,7 +10,7 @@ import {
   getDynamicFarmColors,
   getDynamicFarmIronBrands
 } from '../../types/cattle';
-import { BOVINE_GESTATION_DAYS, formatDate } from '../../services/calculations';
+import { BOVINE_GESTATION_DAYS, formatDate, getLocalDateString } from '../../services/calculations';
 import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Heart, Dna, Tag, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
@@ -58,7 +58,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     status: 'Activo',
     color: '',
     entryBatch: 'Ingreso #1',
-    entryDate: new Date().toISOString().split('T')[0],
+    entryDate: getLocalDateString(),
     entryType: 'Compra',
     entryWeight: '',
     entryPrice: '',
@@ -208,7 +208,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         status: 'Activo',
         color: '',
         entryBatch: 'Ingreso #1',
-        entryDate: new Date().toISOString().split('T')[0],
+        entryDate: getLocalDateString(),
         entryType: 'Compra',
         entryWeight: '',
         entryPrice: '',
@@ -283,7 +283,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       status: 'Activo',
       color: '',
       entryBatch: 'Ingreso #1',
-      entryDate: new Date().toISOString().split('T')[0],
+      entryDate: getLocalDateString(),
       entryType: 'Compra',
       entryWeight: '',
       entryPrice: '',
@@ -367,15 +367,15 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       setFormData(prev => ({
         ...prev,
         pregnancyDays: days,
-        serviceDate: sDate.toISOString().split('T')[0],
-        expectedCalvingDate: expDate.toISOString().split('T')[0]
+        serviceDate: getLocalDateString(sDate),
+        expectedCalvingDate: getLocalDateString(expDate)
       }));
     }
   };
 
   const handleServiceDateChange = (date) => {
     if (date) {
-      const sDate = new Date(date);
+      const sDate = new Date(date + 'T12:00:00');
       if (!isNaN(sDate.getTime())) {
         const expDate = new Date(sDate.getTime() + BOVINE_GESTATION_DAYS * 86400000);
         const diffDays = Math.max(0, Math.floor((new Date() - sDate) / 86400000));
@@ -384,7 +384,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
           ...prev,
           serviceDate: date,
           pregnancyDays: diffDays,
-          expectedCalvingDate: expDate.toISOString().split('T')[0]
+          expectedCalvingDate: getLocalDateString(expDate)
         }));
         return;
       }
@@ -398,7 +398,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
   const handleExpectedCalvingDateChange = (date) => {
     if (date) {
-      const expDate = new Date(date);
+      const expDate = new Date(date + 'T12:00:00');
       if (!isNaN(expDate.getTime())) {
         const sDate = new Date(expDate.getTime() - BOVINE_GESTATION_DAYS * 86400000);
         const remDays = Math.ceil((expDate - new Date()) / 86400000);
@@ -407,7 +407,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         setFormData(prev => ({
           ...prev,
           expectedCalvingDate: date,
-          serviceDate: sDate.toISOString().split('T')[0],
+          serviceDate: getLocalDateString(sDate),
           pregnancyDays: calcDays
         }));
         return;

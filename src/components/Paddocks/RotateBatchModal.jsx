@@ -11,7 +11,7 @@ import {
   Layers,
   Sparkles
 } from 'lucide-react';
-import { formatDate } from '../../services/calculations';
+import { formatDate, getLocalDateString } from '../../services/calculations';
 
 export function RotateBatchModal({
   isOpen,
@@ -24,7 +24,7 @@ export function RotateBatchModal({
   const [fromPaddockId, setFromPaddockId] = useState(initialFromPaddockId || '');
   const [toPaddockId, setToPaddockId] = useState('');
   const [batchName, setBatchName] = useState('');
-  const [rotationDate, setRotationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [rotationDate, setRotationDate] = useState(getLocalDateString());
   const [updateCattleLocation, setUpdateCattleLocation] = useState(true);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);

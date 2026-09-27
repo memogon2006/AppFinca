@@ -13,6 +13,7 @@ import {
   Boxes,
   Zap
 } from 'lucide-react';
+import { getLocalDateString } from '../../services/calculations';
 
 export function PaddockFormModal({
   isOpen,
@@ -32,7 +33,7 @@ export function PaddockFormModal({
     currentBatchName: '',
     targetRestDays: 30,
     targetGrazingDays: 3,
-    lastRestStartDate: new Date().toISOString().split('T')[0],
+    lastRestStartDate: getLocalDateString(),
     entryDate: '',
     shadeQuality: 'Buena',
     fencingType: 'Eléctrica',
@@ -64,7 +65,7 @@ export function PaddockFormModal({
         currentBatchName: editingPaddock.currentBatchName || '',
         targetRestDays: editingPaddock.targetRestDays !== undefined ? editingPaddock.targetRestDays : 30,
         targetGrazingDays: editingPaddock.targetGrazingDays !== undefined ? editingPaddock.targetGrazingDays : 3,
-        lastRestStartDate: editingPaddock.lastRestStartDate || new Date().toISOString().split('T')[0],
+        lastRestStartDate: editingPaddock.lastRestStartDate || getLocalDateString(),
         entryDate: editingPaddock.entryDate || '',
         shadeQuality: editingPaddock.shadeQuality || 'Buena',
         fencingType: editingPaddock.fencingType || 'Eléctrica',
@@ -82,7 +83,7 @@ export function PaddockFormModal({
         currentBatchName: '',
         targetRestDays: 30,
         targetGrazingDays: 3,
-        lastRestStartDate: new Date().toISOString().split('T')[0],
+        lastRestStartDate: getLocalDateString(),
         entryDate: '',
         shadeQuality: 'Buena',
         fencingType: 'Eléctrica',
@@ -96,11 +97,11 @@ export function PaddockFormModal({
       const next = { ...prev, [field]: value };
       // Si cambia a ocupado y no tiene fecha de entrada, asignar hoy
       if (field === 'status' && value === 'ocupado' && !next.entryDate) {
-        next.entryDate = new Date().toISOString().split('T')[0];
+        next.entryDate = getLocalDateString();
       }
       // Si cambia a descanso y no tiene fecha de descanso, asignar hoy
       if (field === 'status' && value === 'descanso' && !next.lastRestStartDate) {
-        next.lastRestStartDate = new Date().toISOString().split('T')[0];
+        next.lastRestStartDate = getLocalDateString();
       }
       return next;
     });

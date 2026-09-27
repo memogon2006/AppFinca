@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Milk, X, Sparkles, CheckCircle2, ChevronRight, ChevronLeft, Search, Plus, Minus, ArrowUpRight, ArrowDownRight, AlertCircle } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
+import { getLocalDateString } from '../../services/calculations';
 
 export function QuickMilkingModal({
   isOpen,
@@ -8,7 +9,7 @@ export function QuickMilkingModal({
   cattle = [],
   milkRecords = [],
   onSaveBatch,
-  defaultDate = new Date().toISOString().split('T')[0]
+  defaultDate = getLocalDateString()
 }) {
   if (!isOpen) return null;
 

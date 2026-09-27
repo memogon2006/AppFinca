@@ -12,7 +12,7 @@ import {
   HelpCircle,
   Sparkles
 } from 'lucide-react';
-import { formatCurrency } from '../../services/calculations';
+import { formatCurrency, getLocalDateString } from '../../services/calculations';
 import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
 export const EXPENSE_CATEGORIES = [
@@ -35,7 +35,7 @@ export function ExpenseModal({
   zIndex = "z-[60]" 
 }) {
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: getLocalDateString(),
     type: 'Variable',
     category: 'alimentacion',
     concept: '',
@@ -54,7 +54,7 @@ export function ExpenseModal({
     if (expense) {
       setFormData({
         id: expense.id,
-        date: expense.date || new Date().toISOString().slice(0, 10),
+        date: expense.date || getLocalDateString(),
         type: expense.type || 'Variable',
         category: expense.category || 'alimentacion',
         concept: expense.concept || '',
@@ -67,7 +67,7 @@ export function ExpenseModal({
       setIsDraftRestored(false);
     } else {
       const defaultState = {
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalDateString(),
         type: 'Variable',
         category: 'alimentacion',
         concept: '',

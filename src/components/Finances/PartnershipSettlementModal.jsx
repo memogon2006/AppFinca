@@ -21,7 +21,7 @@ import {
   SplitSquareVertical,
   HelpCircle
 } from 'lucide-react';
-import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, getLocalDateString } from '../../services/calculations';
 import confetti from 'canvas-confetti';
 
 export function PartnershipSettlementModal({ 
@@ -54,7 +54,7 @@ export function PartnershipSettlementModal({
   const [globalMode, setGlobalMode] = useState('mixed');
 
   // Parámetros comerciales de la venta / liquidación
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saleDate, setSaleDate] = useState(getLocalDateString());
   const [buyerName, setBuyerName] = useState('');
   const [pricePerKg, setPricePerKg] = useState('9200');
   const [farmPercent, setFarmPercent] = useState(50); // % para la Finca en los que son en compañía

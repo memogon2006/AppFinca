@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Sparkles
 } from 'lucide-react';
-import { formatCurrency } from '../../services/calculations';
+import { formatCurrency, getLocalDateString } from '../../services/calculations';
 import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
 export const INCOME_CATEGORIES = [
@@ -28,7 +28,7 @@ export function IncomeModal({
   zIndex = "z-[60]" 
 }) {
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: getLocalDateString(),
     category: 'leche',
     concept: '',
     amount: '',
@@ -44,7 +44,7 @@ export function IncomeModal({
     if (income) {
       setFormData({
         id: income.id,
-        date: income.date || new Date().toISOString().slice(0, 10),
+        date: income.date || getLocalDateString(),
         category: income.category || 'leche',
         concept: income.concept || '',
         amount: income.amount !== undefined ? String(income.amount) : '',
@@ -54,7 +54,7 @@ export function IncomeModal({
       setIsDraftRestored(false);
     } else {
       const defaultState = {
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalDateString(),
         category: 'leche',
         concept: '',
         amount: '',

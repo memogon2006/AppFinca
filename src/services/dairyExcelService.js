@@ -1,5 +1,5 @@
 import XLSX from 'xlsx-js-style';
-import { formatDate, formatCurrency, formatNumber, calculateDaysInMilk, calculateLactationCurve, calculateHerdMilkMetrics, calculatePeriodMilkSummary } from './calculations';
+import { formatDate, formatCurrency, formatNumber, calculateDaysInMilk, calculateLactationCurve, calculateHerdMilkMetrics, calculatePeriodMilkSummary, getLocalDateString } from './calculations';
 
 /**
  * Estilos estándar contables y de encabezado verde esmeralda
@@ -77,7 +77,7 @@ export function exportDairyReportToExcel({
   periodSummary = null,
   periodRange = null,
   farmName = 'Finca Ganadera',
-  selectedDate = new Date().toISOString().split('T')[0]
+  selectedDate = getLocalDateString()
 }) {
   const wb = XLSX.utils.book_new();
 

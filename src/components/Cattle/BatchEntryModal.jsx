@@ -8,7 +8,7 @@ import {
   getDynamicFarmColors,
   getDynamicFarmIronBrands
 } from '../../types/cattle';
-import { formatCurrency, formatNumber } from '../../services/calculations';
+import { formatCurrency, formatNumber, getLocalDateString } from '../../services/calculations';
 import { 
   PackagePlus, 
   Plus, 
@@ -65,7 +65,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const [batchInfo, setBatchInfo] = useState({
     entryType: 'Compra', // 'Compra' | 'Nacimiento' | 'Compañía' | 'Traslado'
     entryBatch: 'Ingreso #1',
-    entryDate: new Date().toISOString().split('T')[0],
+    entryDate: getLocalDateString(),
     owner: 'Hacienda Principal',
     ironBrand: '',
     sex: '',
@@ -179,7 +179,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     setBatchInfo({
       entryType: 'Compra',
       entryBatch: 'Ingreso #1',
-      entryDate: new Date().toISOString().split('T')[0],
+      entryDate: getLocalDateString(),
       owner: 'Hacienda Principal',
       ironBrand: '',
       sex: '',
@@ -422,7 +422,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         status: 'Activo',
         entryBatch: batchInfo.entryBatch?.trim() || '',
         paddock: batchInfo.entryBatch?.trim() || '',
-        entryDate: batchInfo.entryDate || new Date().toISOString().split('T')[0],
+        entryDate: batchInfo.entryDate || getLocalDateString(),
         entryType: batchInfo.entryType || 'Compra',
         origin: isBorn ? 'Nacido en finca' : 'Comprado / Externo',
         motherId: enableBatchGenealogy ? (r.motherId || '') : '',

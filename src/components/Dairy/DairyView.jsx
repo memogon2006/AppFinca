@@ -41,7 +41,9 @@ import {
   calculatePeriodMilkSummary,
   formatNumber, 
   formatCurrency, 
-  formatDate 
+  formatDate,
+  getLocalDateString,
+  parseDateOnly
 } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
 
@@ -74,18 +76,18 @@ export function DairyView({
   });
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth()); // 0-11
-  const [customStart, setCustomStart] = useState(() => new Date().toISOString().split('T')[0]);
-  const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().split('T')[0]);
+  const [customStart, setCustomStart] = useState(() => getLocalDateString());
+  const [customEnd, setCustomEnd] = useState(() => getLocalDateString());
 
   // Registrador Rápido de Día Integrado (con auto-carga según fecha)
-  const [quickDate, setQuickDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [quickDate, setQuickDate] = useState(() => getLocalDateString());
   const [quickAm, setQuickAm] = useState('');
   const [quickPm, setQuickPm] = useState('');
   const [quickTotal, setQuickTotal] = useState('');
   const [quickCows, setQuickCows] = useState('');
 
   // Planilla individual
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => getLocalDateString());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('all');
 
@@ -224,12 +226,14 @@ export function DairyView({
     const days = [];
     if (!periodRange.startDate || !periodRange.endDate) return days;
 
-    const start = new Date(periodRange.startDate + 'T00:00:00');
-    const end = new Date(periodRange.endDate + 'T00:00:00');
+    const start = parseDateOnly(periodRange.startDate);
+    const end = parseDateOnly(periodRange.endDate);
+    if (!start || !end) return days;
+
     const logsMap = new Map(dailyMilkLogs.map(l => [l.date, l]));
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(d);
       const log = logsMap.get(dateStr);
       
       const indRecords = milkRecords.filter(r => r.date === dateStr);
@@ -574,7 +578,7 @@ export function DairyView({
                   onClick={() => {
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
-                    syncQuickDayForm(yesterday.toISOString().split('T')[0]);
+                    syncQuickDayForm(getLocalDateString(yesterday));
                   }}
                   className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer"
                 >
@@ -582,7 +586,7 @@ export function DairyView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => syncQuickDayForm(new Date().toISOString().split('T')[0])}
+                  onClick={() => syncQuickDayForm(getLocalDateString(new Date()))}
                   className="px-2.5 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-400 font-bold text-xs transition cursor-pointer"
                 >
                   Hoy
@@ -896,7 +900,7 @@ export function DairyView({
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {periodDays.map((day) => {
-                    const isToday = day.date === new Date().toISOString().split('T')[0];
+                    const isToday = day.date === getLocalDateString(new Date());
                     const isSelectedInQuick = day.date === quickDate;
 
                     return (

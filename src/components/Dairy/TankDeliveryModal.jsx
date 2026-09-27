@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Milk, X, CheckCircle2, DollarSign, Truck, AlertTriangle, Sparkles, Building2 } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
-import { formatCurrency } from '../../services/calculations';
+import { formatCurrency, getLocalDateString } from '../../services/calculations';
 
 export function TankDeliveryModal({
   isOpen,
@@ -10,7 +10,7 @@ export function TankDeliveryModal({
   editingDelivery = null,
   suggestedLiters = 0,
   defaultPricePerLiter = 2100,
-  defaultDate = new Date().toISOString().split('T')[0]
+  defaultDate = getLocalDateString()
 }) {
   if (!isOpen) return null;
 

@@ -20,7 +20,7 @@ import {
   Percent,
   BadgeCheck
 } from 'lucide-react';
-import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateFinancials, getLocalDateString } from '../../services/calculations';
 import * as XLSX from 'xlsx-js-style';
 
 export function OwnerFinancialDetailModal({
@@ -223,7 +223,7 @@ export function OwnerFinancialDetailModal({
 
     // Descargar archivo
     const safeName = ownerName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    XLSX.writeFile(wb, `Balance_Financiero_${safeName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `Balance_Financiero_${safeName}_${getLocalDateString()}.xlsx`);
   };
 
   // Compartir por WhatsApp

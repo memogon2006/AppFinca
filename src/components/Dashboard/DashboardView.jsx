@@ -35,7 +35,7 @@ import { FarmCalendarWidget } from '../Calendar/FarmCalendarWidget';
 import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
-import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, getSafeDateString } from '../../services/calculations';
+import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, getSafeDateString, getLocalDateString } from '../../services/calculations';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
 
@@ -95,7 +95,7 @@ export function DashboardView({
   }, [farmIncomes, milkSettlements]);
 
   // Métricas de lechería en el día de hoy
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString(new Date());
   const todayMilkRecords = milkRecords.filter(m => m.date === todayStr);
   const todayMilkLiters = todayMilkRecords.reduce((sum, r) => sum + (parseFloat(r.totalLiters) || (parseFloat(r.amLiters) || 0) + (parseFloat(r.pmLiters) || 0)), 0);
 
@@ -138,7 +138,7 @@ export function DashboardView({
   const realNetProfit = totalRealizedProfit + totalOtherIncomes - totalFarmExpenses;
 
   // Gastos e Ingresos del Mes Actual
-  const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+  const currentMonthPrefix = getLocalDateString(new Date()).slice(0, 7);
   const currentMonthExpenses = farmExpenses
     .filter(e => getSafeDateString(e.date, e.createdAt).startsWith(currentMonthPrefix))
     .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);

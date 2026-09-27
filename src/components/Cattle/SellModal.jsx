@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from '../Common/Modal';
-import { formatCurrency, formatNumber } from '../../services/calculations';
+import { formatCurrency, formatNumber, getLocalDateString } from '../../services/calculations';
 import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -11,7 +11,7 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
   const additionalCosts = parseFloat(animal?.additionalCosts) || 0;
 
   const [saleData, setSaleData] = useState({
-    exitDate: new Date().toISOString().split('T')[0],
+    exitDate: getLocalDateString(),
     exitWeight: currentWeight.toString(),
     exitPrice: '',
     buyer: '',

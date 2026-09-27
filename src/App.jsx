@@ -51,7 +51,7 @@ import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCen
 import { InventoryChecklistModal } from './components/Checklist/InventoryChecklistModal';
 import { ForcePasswordChangeModal } from './components/Auth/ForcePasswordChangeModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
-import { calculateWeightMetrics, formatCurrency, formatNumber } from './services/calculations';
+import { calculateWeightMetrics, formatCurrency, formatNumber, getLocalDateString } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
@@ -548,7 +548,7 @@ export default function App() {
             if (!existingInc) {
               const incomeRecord = {
                 id: incId,
-                date: st.paymentDate || st.endDate || new Date().toISOString().split('T')[0],
+                date: st.paymentDate || st.endDate || getLocalDateString(),
                 concept: `Venta de Leche - Liquidación ${st.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(st.totalLiters, 1)} L @ ${formatCurrency(st.pricePerLiter)}) - ${st.buyer || 'Planta'}`,
                 category: 'leche',
                 amount: st.totalValue,
@@ -675,7 +675,7 @@ export default function App() {
           id: weighId,
           cattleId: String(newId),
           userId,
-          date: created.entryDate || new Date().toISOString().split('T')[0],
+          date: created.entryDate || getLocalDateString(),
           weight: parseFloat(created.entryWeight),
           conditionScore: 3.5,
           notes: 'Peso inicial de registro',
@@ -738,7 +738,7 @@ export default function App() {
           id: weighId,
           cattleId: String(newId),
           userId,
-          date: created.entryDate || new Date().toISOString().split('T')[0],
+          date: created.entryDate || getLocalDateString(),
           weight: parseFloat(created.entryWeight),
           conditionScore: 3.5,
           notes: 'Peso inicial de registro por lote',
@@ -977,7 +977,7 @@ export default function App() {
 
     const deathUpdates = {
       status: 'Muerto',
-      deathDate: deathDate || new Date().toISOString().split('T')[0],
+      deathDate: deathDate || getLocalDateString(),
       deathReason: deathReason || 'Enfermedad',
       deathNotes: deathNotes || '',
     };
@@ -1108,7 +1108,7 @@ export default function App() {
     // Registrar acción en bitácora de auditoría
     await logActivity({
       action: 'weighing_batch',
-      description: `Registró pesajes masivos en báscula para ${batch.length} bovinos (Fecha: ${batch[0]?.date || new Date().toISOString().split('T')[0]})`,
+      description: `Registró pesajes masivos en báscula para ${batch.length} bovinos (Fecha: ${batch[0]?.date || getLocalDateString()})`,
       tagNumber: `${batch.length} bovinos`,
       operatorName: currentUser?.name || currentUser?.username || 'Administrador',
       operatorRole: currentUser?.role || 'admin',
@@ -1810,7 +1810,7 @@ export default function App() {
       if (saved.registerIncome !== false && saved.totalValue > 0) {
         const incomeRecord = {
           id: incomeId,
-          date: saved.paymentDate || saved.endDate || new Date().toISOString().split('T')[0],
+          date: saved.paymentDate || saved.endDate || getLocalDateString(),
           concept: `Venta de Leche - Liquidación ${saved.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(saved.totalLiters, 1)} L @ ${formatCurrency(saved.pricePerLiter)}) - ${saved.buyer || 'Planta'}`,
           category: 'leche',
           amount: saved.totalValue,
@@ -1947,7 +1947,7 @@ export default function App() {
 
   const handleRotateBatch = async ({ fromPaddockId, toPaddockId, batchName, date, updateCattleLocation, notes }) => {
     if (!userId || !db.paddocks) return;
-    const todayStr = date || new Date().toISOString().split('T')[0];
+    const todayStr = date || getLocalDateString();
     const changedPaddockIds = [];
 
     // 1. Potrero origen pasa a descanso

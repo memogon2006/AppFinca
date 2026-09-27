@@ -59,55 +59,67 @@ export function formatDate(dateInput) {
 }
 
 /**
+ * Retorna la fecha local en formato YYYY-MM-DD sin desfasajes de zona horaria UTC
+ */
+export function getLocalDateString(dateInput = new Date()) {
+  const d = dateInput instanceof Date ? dateInput : (dateInput ? new Date(dateInput) : new Date());
+  if (isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
  * Obtiene de forma 100% segura un string en formato YYYY-MM-DD o prefijo de fecha,
- * soportando cadenas ISO, timestamps numéricos, objetos Date o fallbacks sin lanzar TypeErrors.
+ * respetando la zona horaria local colombiana/latina sin desfasajes por UTC.
  */
 export function getSafeDateString(dateVal, fallbackVal = '') {
   if (dateVal !== undefined && dateVal !== null && dateVal !== '') {
     if (typeof dateVal === 'string') {
       const trimmed = dateVal.trim();
-      if (trimmed) return trimmed.slice(0, 10);
+      if (trimmed) {
+        if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+        const parsed = parseDateOnly(trimmed);
+        if (parsed) return getLocalDateString(parsed);
+        return trimmed.slice(0, 10);
+      }
     }
     if (typeof dateVal === 'number' && !isNaN(dateVal)) {
-      try {
-        const d = new Date(dateVal);
-        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-      } catch (e) {}
+      return getLocalDateString(new Date(dateVal));
     }
     if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
-      try {
-        return dateVal.toISOString().slice(0, 10);
-      } catch (e) {}
+      return getLocalDateString(dateVal);
     }
   }
   if (fallbackVal !== undefined && fallbackVal !== null && fallbackVal !== '') {
     if (typeof fallbackVal === 'string') {
       const trimmed = fallbackVal.trim();
-      if (trimmed) return trimmed.slice(0, 10);
+      if (trimmed) {
+        if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+        const parsed = parseDateOnly(trimmed);
+        if (parsed) return getLocalDateString(parsed);
+        return trimmed.slice(0, 10);
+      }
     }
     if (typeof fallbackVal === 'number' && !isNaN(fallbackVal)) {
-      try {
-        const d = new Date(fallbackVal);
-        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-      } catch (e) {}
+      return getLocalDateString(new Date(fallbackVal));
     }
     if (fallbackVal instanceof Date && !isNaN(fallbackVal.getTime())) {
-      try {
-        return fallbackVal.toISOString().slice(0, 10);
-      } catch (e) {}
+      return getLocalDateString(fallbackVal);
     }
   }
   return '';
 }
 
 /**
- * Parsea una fecha a objeto Date puro a medianoche local sin sesgo de zona horaria UTC
+ * Parsea una fecha a objeto Date puro al mediodía local (12:00:00) para evitar desfasajes UTC y DST
  */
 export function parseDateOnly(dateInput) {
   if (!dateInput) return null;
   if (dateInput instanceof Date) {
     if (isNaN(dateInput.getTime())) return null;
-    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate(), 12, 0, 0);
   }
   if (typeof dateInput === 'string') {
     const trimmed = dateInput.trim();
@@ -115,19 +127,19 @@ export function parseDateOnly(dateInput) {
     // Formato YYYY-MM-DD o ISO
     if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
       const [y, m, d] = trimmed.split('T')[0].split('-').map(Number);
-      return new Date(y, m - 1, d);
+      return new Date(y, m - 1, d, 12, 0, 0);
     }
     // Formato DD/MM/YYYY
     if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(trimmed)) {
       const parts = trimmed.split('/').map(Number);
       if (parts.length === 3) {
         const [d, m, y] = parts;
-        return new Date(y, m - 1, d);
+        return new Date(y, m - 1, d, 12, 0, 0);
       }
     }
   }
   const d = new Date(dateInput);
-  return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
 }
 
 /**
@@ -147,7 +159,7 @@ export function getDaysDifference(date1, date2 = new Date()) {
  */
 export function calculateContinuousWeighings(animal, weighings = []) {
   const entryWeight = parseFloat(animal.entryWeight) || 0;
-  const entryDate = animal.entryDate || new Date().toISOString().split('T')[0];
+  const entryDate = animal.entryDate || getLocalDateString();
 
   // Ordenar pesajes cronológicamente
   const sorted = [...weighings].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -205,7 +217,7 @@ export function calculateContinuousWeighings(animal, weighings = []) {
     });
 
     if (animal.status === 'Vendido' && animal.exitWeight) {
-      const exitDate = animal.exitDate || new Date().toISOString().split('T')[0];
+      const exitDate = animal.exitDate || getLocalDateString();
       if (!logs.some(l => l.date === exitDate)) {
         const daysFromEntry = getDaysDifference(entryDate, exitDate);
         const totalGain = parseFloat(animal.exitWeight) - entryWeight;
@@ -289,7 +301,7 @@ export function calculateContinuousWeighings(animal, weighings = []) {
  */
 export function calculateWeightMetrics(animal, weighings = []) {
   const entryWeight = parseFloat(animal.entryWeight) || 0;
-  const entryDate = animal.entryDate || new Date().toISOString().split('T')[0];
+  const entryDate = animal.entryDate || getLocalDateString();
 
   // Filtrar pesajes que no sean posteriores a la fecha de entrada o sean iniciales duplicados
   const validWeighings = weighings.filter(w => {
@@ -748,7 +760,7 @@ export function calculateLactationCurve(cow, milkRecords = []) {
  * Calcula las métricas globales del hato lechero en una fecha o acumulado del mes
  */
 export function calculateHerdMilkMetrics(cattle = [], milkRecords = [], milkDeliveries = [], targetDate = null) {
-  const todayStr = targetDate || new Date().toISOString().split('T')[0];
+  const todayStr = targetDate || getLocalDateString();
 
   const females = cattle.filter(c => c.sex === 'Hembra' && c.status === 'Activo');
   

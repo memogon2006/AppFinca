@@ -7,6 +7,7 @@ import {
   DEMO_WEIGHING_IDS,
   DEMO_EXPENSE_IDS 
 } from './sampleData';
+import { getLocalDateString } from './calculations';
 
 export { isDemoAnimal };
 
@@ -420,9 +421,9 @@ export async function deletePaddock(id) {
   }
 }
 
-export async function rotatePaddockBatch({ fromPaddockId, toPaddockId, batchName, date = new Date().toISOString().split('T')[0], userId }) {
+export async function rotatePaddockBatch({ fromPaddockId, toPaddockId, batchName, date = getLocalDateString(), userId }) {
   try {
-    const todayStr = date || new Date().toISOString().split('T')[0];
+    const todayStr = date || getLocalDateString();
     if (fromPaddockId && fromPaddockId !== 'none') {
       const fromP = await db.paddocks.get(Number(fromPaddockId) || fromPaddockId);
       if (fromP) {
@@ -902,7 +903,7 @@ export async function saveMilkRecord(record) {
       amLiters: am,
       pmLiters: pm,
       totalLiters: total,
-      date: record.date || new Date().toISOString().split('T')[0],
+      date: record.date || getLocalDateString(),
       createdAt: record.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -931,7 +932,7 @@ export async function saveBatchMilkRecords(records = [], userId = 'default') {
         amLiters: am,
         pmLiters: pm,
         totalLiters: total,
-        date: r.date || new Date().toISOString().split('T')[0],
+        date: r.date || getLocalDateString(),
         createdAt: r.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -990,7 +991,7 @@ export async function saveMilkDelivery(delivery) {
       totalLiters: liters,
       pricePerLiter: price,
       totalValue: total,
-      date: delivery.date || new Date().toISOString().split('T')[0],
+      date: delivery.date || getLocalDateString(),
       createdAt: delivery.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -1053,7 +1054,7 @@ export async function saveDailyMilkLog(logData) {
     const item = {
       ...logData,
       id: logData.id || ('dml_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
-      date: logData.date || new Date().toISOString().split('T')[0],
+      date: logData.date || getLocalDateString(),
       amLiters: am,
       pmLiters: pm,
       totalLiters: total,
@@ -1133,10 +1134,10 @@ export async function saveMilkSettlement(settlementData) {
       deductions: deductions,
       totalValue: total,
       periodType: settlementData.periodType || 'quincenal',
-      startDate: settlementData.startDate || new Date().toISOString().split('T')[0],
-      endDate: settlementData.endDate || new Date().toISOString().split('T')[0],
+      startDate: settlementData.startDate || getLocalDateString(),
+      endDate: settlementData.endDate || getLocalDateString(),
       paymentStatus: settlementData.paymentStatus || 'Pagada',
-      paymentDate: settlementData.paymentDate || new Date().toISOString().split('T')[0],
+      paymentDate: settlementData.paymentDate || getLocalDateString(),
       registerIncome: settlementData.registerIncome !== false,
       incomeId: settlementData.incomeId || ('inc_milk_' + settlementId),
       notes: settlementData.notes || '',
