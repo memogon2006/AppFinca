@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.17.0";
+export const CURRENT_APP_VERSION = "2.17.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.17.1",
+    date: "26/09/2026",
+    title: "🤝 Transparencia Total & Liquidación Exacta de Ganado en Compañía (Capital Inicial + 50% Utilidad al Dueño)",
+    highlights: [
+      "Modelo Matemático de Compañía Blindado: El capital inicial invertido por el dueño del animal se le reintegra al 100% junto con su porcentaje correspondiente de la ganancia por aumento de peso (50/50).",
+      "Liquidación de la Finca: La finca recibe exclusivamente su 50% de ganancia por pastoreo y aumento de kilos, sin confundir el capital del inversionista con la utilidad del predio.",
+      "Consolidación Contable y P&L Fiel: El Estado de Resultados separa con exactitud los ingresos de ventas directas de las ventas en compañía, reflejando únicamente la utilidad neta real generada para la finca."
+    ]
+  },
   {
     version: "2.17.0",
     date: "26/09/2026",

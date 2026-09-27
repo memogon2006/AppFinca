@@ -256,11 +256,25 @@ export function AccountingView({
       const exitPrice = parseFloat(c.exitPrice) || 0;
       const purchasePrice = parseFloat(c.entryPrice || c.purchasePrice) || 0;
       const exitWeight = parseFloat(c.exitWeight) || 0;
-      
-      grossRevenue += exitPrice;
-      purchaseCapitalRecovered += purchasePrice;
-      grossProfit += (exitPrice - purchasePrice);
-      kilosSold += exitWeight;
+      const isPart = c.exitType === 'En Compañía' || !!c.partnershipDetails;
+      const part = c.partnershipDetails;
+
+      if (isPart && part) {
+        const farmShare = parseFloat(part.farmShare) !== undefined && !isNaN(parseFloat(part.farmShare))
+          ? parseFloat(part.farmShare)
+          : (part.farmPercent ? (exitPrice - purchasePrice) * (part.farmPercent / 100) : (exitPrice - purchasePrice) * 0.5);
+        
+        grossRevenue += exitPrice;
+        const partnerReturn = parseFloat(part.partnerTotalReturn) || (purchasePrice + (exitPrice - purchasePrice - farmShare));
+        purchaseCapitalRecovered += partnerReturn;
+        grossProfit += farmShare;
+        kilosSold += exitWeight;
+      } else {
+        grossRevenue += exitPrice;
+        purchaseCapitalRecovered += purchasePrice;
+        grossProfit += (exitPrice - purchasePrice);
+        kilosSold += exitWeight;
+      }
     });
 
     return {

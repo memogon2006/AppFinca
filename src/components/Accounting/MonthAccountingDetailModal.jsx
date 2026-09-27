@@ -150,6 +150,11 @@ export function MonthAccountingDetailModal({
 
   const totalMonthCattleProfit = useMemo(() => {
     return monthSoldCattle.reduce((sum, c) => {
+      const isPart = c.exitType === 'En Compañía' || !!c.partnershipDetails;
+      if (isPart && c.partnershipDetails) {
+        const farmShare = parseFloat(c.partnershipDetails.farmShare);
+        return sum + (!isNaN(farmShare) ? farmShare : (calculateFinancials(c).netProfit * 0.5));
+      }
       const fin = calculateFinancials(c);
       return sum + fin.netProfit;
     }, 0);
