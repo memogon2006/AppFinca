@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Users, 
   Scale, 
@@ -35,7 +35,7 @@ import { FarmCalendarWidget } from '../Calendar/FarmCalendarWidget';
 import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
-import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials } from '../../services/calculations';
+import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, getSafeDateString } from '../../services/calculations';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
 
@@ -83,7 +83,7 @@ export function DashboardView({
       if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id)) {
         list.push({
           id: 'inc_milk_' + st.id,
-          date: st.paymentDate || st.endDate || st.createdAt?.slice(0, 10) || '',
+          date: st.paymentDate || st.endDate || getSafeDateString(st.date, st.createdAt),
           amount: parseFloat(st.totalValue) || 0,
           category: 'leche',
           isMilkSettlement: true
@@ -140,10 +140,10 @@ export function DashboardView({
   // Gastos e Ingresos del Mes Actual
   const currentMonthPrefix = new Date().toISOString().slice(0, 7);
   const currentMonthExpenses = farmExpenses
-    .filter(e => (e.date || '').startsWith(currentMonthPrefix))
+    .filter(e => getSafeDateString(e.date, e.createdAt).startsWith(currentMonthPrefix))
     .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const currentMonthIncomes = effectiveIncomes
-    .filter(i => (i.date || i.createdAt?.slice(0, 10) || '').startsWith(currentMonthPrefix))
+    .filter(i => getSafeDateString(i.date, i.createdAt).startsWith(currentMonthPrefix))
     .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
   const currentMonthCattleProfit = soldCattle
     .filter(c => (c.exitDate || c.updatedAt || '').startsWith(currentMonthPrefix))

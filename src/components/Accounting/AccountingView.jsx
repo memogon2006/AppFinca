@@ -44,7 +44,7 @@ import {
   CartesianGrid 
 } from 'recharts';
 import * as XLSX from 'xlsx-js-style';
-import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateFinancials, getSafeDateString } from '../../services/calculations';
 import { useAuth } from '../../context/AuthContext';
 import { EXPENSE_CATEGORIES } from './ExpenseModal';
 import { INCOME_CATEGORIES } from './IncomeModal';
@@ -94,7 +94,7 @@ export function AccountingView({
       if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id)) {
         list.push({
           id: 'inc_milk_' + st.id,
-          date: st.paymentDate || st.endDate || st.createdAt?.slice(0, 10) || '',
+          date: st.paymentDate || st.endDate || getSafeDateString(st.date, st.createdAt),
           concept: `Venta de Leche - Liquidación ${st.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(st.totalLiters, 1)} L @ ${formatCurrency(st.pricePerLiter)}) - ${st.buyer || 'Planta'}`,
           category: 'leche',
           amount: parseFloat(st.totalValue) || 0,
@@ -186,7 +186,7 @@ export function AccountingView({
   // 1. Filtrar Gastos de la Finca en el período
   const periodExpenses = useMemo(() => {
     return farmExpenses.filter(exp => {
-      const d = exp.date || exp.createdAt?.slice(0, 10) || '';
+      const d = getSafeDateString(exp.date, exp.createdAt);
       return d >= dateRange.start && d <= dateRange.end;
     });
   }, [farmExpenses, dateRange]);
@@ -194,7 +194,7 @@ export function AccountingView({
   // 2. Filtrar Ingresos Adicionales en el período
   const periodIncomes = useMemo(() => {
     return effectiveIncomes.filter(inc => {
-      const d = inc.date || inc.createdAt?.slice(0, 10) || '';
+      const d = getSafeDateString(inc.date, inc.createdAt);
       return d >= dateRange.start && d <= dateRange.end;
     });
   }, [effectiveIncomes, dateRange]);
@@ -401,7 +401,7 @@ export function AccountingView({
 
       // Otros ingresos del mes (incluyendo liquidaciones de leche)
       const monthOtherInc = effectiveIncomes
-        .filter(inc => (inc.date || inc.createdAt?.slice(0, 10) || '').startsWith(monthPrefix))
+        .filter(inc => getSafeDateString(inc.date, inc.createdAt).startsWith(monthPrefix))
         .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
 
       const monthIncome = monthCattleProfit + monthOtherInc;

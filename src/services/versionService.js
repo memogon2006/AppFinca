@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.16.1";
+export const CURRENT_APP_VERSION = "2.16.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.16.2",
+    date: "26/09/2026",
+    title: "⚡ Blindaje de Carga Inicial, Corrección de useMemo & Normalización de Fechas",
+    highlights: [
+      "Restauración Inmediata de Arranque: Corregida referencia de hook en DashboardView que impedía abrir la aplicación tras la última actualización.",
+      "Protección Total contra Formatos de Fechas (getSafeDateString): Manejo blindado para registros de gastos, ingresos y liquidaciones con fechas en formato texto, número o timestamp.",
+      "Auto-Recuperación y Limpieza de Caché: Pantalla de restauración con opción de limpieza de caché para garantizar apertura fluida y continua en cualquier navegador."
+    ]
+  },
   {
     version: "2.16.1",
     date: "26/09/2026",

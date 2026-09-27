@@ -33,7 +33,7 @@ import {
   Legend 
 } from 'recharts';
 import * as XLSX from 'xlsx-js-style';
-import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateFinancials, getSafeDateString } from '../../services/calculations';
 import { EXPENSE_CATEGORIES } from './ExpenseModal';
 import { INCOME_CATEGORIES } from './IncomeModal';
 
@@ -88,7 +88,7 @@ export function MonthAccountingDetailModal({
       if (st.registerIncome !== false && st.totalValue > 0 && !existingSettlementIds.has(st.id)) {
         list.push({
           id: 'inc_milk_' + st.id,
-          date: st.paymentDate || st.endDate || st.createdAt?.slice(0, 10) || '',
+          date: st.paymentDate || st.endDate || getSafeDateString(st.date, st.createdAt),
           concept: `Venta de Leche - Liquidación ${st.periodType?.toUpperCase() || 'QUINCENAL'} (${formatNumber(st.totalLiters, 1)} L @ ${formatCurrency(st.pricePerLiter)}) - ${st.buyer || 'Planta'}`,
           category: 'leche',
           amount: parseFloat(st.totalValue) || 0,
@@ -148,7 +148,7 @@ export function MonthAccountingDetailModal({
 
   // 3. Otros ingresos del mes (incluyendo liquidaciones de leche)
   const monthIncomes = useMemo(() => {
-    return effectiveIncomes.filter(inc => (inc.date || inc.createdAt?.slice(0, 10) || '').startsWith(monthPrefix));
+    return effectiveIncomes.filter(inc => getSafeDateString(inc.date, inc.createdAt).startsWith(monthPrefix));
   }, [effectiveIncomes, monthPrefix]);
 
   const totalMonthOtherIncomes = useMemo(() => {

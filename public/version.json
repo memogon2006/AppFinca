@@ -1,5 +1,5 @@
 {
-  "version": "2.16.1",
-  "buildTime": 1790476000000,
-  "description": "🥛 Corrección de Deducciones y Soporte de Comas Decimales en Liquidación de Leche"
+  "version": "2.16.2",
+  "buildTime": 1790478000000,
+  "description": "⚡ Blindaje de Carga Inicial, Corrección de useMemo y Normalización Segura de Fechas"
 }

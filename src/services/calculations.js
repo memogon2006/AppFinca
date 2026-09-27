@@ -59,6 +59,48 @@ export function formatDate(dateInput) {
 }
 
 /**
+ * Obtiene de forma 100% segura un string en formato YYYY-MM-DD o prefijo de fecha,
+ * soportando cadenas ISO, timestamps numéricos, objetos Date o fallbacks sin lanzar TypeErrors.
+ */
+export function getSafeDateString(dateVal, fallbackVal = '') {
+  if (dateVal !== undefined && dateVal !== null && dateVal !== '') {
+    if (typeof dateVal === 'string') {
+      const trimmed = dateVal.trim();
+      if (trimmed) return trimmed.slice(0, 10);
+    }
+    if (typeof dateVal === 'number' && !isNaN(dateVal)) {
+      try {
+        const d = new Date(dateVal);
+        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+      } catch (e) {}
+    }
+    if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
+      try {
+        return dateVal.toISOString().slice(0, 10);
+      } catch (e) {}
+    }
+  }
+  if (fallbackVal !== undefined && fallbackVal !== null && fallbackVal !== '') {
+    if (typeof fallbackVal === 'string') {
+      const trimmed = fallbackVal.trim();
+      if (trimmed) return trimmed.slice(0, 10);
+    }
+    if (typeof fallbackVal === 'number' && !isNaN(fallbackVal)) {
+      try {
+        const d = new Date(fallbackVal);
+        if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+      } catch (e) {}
+    }
+    if (fallbackVal instanceof Date && !isNaN(fallbackVal.getTime())) {
+      try {
+        return fallbackVal.toISOString().slice(0, 10);
+      } catch (e) {}
+    }
+  }
+  return '';
+}
+
+/**
  * Parsea una fecha a objeto Date puro a medianoche local sin sesgo de zona horaria UTC
  */
 export function parseDateOnly(dateInput) {
