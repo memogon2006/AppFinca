@@ -52,6 +52,10 @@ import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCen
 import { InventoryChecklistModal } from './components/Checklist/InventoryChecklistModal';
 import { ForcePasswordChangeModal } from './components/Auth/ForcePasswordChangeModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
+import { MembershipModal } from './components/Subscription/MembershipModal';
+import { SubscriptionExpiredOverlay } from './components/Subscription/SubscriptionExpiredOverlay';
+import { MasterAdminSubscriptionsModal } from './components/Subscription/MasterAdminSubscriptionsModal';
+import { getSubscriptionStatus, canAddAnimal, isSuperAdmin } from './services/subscriptionService';
 import { calculateWeightMetrics, formatCurrency, formatNumber, formatDate, getLocalDateString } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -110,6 +114,8 @@ export default function App() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
+  const [isMasterAdminModalOpen, setIsMasterAdminModalOpen] = useState(false);
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   const [isPartnershipModalOpen, setIsPartnershipModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -282,6 +288,7 @@ export default function App() {
   ]);
 
   const userId = effectiveUserId || currentUser?.id;
+  const subStatus = getSubscriptionStatus(currentUser);
 
   const { isModuleActive } = useActiveModules();
 
@@ -2317,6 +2324,11 @@ export default function App() {
   };
 
   const handleOpenNew = (initialData = null) => {
+    if (!canAddAnimal(currentUser, activeCattleCount)) {
+      triggerFeedback('error');
+      setIsMembershipModalOpen(true);
+      return;
+    }
     if (initialData && typeof initialData === 'object' && !initialData.nativeEvent) {
       setEditingAnimal({
         ...initialData,
@@ -2326,6 +2338,15 @@ export default function App() {
       setEditingAnimal(null);
     }
     setIsFormModalOpen(true);
+  };
+
+  const handleOpenBatchEntry = () => {
+    if (!canAddAnimal(currentUser, activeCattleCount)) {
+      triggerFeedback('error');
+      setIsMembershipModalOpen(true);
+      return;
+    }
+    setIsBatchEntryModalOpen(true);
   };
 
   const handleOpenEdit = (animal) => {
@@ -2417,6 +2438,8 @@ export default function App() {
         onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
         onOpenWorkers={() => setIsWorkersModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenMembership={() => setIsMembershipModalOpen(true)}
+        onOpenMasterAdmin={() => setIsMasterAdminModalOpen(true)}
         onManualSync={handleManualSync}
         isSyncing={isSyncing}
         isOnline={isOnline}
@@ -2472,7 +2495,7 @@ export default function App() {
             onNavigate={setCurrentView}
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
-            onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
+            onOpenBatchEntry={handleOpenBatchEntry}
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
             onOpenChecklist={() => setIsChecklistOpen(true)}
@@ -2508,7 +2531,7 @@ export default function App() {
             onSelectAnimal={handleSelectAnimal}
             onOpenNew={handleOpenNew}
             onOpenNewAnimal={handleOpenNew}
-            onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
+            onOpenBatchEntry={handleOpenBatchEntry}
             onOpenEdit={handleOpenEdit}
             onOpenSell={handleOpenSell}
             onOpenDeath={handleOpenDeath}
@@ -2544,7 +2567,7 @@ export default function App() {
             cattle={cattle}
             weighings={weighings}
             onSelectAnimal={handleSelectAnimal}
-            onOpenBatchEntry={() => setIsBatchEntryModalOpen(true)}
+            onOpenBatchEntry={handleOpenBatchEntry}
             onOpenNewAnimal={handleOpenNew}
             onOpenExportImport={() => setIsExportModalOpen(true)}
             onOpenWhatsAppReport={() => setIsWhatsAppModalOpen(true)}
@@ -2774,6 +2797,7 @@ export default function App() {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         onOpenWorkers={() => setIsWorkersModalOpen(true)}
+        onOpenMembership={() => setIsMembershipModalOpen(true)}
         activeCattleCount={activeCattleCount}
         zIndex="z-[60]"
       />
@@ -2875,6 +2899,27 @@ export default function App() {
         income={editingIncome}
         zIndex="z-[60]"
       />
+
+      {/* 7. Modales de Suscripción & Membresías */}
+      <MembershipModal
+        isOpen={isMembershipModalOpen}
+        onClose={() => setIsMembershipModalOpen(false)}
+        zIndex="z-[80]"
+      />
+
+      <MasterAdminSubscriptionsModal
+        isOpen={isMasterAdminModalOpen}
+        onClose={() => setIsMasterAdminModalOpen(false)}
+        zIndex="z-[85]"
+      />
+
+      {/* 8. Overlay de Bloqueo por Membresía Expirada (Paywall Amigable con Respaldo Excel) */}
+      {subStatus.isExpired && !subStatus.isSuperAdmin && !isWorker && (
+        <SubscriptionExpiredOverlay
+          onOpenMembershipModal={() => setIsMembershipModalOpen(true)}
+          onExportAllData={() => setIsExportModalOpen(true)}
+        />
+      )}
 
     </div>
   );

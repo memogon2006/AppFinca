@@ -27,7 +27,9 @@ import {
   Cloud,
   DownloadCloud,
   Scale,
-  Sliders
+  Sliders,
+  Crown,
+  ArrowRight
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkAppUpdate, applyAppUpdate, APP_CHANGELOG } from '../../services/versionService';
 import { clearAllData, deleteDemoData, isDemoAnimal, db } from '../../services/db';
@@ -43,11 +45,13 @@ import {
 } from '../../services/soundService';
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 import { MODULE_CATALOG, FARM_PRESETS, useActiveModules } from '../../services/moduleService';
+import { getSubscriptionStatus, PAYMENT_CONTACT_INFO } from '../../services/subscriptionService';
 
-export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount = 0, zIndex = 'z-[60]' }) {
+export function ProfileModal({ isOpen, onClose, onOpenWorkers, onOpenMembership, activeCattleCount = 0, zIndex = 'z-[60]' }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout, isWorker } = useAuth();
+  const subStatus = getSubscriptionStatus(currentUser);
 
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'modules' | 'security' | 'version' | 'delete'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'membership' | 'modules' | 'security' | 'version' | 'delete'
   const [demoCount, setDemoCount] = useState(0);
   const [loadingDeleteDemo, setLoadingDeleteDemo] = useState(false);
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
@@ -403,6 +407,21 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
             <User className="w-4 h-4" />
             <span>{isWorker ? 'Mi Perfil' : 'Datos Finca'}</span>
           </button>
+
+          {!isWorker && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('membership')}
+              className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer ${
+                activeTab === 'membership'
+                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Crown className="w-4 h-4 text-amber-500" />
+              <span>👑 Membresía</span>
+            </button>
+          )}
 
           {!isWorker && (
             <button
@@ -875,6 +894,108 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
             )}
 
           </form>
+        )}
+
+        {/* PESTAÑA: MEMBRESÍA & FACTURACIÓN */}
+        {activeTab === 'membership' && !isWorker && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            
+            {/* Tarjeta de Estado Actual */}
+            <div className={`p-5 rounded-3xl border shadow-sm ${
+              subStatus.isExpired
+                ? 'bg-rose-500/10 border-rose-500/30'
+                : subStatus.isTrial
+                ? 'bg-amber-500/10 border-amber-500/30'
+                : 'bg-emerald-500/10 border-emerald-500/30'
+            }`}>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-md ${
+                    subStatus.isExpired
+                      ? 'bg-rose-500 text-white'
+                      : subStatus.isTrial
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-emerald-600 text-white'
+                  }`}>
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      Membresía Activa
+                    </span>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                      {subStatus.plan.name}
+                    </h3>
+                  </div>
+                </div>
+
+                <span className={`px-3 py-1 rounded-full text-xs font-black border ${
+                  subStatus.isExpired
+                    ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40 animate-pulse'
+                    : subStatus.isTrial
+                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40'
+                    : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
+                }`}>
+                  {subStatus.label}
+                </span>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 space-y-1">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Capacidad de Ganado</div>
+                  <div className="text-sm font-black text-slate-900 dark:text-white flex items-center justify-between">
+                    <span>{activeCattleCount} registrados</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                      / {subStatus.plan.maxCattle === Infinity ? 'Ilimitados' : `${subStatus.plan.maxCattle} max`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 space-y-1">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Vigencia / Vencimiento</div>
+                  <div className="text-sm font-black text-slate-900 dark:text-white">
+                    {subStatus.daysRemaining !== null ? `${subStatus.daysRemaining} días restantes` : 'Acceso Vitalicio'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Características del Plan */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2">
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Beneficios Incluidos en tu Plan
+              </h4>
+              <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+                {subStatus.plan.features.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Botón para Abrir Modal de Planes y Renovación */}
+            <div className="pt-2 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onOpenMembership) onOpenMembership();
+                }}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20 active:scale-[0.98] transition cursor-pointer"
+              >
+                <Crown className="w-4 h-4 text-amber-300" />
+                <span>Ver Planes, Precios & Mejorar Membresía</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <p className="text-[11px] text-center text-slate-400">
+                ¿Necesitas factura electrónica o soporte en tu pago? Escríbenos a WhatsApp <strong>{PAYMENT_CONTACT_INFO.whatsappDisplay}</strong>
+              </p>
+            </div>
+
+          </div>
         )}
 
         {/* PESTAÑA: PERSONALIZACIÓN MODULAR DE LA FINCA */}

@@ -16,6 +16,7 @@ import {
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 import { setActiveModules, getActiveModules, DEFAULT_MODULES, FARM_PRESETS } from './moduleService';
 import { setSoundProfile, setSoundEnabled, getSoundProfile, isSoundEnabled } from './soundService';
+import { getDefaultSubscription, isSuperAdmin } from './subscriptionService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
 const LOCKOUT_PREFIX = 'ganado_login_lockout_';
@@ -266,6 +267,9 @@ export async function registerUser({ name, farmName, email, password, farmPreset
   // Módulos iniciales según el preset elegido
   const initialModules = activeModules || (FARM_PRESETS[farmPreset?.toUpperCase()]?.modules) || DEFAULT_MODULES;
 
+  const isSuper = isSuperAdmin({ email: cleanEmail });
+  const subscription = getDefaultSubscription(isSuper);
+
   const newUser = {
     id: userId,
     name: cleanName,
@@ -274,6 +278,7 @@ export async function registerUser({ name, farmName, email, password, farmPreset
     passwordHash,
     farmPreset: farmPreset || 'completo',
     activeModules: initialModules,
+    subscription,
     mustChangePassword: false,
     createdAt: new Date().toISOString(),
   };
@@ -321,6 +326,7 @@ export async function registerUser({ name, farmName, email, password, farmPreset
     email: newUser.email,
     farmPreset: newUser.farmPreset,
     activeModules: initialModules,
+    subscription,
     createdAt: newUser.createdAt,
     mustChangePassword: false,
   };
@@ -477,6 +483,12 @@ export async function loginUser({ email, password }) {
     setSoundProfile(effectiveSoundProfile, effectiveFarmId, false);
     setSoundEnabled(effectiveSoundEnabled, effectiveFarmId, false);
 
+    let sub = localUser.subscription;
+    if (!sub) {
+      const isSuper = isSuperAdmin(localUser);
+      sub = getDefaultSubscription(isSuper);
+    }
+
     const sessionUser = {
       id: localUser.id,
       name: localUser.name,
@@ -490,6 +502,7 @@ export async function loginUser({ email, password }) {
       activeModules: effectiveModules,
       soundProfile: effectiveSoundProfile,
       soundEnabled: effectiveSoundEnabled,
+      subscription: sub,
       isActive: localUser.isActive !== false,
       createdAt: localUser.createdAt,
       mustChangePassword: !!localUser.mustChangePassword,
@@ -633,6 +646,12 @@ export async function loginUser({ email, password }) {
   setSoundProfile(effectiveSoundProfile, effectiveFarmId, false);
   setSoundEnabled(effectiveSoundEnabled, effectiveFarmId, false);
 
+  let sub = user.subscription || localUser?.subscription;
+  if (!sub) {
+    const isSuper = isSuperAdmin(user);
+    sub = getDefaultSubscription(isSuper);
+  }
+
   const sessionUser = {
     id: user.id,
     name: user.name,
@@ -646,6 +665,7 @@ export async function loginUser({ email, password }) {
     activeModules: remoteModules,
     soundProfile: effectiveSoundProfile,
     soundEnabled: effectiveSoundEnabled,
+    subscription: sub,
     isActive: user.isActive !== false,
     createdAt: user.createdAt,
     mustChangePassword: !!user.mustChangePassword,

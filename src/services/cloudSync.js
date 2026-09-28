@@ -74,7 +74,7 @@ if (typeof window !== 'undefined') {
 /**
  * Petición fetch segura con abort timeout de 15s y bypass automático si no hay conexión
  */
-async function safeFetch(url, options = {}, timeoutMs = 15000) {
+export async function safeFetch(url, options = {}, timeoutMs = 15000) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return null;
   }

@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.6";
+export const CURRENT_APP_VERSION = "2.25.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.25.0",
+    date: "28/09/2026",
+    title: "👑 Sistema Integral de Membresías Ganaderas (SaaS Plataforma Ganadera)",
+    highlights: [
+      "Planes Flexibles de Suscripción: Prueba Gratuita (14 Días), Básico (hasta 30 animales), Pro Ganadero (hasta 200 animales) y Premium (ilimitado).",
+      "Pasarela de Activación Ágil: Contratación directa por WhatsApp con envío automático de datos de finca y cuenta bancaria para transferencias.",
+      "Overlay de Pago Amigable (Paywall Seguro): Pantalla de renovación con botón para descargar copia de seguridad completa en Excel con 1 solo clic.",
+      "Panel Maestro SuperAdmin: Gestión centralizada para extender días (+30d, +1 año), otorgar acceso vitalicio o suspender cuentas en vivo.",
+      "Control de Límites sin Pérdida de Datos: Validación preventiva al registrar bovinos o trabajadores según el cupo del plan contratado."
+    ]
+  },
   {
     version: "2.24.6",
     date: "28/09/2026",

@@ -27,12 +27,15 @@ import {
   Wallet,
   Leaf,
   Milk,
-  HeartHandshake
+  HeartHandshake,
+  Crown,
+  ShieldCheck
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { CURRENT_APP_VERSION } from '../services/versionService';
 import { useActiveModules, MODULE_KEYS } from '../services/moduleService';
+import { getSubscriptionStatus, isSuperAdmin } from '../services/subscriptionService';
 import { ModuleSelectorModal } from './Common/ModuleSelectorModal';
 
 export function Navbar({ 
@@ -43,6 +46,8 @@ export function Navbar({
   onOpenWhatsAppReport,
   onOpenWorkers,
   onOpenProfile, 
+  onOpenMembership,
+  onOpenMasterAdmin,
   onManualSync,
   isSyncing = false,
   isOnline = true,
@@ -53,6 +58,9 @@ export function Navbar({
   const { isDark, toggleTheme } = useTheme();
   const { currentUser, logout, isWorker } = useAuth();
   const { isModuleActive } = useActiveModules();
+
+  const subStatus = getSubscriptionStatus(currentUser);
+  const isSuper = isSuperAdmin(currentUser);
 
   const scrollPositionRef = useRef(0);
   const isLockedRef = useRef(false);
@@ -300,7 +308,26 @@ export function Navbar({
                 <span className="hidden sm:inline">Registrar Bovino</span>
               </button>
 
-
+              {/* Botón Membresía / Plan */}
+              {!isWorker && (
+                <button
+                  type="button"
+                  onClick={onOpenMembership}
+                  title={`Membresía: ${subStatus.label} (${subStatus.daysRemaining !== null ? `${subStatus.daysRemaining} días` : 'Ilimitado'})`}
+                  className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-black cursor-pointer transition shrink-0 backdrop-blur-sm shadow-xs ${
+                    subStatus.isExpired
+                      ? 'bg-rose-500/30 hover:bg-rose-500/40 border-rose-400/50 text-rose-200 animate-pulse'
+                      : subStatus.isTrial
+                      ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/40 text-amber-200'
+                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/40 text-emerald-200'
+                  }`}
+                >
+                  <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span className="truncate max-w-[90px]">
+                    {subStatus.isTrial ? `Trial (${subStatus.daysRemaining}d)` : subStatus.plan.name}
+                  </span>
+                </button>
+              )}
 
               {/* Botón Sincronización Nube */}
               <button
@@ -588,6 +615,59 @@ export function Navbar({
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </button>
+
+              {/* Membresía y Plan (Admin) */}
+              {!isWorker && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    if (onOpenMembership) onOpenMembership();
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-900 dark:hover:text-emerald-200 transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition">
+                      <Crown className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-black text-xs flex items-center gap-1.5">
+                        <span>Membresía & Plan</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold">
+                          {subStatus.label}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                        {subStatus.daysRemaining !== null ? `${subStatus.daysRemaining} días restantes` : 'Acceso Vitalicio'}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+
+              {/* Panel Maestro SuperAdmin (Solo para Luis Guillermo Gonzalez / memogon2006) */}
+              {isSuper && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    if (onOpenMasterAdmin) onOpenMasterAdmin();
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-black text-amber-900 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-700/60 transition cursor-pointer group shadow-xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-amber-500 text-white group-hover:scale-105 transition shadow-xs">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-black text-xs">Panel Maestro Suscripciones</div>
+                      <div className="text-[10px] text-amber-700 dark:text-amber-400 font-normal">SuperAdmin Global</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                </button>
+              )}
 
               {/* Sincronización Nube Manual */}
               <button
