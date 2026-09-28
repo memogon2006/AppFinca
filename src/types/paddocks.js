@@ -107,6 +107,7 @@ export function calculateForageCapacity({
  * 1. ¿Cuántos animales podemos meter para X días de ocupación?
  * 2. Si metemos N animales, ¿cuántos días de ocupación ideales rinde?
  * 3. Basado en el tiempo de descanso deseado, ¿cuántos potreros requiere el circuito rotacional?
+ * 4. Si el ganadero tiene P potreros disponibles en su rotación (ej. 3 potreros), ¿cómo se comporta el circuito?
  */
 export function calculatePaddockCapacity({
   areaHa = 1,
@@ -119,6 +120,7 @@ export function calculatePaddockCapacity({
   avgAnimalWeightKg = 380,
   consumptionRate = 10,
   entryDate = null,
+  availablePaddocksCount = 3,
 }) {
   const parsedAreaHa = parseFloat(areaHa) || 0;
   const areaM2 = parsedAreaHa * 10000;
@@ -145,6 +147,7 @@ export function calculatePaddockCapacity({
 
   const restDays = Math.max(5, parseInt(targetRestDays) || defaultPastureInfo.restDays || 30);
   const targetStayDays = Math.max(1, parseFloat(targetGrazingDays) || 3);
+  const userPaddocksCount = Math.max(1, parseInt(availablePaddocksCount) || 3);
 
   // 1. ¿CUÁNTOS ANIMALES PODEMOS METER para pastorear targetStayDays (ej. 3 días)?
   const maxAnimalsForTargetStay = dailyPerAnimalKg > 0 && targetStayDays > 0
@@ -157,18 +160,103 @@ export function calculatePaddockCapacity({
   const exactIdealGrazingDays = dailyTotalBatchKg > 0 ? (usableForageKg / dailyTotalBatchKg) : 0;
   const idealGrazingDays = Math.round(exactIdealGrazingDays * 10) / 10;
 
-  // 3. NÚMERO DE POTREROS NECESARIOS PARA EL CIRCUITO ROTACIONAL CONTINUO
+  // 3. NÚMERO DE POTREROS TEÓRICOS NECESARIOS PARA EL CIRCUITO ROTACIONAL CONTINUO
   // Fórmula: N° Potreros = (Días de Descanso / Días de Ocupación) + 1
   const effectiveGrazingDaysForCircuit = Math.max(0.5, exactIdealGrazingDays);
   const paddocksNeededInCircuit = Math.ceil(restDays / effectiveGrazingDaysForCircuit) + 1;
 
-  // 4. CARGA INSTANTÁNEA (UGM = 450 kg)
+  // 4. SIMULACIÓN DEL CIRCUITO CON 'userPaddocksCount' POTREROS (ej. 3 potreros)
+  // En P potreros, mientras 1 está ocupado, (P - 1) descansan.
+  const actualRestDaysAchieved = userPaddocksCount > 1
+    ? Math.round(((userPaddocksCount - 1) * exactIdealGrazingDays) * 10) / 10
+    : 0;
+
+  const cycleTotalDays = Math.round((userPaddocksCount * exactIdealGrazingDays) * 10) / 10;
+  const restDaysBalance = Math.round((actualRestDaysAchieved - restDays) * 10) / 10;
+  const paddocksDeficit = Math.max(0, paddocksNeededInCircuit - userPaddocksCount);
+
+  // Días que debería durar el pastoreo en cada potrero si quisiéramos cumplir exactamente el descanso con estos P potreros
+  const requiredStayPerPaddockForTargetRest = userPaddocksCount > 1
+    ? Math.round((restDays / (userPaddocksCount - 1)) * 10) / 10
+    : restDays;
+
+  // Tamaño de lote sostenible en equilibrio para estos P potreros y descanso meta
+  const sustainableHerdSizeForCircuit = (dailyPerAnimalKg > 0 && requiredStayPerPaddockForTargetRest > 0)
+    ? Math.floor(usableForageKg / (requiredStayPerPaddockForTargetRest * dailyPerAnimalKg))
+    : 0;
+
+  // Estado del circuito con los P potreros definidos
+  let circuitEvaluation = {
+    status: 'sostenible',
+    badgeVariant: 'emerald',
+    label: `Circuito Sostenible (${userPaddocksCount} potreros)`,
+    summary: `Con tus ${userPaddocksCount} potreros y ${count} animales, cada potrero descansará ${actualRestDaysAchieved} días (meta: ${restDays}d). La rotación completa durará ${cycleTotalDays} días.`,
+  };
+
+  if (userPaddocksCount === 1) {
+    circuitEvaluation = {
+      status: 'continuo',
+      badgeVariant: 'rose',
+      label: 'Pastoreo Continuo (1 Potrero)',
+      summary: `Con 1 solo potrero no hay descanso para la pastura. El ganado comerá el rebrote tierno continuamente. Se recomienda subdividir en al menos ${paddocksNeededInCircuit} potreros.`,
+    };
+  } else if (actualRestDaysAchieved < restDays * 0.75) {
+    circuitEvaluation = {
+      status: 'deficit_descanso',
+      badgeVariant: 'rose',
+      label: `¡Déficit de Descanso (${userPaddocksCount} potreros)!`,
+      summary: `Con ${userPaddocksCount} potreros y ${count} animales, los potreros solo descansarán ${actualRestDaysAchieved} días antes del regreso (faltan ${Math.abs(restDaysBalance)} días para la meta de ${restDays}d). Necesitas subdividir a ${paddocksNeededInCircuit} potreros o ajustar el lote a ${sustainableHerdSizeForCircuit} cabezas.`,
+    };
+  } else if (actualRestDaysAchieved < restDays) {
+    circuitEvaluation = {
+      status: 'ajustado',
+      badgeVariant: 'amber',
+      label: `Rotación Ajustada (${userPaddocksCount} potreros)`,
+      summary: `Tus ${userPaddocksCount} potreros acumulan ${actualRestDaysAchieved} días de descanso (meta: ${restDays}d, faltan ${Math.abs(restDaysBalance)}d). El pasto rebrotará pero estará algo tierno. Se sugiere sumar ${paddocksDeficit} potrero(s) más.`,
+    };
+  }
+
+  // 5. CRONOGRAMA SIMULADO DE ROTACIÓN DEL CIRCUITO (Fechas)
+  const rotationSteps = [];
+  const baseDateStr = entryDate || getLocalDateString();
+  try {
+    const parts = baseDateStr.split('-');
+    if (parts.length === 3) {
+      let currentD = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      const daysPerPaddock = Math.max(1, Math.round(exactIdealGrazingDays));
+
+      for (let i = 1; i <= userPaddocksCount; i++) {
+        const startD = new Date(currentD);
+        const endD = new Date(currentD);
+        endD.setDate(endD.getDate() + daysPerPaddock);
+
+        const fmt = (d) => {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        };
+
+        rotationSteps.push({
+          paddockIndex: i,
+          name: i === 1 ? 'Potrero 1 (Actual)' : `Potrero ${i}`,
+          entryDate: fmt(startD),
+          exitDate: fmt(endD),
+          grazingDays: daysPerPaddock,
+        });
+
+        currentD = new Date(endD);
+      }
+    }
+  } catch (e) {}
+
+  // 6. CARGA INSTANTÁNEA (UGM = 450 kg)
   const totalLiveWeightKg = count * avgWeight;
   const totalUGM = Math.round((totalLiveWeightKg / 450) * 10) / 10;
   const ugmPerHa = parsedAreaHa > 0 ? Math.round((totalUGM / parsedAreaHa) * 10) / 10 : 0;
   const kgPerHa = parsedAreaHa > 0 ? Math.round(totalLiveWeightKg / parsedAreaHa) : 0;
 
-  // 5. FECHA SUGERIDA DE SALIDA / ROTACIÓN
+  // 7. FECHA SUGERIDA DE SALIDA DEL POTRERO ACTUAL
   let suggestedExitDate = '';
   if (entryDate) {
     try {
@@ -185,7 +273,7 @@ export function calculatePaddockCapacity({
     } catch (e) {}
   }
 
-  // 6. EVALUACIÓN ZOOTÉCNICA & SEMÁFORO
+  // 8. EVALUACIÓN ZOOTÉCNICA GENERAL
   let evaluation = {
     status: 'optimo',
     badgeVariant: 'emerald',
@@ -235,6 +323,17 @@ export function calculatePaddockCapacity({
     idealGrazingDays,
     exactIdealGrazingDays,
     paddocksNeededInCircuit,
+    // Circuito personalizado del usuario
+    availablePaddocksCount: userPaddocksCount,
+    actualRestDaysAchieved,
+    cycleTotalDays,
+    restDaysBalance,
+    requiredStayPerPaddockForTargetRest,
+    sustainableHerdSizeForCircuit,
+    paddocksDeficit,
+    circuitEvaluation,
+    rotationSteps,
+    // Carga y fechas
     totalLiveWeightKg,
     totalUGM,
     ugmPerHa,

@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.19.0";
+export const CURRENT_APP_VERSION = "2.20.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.20.0",
+    date: "27/09/2026",
+    title: "🔄 Simulador de Circuito Rotacional con N Potreros & Balance de Descanso",
+    highlights: [
+      "Simulación con N Potreros Definidos: Ahora puedes ingresar exactamente cuántos potreros tienes para tu rotación (ej. 3 potreros) y el sistema calcula la dinámica completa del circuito.",
+      "Balance Real de Descanso: Calcula cuántos días de descanso reales acumularán los otros potreros ((P-1) × TO) y los compara contra el descanso meta necesario para el rebrote.",
+      "Duración del Ciclo Completo: Calcula los días que tomará la vuelta completa por todos los potreros del circuito.",
+      "Cronograma Simulado con Fechas: Despliega el calendario proyectado de entrada y salida para cada potrero y la fecha de reingreso al potrero inicial.",
+      "Capacidad Equilibrada Sugerida: Te indica el tamaño ideal de lote para que tus potreros se mantengan en equilibrio perfecto sin sobrepastoreo."
+    ]
+  },
   {
     version: "2.19.0",
     date: "27/09/2026",

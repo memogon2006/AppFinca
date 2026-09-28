@@ -93,6 +93,7 @@ export function PaddocksView({
       avgAnimalWeightKg: avgWeight,
       consumptionRate: 10,
       entryDate: p.entryDate || today,
+      availablePaddocksCount: paddocks.length > 0 ? paddocks.length : 3,
     });
 
     return {

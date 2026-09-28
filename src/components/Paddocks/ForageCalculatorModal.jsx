@@ -41,6 +41,8 @@ export function ForageCalculatorModal({
   const [avgAnimalWeightKg, setAvgAnimalWeightKg] = useState(380);
   const [consumptionRate, setConsumptionRate] = useState(10);
   const [entryDate, setEntryDate] = useState(getLocalDateString());
+  const [circuitPaddocksCount, setCircuitPaddocksCount] = useState(paddocks.length > 0 ? Math.max(2, paddocks.length) : 3);
+  const [showCircuitSchedule, setShowCircuitSchedule] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
 
   // Sincronizar cuando cambia selectedPaddock
@@ -110,6 +112,7 @@ export function ForageCalculatorModal({
       avgAnimalWeightKg,
       consumptionRate,
       entryDate,
+      availablePaddocksCount: circuitPaddocksCount,
     });
   }, [
     areaHa,
@@ -121,7 +124,8 @@ export function ForageCalculatorModal({
     animalCount,
     avgAnimalWeightKg,
     consumptionRate,
-    entryDate
+    entryDate,
+    circuitPaddocksCount
   ]);
 
   const areaM2 = (parseFloat(areaHa) || 0) * 10000;
@@ -386,7 +390,7 @@ export function ForageCalculatorModal({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-center">
             
             {/* 1. Capacidad Máxima */}
             <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex flex-col justify-between">
@@ -426,27 +430,126 @@ export function ForageCalculatorModal({
               </span>
             </div>
 
-            {/* 3. Circuito Rotacional Requerido */}
-            <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex flex-col justify-between">
-              <span className="text-[10px] text-teal-300 uppercase font-black tracking-wide">
-                3. Circuito para Descanso ({targetRestDays}d)
-              </span>
-              <div className="my-1">
-                <p className="text-2xl sm:text-3xl font-black text-teal-300">
-                  {results.paddocksNeededInCircuit} <span className="text-xs font-bold text-white">potreros</span>
-                </p>
-                <p className="text-[10px] text-slate-300">
-                  (Fórmula: TD/TO + 1)
-                </p>
+          </div>
+
+          {/* 3. SIMULACIÓN DE CIRCUITO CON N POTREROS DEFINIDOS */}
+          <div className="p-4 rounded-xl bg-black/40 border border-emerald-500/30 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Boxes className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-xs font-black text-white">
+                  3. Simulación con tus Potreros en Rotación
+                </span>
               </div>
-              <span className="text-[10px] text-slate-300">
-                Rotación continua sin degradación
-              </span>
+
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-emerald-200">
+                  Tengo para rotar:
+                </label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={circuitPaddocksCount}
+                    onChange={(e) => setCircuitPaddocksCount(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-400/60 text-center font-black text-white text-xs focus:ring-2 focus:ring-emerald-400"
+                  />
+                  <span className="text-xs font-bold text-slate-300">potreros</span>
+                </div>
+              </div>
             </div>
+
+            {/* Cuadrícula de Indicadores con N Potreros */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+              
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Días / Potrero</span>
+                <span className="text-base font-black text-white">{results.idealGrazingDays}d</span>
+                <span className="text-[9px] text-slate-400 block">({animalCount} cab.)</span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Descanso Real</span>
+                <span className={`text-base font-black ${
+                  results.actualRestDaysAchieved >= targetRestDays 
+                    ? 'text-emerald-400' 
+                    : results.actualRestDaysAchieved >= targetRestDays * 0.75 
+                      ? 'text-amber-400' 
+                      : 'text-rose-400'
+                }`}>
+                  {results.actualRestDaysAchieved}d
+                </span>
+                <span className="text-[9px] text-slate-400 block">(meta: {targetRestDays}d)</span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Ciclo Completo</span>
+                <span className="text-base font-black text-teal-300">{results.cycleTotalDays}d</span>
+                <span className="text-[9px] text-slate-400 block">({circuitPaddocksCount} potreros)</span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Capacidad Equilibrada</span>
+                <span className="text-base font-black text-amber-300">
+                  ~{results.sustainableHerdSizeForCircuit} cab.
+                </span>
+                <span className="text-[9px] text-slate-400 block">(para {targetRestDays}d descanso)</span>
+              </div>
+
+            </div>
+
+            {/* Diagnóstico Zootécnico */}
+            <div className={`p-3 rounded-xl border text-xs font-medium leading-relaxed ${
+              results.circuitEvaluation.badgeVariant === 'emerald'
+                ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200'
+                : results.circuitEvaluation.badgeVariant === 'amber'
+                  ? 'bg-amber-950/60 border-amber-500/40 text-amber-200'
+                  : 'bg-rose-950/60 border-rose-500/40 text-rose-200'
+            }`}>
+              <strong>{results.circuitEvaluation.label}:</strong> {results.circuitEvaluation.summary}
+            </div>
+
+            {/* Cronograma Paso a Paso */}
+            {results.rotationSteps.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowCircuitSchedule(!showCircuitSchedule)}
+                  className="text-xs font-bold text-emerald-300 hover:text-white underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{showCircuitSchedule ? 'Ocultar fechas del ciclo' : `Ver cronograma de fechas para los ${circuitPaddocksCount} potreros`}</span>
+                </button>
+
+                {showCircuitSchedule && (
+                  <div className="mt-2.5 p-3 rounded-xl bg-black/60 border border-white/10 space-y-2 animate-fadeIn">
+                    <p className="text-xs font-bold text-slate-200">
+                      📅 Cronograma estimado del lote ({animalCount} cabezas de {avgAnimalWeightKg} kg):
+                    </p>
+                    <div className="divide-y divide-white/10">
+                      {results.rotationSteps.map((step) => (
+                        <div key={step.paddockIndex} className="flex items-center justify-between text-xs py-1.5">
+                          <span className="font-bold text-emerald-300">{step.name}:</span>
+                          <span className="text-slate-300">
+                            Entrada: <strong>{step.entryDate}</strong> ➔ Salida: <strong>{step.exitDate}</strong> ({step.grazingDays} días de pastoreo)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {results.rotationSteps.length > 0 && (
+                      <p className="text-xs text-emerald-400 font-bold pt-2 border-t border-white/10">
+                        🔄 Regreso al Potrero 1: <strong>{results.rotationSteps[results.rotationSteps.length - 1]?.exitDate}</strong> (habrá descansado <strong>{results.actualRestDaysAchieved} días</strong>).
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
 
-          {/* Recomendación Zootécnica */}
+          {/* Recomendación Zootécnica General */}
           <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2.5 text-xs">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-emerald-100">
