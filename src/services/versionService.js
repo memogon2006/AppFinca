@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.17.1";
+export const CURRENT_APP_VERSION = "2.17.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.17.2",
+    date: "27/09/2026",
+    title: "✨ Limpieza del Perfil Ganadero: Retiro de sección de precios comerciales",
+    highlights: [
+      "Perfil Simplificado y Limpio: Se removió la tarjeta de configuración de precios de leche y carne del modal de Perfil Ganadero, manteniendo una interfaz clara y directa para los datos de cuenta y sonido.",
+      "Gestión de Precios en Módulos Dedicados: Los precios de leche continúan gestionándose directamente en el módulo de Lechería y los precios de carne en las ventas de ganado y liquidaciones."
+    ]
+  },
   {
     version: "2.17.1",
     date: "26/09/2026",

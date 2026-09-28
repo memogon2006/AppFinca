@@ -43,7 +43,6 @@ import {
 } from '../../services/soundService';
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 import { MODULE_CATALOG, FARM_PRESETS, useActiveModules } from '../../services/moduleService';
-import { getFarmPrices, setFarmPrices, DEFAULT_MILK_PRICE, DEFAULT_MEAT_PRICE_PER_KG } from '../../services/farmPriceService';
 
 export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount = 0, zIndex = 'z-[60]' }) {
   const { currentUser, updateProfile, changePassword, deleteAccount, logout, isWorker } = useAuth();
@@ -91,10 +90,6 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
     email: '',
   });
 
-  // Precios comerciales de la finca (leche y carne por kilo)
-  const [milkPriceInput, setMilkPriceInput] = useState(() => String(getFarmPrices(currentUser).milkPrice));
-  const [meatPriceInput, setMeatPriceInput] = useState(() => String(getFarmPrices(currentUser).meatPricePerKg));
-
   // Password form
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -128,9 +123,6 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
         farmName: currentUser.farmName || '',
         email: currentUser.email || '',
       });
-      const fp = getFarmPrices(currentUser);
-      setMilkPriceInput(String(fp.milkPrice));
-      setMeatPriceInput(String(fp.meatPricePerKg));
 
       const targetId = currentUser.role === 'worker' ? (currentUser.ownerId || currentUser.id) : currentUser.id;
       setSoundState(isSoundEnabled(targetId));
@@ -156,24 +148,14 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
     setProfileMsg(null);
     try {
       setLoadingProfile(true);
-      const cleanMilk = parseFloat(milkPriceInput) || DEFAULT_MILK_PRICE;
-      const cleanMeat = parseFloat(meatPriceInput) || DEFAULT_MEAT_PRICE_PER_KG;
 
       await updateProfile({
         ...profileData,
         soundProfile: activeSoundProfile,
         soundEnabled: soundEnabled,
-        milkPrice: cleanMilk,
-        meatPricePerKg: cleanMeat,
       });
 
-      // Guardar precios comerciales independientes de la finca
-      setFarmPrices(currentUser, { milkPrice: cleanMilk, meatPricePerKg: cleanMeat });
-      if (profileData.farmName && profileData.farmName.trim()) {
-        setFarmPrices(profileData.farmName.trim(), { milkPrice: cleanMilk, meatPricePerKg: cleanMeat });
-      }
-
-      setProfileMsg({ type: 'success', text: '¡Datos del perfil, nombre de finca y precios comerciales guardados con éxito!' });
+      setProfileMsg({ type: 'success', text: '¡Datos del perfil y nombre de finca guardados con éxito!' });
     } catch (err) {
       setProfileMsg({ type: 'error', text: err.message });
     } finally {
@@ -693,76 +675,6 @@ export function ProfileModal({ isOpen, onClose, onOpenWorkers, activeCattleCount
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[44px]"
                       required
                     />
-                  </div>
-                </div>
-
-                {/* PRECIOS COMERCIALES INDEPENDIENTES DE LA FINCA */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-amber-500/5 to-slate-50 dark:to-slate-800/70 border border-emerald-500/30 space-y-3 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-xs shrink-0">
-                        💰
-                      </div>
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                          <span>Precios Comerciales de la Finca</span>
-                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700/60">
-                            Personalizados
-                          </span>
-                        </h4>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Cada predio o hacienda maneja sus propios precios de venta de referencia.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    {/* Precio Leche ($/Litro) */}
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                        <span>🥛 Precio por Litro de Leche</span>
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">$</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="50"
-                          placeholder="2100"
-                          value={milkPriceInput}
-                          onChange={(e) => setMilkPriceInput(e.target.value)}
-                          className="w-full pl-8 pr-12 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold text-xs sm:text-sm focus:outline-none focus:border-emerald-500 shadow-xs"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-slate-400">/ Litro</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400">
-                        Se aplica en liquidaciones y reportes de lechería.
-                      </p>
-                    </div>
-
-                    {/* Precio Carne ($/Kg) */}
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                        <span>🥩 Precio por Kilo de Carne</span>
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-black text-amber-600 dark:text-amber-400">$</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="100"
-                          placeholder="9200"
-                          value={meatPriceInput}
-                          onChange={(e) => setMeatPriceInput(e.target.value)}
-                          className="w-full pl-8 pr-12 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold text-xs sm:text-sm focus:outline-none focus:border-amber-500 shadow-xs"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-slate-400">/ Kg</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400">
-                        Se aplica en ventas de ganado y avalúos en pie.
-                      </p>
-                    </div>
                   </div>
                 </div>
               </>
