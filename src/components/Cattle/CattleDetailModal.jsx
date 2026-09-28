@@ -76,7 +76,7 @@ export function CattleDetailModal({
   onOpenCalving,
   isDark = false 
 }) {
-  const { isWorker } = useAuth();
+  const { currentUser, isWorker } = useAuth();
   const [ancestorModalAnimal, setAncestorModalAnimal] = useState(null);
   const [activeTab, setActiveTab] = useState('weights'); // 'weights' | 'repro' | 'genealogy' | 'financials' | 'sanitary' | 'general'
 
@@ -1131,7 +1131,7 @@ export function CattleDetailModal({
                 </div>
 
                 {/* Si fue en compañía, desglose 50/50 y rol */}
-                {(animal.exitType === 'En Compañía' || animal.partnershipDetails) && (() => {
+                {(animal.exitType === 'En Compañía' || animal.partnershipDetails) ? (() => {
                   const flow = calculateSaleCashFlow(animal, currentUser);
                   const part = animal.partnershipDetails || {
                     entryPrice: parseFloat(animal.entryPrice) || 0,
@@ -1173,9 +1173,31 @@ export function CattleDetailModal({
                           <p className="font-black text-teal-800 dark:text-teal-300 mt-0.5">{formatCurrency(part.partnerTotalReturn)}</p>
                         </div>
                       </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                        <div className="p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-300 dark:border-blue-800">
+                          <span className="text-[10px] font-black text-blue-800 dark:text-blue-300 block">📈 Rentabilidad Mensual Dueño:</span>
+                          <p className="font-black text-blue-700 dark:text-blue-400 text-xs mt-0.5">{flow.ownerMonthlyRoi}% / mes (+{formatCurrency(flow.ownerMonthlyProfit)}/m)</p>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800">
+                          <span className="text-[10px] font-black text-emerald-800 dark:text-emerald-300 block">🏢 Ganancia Mensual Pastoreo Finca:</span>
+                          <p className="font-black text-emerald-700 dark:text-emerald-400 text-xs mt-0.5">+{formatCurrency(flow.farmMonthlyProfit)} / mes ({flow.farmMonthlyRoi}%/m)</p>
+                        </div>
+                      </div>
                     </div>
                   );
-                })()}
+                })() : (
+                  <div className="mt-3 pt-2.5 border-t border-emerald-200 dark:border-emerald-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 shadow-sm">
+                      <span className="text-[10px] text-slate-500 block font-bold">Utilidad Neta Real:</span>
+                      <p className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{formatCurrency(financials.netProfit)} ({financials.roi}%)</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 shadow-sm">
+                      <span className="text-[10px] text-slate-500 block font-bold">Rentabilidad Mensual Capital:</span>
+                      <p className="font-black text-indigo-600 dark:text-indigo-400 text-sm">📈 {financials.monthlyRoi}% / mes (+{formatCurrency(financials.monthlyProfit)}/m)</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

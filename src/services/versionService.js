@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.0";
+export const CURRENT_APP_VERSION = "2.24.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.1",
+    date: "28/09/2026",
+    title: "🛠️ Corrección y Optimización de la Pestaña Finanzas & Costos en la Ficha Técnica",
+    highlights: [
+      "Ficha Técnica 100% Estable: Solucionado el error al consultar la pestaña 'Finanzas y Costos' en animales vendidos.",
+      "Desglose Completo de Venta: Visualización de retorno de capital, ganancia de pastoreo de la finca y rentabilidad mensual directa dentro de la ficha de cada animal.",
+      "Sincronización Total con la Triada Financiera y Rentabilidad Mensual."
+    ]
+  },
   {
     version: "2.24.0",
     date: "28/09/2026",

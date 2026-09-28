@@ -1,5 +1,5 @@
 {
-  "version": "2.24.0",
-  "buildTime": 1790650000000,
-  "description": "📈 Rentabilidad Mensual del Capital (% mensual y $/mes) para Dueño del Animal y Finca"
+  "version": "2.24.1",
+  "buildTime": 1790651000000,
+  "description": "🛠️ Corrección y despliegue del módulo Finanzas y Costos en la Ficha Técnica del Bovino"
 }
