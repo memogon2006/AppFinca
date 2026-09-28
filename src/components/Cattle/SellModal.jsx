@@ -3,9 +3,12 @@ import { Modal } from '../Common/Modal';
 import { formatCurrency, formatNumber, getLocalDateString } from '../../services/calculations';
 import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
 import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
 
 export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-[60]' }) {
+  const { currentUser } = useAuth();
+
   const entryPrice = parseFloat(animal?.entryPrice) || 0;
   const entryWeight = parseFloat(animal?.entryWeight) || 0;
   const currentWeight = parseFloat(animal?.currentWeight || entryWeight);
@@ -24,6 +27,15 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
   const [calcMode, setCalcMode] = useState('total');
   const [pricePerKg, setPricePerKg] = useState(() => String(farmMeatPrice));
 
+  // Modalidad: 'direct' (Solo yo / 100% utilidad finca) | 'partnership' (En compañía 50/50)
+  const [settlementMode, setSettlementMode] = useState('direct');
+  const [farmPercent, setFarmPercent] = useState(50);
+  const [partnerPercent, setPartnerPercent] = useState(50);
+
+  // Partes de la liquidación en compañía
+  const [farmPartyName, setFarmPartyName] = useState(() => currentUser?.farmName || currentUser?.name || 'Finca Principal');
+  const [partnerPartyName, setPartnerPartyName] = useState(() => animal?.owner || 'Dueño del Animal');
+
   useEffect(() => {
     if (isOpen && animal) {
       const pMeat = getFarmMeatPrice(animal?.owner);
@@ -33,13 +45,12 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
         ...prev,
         exitWeight: w > 0 ? w.toString() : prev.exitWeight,
       }));
+      setPartnerPartyName(animal?.owner || 'Dueño del Animal');
+      if (currentUser?.farmName || currentUser?.name) {
+        setFarmPartyName(currentUser?.farmName || currentUser?.name);
+      }
     }
-  }, [isOpen, animal]);
-
-  // Modalidad: 'direct' (Solo yo / 100% utilidad finca) | 'partnership' (En compañía 50/50)
-  const [settlementMode, setSettlementMode] = useState('direct');
-  const [farmPercent, setFarmPercent] = useState(50);
-  const [partnerPercent, setPartnerPercent] = useState(50);
+  }, [isOpen, animal, currentUser]);
 
   if (!isOpen || !animal) return null;
 
@@ -109,7 +120,9 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
       exitWeight: parseFloat(saleData.exitWeight),
       exitPrice: parseFloat(saleData.exitPrice),
       saleBuyer: saleData.buyer,
-      saleReason: isPartnership ? `Venta en Compañía (${farmPercent}% Finca / ${partnerPercent}% Dueño)` : (saleData.exitReason || 'Venta Directa'),
+      saleReason: isPartnership 
+        ? `Venta en Compañía (${farmPercent}% ${farmPartyName} / ${partnerPercent}% ${partnerPartyName})` 
+        : (saleData.exitReason || 'Venta Directa'),
       exitType: isPartnership ? 'En Compañía' : 'En Pie',
       currentWeight: parseFloat(saleData.exitWeight),
       partnershipDetails: isPartnership ? {
@@ -120,7 +133,9 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
         partnerTotalReturn,
         entryPrice,
         profit: netProfit,
-        owner: animal.owner,
+        owner: animal.owner || partnerPartyName,
+        farmPartyName,
+        partnerPartyName,
       } : null
     });
     onClose();
@@ -349,18 +364,49 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
                 Reparto de Ganancia de Compañía
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-200 dark:bg-teal-800 text-teal-900 dark:text-teal-100">
-                {farmPercent}% Finca / {partnerPercent}% Dueño del Animal
+                {farmPercent}% Finca / {partnerPercent}% Dueño
               </span>
             </div>
 
-            <div className="space-y-3 pt-2 border-t border-teal-200/80 dark:border-teal-800/60 text-xs">
+            {/* SELECCIÓN DE FINCA Y DUEÑO */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 text-xs">
+              <div>
+                <label className="block text-[10px] font-bold text-emerald-800 dark:text-emerald-300 mb-1 flex items-center gap-1">
+                  <Building2 className="w-3 h-3 text-emerald-600" />
+                  <span>🏢 ¿Quién es la Finca? (Tenedor):</span>
+                </label>
+                <input
+                  type="text"
+                  value={farmPartyName}
+                  onChange={(e) => setFarmPartyName(e.target.value)}
+                  placeholder="Nombre de la Finca..."
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-blue-800 dark:text-blue-300 mb-1 flex items-center gap-1">
+                  <UserCheck className="w-3 h-3 text-blue-600" />
+                  <span>👤 ¿Quién es el Dueño? (Inversionista):</span>
+                </label>
+                <input
+                  type="text"
+                  value={partnerPartyName}
+                  onChange={(e) => setPartnerPartyName(e.target.value)}
+                  placeholder="Nombre del Dueño..."
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-1 border-t border-teal-200/80 dark:border-teal-800/60 text-xs">
               <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                El dueño del animal recupera el 100% de su costo de compra ({formatCurrency(entryPrice)}) y la ganancia restante ({formatCurrency(Math.max(0, netProfit))}) se reparte:
+                <strong>{partnerPartyName}</strong> recupera el 100% de su costo de compra ({formatCurrency(entryPrice)}) y la ganancia restante ({formatCurrency(Math.max(0, netProfit))}) se reparte:
               </p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-700">
-                  <span className="text-[10px] font-bold text-slate-500 block mb-1">🏢 Finca (%):</span>
+                  <span className="text-[10px] font-bold text-slate-500 block mb-1">🏢 {farmPartyName} (%):</span>
                   <div className="flex items-center gap-1.5">
                     <input
                       type="number"
@@ -375,7 +421,7 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-700">
-                  <span className="text-[10px] font-bold text-slate-500 block mb-1">👤 Dueño (%):</span>
+                  <span className="text-[10px] font-bold text-slate-500 block mb-1">👤 {partnerPartyName} (%):</span>
                   <div className="flex items-center gap-1.5">
                     <input
                       type="number"
@@ -393,11 +439,11 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
               {exitPriceNum > 0 && (
                 <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700">
                   <div>
-                    <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 block">🏢 PARTE FINCA ({farmPercent}%):</span>
+                    <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 block">🏢 PARTE {farmPartyName.toUpperCase()} ({farmPercent}%):</span>
                     <strong className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(farmProfitShare)}</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 block">👤 PAGO TOTAL DUEÑO:</span>
+                    <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 block">👤 PAGO TOTAL {partnerPartyName.toUpperCase()}:</span>
                     <strong className="text-sm font-black text-blue-600 dark:text-blue-400">{formatCurrency(partnerTotalReturn)}</strong>
                     <div className="text-[9px] text-slate-400">Capital ({formatCurrency(entryPrice)}) + {partnerPercent}% ganancia</div>
                   </div>

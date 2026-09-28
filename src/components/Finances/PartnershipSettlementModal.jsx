@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, getLocalDateString } from '../../services/calculations';
 import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
+import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
 
 export function PartnershipSettlementModal({ 
@@ -33,16 +34,48 @@ export function PartnershipSettlementModal({
   onConfirmBatchSale,
   zIndex = 'z-[60]'
 }) {
+  const { currentUser } = useAuth();
+
   if (!isOpen) return null;
 
   const activeCattle = useMemo(() => {
     return cattle.filter(c => c.status === 'Activo');
   }, [cattle]);
 
+  // Propietarios únicos y opciones de finca
+  const entryBatches = useMemo(() => {
+    return Array.from(new Set(activeCattle.map(c => c.entryBatch || c.paddock).filter(Boolean)));
+  }, [activeCattle]);
+
+  const owners = useMemo(() => {
+    return Array.from(new Set(cattle.map(c => c.owner).filter(Boolean)));
+  }, [cattle]);
+
+  const farmOptions = useMemo(() => {
+    const list = [];
+    if (currentUser?.farmName) list.push(currentUser.farmName);
+    if (currentUser?.name && currentUser.name !== currentUser?.farmName) list.push(currentUser.name);
+    list.push('Finca Principal (Tenedor / Pastos)');
+    return Array.from(new Set(list));
+  }, [currentUser]);
+
   // Estados del filtro de selección
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('');
   const [selectedOwnerFilter, setSelectedOwnerFilter] = useState('');
+
+  // Partes del acuerdo de liquidación
+  const [farmPartyName, setFarmPartyName] = useState(() => currentUser?.farmName || currentUser?.name || 'Finca Principal');
+  const [farmPartyDoc, setFarmPartyDoc] = useState(() => currentUser?.documentNumber || '');
+  const [partnerPartyName, setPartnerPartyName] = useState(() => selectedOwnerFilter || owners[0] || 'Dueño del Animal');
+  const [partnerPartyDoc, setPartnerPartyDoc] = useState('');
+
+  // Sincronizar dueño seleccionado con el filtro
+  useEffect(() => {
+    if (selectedOwnerFilter) {
+      setPartnerPartyName(selectedOwnerFilter);
+    }
+  }, [selectedOwnerFilter]);
 
   // Animales seleccionados y sus pesos de salida modificables
   const [selectedIds, setSelectedIds] = useState([]);
@@ -61,15 +94,6 @@ export function PartnershipSettlementModal({
   const [farmPercent, setFarmPercent] = useState(50); // % para la Finca en los que son en compañía
   const [partnerPercent, setPartnerPercent] = useState(50); // % para el Dueño del Animal
   const [activeTab, setActiveTab] = useState('selection'); // 'selection' | 'preview' | 'report'
-
-  // Batches y Propietarios únicos
-  const entryBatches = useMemo(() => {
-    return Array.from(new Set(activeCattle.map(c => c.entryBatch || c.paddock).filter(Boolean)));
-  }, [activeCattle]);
-
-  const owners = useMemo(() => {
-    return Array.from(new Set(activeCattle.map(c => c.owner).filter(Boolean)));
-  }, [activeCattle]);
 
   // Filtrar lista disponible
   const filteredAvailable = useMemo(() => {
@@ -319,11 +343,13 @@ export function PartnershipSettlementModal({
       return;
     }
 
-    const confirmMsg = `⚠️ ¿Confirmas la venta/liquidación de este lote (${totals.totalHeads} bovinos por un total de ${formatCurrency(totals.totalGrossSale)})?\n\n` +
-      `• 💰 Animales en Venta Directa: ${totals.countDirect} cabezas (${formatCurrency(totals.directGross)} Venta Bruta directa al Dueño)\n` +
+    const confirmMsg = `⚠️ ¿Confirmas la liquidación y venta de este lote (${totals.totalHeads} bovinos por un total de ${formatCurrency(totals.totalGrossSale)})?\n\n` +
+      `• 🏢 Finca / Tenedor: ${farmPartyName}\n` +
+      `• 👤 Dueño del Animal: ${partnerPartyName}\n\n` +
+      `• 💰 Animales en Venta Directa: ${totals.countDirect} cabezas (${formatCurrency(totals.directGross)})\n` +
       `• 🤝 Animales en Compañía: ${totals.countPartnership} cabezas (${formatCurrency(totals.partnershipGross)})\n\n` +
-      `• 🏢 Total Dinero para la Finca: ${formatCurrency(totals.totalFarmGrossCash)} (Utilidad Neta: ${formatCurrency(totals.totalFarmNetProfit)})\n` +
-      `• 👤 Total a Entregar al Dueño del Animal: ${formatCurrency(totals.partnershipPartnerReturn)}`;
+      `• 🏢 Total Dinero para la Finca (${farmPartyName}): ${formatCurrency(totals.totalFarmGrossCash)} (Utilidad Neta: ${formatCurrency(totals.totalFarmNetProfit)})\n` +
+      `• 👤 Total a Entregar a (${partnerPartyName}): ${formatCurrency(totals.partnershipPartnerReturn)}`;
     
     if (window.confirm(confirmMsg)) {
       try {
@@ -342,7 +368,7 @@ export function PartnershipSettlementModal({
         exitPrice: d.grossSale,
         saleBuyer: buyerName || (d.isPart ? 'Comprador Lote Compañía' : 'Comprador Lote Directo'),
         saleReason: d.isPart 
-          ? `Venta en Compañía (${farmPercent}% Finca / ${partnerPercent}% Dueño)` 
+          ? `Venta en Compañía (${farmPercent}% ${farmPartyName} / ${partnerPercent}% ${partnerPartyName})` 
           : 'Venta Directa de Lote',
         exitType: d.isPart ? 'En Compañía' : 'En Pie',
         partnershipDetails: d.isPart ? {
@@ -354,7 +380,11 @@ export function PartnershipSettlementModal({
           farmShare: d.farmProfitOnly,
           partnerTotalReturn: d.partnerTotalReturn,
           partnerProfitShare: d.partnerProfitShare,
-          owner: d.animal.owner,
+          owner: d.animal.owner || partnerPartyName,
+          farmPartyName,
+          partnerPartyName,
+          farmPartyDoc,
+          partnerPartyDoc,
         } : null
       }));
 
@@ -668,6 +698,85 @@ export function PartnershipSettlementModal({
                   </div>
                 </div>
 
+                {/* ========================================================================= */}
+                {/* 👥 IDENTIFICACIÓN DE LAS PARTES (FINCA VS DUEÑO DEL ANIMAL)              */}
+                {/* ========================================================================= */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-blue-50/70 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-blue-950/30 border border-teal-200 dark:border-teal-800/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-xl bg-teal-500/20 text-teal-600 dark:text-teal-400">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h5 className="font-extrabold text-xs uppercase tracking-wider text-slate-900 dark:text-white">
+                          👥 Partes del Acuerdo de Liquidación
+                        </h5>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                          Selecciona quién representa a la <strong>Finca</strong> (cuidado/pastos) y quién es el <strong>Dueño del Animal</strong> (capital de compra).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    {/* PARTE 1: LA FINCA */}
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/80 shadow-sm space-y-2">
+                      <label className="block font-black text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-1.5">
+                        <Building2 className="w-4 h-4 text-emerald-600" />
+                        <span>🏢 1. ¿Quién es la Finca? (Tenedor / Pastos):</span>
+                      </label>
+                      <input
+                        type="text"
+                        list="modal-farm-parties-list"
+                        value={farmPartyName}
+                        onChange={(e) => setFarmPartyName(e.target.value)}
+                        placeholder="Nombre de la Finca o Administrador..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <datalist id="modal-farm-parties-list">
+                        {farmOptions.map(f => (
+                          <option key={f} value={f} />
+                        ))}
+                      </datalist>
+                      <input
+                        type="text"
+                        value={farmPartyDoc}
+                        onChange={(e) => setFarmPartyDoc(e.target.value)}
+                        placeholder="NIT / C.C. Finca (Opcional para acta)..."
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300"
+                      />
+                    </div>
+
+                    {/* PARTE 2: EL DUEÑO DEL ANIMAL */}
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700/80 shadow-sm space-y-2">
+                      <label className="block font-black text-blue-800 dark:text-blue-300 text-xs flex items-center gap-1.5">
+                        <UserCheck className="w-4 h-4 text-blue-600" />
+                        <span>👤 2. ¿Quién es el Dueño del Animal? (Inversionista):</span>
+                      </label>
+                      <input
+                        type="text"
+                        list="modal-partner-parties-list"
+                        value={partnerPartyName}
+                        onChange={(e) => setPartnerPartyName(e.target.value)}
+                        placeholder="Nombre del Dueño del Animal..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-blue-500"
+                      />
+                      <datalist id="modal-partner-parties-list">
+                        {owners.map(o => (
+                          <option key={o} value={o} />
+                        ))}
+                      </datalist>
+                      <input
+                        type="text"
+                        value={partnerPartyDoc}
+                        onChange={(e) => setPartnerPartyDoc(e.target.value)}
+                        placeholder="C.C. / NIT Dueño (Opcional para acta)..."
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   <div>
                     <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -721,14 +830,14 @@ export function PartnershipSettlementModal({
                         Distribución de Ganancia para los {totals.countPartnership} animales en Compañía:
                       </span>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        * El dueño del animal recupera primero el capital de compra de sus animales y luego se reparte la ganancia.
+                        * <strong>{partnerPartyName}</strong> recupera primero el capital de compra ({formatCurrency(totals.partnershipPartnerCapital)}) y luego se reparte la ganancia.
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                          🏢 Parte Finca (Cuidado / Pastos):
+                          🏢 Parte {farmPartyName} (Cuidado / Pastos):
                         </label>
                         <div className="flex items-center gap-2">
                           <input
@@ -745,7 +854,7 @@ export function PartnershipSettlementModal({
 
                       <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                          👤 Parte Dueño del Animal:
+                          👤 Parte {partnerPartyName} (Dueño):
                         </label>
                         <div className="flex items-center gap-2">
                           <input
@@ -789,27 +898,27 @@ export function PartnershipSettlementModal({
                     {formatCurrency(totals.totalEntryCost)}
                   </p>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">
-                    {totals.countPartnership > 0 && `Dueño: ${formatCurrency(totals.partnershipPartnerCapital)}`} {totals.countDirect > 0 && `• Finca: ${formatCurrency(totals.directEntryCost)}`}
+                    {totals.countPartnership > 0 && `${partnerPartyName}: ${formatCurrency(totals.partnershipPartnerCapital)}`} {totals.countDirect > 0 && `• ${farmPartyName}: ${formatCurrency(totals.directEntryCost)}`}
                   </div>
                 </div>
 
                 {/* 3. DINERO TOTAL PARA LA FINCA */}
                 <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 shadow-sm">
                   <span className="text-[11px] font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block flex items-center gap-1">
-                    <Building2 className="w-3.5 h-3.5" /> 3. Total Dinero para la Finca
+                    <Building2 className="w-3.5 h-3.5" /> 3. Total Finca ({farmPartyName})
                   </span>
                   <p className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-1">
                     {formatCurrency(totals.totalFarmGrossCash)}
                   </p>
                   <div className="text-[11px] text-emerald-800 dark:text-emerald-400 font-bold mt-1">
-                    {totals.countDirect > 0 && `100% Venta Directa (${formatCurrency(totals.directGross)})`} {totals.countPartnership > 0 && `• Ganancia Compañía (${formatCurrency(totals.partnershipFarmProfit)})`}
+                    {totals.countDirect > 0 && `Venta Directa (${formatCurrency(totals.directGross)})`} {totals.countPartnership > 0 && `• Ganancia Compañía (${formatCurrency(totals.partnershipFarmProfit)})`}
                   </div>
                 </div>
 
                 {/* 4. TOTAL DUEÑO DEL ANIMAL */}
                 <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-300 dark:border-blue-700 shadow-sm">
                   <span className="text-[11px] font-extrabold text-blue-800 dark:text-blue-300 uppercase tracking-wider block flex items-center gap-1">
-                    <UserCheck className="w-3.5 h-3.5" /> 4. Entrega Total al Dueño
+                    <UserCheck className="w-3.5 h-3.5" /> 4. Total Dueño ({partnerPartyName})
                   </span>
                   <p className="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">
                     {formatCurrency(totals.partnershipPartnerReturn)}
@@ -922,8 +1031,8 @@ export function PartnershipSettlementModal({
                     <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-2">
                       <span>🐄 ACTA DE LIQUIDACIÓN Y VENTA DE GANADO POR LOTE</span>
                     </h2>
-                    <p className="text-xs text-slate-600 font-semibold mt-0.5">
-                      Finca Ganadera • Sistema de Ceba & Aumento en Pastoreo
+                    <p className="text-xs text-slate-700 font-bold mt-0.5">
+                      🏢 Finca / Tenedor: <strong>{farmPartyName}</strong> {farmPartyDoc && `(Doc: ${farmPartyDoc})`} • 👤 Dueño del Animal: <strong>{partnerPartyName}</strong> {partnerPartyDoc && `(Doc: ${partnerPartyDoc})`}
                     </p>
                   </div>
                   <div className="text-right text-xs">
@@ -944,8 +1053,8 @@ export function PartnershipSettlementModal({
                     <strong className="text-sm">{formatNumber(totals.totalExitWeight, 1)} kg</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500 block">Venta Directa:</span>
-                    <strong className="text-sm">100% Venta Bruta al Dueño</strong>
+                    <span className="text-slate-500 block">Reparto en Compañía:</span>
+                    <strong className="text-sm">{farmPercent}% {farmPartyName} / {partnerPercent}% {partnerPartyName}</strong>
                   </div>
                   <div>
                     <span className="text-slate-500 block">Kilos Ganados en Pastos:</span>
@@ -959,14 +1068,14 @@ export function PartnershipSettlementModal({
                     <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                       <th className="p-2 border-r border-slate-200">Arete</th>
                       <th className="p-2 border-r border-slate-200">Modalidad</th>
-                      <th className="p-2 border-r border-slate-200">Dueño del Animal</th>
+                      <th className="p-2 border-r border-slate-200">Dueño Registrado</th>
                       <th className="p-2 border-r border-slate-200">Peso Ent.</th>
                       <th className="p-2 border-r border-slate-200">Peso Sal.</th>
                       <th className="p-2 border-r border-slate-200">Aumento</th>
                       <th className="p-2 border-r border-slate-200">Costo Compra</th>
                       <th className="p-2 border-r border-slate-200">Venta Bruta</th>
-                      <th className="p-2 border-r border-slate-200 text-emerald-800">Total Finca (Dinero)</th>
-                      <th className="p-2 text-blue-800">Total Pago a Dueño</th>
+                      <th className="p-2 border-r border-slate-200 text-emerald-800">Total {farmPartyName}</th>
+                      <th className="p-2 text-blue-800">Total {partnerPartyName}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -976,7 +1085,7 @@ export function PartnershipSettlementModal({
                         <td className="p-2 border-r border-slate-200 font-bold text-[10px]">
                           {d.isPart ? '🤝 En Compañía' : '💰 Venta Directa'}
                         </td>
-                        <td className="p-2 border-r border-slate-200">{d.animal.owner || 'Dueño Principal'} ({d.animal.ironBrand || 'N/A'})</td>
+                        <td className="p-2 border-r border-slate-200">{d.animal.owner || partnerPartyName} ({d.animal.ironBrand || 'N/A'})</td>
                         <td className="p-2 border-r border-slate-200">{d.entryWeight} kg</td>
                         <td className="p-2 font-bold border-r border-slate-200">{d.exitWeight} kg</td>
                         <td className="p-2 font-bold text-emerald-700 border-r border-slate-200">+{d.weightGain} kg</td>
@@ -1006,18 +1115,18 @@ export function PartnershipSettlementModal({
                 {/* Cuadro Resumen Final Consolidado */}
                 <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-100 border border-slate-300 text-xs">
                   <div className="space-y-1">
-                    <p className="font-extrabold text-emerald-900 uppercase">🏢 TOTAL DINERO PARA LA FINCA:</p>
+                    <p className="font-extrabold text-emerald-900 uppercase">🏢 TOTAL DINERO PARA {farmPartyName.toUpperCase()}:</p>
                     <p className="text-2xl font-black text-emerald-700">{formatCurrency(totals.totalFarmGrossCash)}</p>
                     <span className="text-slate-600 text-[11px]">
-                      100% Venta Bruta de Directos ({formatCurrency(totals.directGross)}) + Ganancia en Pastoreo de Compañía ({formatCurrency(totals.partnershipFarmProfit)}). Utilidad neta total: {formatCurrency(totals.totalFarmNetProfit)}.
+                      Venta directa ({formatCurrency(totals.directGross)}) + Ganancia en pastos de compañía ({formatCurrency(totals.partnershipFarmProfit)}). Utilidad neta: {formatCurrency(totals.totalFarmNetProfit)}.
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <p className="font-extrabold text-blue-900 uppercase">👤 TOTAL A ENTREGAR AL DUEÑO DEL ANIMAL:</p>
+                    <p className="font-extrabold text-blue-900 uppercase">👤 TOTAL A ENTREGAR A {partnerPartyName.toUpperCase()} (DUEÑO DEL ANIMAL):</p>
                     <p className="text-2xl font-black text-blue-700">{formatCurrency(totals.partnershipPartnerReturn)}</p>
                     <span className="text-slate-600 text-[11px]">
                       {totals.countPartnership > 0 
-                        ? `Devolución de Capital (${formatCurrency(totals.partnershipPartnerCapital)}) + Ganancia Dueño (${formatCurrency(totals.partnershipPartnerProfit)}).`
+                        ? `Devolución de capital invertido (${formatCurrency(totals.partnershipPartnerCapital)}) + ${partnerPercent}% Ganancia (${formatCurrency(totals.partnershipPartnerProfit)}).`
                         : 'Sin participación de animales en compañía en este lote.'}
                     </span>
                   </div>
@@ -1027,13 +1136,13 @@ export function PartnershipSettlementModal({
                 <div className="grid grid-cols-2 gap-8 pt-10 border-t border-slate-300 text-xs">
                   <div className="text-center space-y-1">
                     <div className="border-t border-slate-400 mx-8"></div>
-                    <p className="font-bold text-slate-800 mt-2">ADMINISTRADOR / FINCA</p>
-                    <p className="text-slate-500">C.C. ___________________</p>
+                    <p className="font-bold text-slate-800 mt-2">ADMINISTRADOR / FINCA ({farmPartyName})</p>
+                    <p className="text-slate-500">C.C. / NIT: {farmPartyDoc || '___________________'}</p>
                   </div>
                   <div className="text-center space-y-1">
                     <div className="border-t border-slate-400 mx-8"></div>
-                    <p className="font-bold text-slate-800 mt-2">DUEÑO DEL ANIMAL O COMPRADOR</p>
-                    <p className="text-slate-500">C.C. / NIT: ___________________</p>
+                    <p className="font-bold text-slate-800 mt-2">DUEÑO DEL ANIMAL ({partnerPartyName})</p>
+                    <p className="text-slate-500">C.C. / NIT: {partnerPartyDoc || '___________________'}</p>
                   </div>
                 </div>
 

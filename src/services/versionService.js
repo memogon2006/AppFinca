@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.20.0";
+export const CURRENT_APP_VERSION = "2.21.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.21.0",
+    date: "28/09/2026",
+    title: "🤝 Selección Personalizada de 'Finca' y 'Dueño del Animal' en Liquidación en Compañía",
+    highlights: [
+      "Identificación Precisa de Partes: Ahora puedes seleccionar o digitar quién representa a la Finca (tenedor/pastos) y quién es el Dueño del Animal (inversionista/aportante de capital) tanto en liquidaciones por lote como individuales.",
+      "Listas Sugeridas Inteligentes: Carga automática de los nombres de finca registrados y de todos los propietarios detectados en el hato para selección en 1 clic.",
+      "Desglose & Tarjetas Dinámicas: Todos los balances, montos de devolución de capital y porcentajes de ganancia muestran los nombres específicos de las partes involucradas.",
+      "Acta & Comprobante Oficial Imprimible: El acta de liquidación incluye los nombres, documentos y firmas personalizadas para la Finca y el Dueño del Animal."
+    ]
+  },
   {
     version: "2.20.0",
     date: "27/09/2026",
