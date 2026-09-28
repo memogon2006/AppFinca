@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.1";
+export const CURRENT_APP_VERSION = "2.24.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.2",
+    date: "28/09/2026",
+    title: " Claridad Total en Métricas Financieras del Tablero Principal y Contabilidad",
+    highlights: [
+      "Distinción Clara en Tablero: Indicadores explícitos de 'Ingresos Totales (Histórico)', 'Gastos Finca (Histórico)' y 'Utilidad Neta Real (Histórica)'.",
+      "Indicador de Mes Actual en Vivo: Cada tarjeta muestra directamente el flujo correspondiente al mes en curso (ej. Septiembre 2026).",
+      "Sincronización Total con Contabilidad: Coincidencia matemática exacta entre el resumen general del Tablero y los filtros por período del Módulo Contable."
+    ]
+  },
   {
     version: "2.24.1",
     date: "28/09/2026",

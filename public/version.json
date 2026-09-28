@@ -1,5 +1,5 @@
 {
-  "version": "2.24.1",
-  "buildTime": 1790651000000,
-  "description": "🛠️ Corrección y despliegue del módulo Finanzas y Costos en la Ficha Técnica del Bovino"
+  "version": "2.24.2",
+  "buildTime": 1790653000000,
+  "description": " Claridad total en el Tablero Principal: Distinción entre Totales Históricos y Mes Actual sincronizados con Contabilidad"
 }

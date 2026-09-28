@@ -126,7 +126,6 @@ export function DashboardView({
   // Cálculos financieros y de biomasa
   let totalInvestedActive = 0;
   let totalCurrentWeight = 0;
-  let totalRealizedProfit = 0;
 
   activeCattle.forEach(animal => {
     const fin = calculateFinancials(animal, 0, meatPricePerKg);
@@ -137,9 +136,15 @@ export function DashboardView({
     totalCurrentWeight += metrics.currentWeight;
   });
 
+  let totalUserCashInflow = 0;
+  let totalCapitalRecovered = 0;
+  let totalRealizedProfit = 0;
+
   soldCattle.forEach(animal => {
-    const fin = calculateFinancials(animal, 0, meatPricePerKg);
-    totalRealizedProfit += fin.netProfit;
+    const flow = calculateSaleCashFlow(animal, currentUser);
+    totalRealizedProfit += flow.netProfit;
+    totalUserCashInflow += flow.cashInflow;
+    totalCapitalRecovered += flow.capitalReturn;
   });
 
   // Cálculos Financieros Integrales de la Finca (Contabilidad + Ventas + Lechería)
@@ -157,10 +162,24 @@ export function DashboardView({
   const currentMonthIncomes = effectiveIncomes
     .filter(i => getSafeDateString(i.date, i.createdAt).startsWith(currentMonthPrefix))
     .reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
-  const currentMonthCattleProfit = soldCattle
+  
+  let currentMonthCattleSalesGross = 0;
+  let currentMonthUserCashInflow = 0;
+  let currentMonthCapitalRecovered = 0;
+  let currentMonthCattleProfit = 0;
+
+  soldCattle
     .filter(c => (c.exitDate || c.updatedAt || '').startsWith(currentMonthPrefix))
-    .reduce((sum, c) => sum + calculateFinancials(c, 0, meatPricePerKg).netProfit, 0);
+    .forEach(c => {
+      const flow = calculateSaleCashFlow(c, currentUser);
+      currentMonthCattleSalesGross += (parseFloat(c.exitPrice) || 0);
+      currentMonthUserCashInflow += flow.cashInflow;
+      currentMonthCapitalRecovered += flow.capitalReturn;
+      currentMonthCattleProfit += flow.netProfit;
+    });
+
   const currentMonthNetProfit = currentMonthCattleProfit + currentMonthIncomes - currentMonthExpenses;
+  const currentMonthGrossIncome = currentMonthCattleSalesGross + currentMonthIncomes;
 
   // Cobertura de Gastos del Mes
   const expenseCoveragePct = currentMonthExpenses > 0 
@@ -632,28 +651,28 @@ export function DashboardView({
               {/* 1. Ingresos Totales */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Ingresos Totales</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Ingresos Totales (Histórico)</span>
                   <TrendingUp className="w-4 h-4" />
                 </div>
                 <p className="text-lg font-black text-slate-900 dark:text-white tabular-nums">
                   {formatCurrency(totalGrossIncome)}
                 </p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                  Ventas: {formatCurrency(totalCattleSalesRevenue)} • Otros: {formatCurrency(totalOtherIncomes)}
+                  📅 Mes actual: {formatCurrency(currentMonthGrossIncome)} • Ventas: {formatCurrency(totalCattleSalesRevenue)}
                 </p>
               </div>
 
               {/* 2. Gastos Totales de Finca */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Gastos de Finca</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Gastos Finca (Histórico)</span>
                   <TrendingDown className="w-4 h-4" />
                 </div>
                 <p className="text-lg font-black text-rose-600 dark:text-rose-400 tabular-nums">
                   {formatCurrency(totalFarmExpenses)}
                 </p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                  Mes actual: {formatCurrency(currentMonthExpenses)}
+                  📅 Mes actual: {formatCurrency(currentMonthExpenses)}
                 </p>
               </div>
 
@@ -664,7 +683,7 @@ export function DashboardView({
                   : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/60'
               }`}>
                 <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Utilidad Neta Real</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Utilidad Neta Real (Histórica)</span>
                   <DollarSign className={`w-4 h-4 ${realNetProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} />
                 </div>
                 <p className={`text-lg font-black tabular-nums ${
@@ -673,7 +692,7 @@ export function DashboardView({
                   {formatCurrency(realNetProfit)}
                 </p>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                  Mes: {formatCurrency(currentMonthNetProfit)}
+                  📅 Mes actual: {formatCurrency(currentMonthNetProfit)}
                 </p>
               </div>
 
