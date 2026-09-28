@@ -24,7 +24,8 @@ import {
   Receipt,
   FileText,
   Save,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { QuickMilkingModal } from './QuickMilkingModal';
 import { TankDeliveryModal } from './TankDeliveryModal';

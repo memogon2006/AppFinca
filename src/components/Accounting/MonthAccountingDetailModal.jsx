@@ -24,7 +24,8 @@ import {
   Info,
   ChevronRight,
   Building2,
-  UserCheck
+  UserCheck,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 

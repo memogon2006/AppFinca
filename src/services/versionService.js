@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.3";
+export const CURRENT_APP_VERSION = "2.24.4";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.4",
+    date: "28/09/2026",
+    title: "📊 Corrección y Estabilidad en el Desglose Contable Mensual",
+    highlights: [
+      "Desglose Mensual 100% Funcional: Solucionada la apertura al hacer clic en las barras o meses del gráfico histórico.",
+      "Auditoría Exhaustiva de Componentes: Validación total de referencias e íconos en todos los módulos financieros y contables.",
+      "Sincronización PWA Instantánea."
+    ]
+  },
   {
     version: "2.24.3",
     date: "28/09/2026",
