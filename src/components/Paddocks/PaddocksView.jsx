@@ -20,9 +20,11 @@ import {
   TrendingUp,
   Layers,
   Info,
-  Calendar
+  Calendar,
+  Scale
 } from 'lucide-react';
 import { formatDate, getLocalDateString } from '../../services/calculations';
+import { calculatePaddockCapacity } from '../../types/paddocks';
 import { PaddockFormModal } from './PaddockFormModal';
 import { RotateBatchModal } from './RotateBatchModal';
 import { ForageCalculatorModal } from './ForageCalculatorModal';
@@ -50,7 +52,7 @@ export function PaddocksView({
 
   const today = getLocalDateString();
 
-  // Métricas zootécnicas de días de descanso / pastoreo
+  // Métricas zootécnicas de días de descanso / pastoreo y capacidad
   const getPaddockMetrics = (p) => {
     let restDays = 0;
     let grazingDays = 0;
@@ -65,16 +67,33 @@ export function PaddocksView({
       grazingDays = Math.max(0, diff);
     }
 
-    const targetRest = p.targetRestDays || 30;
-    const targetGrazing = p.targetGrazingDays || 3;
+    const targetRest = parseInt(p.targetRestDays) || 30;
+    const targetGrazing = parseInt(p.targetGrazingDays) || 3;
     const isRestCompleted = restDays >= targetRest;
     const isGrazingExceeded = grazingDays > targetGrazing;
 
     // Animales activos en este potrero o lote
     const activeAnimals = cattle.filter(c => 
       c.status === 'Activo' && 
-      ((p.currentBatchName && c.entryBatch === p.currentBatchName) || c.paddock === p.name)
+      ((p.currentBatchName && (c.entryBatch === p.currentBatchName || c.paddock === p.currentBatchName)) || c.paddock === p.name)
     );
+    const activeAnimalsCount = activeAnimals.length;
+    const totalWeight = activeAnimals.reduce((sum, c) => sum + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
+    const avgWeight = activeAnimalsCount > 0 ? Math.round(totalWeight / activeAnimalsCount) : 380;
+
+    // Cálculo zootécnico de capacidad
+    const capacity = calculatePaddockCapacity({
+      areaHa: p.areaHa || 1,
+      pastureType: p.pastureType,
+      cuttingWeightKg: p.cuttingWeightKg,
+      usablePercentage: p.usablePercentage || 70,
+      targetRestDays: targetRest,
+      targetGrazingDays: targetGrazing,
+      animalCount: activeAnimalsCount > 0 ? activeAnimalsCount : 25,
+      avgAnimalWeightKg: avgWeight,
+      consumptionRate: 10,
+      entryDate: p.entryDate || today,
+    });
 
     return {
       restDays,
@@ -83,7 +102,9 @@ export function PaddocksView({
       targetGrazing,
       isRestCompleted,
       isGrazingExceeded,
-      activeAnimalsCount: activeAnimals.length,
+      activeAnimalsCount,
+      avgWeight,
+      capacity,
     };
   };
 
@@ -479,6 +500,17 @@ export function PaddocksView({
                       </span>
                     )}
                   </div>
+
+                  {/* Capacidad Zootécnica Estimada */}
+                  <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/60">
+                    <span className="text-slate-600 dark:text-slate-400 font-bold flex items-center gap-1">
+                      <Scale className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Capacidad ({p.targetGrazingDays || 3}d pastoreo):</span>
+                    </span>
+                    <span className="font-black text-emerald-700 dark:text-emerald-300">
+                      ~{m.capacity.maxAnimalsForTargetStay} cabezas ({m.capacity.maxUGMForTargetStay} UGM)
+                    </span>
+                  </div>
                 </div>
 
                 {/* Semáforo / Días de Descanso u Ocupación */}
@@ -498,7 +530,7 @@ export function PaddocksView({
 
                       <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 mb-1">
                         <span>Pastoreando: <strong>{m.grazingDays} días</strong></span>
-                        <span>Meta máx: {m.targetGrazing} días</span>
+                        <span>Ocupación ideal: <strong>{m.capacity.idealGrazingDays} días</strong></span>
                       </div>
 
                       {/* Barra de progreso de pastoreo */}
@@ -517,11 +549,18 @@ export function PaddocksView({
                           <span>¡Pastoreo excedido por {m.grazingDays - m.targetGrazing} días! Rotar de inmediato.</span>
                         </p>
                       ) : (
-                        <p className="text-[10px] text-slate-500 mt-1">
-                          {m.targetGrazing - m.grazingDays > 0 
-                            ? `Le quedan aprox. ${m.targetGrazing - m.grazingDays} días de pastoreo ideal.`
-                            : 'Cumplió el tiempo de pastoreo recomendado.'}
-                        </p>
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                          <span>
+                            {m.targetGrazing - m.grazingDays > 0 
+                              ? `Le quedan aprox. ${m.targetGrazing - m.grazingDays} días de pastoreo ideal.`
+                              : 'Cumplió el tiempo de pastoreo recomendado.'}
+                          </span>
+                          {m.capacity.suggestedExitDate && (
+                            <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                              Rotar: {m.capacity.suggestedExitDate}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                   ) : p.status === 'descanso' ? (
@@ -558,6 +597,14 @@ export function PaddocksView({
                           </span>
                         )}
                         <span className="font-bold text-slate-400">{restProgressPct}%</span>
+                      </div>
+
+                      {/* Circuito Requerido */}
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700/60 mt-1">
+                        <span>Circuito rotacional continuo:</span>
+                        <strong className="text-emerald-700 dark:text-emerald-300">
+                          {m.capacity.paddocksNeededInCircuit} potreros
+                        </strong>
                       </div>
                     </div>
                   ) : (

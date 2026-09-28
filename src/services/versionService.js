@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.18.3";
+export const CURRENT_APP_VERSION = "2.19.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.19.0",
+    date: "27/09/2026",
+    title: "🌾 Calculadora de Aforo 1m², Capacidad de Carga & Pastoreo Rotacional en Potreros",
+    highlights: [
+      "Predicción de Capacidad Animal en Creación: Al crear o editar un potrero, el sistema calcula en tiempo real cuántos animales puedes meter según el área y la especie forrajera para tus días de pastoreo meta.",
+      "Cálculo de Días de Ocupación por Lote: Ingresa o simula el número de cabezas y su peso promedio para obtener los días de comida exactos antes de que comience el rebrote del pasto.",
+      "Diseño del Circuito Rotacional Continuo: Basado en tus días de descanso meta (ej. 30-35d) y los días de ocupación, calcula el número de potreros que necesita tu finca para una rotación sin degradación (TD/TO + 1).",
+      "Fecha Límite Sugerida de Salida: Proyecta el día exacto en que se debe rotar el lote para evitar el sobrepastoreo."
+    ]
+  },
   {
     version: "2.18.3",
     date: "27/09/2026",

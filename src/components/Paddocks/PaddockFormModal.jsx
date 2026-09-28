@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
-import { PASTURE_TYPES, WATER_SOURCES, PADDOCK_STATUSES } from '../../types/paddocks';
+import { 
+  PASTURE_TYPES, 
+  WATER_SOURCES, 
+  PADDOCK_STATUSES,
+  getPastureDefaultAforo,
+  calculatePaddockCapacity
+} from '../../types/paddocks';
 import { 
   Leaf, 
   MapPin, 
@@ -11,9 +17,14 @@ import {
   ShieldCheck, 
   FileText,
   Boxes,
-  Zap
+  Zap,
+  Calculator,
+  Scale,
+  Sparkles,
+  AlertTriangle,
+  HelpCircle
 } from 'lucide-react';
-import { getLocalDateString } from '../../services/calculations';
+import { getLocalDateString, formatCurrency } from '../../services/calculations';
 
 export function PaddockFormModal({
   isOpen,
@@ -37,22 +48,42 @@ export function PaddockFormModal({
     entryDate: '',
     shadeQuality: 'Buena',
     fencingType: 'Eléctrica',
+    cuttingWeightKg: '',
+    usablePercentage: 70,
     notes: '',
   });
 
   const [loading, setLoading] = useState(false);
 
+  // Estados interactivos para cálculo de aforo y simulación de carga
+  const [showAdvancedAforo, setShowAdvancedAforo] = useState(false);
+  const [customAforoKg, setCustomAforoKg] = useState('');
+  const [customUsablePct, setCustomUsablePct] = useState(70);
+  const [simulatedAnimalCount, setSimulatedAnimalCount] = useState(25);
+  const [simulatedAvgWeight, setSimulatedAvgWeight] = useState(380);
+
   // Obtener lotes activos existentes
-  const activeBatches = Array.from(new Set(
-    cattle
-      .filter(c => c.status === 'Activo' && (c.entryBatch || c.paddock))
-      .map(c => c.entryBatch || c.paddock)
-  )).filter(Boolean);
+  const activeBatches = useMemo(() => {
+    return Array.from(new Set(
+      cattle
+        .filter(c => c.status === 'Activo' && (c.entryBatch || c.paddock))
+        .map(c => c.entryBatch || c.paddock)
+    )).filter(Boolean);
+  }, [cattle]);
+
+  // Peso promedio del hato
+  const herdAvgWeight = useMemo(() => {
+    const active = cattle.filter(c => c.status === 'Activo');
+    if (active.length === 0) return 380;
+    const total = active.reduce((sum, c) => sum + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
+    return Math.round(total / active.length);
+  }, [cattle]);
 
   useEffect(() => {
     if (editingPaddock) {
       const isStandardPasture = PASTURE_TYPES.includes(editingPaddock.pastureType);
       const isStandardWater = WATER_SOURCES.includes(editingPaddock.waterSource);
+      const pastureDefault = getPastureDefaultAforo(editingPaddock.pastureType);
 
       setFormData({
         name: editingPaddock.name || '',
@@ -63,34 +94,62 @@ export function PaddockFormModal({
         customWater: !isStandardWater ? (editingPaddock.waterSource || '') : '',
         status: editingPaddock.status || 'descanso',
         currentBatchName: editingPaddock.currentBatchName || '',
-        targetRestDays: editingPaddock.targetRestDays !== undefined ? editingPaddock.targetRestDays : 30,
+        targetRestDays: editingPaddock.targetRestDays !== undefined ? editingPaddock.targetRestDays : pastureDefault.restDays || 30,
         targetGrazingDays: editingPaddock.targetGrazingDays !== undefined ? editingPaddock.targetGrazingDays : 3,
         lastRestStartDate: editingPaddock.lastRestStartDate || getLocalDateString(),
         entryDate: editingPaddock.entryDate || '',
         shadeQuality: editingPaddock.shadeQuality || 'Buena',
         fencingType: editingPaddock.fencingType || 'Eléctrica',
+        cuttingWeightKg: editingPaddock.cuttingWeightKg || '',
+        usablePercentage: editingPaddock.usablePercentage || 70,
         notes: editingPaddock.notes || '',
       });
+
+      setCustomAforoKg(editingPaddock.cuttingWeightKg || '');
+      setCustomUsablePct(editingPaddock.usablePercentage || 70);
+
+      // Si tiene lote asignado, buscar cabezas y peso
+      if (editingPaddock.currentBatchName) {
+        const batchAnimals = cattle.filter(c => 
+          (c.entryBatch === editingPaddock.currentBatchName || c.paddock === editingPaddock.name) && 
+          c.status === 'Activo'
+        );
+        if (batchAnimals.length > 0) {
+          setSimulatedAnimalCount(batchAnimals.length);
+          const totalW = batchAnimals.reduce((acc, c) => acc + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
+          setSimulatedAvgWeight(Math.round(totalW / batchAnimals.length));
+        }
+      }
     } else {
+      const defaultPasture = PASTURE_TYPES[0];
+      const pastureDefault = getPastureDefaultAforo(defaultPasture);
+
       setFormData({
         name: '',
         areaHa: '',
-        pastureType: PASTURE_TYPES[0],
+        pastureType: defaultPasture,
         customPasture: '',
         waterSource: WATER_SOURCES[0],
         customWater: '',
         status: 'descanso',
         currentBatchName: '',
-        targetRestDays: 30,
+        targetRestDays: pastureDefault.restDays || 30,
         targetGrazingDays: 3,
         lastRestStartDate: getLocalDateString(),
         entryDate: '',
         shadeQuality: 'Buena',
         fencingType: 'Eléctrica',
+        cuttingWeightKg: '',
+        usablePercentage: 70,
         notes: '',
       });
+
+      setCustomAforoKg('');
+      setCustomUsablePct(70);
+      setSimulatedAnimalCount(cattle.filter(c => c.status === 'Activo').length > 0 ? Math.min(30, cattle.filter(c => c.status === 'Activo').length) : 25);
+      setSimulatedAvgWeight(herdAvgWeight);
     }
-  }, [editingPaddock, isOpen]);
+  }, [editingPaddock, isOpen, herdAvgWeight]);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -103,9 +162,66 @@ export function PaddockFormModal({
       if (field === 'status' && value === 'descanso' && !next.lastRestStartDate) {
         next.lastRestStartDate = getLocalDateString();
       }
+      // Si cambia el tipo de pasto y no tiene días de descanso personalizados, sugerir los de la especie
+      if (field === 'pastureType' && value !== 'Otro') {
+        const info = getPastureDefaultAforo(value);
+        if (!editingPaddock || !editingPaddock.targetRestDays) {
+          next.targetRestDays = info.restDays;
+        }
+      }
       return next;
     });
   };
+
+  const handleBatchSelected = (batch) => {
+    handleChange('currentBatchName', batch);
+    if (batch) {
+      const batchAnimals = cattle.filter(c => 
+        (c.entryBatch === batch || c.paddock === batch || (editingPaddock && c.paddock === editingPaddock.name)) && 
+        c.status === 'Activo'
+      );
+      if (batchAnimals.length > 0) {
+        setSimulatedAnimalCount(batchAnimals.length);
+        const totalW = batchAnimals.reduce((acc, c) => acc + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
+        setSimulatedAvgWeight(Math.round(totalW / batchAnimals.length));
+      }
+    }
+  };
+
+  // Cálculo Zootécnico Integral de Aforo y Capacidad en Tiempo Real
+  const capacityResults = useMemo(() => {
+    const area = parseFloat(formData.areaHa) || 0;
+    const finalPastureType = formData.pastureType === 'Otro' ? formData.customPasture : formData.pastureType;
+    const aforoKg = customAforoKg !== '' ? parseFloat(customAforoKg) : null;
+    
+    return calculatePaddockCapacity({
+      areaHa: area,
+      pastureType: finalPastureType,
+      cuttingWeightKg: aforoKg,
+      usablePercentage: customUsablePct,
+      targetRestDays: formData.targetRestDays,
+      targetGrazingDays: formData.targetGrazingDays,
+      animalCount: simulatedAnimalCount,
+      avgAnimalWeightKg: simulatedAvgWeight,
+      consumptionRate: 10,
+      entryDate: formData.entryDate || getLocalDateString(),
+    });
+  }, [
+    formData.areaHa, 
+    formData.pastureType, 
+    formData.customPasture, 
+    customAforoKg, 
+    customUsablePct, 
+    formData.targetRestDays, 
+    formData.targetGrazingDays, 
+    simulatedAnimalCount, 
+    simulatedAvgWeight, 
+    formData.entryDate
+  ]);
+
+  const defaultPastureAforo = useMemo(() => {
+    return getPastureDefaultAforo(formData.pastureType);
+  }, [formData.pastureType]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,6 +243,8 @@ export function PaddockFormModal({
       currentBatchName: formData.status === 'ocupado' ? formData.currentBatchName.trim() : '',
       targetRestDays: parseInt(formData.targetRestDays) || 30,
       targetGrazingDays: parseInt(formData.targetGrazingDays) || 3,
+      cuttingWeightKg: customAforoKg !== '' ? parseFloat(customAforoKg) : defaultPastureAforo.avgCuttingKg,
+      usablePercentage: customUsablePct || 70,
       lastRestStartDate: formData.status === 'descanso' ? formData.lastRestStartDate : (editingPaddock?.lastRestStartDate || ''),
       entryDate: formData.status === 'ocupado' ? formData.entryDate : '',
       shadeQuality: formData.shadeQuality,
@@ -153,8 +271,8 @@ export function PaddockFormModal({
       isOpen={isOpen}
       onClose={onClose}
       title={editingPaddock ? `Editar Potrero: ${editingPaddock.name}` : 'Registrar Nuevo Potrero'}
-      subtitle="Catálogo de potreros, pastos, fuentes de agua y descansos"
-      maxWidth="max-w-2xl"
+      subtitle="Catálogo de potreros, pastos, aforo 1m² y rotación rotacional"
+      maxWidth="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-slate-800 dark:text-slate-200">
         
@@ -189,7 +307,7 @@ export function PaddockFormModal({
             <input
               type="number"
               step="0.01"
-              min="0"
+              min="0.01"
               required
               value={formData.areaHa}
               onChange={(e) => handleChange('areaHa', e.target.value)}
@@ -259,89 +377,6 @@ export function PaddockFormModal({
 
         </div>
 
-        {/* Estado y Lote Activo */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Estado Actual del Potrero:
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {PADDOCK_STATUSES.map(s => {
-                  const isSelected = formData.status === s.value;
-                  return (
-                    <button
-                      key={s.value}
-                      type="button"
-                      onClick={() => handleChange('status', s.value)}
-                      className={`p-2 rounded-xl border text-[11px] font-black flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
-                        isSelected
-                          ? s.value === 'descanso'
-                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                            : s.value === 'ocupado'
-                              ? 'bg-rose-600 text-white border-rose-600 shadow-md'
-                              : 'bg-amber-600 text-white border-amber-600 shadow-md'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
-                      }`}
-                    >
-                      <span>{s.value === 'descanso' ? '🟢 Descanso' : s.value === 'ocupado' ? '🔴 Ocupado' : '🟡 Mantenim.'}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Lote actual si está ocupado */}
-            {formData.status === 'ocupado' ? (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Lote / Grupo que lo Pastorea:
-                </label>
-                <input
-                  type="text"
-                  value={formData.currentBatchName}
-                  onChange={(e) => handleChange('currentBatchName', e.target.value)}
-                  list="modal-batches-list"
-                  placeholder="Ej. Lote Machos Ceba"
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
-                />
-                <datalist id="modal-batches-list">
-                  {activeBatches.map(b => (
-                    <option key={b} value={b} />
-                  ))}
-                </datalist>
-              </div>
-            ) : formData.status === 'descanso' ? (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Fecha de Inicio del Descanso:
-                </label>
-                <input
-                  type="date"
-                  value={formData.lastRestStartDate}
-                  onChange={(e) => handleChange('lastRestStartDate', e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Motivo de Mantenimiento:
-                </label>
-                <input
-                  type="text"
-                  value={formData.notes}
-                  onChange={(e) => handleChange('notes', e.target.value)}
-                  placeholder="Ej. Guadaña, siembra, control de maleza..."
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
-                />
-              </div>
-            )}
-          </div>
-
-        </div>
-
         {/* Metas de Rotación: Días de Descanso y Días de Ocupación */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           
@@ -385,6 +420,262 @@ export function PaddockFormModal({
             <p className="text-[10px] text-slate-500 mt-0.5">
               Periodo máximo recomendado para evitar sobrepastoreo (1-4 días).
             </p>
+          </div>
+
+        </div>
+
+        {/* ========================================================================= */}
+        {/* PANEL ZOOTÉCNICO: AFORO FORRAJERO, CAPACIDAD DE CARGA & ROTACIÓN EN VIVO */}
+        {/* ========================================================================= */}
+        {areaM2 > 0 && (
+          <div className="p-4 sm:p-4.5 rounded-2xl bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 text-white border border-emerald-500/40 shadow-xl space-y-3.5 animate-fadeIn">
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                  <Calculator className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-white flex items-center gap-1.5">
+                    <span>Aforo & Capacidad de Carga en Tiempo Real</span>
+                  </h4>
+                  <p className="text-[11px] text-emerald-300/90 font-medium">
+                    Aforo base: <strong>{capacityResults.cuttingWeightKg} kg/m²</strong> • Forraje Neto: <strong>{capacityResults.usableForageKg.toLocaleString('es-CO')} kg</strong>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAdvancedAforo(!showAdvancedAforo)}
+                className="text-[11px] font-bold text-emerald-300 hover:text-white underline cursor-pointer self-start sm:self-auto"
+              >
+                {showAdvancedAforo ? 'Ocultar ajustes de aforo' : '⚙️ Ajustar kg/m² de aforo'}
+              </button>
+            </div>
+
+            {/* Ajustes avanzados de aforo si se despliegan */}
+            {showAdvancedAforo && (
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs animate-fadeIn">
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-200 mb-1">
+                    Aforo / Peso Cortado por M² (kg/m²):
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.2"
+                    value={customAforoKg}
+                    onChange={(e) => setCustomAforoKg(e.target.value)}
+                    placeholder={`Por defecto: ${defaultPastureAforo.avgCuttingKg} kg`}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-emerald-500/40 text-white text-xs font-bold focus:ring-2 focus:ring-emerald-400"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Promedio especie ({formData.pastureType}): {defaultPastureAforo.avgCuttingKg} kg/m²
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-200 mb-1">
+                    Forraje Aprovechable (%):
+                  </label>
+                  <input
+                    type="number"
+                    min="40"
+                    max="90"
+                    value={customUsablePct}
+                    onChange={(e) => setCustomUsablePct(Math.max(40, Math.min(95, parseInt(e.target.value) || 70)))}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-emerald-500/40 text-white text-xs font-bold focus:ring-2 focus:ring-emerald-400"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Piso/rechazo: {100 - customUsablePct}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* DOS PREGUNTAS CLAVE DEL GANADERO */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              
+              {/* 1. ¿Cuántos animales podemos meter? */}
+              <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex flex-col justify-between space-y-2">
+                <div>
+                  <span className="text-[10px] uppercase font-black tracking-wider text-emerald-300 flex items-center gap-1 mb-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>1. ¿Cuántos Animales Puedes Meter?</span>
+                  </span>
+                  <p className="text-xs text-slate-200 leading-snug">
+                    Para pastorear <strong className="text-white">{formData.targetGrazingDays} días</strong> meta:
+                  </p>
+                  <div className="flex items-baseline gap-1.5 pt-1">
+                    <span className="text-2xl sm:text-3xl font-black text-emerald-400">
+                      {capacityResults.maxAnimalsForTargetStay}
+                    </span>
+                    <span className="text-xs font-extrabold text-white">cabezas</span>
+                    <span className="text-[11px] text-emerald-300/80 font-semibold">
+                      (~{capacityResults.maxUGMForTargetStay} UGM)
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 pt-1 border-t border-white/10">
+                  Consumo lote: {capacityResults.dailyPerAnimalKg} kg/día/animal ({simulatedAvgWeight} kg prom.).
+                </p>
+              </div>
+
+              {/* 2. Días de ocupación si metemos N animales */}
+              <div className="p-3.5 rounded-xl bg-emerald-500/20 border-2 border-emerald-400/80 backdrop-blur-sm space-y-2">
+                <span className="text-[10px] uppercase font-black tracking-wider text-emerald-200 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>2. Días de Ocupación con tu Lote</span>
+                </span>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-emerald-200 block">Animales en lote:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={simulatedAnimalCount}
+                      onChange={(e) => setSimulatedAnimalCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full px-2.5 py-1 rounded-lg bg-black/40 border border-emerald-400/60 text-white text-xs font-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-emerald-200 block">Peso prom. (kg):</label>
+                    <input
+                      type="number"
+                      min="50"
+                      value={simulatedAvgWeight}
+                      onChange={(e) => setSimulatedAvgWeight(Math.max(50, parseFloat(e.target.value) || 380))}
+                      className="w-full px-2.5 py-1 rounded-lg bg-black/40 border border-emerald-400/60 text-white text-xs font-black"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-emerald-400/30">
+                  <span className="text-xs font-bold text-emerald-100">Ocupación ideal:</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xl font-black text-white">{capacityResults.idealGrazingDays}</span>
+                    <span className="text-xs font-extrabold text-emerald-200">días</span>
+                  </div>
+                </div>
+
+                {/* Botón para sincronizar directamente los días calculados */}
+                {capacityResults.idealGrazingDays > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleChange('targetGrazingDays', Math.max(1, Math.round(capacityResults.idealGrazingDays)));
+                    }}
+                    className="w-full py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[10px] flex items-center justify-center gap-1 transition cursor-pointer shadow-sm active:scale-95"
+                  >
+                    <span>✓ Fijar {Math.max(1, Math.round(capacityResults.idealGrazingDays))} días como Meta de Pastoreo</span>
+                  </button>
+                )}
+              </div>
+
+            </div>
+
+            {/* 3. Circuito Rotacional Necesario basado en el Tiempo de Descanso Deseado */}
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <Boxes className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-slate-200">
+                  Para cumplir <strong>{formData.targetRestDays} días de descanso</strong> con este lote ({capacityResults.idealGrazingDays}d pastoreo):
+                </span>
+              </div>
+              <span className="font-black text-emerald-300 text-xs sm:text-sm whitespace-nowrap bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-500/40 shrink-0">
+                🔄 Circuito de {capacityResults.paddocksNeededInCircuit} potreros
+              </span>
+            </div>
+
+            {/* Consejo Zootécnico */}
+            <div className="text-[11px] text-emerald-100/90 italic flex items-start gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+              <span>{capacityResults.evaluation.summary}</span>
+            </div>
+
+          </div>
+        )}
+
+        {/* Estado y Lote Activo */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Estado Actual del Potrero:
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {PADDOCK_STATUSES.map(s => {
+                  const isSelected = formData.status === s.value;
+                  return (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onClick={() => handleChange('status', s.value)}
+                      className={`p-2 rounded-xl border text-[11px] font-black flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                        isSelected
+                          ? s.value === 'descanso'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                            : s.value === 'ocupado'
+                              ? 'bg-rose-600 text-white border-rose-600 shadow-md'
+                              : 'bg-amber-600 text-white border-amber-600 shadow-md'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{s.value === 'descanso' ? '🟢 Descanso' : s.value === 'ocupado' ? '🔴 Ocupado' : '🟡 Mantenim.'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Lote actual si está ocupado */}
+            {formData.status === 'ocupado' ? (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Lote / Grupo que lo Pastorea:
+                </label>
+                <input
+                  type="text"
+                  value={formData.currentBatchName}
+                  onChange={(e) => handleBatchSelected(e.target.value)}
+                  list="modal-batches-list"
+                  placeholder="Ej. Lote Machos Ceba"
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                />
+                <datalist id="modal-batches-list">
+                  {activeBatches.map(b => (
+                    <option key={b} value={b} />
+                  ))}
+                </datalist>
+              </div>
+            ) : formData.status === 'descanso' ? (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Fecha de Inicio del Descanso:
+                </label>
+                <input
+                  type="date"
+                  value={formData.lastRestStartDate}
+                  onChange={(e) => handleChange('lastRestStartDate', e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Motivo de Mantenimiento:
+                </label>
+                <input
+                  type="text"
+                  value={formData.notes}
+                  onChange={(e) => handleChange('notes', e.target.value)}
+                  placeholder="Ej. Guadaña, siembra, control de maleza..."
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+            )}
           </div>
 
         </div>
