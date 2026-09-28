@@ -128,6 +128,8 @@ export function VaccinationRecordModal({
   const [biologicalBatch, setBiologicalBatch] = useState('');
   const [vaccinator, setVaccinator] = useState('');
   const [cost, setCost] = useState('');
+  const [registerExpense, setRegisterExpense] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [notes, setNotes] = useState('');
 
   // Estado de Revacunación / Dosis de Refuerzo Programada
@@ -339,6 +341,8 @@ export function VaccinationRecordModal({
       biologicalBatch: biologicalBatch.trim(),
       vaccinator: vaccinator.trim(),
       cost: parseFloat(cost) || 0,
+      registerExpense: !!registerExpense,
+      paymentMethod: paymentMethod || 'Efectivo',
       notes: notes.trim(),
       requiresBooster: isBoosterActive,
       boosterDays: isBoosterActive ? effectiveBoosterDays : null,
@@ -849,6 +853,50 @@ export function VaccinationRecordModal({
                 />
               </div>
             </div>
+
+            {/* INTEGRACIÓN FINANCIERA AUTOMÁTICA CON CONTABILIDAD & ESTADO DE RESULTADOS */}
+            {parseFloat(cost) > 0 && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-600/60 space-y-2.5 animate-fadeIn">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={registerExpense}
+                      onChange={(e) => setRegisterExpense(e.target.checked)}
+                      className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-black text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+                      <span>💰 Registrar automáticamente en Finanzas & Gastos de la Finca</span>
+                    </span>
+                  </label>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-200/90 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
+                    <span>💉 Sanidad & Medicamentos</span>
+                  </span>
+                </div>
+
+                {registerExpense && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-emerald-200/80 dark:border-emerald-800/60">
+                    <div className="text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center">
+                      <span>
+                        Se creará un asiento contable de <strong>{formatCurrency(parseFloat(cost) || 0)}</strong> en el Estado de Resultados (P&L) y Flujo de Caja.
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 justify-start sm:justify-end">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">Medio de Pago:</label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="p-1.5 px-2 rounded-xl border border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm cursor-pointer"
+                      >
+                        <option value="Efectivo">💵 Efectivo</option>
+                        <option value="Transferencia">📱 Transferencia</option>
+                        <option value="Crédito / Por pagar">🧾 Crédito / Por pagar</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 4. PROGRAMACIÓN DE REVACUNACIÓN / REFUERZO CON ALARMA INTELIGENTE */}

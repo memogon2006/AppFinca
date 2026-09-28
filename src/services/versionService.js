@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.18.1";
+export const CURRENT_APP_VERSION = "2.18.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.18.2",
+    date: "27/09/2026",
+    title: "💉 Integración Financiera Total de Vacunación & Sanidad con Contabilidad (P&L y Gastos)",
+    highlights: [
+      "Conexión Contable Automática: Al registrar una jornada sanitaria o ciclo oficial de vacunación con costo, el sistema genera automáticamente un asiento contable en Finanzas clasificado en '💉 Sanidad & Medicamentos'.",
+      "Impacto Directo en Flujo de Caja & P&L: Los costos de vacunas, RUV, biológicos y honorarios de vacunación se reflejan de inmediato en el Estado de Resultados y balances financieros de la finca.",
+      "Sincronización Bidireccional & Retroactiva: Si se elimina el registro de vacunación se limpia su gasto asociado, y se sincronizan automáticamente los registros históricos con costo."
+    ]
+  },
   {
     version: "2.18.1",
     date: "27/09/2026",

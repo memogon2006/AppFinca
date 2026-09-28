@@ -254,6 +254,11 @@ export function VaccinationCalendar({
                           RUV: {vac.ruvNumber}
                         </span>
                       )}
+                      {vac.cost > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-[9px]">
+                          💰 {formatCurrency(vac.cost)}
+                        </span>
+                      )}
                       {vac.requiresBooster && (
                         <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-[9px] uppercase tracking-wide">
                           Refuerzo {vac.boosterDays || ''}d

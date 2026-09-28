@@ -595,6 +595,51 @@ export default function App() {
     syncMissingMilkIncomes();
   }, [userId, milkSettlements?.length]);
 
+  // Sincronización automática de costos de vacunaciones históricas hacia farmExpenses
+  useEffect(() => {
+    if (!userId || !vaccinations || vaccinations.length === 0 || !db.farmExpenses) return;
+
+    const syncMissingVaccinationExpenses = async () => {
+      try {
+        let syncedCount = 0;
+        for (const vac of vaccinations) {
+          const costVal = parseFloat(vac.cost) || 0;
+          if (costVal > 0 && vac.registerExpense !== false) {
+            const expId = 'exp_vac_' + vac.id;
+            const existingExp = await db.farmExpenses.get(expId);
+            if (!existingExp) {
+              const expenseRecord = {
+                id: expId,
+                date: vac.date || getLocalDateString(),
+                concept: `Vacunación / Plan Sanitario: ${vac.vaccineType || 'Vacuna'} (${vac.targetLabel || 'Hato'})${vac.officialCycle ? ` - ${vac.officialCycle}` : ''}`,
+                category: 'sanidad',
+                type: 'Variable',
+                amount: costVal,
+                paymentMethod: vac.paymentMethod || 'Efectivo',
+                notes: `Registro oficial sanitario. RUV: ${vac.ruvNumber || 'N/A'}. Lote: ${vac.biologicalBatch || 'N/A'}. Vacunador: ${vac.vaccinator || 'N/A'}. Cobertura: ${vac.animalCount || 0} bovinos.${vac.notes ? ` Notas: ${vac.notes}` : ''}`,
+                vaccinationId: vac.id,
+                isVaccinationExpense: true,
+                userId: vac.userId || userId,
+                createdAt: vac.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              await db.farmExpenses.put(expenseRecord);
+              markPendingSync(userId, expId);
+              syncedCount++;
+            }
+          }
+        }
+        if (syncedCount > 0) {
+          cloudPushData(userId);
+        }
+      } catch (e) {
+        console.warn('Error auto-syncing vaccination expenses to farmExpenses:', e);
+      }
+    };
+
+    syncMissingVaccinationExpenses();
+  }, [userId, vaccinations?.length]);
+
   if (authLoading || !isInitialized) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white space-y-4">
@@ -1351,7 +1396,30 @@ export default function App() {
       markPendingSync(userId, vacRecord.id);
     }
 
-    // Si tiene revacunación/refuerzo programado, agendar automáticamente en el calendario de la finca
+    // 1. Integración Financiera Automática: Registrar en farmExpenses si tiene costo
+    const vacCost = parseFloat(vacRecord.cost) || 0;
+    if (vacCost > 0 && vacRecord.registerExpense !== false && db.farmExpenses) {
+      const expId = 'exp_vac_' + vacRecord.id;
+      const expenseRecord = {
+        id: expId,
+        date: vacRecord.date || getLocalDateString(),
+        concept: `Vacunación / Plan Sanitario: ${vacRecord.vaccineType || 'Vacuna'} (${vacRecord.targetLabel || 'Hato'})${vacRecord.officialCycle ? ` - ${vacRecord.officialCycle}` : ''}`,
+        category: 'sanidad',
+        type: 'Variable',
+        amount: vacCost,
+        paymentMethod: vacRecord.paymentMethod || 'Efectivo',
+        notes: `Registro oficial sanitario. RUV: ${vacRecord.ruvNumber || 'N/A'}. Lote: ${vacRecord.biologicalBatch || 'N/A'}. Vacunador: ${vacRecord.vaccinator || 'N/A'}. Cobertura: ${vacRecord.animalCount || 0} bovinos.${vacRecord.notes ? ` Notas: ${vacRecord.notes}` : ''}`,
+        vaccinationId: vacRecord.id,
+        isVaccinationExpense: true,
+        userId,
+        createdAt: vacRecord.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await db.farmExpenses.put(expenseRecord);
+      markPendingSync(userId, expId);
+    }
+
+    // 2. Si tiene revacunación/refuerzo programado, agendar automáticamente en el calendario de la finca
     if (vacRecord.requiresBooster && vacRecord.boosterDate && db.calendarNotes) {
       const noteId = 'note_booster_' + vacRecord.id;
       await db.calendarNotes.put({
@@ -1366,10 +1434,10 @@ export default function App() {
       markPendingSync(userId, noteId);
     }
 
-    // Registrar acción en bitácora de auditoría
+    // 3. Registrar acción en bitácora de auditoría
     await logActivity({
       action: 'vaccination',
-      description: `Registró vacunación/sanidad: ${vaccinationData.vaccineType || 'Vacuna'} (${vaccinationData.batchName ? `Lote: ${vaccinationData.batchName}` : `Chapa #${vaccinationData.tagNumber || 'General'}`}${vaccinationData.officialCycle ? `, Ciclo: ${vaccinationData.officialCycle}` : ''}${vaccinationData.ruvNumber ? `, RUV: ${vaccinationData.ruvNumber}` : ''}${vaccinationData.requiresBooster ? ` • Refuerzo en ${vaccinationData.boosterDays}d (${vaccinationData.boosterDate})` : ''})`,
+      description: `Registró vacunación/sanidad: ${vaccinationData.vaccineType || 'Vacuna'} (${vaccinationData.batchName ? `Lote: ${vaccinationData.batchName}` : `Chapa #${vaccinationData.tagNumber || 'General'}`}${vaccinationData.officialCycle ? `, Ciclo: ${vaccinationData.officialCycle}` : ''}${vaccinationData.ruvNumber ? `, RUV: ${vaccinationData.ruvNumber}` : ''}${vacCost > 0 ? ` • Costo: ${formatCurrency(vacCost)}` : ''}${vaccinationData.requiresBooster ? ` • Refuerzo en ${vaccinationData.boosterDays}d (${vaccinationData.boosterDate})` : ''})`,
       tagNumber: vaccinationData.tagNumber || vaccinationData.batchName || '',
       operatorName: currentUser?.name || currentUser?.username || 'Administrador',
       operatorRole: currentUser?.role || 'admin',
@@ -1378,7 +1446,7 @@ export default function App() {
 
     cloudPushData(userId);
     triggerFeedback('success');
-    showToast(`Registro sanitario de ${vaccinationData.vaccineType} guardado exitosamente 💉${vaccinationData.requiresBooster ? ' (Alarma de refuerzo configurada)' : ''}`);
+    showToast(`Registro sanitario de ${vaccinationData.vaccineType} guardado exitosamente 💉${vacCost > 0 ? ` (Gasto de ${formatCurrency(vacCost)} registrado en Finanzas 💰)` : ''}${vaccinationData.requiresBooster ? ' (Alarma de refuerzo configurada)' : ''}`);
   };
 
   const handleCompleteBooster = async (vacId) => {
@@ -1427,6 +1495,12 @@ export default function App() {
       markPendingDelete(userId, 'calendarNotes', noteId);
     }
 
+    if (db.farmExpenses) {
+      const expId = 'exp_vac_' + vacId;
+      await db.farmExpenses.delete(expId).catch(() => null);
+      markPendingDelete(userId, 'farmExpenses', expId);
+    }
+
     // Registrar acción en bitácora de auditoría
     await logActivity({
       action: 'vaccination_deleted',
@@ -1439,7 +1513,7 @@ export default function App() {
 
     cloudPushData(userId);
     triggerFeedback('warning');
-    showToast('Registro de vacunación eliminado 🗑️');
+    showToast('Registro de vacunación y gasto sanitario eliminados 🗑️');
   };
 
   const handleSavePalpation = async (palpationData) => {
