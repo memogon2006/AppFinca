@@ -90,10 +90,24 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
   const roi = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
   const weightGain = (parseFloat(saleData.exitWeight) || 0) - entryWeight;
 
+  const daysInFarm = Math.max(getDaysDifference(animal.entryDate, saleData.exitDate || getLocalDateString()), 1);
+  const monthsInFarm = Math.max(daysInFarm / 30.417, 0.1);
+
   // Cálculos de Compañía
   const farmProfitShare = netProfit > 0 ? netProfit * (farmPercent / 100) : 0;
   const partnerProfitShare = netProfit > 0 ? netProfit * (partnerPercent / 100) : 0;
   const partnerTotalReturn = entryPrice + partnerProfitShare;
+
+  // Rentabilidades Mensuales del Capital
+  const partnerTotalRoi = entryPrice > 0 ? (partnerProfitShare / entryPrice) * 100 : 0;
+  const partnerMonthlyRoi = monthsInFarm > 0 ? partnerTotalRoi / monthsInFarm : 0;
+  const partnerMonthlyProfit = monthsInFarm > 0 ? partnerProfitShare / monthsInFarm : 0;
+
+  const farmMonthlyProfit = monthsInFarm > 0 ? farmProfitShare / monthsInFarm : 0;
+  const farmMonthlyRoi = entryPrice > 0 && monthsInFarm > 0 ? (farmProfitShare / entryPrice) * 100 / monthsInFarm : 0;
+
+  const directMonthlyRoi = monthsInFarm > 0 ? roi / monthsInFarm : 0;
+  const directMonthlyProfit = monthsInFarm > 0 ? netProfit / monthsInFarm : 0;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -141,6 +155,11 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
         owner: animal.owner || partnerPartyName,
         farmPartyName,
         partnerPartyName,
+        daysInFarm,
+        monthsInFarm: Number(monthsInFarm.toFixed(1)),
+        partnerMonthlyRoi: Number(partnerMonthlyRoi.toFixed(2)),
+        partnerMonthlyProfit: Number(partnerMonthlyProfit.toFixed(0)),
+        farmMonthlyProfit: Number(farmMonthlyProfit.toFixed(0)),
       } : null
     });
     onClose();
@@ -526,6 +545,26 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
                         : `(${formatCurrency(entryPrice)} capital + ${formatCurrency(partnerProfitShare)} ganancia)`}
                     </span>
                   </div>
+
+                  {/* INDICADORES DE RENTABILIDAD MENSUAL DEL CAPITAL */}
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-black uppercase text-teal-900 dark:text-teal-300">
+                      <span>📈 Rentabilidad Mensual del Capital ({formatNumber(monthsInFarm, 1)} meses)</span>
+                      <span className="text-[10px] font-bold text-slate-400">{daysInFarm} días en finca</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                        <span className="text-[9px] uppercase font-bold text-emerald-800 dark:text-emerald-300 block">🏢 Finca ({farmPartyName}):</span>
+                        <p className="font-black text-emerald-700 dark:text-emerald-300 text-sm">{formatCurrency(farmMonthlyProfit)} / mes</p>
+                        <span className="text-[9px] text-slate-500">Ganancia mensual pastos</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60">
+                        <span className="text-[9px] uppercase font-bold text-blue-800 dark:text-blue-300 block">🐮 Dueño ({partnerPartyName}):</span>
+                        <p className="font-black text-blue-700 dark:text-blue-300 text-sm">{formatNumber(partnerMonthlyRoi, 2)}% / mes</p>
+                        <span className="text-[9px] text-slate-500">+{formatCurrency(partnerMonthlyProfit)}/mes ({formatNumber(partnerTotalRoi, 1)}% tot)</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -541,7 +580,7 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
                 Liquidación Propia (100% Utilidad Finca)
               </span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${netProfit >= 0 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300'}`}>
-                ROI: {formatNumber(roi, 1)}%
+                ROI Total: {formatNumber(roi, 1)}%
               </span>
             </div>
 
@@ -551,10 +590,13 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
                 <p className={`text-xl font-extrabold ${netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   {formatCurrency(netProfit)}
                 </p>
+                <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold mt-0.5">
+                  📈 Rentabilidad Mensual del Capital: <strong>{formatNumber(directMonthlyRoi, 2)}% / mes</strong> ({formatCurrency(directMonthlyProfit)}/mes)
+                </p>
               </div>
               <div className="text-right text-xs text-slate-600 dark:text-slate-300">
                 <p>Kilos Ganados: <strong className="text-slate-900 dark:text-white">+{formatNumber(weightGain, 1)} kg</strong></p>
-                <p className="text-[11px] text-slate-400">Precio/kg: {formatCurrency(Math.round(exitPriceNum / (parseFloat(saleData.exitWeight) || 1)))}/kg</p>
+                <p className="text-[11px] text-slate-400">Permanencia: {formatNumber(monthsInFarm, 1)} meses ({daysInFarm} días)</p>
               </div>
             </div>
           </div>

@@ -90,6 +90,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
   let totalCapitalRecovered = 0;
   let totalUserCashInflow = 0;
   let totalUserNetProfit = 0;
+  let totalUserMonthlyProfit = 0;
 
   filteredSoldCattle.forEach(c => {
     const fin = calculateFinancials(c, 0, meatPricePerKg);
@@ -99,9 +100,11 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
     totalCapitalRecovered += flow.capitalReturn;
     totalUserCashInflow += flow.cashInflow;
     totalUserNetProfit += flow.netProfit;
+    totalUserMonthlyProfit += flow.userMonthlyProfit || 0;
   });
 
   const overallRealizedRoi = totalCostSold > 0 ? (totalUserNetProfit / totalCostSold) * 100 : 0;
+  const overallMonthlyRoi = totalCostSold > 0 ? (totalUserMonthlyProfit / totalCostSold) * 100 : 0;
 
   const totalActiveInvestment = activeCattle.reduce((sum, c) => {
     const fin = calculateFinancials(c, 0, meatPricePerKg);
@@ -122,7 +125,9 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         activeInvested: 0,
         totalSales: 0,
         netProfit: 0,
-        cashInflow: 0
+        cashInflow: 0,
+        monthlyProfit: 0,
+        soldCost: 0
       };
     }
     const fin = calculateFinancials(c, 0, meatPricePerKg);
@@ -134,9 +139,11 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
     } else if (c.status === 'Vendido') {
       const flow = calculateSaleCashFlow(c, currentUser);
       profitByOwner[owner].soldHeads++;
+      profitByOwner[owner].soldCost += fin.totalInvested;
       profitByOwner[owner].totalSales += parseFloat(c.exitPrice) || 0;
       profitByOwner[owner].netProfit += flow.netProfit;
       profitByOwner[owner].cashInflow += flow.cashInflow;
+      profitByOwner[owner].monthlyProfit += flow.userMonthlyProfit || 0;
     }
   });
 
@@ -215,9 +222,12 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm">
           <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">Utilidad Neta Realizada</span>
           <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">{formatCurrency(totalUserNetProfit)}</p>
-          <span className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold mt-1 inline-block">
-            ROI Promedio: {formatNumber(overallRealizedRoi, 1)}%
-          </span>
+          <div className="text-xs text-emerald-700 dark:text-emerald-400 font-bold mt-1 flex items-center justify-between flex-wrap gap-1">
+            <span>ROI: {formatNumber(overallRealizedRoi, 1)}%</span>
+            <span className="bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded text-[11px]">
+              📈 {formatNumber(overallMonthlyRoi, 2)}% / mes (+{formatCurrency(totalUserMonthlyProfit)}/m)
+            </span>
+          </div>
         </div>
 
         {/* Card 4: Inversión en Ganado Activo */}
@@ -326,7 +336,14 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                 </div>
 
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Utilidad Neta:</span>
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Utilidad Neta:</span>
+                    {ownerData.soldCost > 0 && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold block">
+                        📈 {formatNumber((ownerData.monthlyProfit / ownerData.soldCost) * 100, 1)}%/m
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-base font-black ${ownerData.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                     {formatCurrency(ownerData.netProfit)}
                   </span>
@@ -532,8 +549,11 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                       <td className={`p-3 font-extrabold ${flow.netProfit >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {formatCurrency(flow.netProfit)}
                       </td>
-                      <td className="p-3 font-bold text-blue-600 dark:text-blue-400">
-                        {fin.roi}%
+                      <td className="p-3">
+                        <span className="font-bold text-blue-600 dark:text-blue-400 block">{fin.roi}%</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold block">
+                          📈 {isPart ? `${flow.userMonthlyRoi}%/m` : `${fin.monthlyRoi}%/m`}
+                        </span>
                       </td>
                       <td className="p-3 text-slate-600 dark:text-slate-400">
                         {animal.saleBuyer || animal.buyer || 'No registrado'}

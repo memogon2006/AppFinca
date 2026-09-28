@@ -1,5 +1,5 @@
 {
-  "version": "2.23.0",
-  "buildTime": 1790645000000,
-  "description": "📊 Triada Financiera Ganadera: Ingresos Totales = Capital Recuperado + Utilidad Neta Real"
+  "version": "2.24.0",
+  "buildTime": 1790650000000,
+  "description": "📈 Rentabilidad Mensual del Capital (% mensual y $/mes) para Dueño del Animal y Finca"
 }

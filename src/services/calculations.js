@@ -539,6 +539,10 @@ export function calculateFinancials(animal, additionalExpenses = 0, customMarket
     estimatedMarketPricePerKg,
     isSold,
     isDead,
+    daysInFarm: Math.max(getDaysDifference(animal.entryDate, isSold ? (animal.exitDate || getLocalDateString()) : getLocalDateString()), 1),
+    monthsInFarm: Number(Math.max(getDaysDifference(animal.entryDate, isSold ? (animal.exitDate || getLocalDateString()) : getLocalDateString()) / 30.417, 0.1).toFixed(1)),
+    monthlyRoi: Number(((totalInvested > 0 ? (netProfit / totalInvested) * 100 : 0) / Math.max(getDaysDifference(animal.entryDate, isSold ? (animal.exitDate || getLocalDateString()) : getLocalDateString()) / 30.417, 0.1)).toFixed(2)),
+    monthlyProfit: Number((netProfit / Math.max(getDaysDifference(animal.entryDate, isSold ? (animal.exitDate || getLocalDateString()) : getLocalDateString()) / 30.417, 0.1)).toFixed(0)),
     cashFlow: calculateSaleCashFlow(animal)
   };
 }
@@ -548,6 +552,8 @@ export function calculateFinancials(animal, additionalExpenses = 0, customMarket
  * - Venta Directa: 100% de la venta bruta ingresa a caja; utilidad = venta - costo.
  * - En Compañía como Finca (Tenedor): Ingresa el 50% de la utilidad de pastoreo (farmShare).
  * - En Compañía como Dueño del Ganado (Inversionista): Ingresa el 100% de su capital de compra + 50% de utilidad (partnerTotalReturn).
+ * 
+ * Además calcula la Rentabilidad Mensual del Capital (% mensual) y ganancia por mes para ambas partes.
  */
 export function calculateSaleCashFlow(animal, currentUser = null) {
   if (!animal) {
@@ -561,7 +567,18 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
       grossSale: 0,
       farmShare: 0,
       partnerTotalReturn: 0,
-      partnerProfitShare: 0
+      partnerProfitShare: 0,
+      daysInFarm: 0,
+      monthsInFarm: 0,
+      monthlyRoi: 0,
+      monthlyProfit: 0,
+      ownerTotalRoi: 0,
+      ownerMonthlyRoi: 0,
+      ownerMonthlyProfit: 0,
+      farmMonthlyProfit: 0,
+      farmMonthlyRoi: 0,
+      userMonthlyRoi: 0,
+      userMonthlyProfit: 0
     };
   }
 
@@ -572,8 +589,17 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
   const isPart = animal.exitType === 'En Compañía' || !!animal.partnershipDetails;
   const part = animal.partnershipDetails;
 
+  const exitDate = animal.exitDate || animal.saleDate || getLocalDateString();
+  const entryDate = animal.entryDate || getLocalDateString();
+  const daysInFarm = Math.max(getDaysDifference(entryDate, exitDate), 1);
+  const monthsInFarm = Math.max(daysInFarm / 30.417, 0.1);
+
   if (!isPart || !part) {
     const netProfit = exitPrice - totalInvested;
+    const directRoi = totalInvested > 0 ? (netProfit / totalInvested) * 100 : 0;
+    const directMonthlyRoi = monthsInFarm > 0 ? (directRoi / monthsInFarm) : 0;
+    const directMonthlyProfit = monthsInFarm > 0 ? (netProfit / monthsInFarm) : 0;
+
     return {
       isPartnership: false,
       userRole: 'direct',
@@ -586,7 +612,18 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
       partnerTotalReturn: 0,
       partnerProfitShare: 0,
       farmPartyName: 'Finca Principal',
-      partnerPartyName: animal.owner || 'Dueño'
+      partnerPartyName: animal.owner || 'Dueño',
+      daysInFarm,
+      monthsInFarm: Number(monthsInFarm.toFixed(1)),
+      monthlyRoi: Number(directMonthlyRoi.toFixed(2)),
+      monthlyProfit: Number(directMonthlyProfit.toFixed(0)),
+      ownerTotalRoi: Number(directRoi.toFixed(1)),
+      ownerMonthlyRoi: Number(directMonthlyRoi.toFixed(2)),
+      ownerMonthlyProfit: Number(directMonthlyProfit.toFixed(0)),
+      farmMonthlyProfit: Number(directMonthlyProfit.toFixed(0)),
+      farmMonthlyRoi: Number(directMonthlyRoi.toFixed(2)),
+      userMonthlyRoi: Number(directMonthlyRoi.toFixed(2)),
+      userMonthlyProfit: Number(directMonthlyProfit.toFixed(0))
     };
   }
 
@@ -625,6 +662,16 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
     ? parseFloat(part.partnerTotalReturn)
     : (entryPrice + partnerProfitShare);
 
+  // Rentabilidad del Dueño del Ganado (Inversionista de Capital)
+  const ownerInvested = entryPrice > 0 ? entryPrice : 1;
+  const ownerTotalRoi = (partnerProfitShare / ownerInvested) * 100;
+  const ownerMonthlyRoi = monthsInFarm > 0 ? (ownerTotalRoi / monthsInFarm) : 0;
+  const ownerMonthlyProfit = monthsInFarm > 0 ? (partnerProfitShare / monthsInFarm) : 0;
+
+  // Rentabilidad del Dueño de la Finca (Tenedor / Pastoreo)
+  const farmMonthlyProfit = monthsInFarm > 0 ? (farmShare / monthsInFarm) : 0;
+  const farmMonthlyRoi = ownerInvested > 0 && monthsInFarm > 0 ? (farmShare / ownerInvested) * 100 / monthsInFarm : 0;
+
   if (userRole === 'owner') {
     return {
       isPartnership: true,
@@ -639,7 +686,16 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
       partnerTotalReturn,
       partnerProfitShare,
       farmPartyName: part.farmPartyName || 'Finca Socia',
-      partnerPartyName: part.partnerPartyName || 'Yo (Dueño)'
+      partnerPartyName: part.partnerPartyName || 'Yo (Dueño)',
+      daysInFarm,
+      monthsInFarm: Number(monthsInFarm.toFixed(1)),
+      ownerTotalRoi: Number(ownerTotalRoi.toFixed(1)),
+      ownerMonthlyRoi: Number(ownerMonthlyRoi.toFixed(2)),
+      ownerMonthlyProfit: Number(ownerMonthlyProfit.toFixed(0)),
+      farmMonthlyProfit: Number(farmMonthlyProfit.toFixed(0)),
+      farmMonthlyRoi: Number(farmMonthlyRoi.toFixed(2)),
+      userMonthlyRoi: Number(ownerMonthlyRoi.toFixed(2)),
+      userMonthlyProfit: Number(ownerMonthlyProfit.toFixed(0))
     };
   } else {
     return {
@@ -655,7 +711,16 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
       partnerTotalReturn,
       partnerProfitShare,
       farmPartyName: part.farmPartyName || 'Mi Finca',
-      partnerPartyName: part.partnerPartyName || 'Socio Inversionista'
+      partnerPartyName: part.partnerPartyName || 'Socio Inversionista',
+      daysInFarm,
+      monthsInFarm: Number(monthsInFarm.toFixed(1)),
+      ownerTotalRoi: Number(ownerTotalRoi.toFixed(1)),
+      ownerMonthlyRoi: Number(ownerMonthlyRoi.toFixed(2)),
+      ownerMonthlyProfit: Number(ownerMonthlyProfit.toFixed(0)),
+      farmMonthlyProfit: Number(farmMonthlyProfit.toFixed(0)),
+      farmMonthlyRoi: Number(farmMonthlyRoi.toFixed(2)),
+      userMonthlyRoi: Number(farmMonthlyRoi.toFixed(2)),
+      userMonthlyProfit: Number(farmMonthlyProfit.toFixed(0))
     };
   }
 }

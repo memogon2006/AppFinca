@@ -21,7 +21,7 @@ import {
   SplitSquareVertical,
   HelpCircle
 } from 'lucide-react';
-import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, getLocalDateString } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, getLocalDateString, getDaysDifference } from '../../services/calculations';
 import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
@@ -224,6 +224,24 @@ export function PartnershipSettlementModal({
       const partnerProfitShare = isPart ? (profit > 0 ? profit * pPct : 0) : 0;
       const partnerTotalReturn = isPart ? (entryP + partnerProfitShare) : 0;
 
+      // Métricas de tiempo y rentabilidad mensual del capital
+      const daysInFarm = animal.entryDate ? Math.max(1, getDaysDifference(animal.entryDate, saleDate || getLocalDateString())) : 30;
+      const monthsInFarm = Math.max(daysInFarm / 30.417, 0.1);
+
+      // Rentabilidad Dueño del Animal (% mensual y $/mes)
+      const partnerTotalRoi = entryP > 0 ? (partnerProfitShare / entryP) * 100 : 0;
+      const partnerMonthlyRoi = partnerTotalRoi / monthsInFarm;
+      const partnerMonthlyProfit = partnerProfitShare / monthsInFarm;
+
+      // Rentabilidad Finca (% mensual y $/mes)
+      const farmMonthlyProfit = farmProfitOnly / monthsInFarm;
+      const farmMonthlyRoi = entryP > 0 ? (farmProfitOnly / (entryP * monthsInFarm)) * 100 : 0;
+
+      // Rentabilidad Venta Directa (% mensual y $/mes)
+      const directTotalRoi = entryP > 0 ? (profit / entryP) * 100 : 0;
+      const directMonthlyRoi = directTotalRoi / monthsInFarm;
+      const directMonthlyProfit = profit / monthsInFarm;
+
       return {
         animal,
         mode, // 'partnership' | 'direct'
@@ -238,11 +256,21 @@ export function PartnershipSettlementModal({
         farmProfitOnly,
         partnerProfitShare,
         partnerTotalReturn,
+        daysInFarm,
+        monthsInFarm,
+        partnerTotalRoi,
+        partnerMonthlyRoi,
+        partnerMonthlyProfit,
+        farmMonthlyProfit,
+        farmMonthlyRoi,
+        directTotalRoi,
+        directMonthlyRoi,
+        directMonthlyProfit,
       };
     }).filter(Boolean);
-  }, [selectedIds, cattle, weighings, customExitWeights, pricePerKg, farmPercent, partnerPercent, animalModes, globalMode]);
+  }, [selectedIds, cattle, weighings, customExitWeights, pricePerKg, farmPercent, partnerPercent, animalModes, globalMode, saleDate]);
 
-  // Consolidado total del lote con desglose combinado
+  // Consolidado total del lote con desglose combinado y rentabilidades mensuales
   const totals = useMemo(() => {
     let totalHeads = selectedAnimalsData.length;
     let totalEntryWeight = 0;
@@ -251,6 +279,7 @@ export function PartnershipSettlementModal({
     let totalEntryCost = 0; // Capital invertido total
     let totalGrossSale = 0; // Venta bruta total
     let totalProfit = 0; // Ganancia total bruta
+    let totalMonthsInFarmSum = 0;
 
     // Desglose Compañía vs Directa
     let countPartnership = 0;
@@ -263,6 +292,9 @@ export function PartnershipSettlementModal({
     let partnershipPartnerReturn = 0;
     let partnershipFarmProfit = 0;
     let directFarmProfit = 0;
+    let totalPartnerMonthlyProfit = 0;
+    let totalFarmMonthlyProfit = 0;
+    let totalDirectMonthlyProfit = 0;
 
     selectedAnimalsData.forEach(d => {
       totalEntryWeight += d.entryWeight;
@@ -271,6 +303,7 @@ export function PartnershipSettlementModal({
       totalEntryCost += d.entryPrice;
       totalGrossSale += d.grossSale;
       totalProfit += d.profit;
+      totalMonthsInFarmSum += d.monthsInFarm;
 
       if (d.isPart) {
         countPartnership++;
@@ -279,11 +312,14 @@ export function PartnershipSettlementModal({
         partnershipPartnerProfit += d.partnerProfitShare;
         partnershipPartnerReturn += d.partnerTotalReturn;
         partnershipFarmProfit += d.farmProfitOnly;
+        totalPartnerMonthlyProfit += d.partnerMonthlyProfit;
+        totalFarmMonthlyProfit += d.farmMonthlyProfit;
       } else {
         countDirect++;
         directGross += d.grossSale;
         directEntryCost += d.entryPrice;
         directFarmProfit += d.profit;
+        totalDirectMonthlyProfit += d.directMonthlyProfit;
       }
     });
 
@@ -301,6 +337,16 @@ export function PartnershipSettlementModal({
       : partnershipFarmProfit;
     const avgGdpOverall = totalHeads > 0 ? (totalWeightGain / totalHeads) : 0;
     const batchRoi = totalEntryCost > 0 ? (totalProfit / totalEntryCost) * 100 : 0;
+
+    const avgMonthsInFarm = totalHeads > 0 ? (totalMonthsInFarmSum / totalHeads) : 1;
+    const avgPartnerMonthlyRoi = partnershipPartnerCapital > 0 ? (totalPartnerMonthlyProfit / partnershipPartnerCapital) * 100 : 0;
+    const avgFarmMonthlyRoi = partnershipPartnerCapital > 0 ? (totalFarmMonthlyProfit / partnershipPartnerCapital) * 100 : 0;
+    const avgDirectMonthlyRoi = directEntryCost > 0 ? (totalDirectMonthlyProfit / directEntryCost) * 100 : 0;
+
+    const userTotalMonthlyProfit = myRole === 'farm'
+      ? (totalDirectMonthlyProfit + totalFarmMonthlyProfit)
+      : (totalDirectMonthlyProfit + totalPartnerMonthlyProfit);
+    const userMonthlyRoi = totalEntryCost > 0 ? (userTotalMonthlyProfit / totalEntryCost) * 100 : 0;
 
     return {
       totalHeads,
@@ -326,7 +372,16 @@ export function PartnershipSettlementModal({
       userTotalNetProfit,
       partnerPayout,
       avgGdpOverall,
-      batchRoi
+      batchRoi,
+      avgMonthsInFarm,
+      totalPartnerMonthlyProfit,
+      totalFarmMonthlyProfit,
+      totalDirectMonthlyProfit,
+      avgPartnerMonthlyRoi,
+      avgFarmMonthlyRoi,
+      avgDirectMonthlyRoi,
+      userTotalMonthlyProfit,
+      userMonthlyRoi
     };
   }, [selectedAnimalsData, myRole]);
 
@@ -983,6 +1038,11 @@ export function PartnershipSettlementModal({
                   <div className="text-[11px] text-emerald-800 dark:text-emerald-400 font-bold mt-1">
                     {totals.countDirect > 0 && `Venta Directa (${formatCurrency(totals.directGross)})`} {totals.countPartnership > 0 && `• Ganancia Compañía (${formatCurrency(totals.partnershipFarmProfit)})`}
                   </div>
+                  {totals.countPartnership > 0 && (
+                    <div className="mt-1.5 pt-1.5 border-t border-emerald-200 dark:border-emerald-800 text-[10px] text-emerald-900 dark:text-emerald-300 font-black">
+                      📈 Rentab. Pastos: +{formatCurrency(totals.totalFarmMonthlyProfit)}/mes ({formatNumber(totals.avgFarmMonthlyRoi, 2)}%/mes)
+                    </div>
+                  )}
                 </div>
 
                 {/* 4. TOTAL DUEÑO DEL ANIMAL */}
@@ -998,6 +1058,11 @@ export function PartnershipSettlementModal({
                       ? `Capital (${formatCurrency(totals.partnershipPartnerCapital)}) + Ganancia (${formatCurrency(totals.partnershipPartnerProfit)})`
                       : 'Sin animales en compañía'}
                   </div>
+                  {totals.countPartnership > 0 && (
+                    <div className="mt-1.5 pt-1.5 border-t border-blue-200 dark:border-blue-800 text-[10px] text-blue-900 dark:text-blue-300 font-black">
+                      📈 Rentab. Capital: +{formatCurrency(totals.totalPartnerMonthlyProfit)}/mes ({formatNumber(totals.avgPartnerMonthlyRoi, 2)}%/mes)
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -1020,7 +1085,10 @@ export function PartnershipSettlementModal({
                   <span className="text-xs font-black block">
                     Utilidad Neta Realizada: +{formatCurrency(totals.userTotalNetProfit)}
                   </span>
-                  <span className="text-[11px] opacity-80 block mt-0.5">
+                  <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 block mt-0.5">
+                    🚀 Rentabilidad Mensual: +{formatCurrency(totals.userTotalMonthlyProfit)} / mes ({formatNumber(totals.userMonthlyRoi, 2)}% / mes)
+                  </span>
+                  <span className="text-[10px] opacity-80 block mt-0.5">
                     {myRole === 'farm'
                       ? `(50% utilidad de pastoreo: ${formatCurrency(totals.partnershipFarmProfit)}${totals.countDirect > 0 ? ` + ${formatCurrency(totals.directGross)} directa` : ''})`
                       : `(${formatCurrency(totals.partnershipPartnerCapital)} retorno capital + ${formatCurrency(totals.partnershipPartnerProfit)} ganancia)`}
@@ -1057,6 +1125,7 @@ export function PartnershipSettlementModal({
                           <th className="p-2.5">Venta Bruta</th>
                           <th className="p-2.5 text-emerald-600 dark:text-emerald-400">Total Finca (Dinero)</th>
                           <th className="p-2.5 text-blue-600 dark:text-blue-400">Pago a Dueño</th>
+                          <th className="p-2.5 text-indigo-600 dark:text-indigo-400">Rentab. Mensual</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -1088,6 +1157,22 @@ export function PartnershipSettlementModal({
                             </td>
                             <td className="p-2.5 font-bold text-blue-600 dark:text-blue-400">
                               {d.isPart ? formatCurrency(d.partnerTotalReturn) : '$0'}
+                            </td>
+                            <td className="p-2.5">
+                              {d.isPart ? (
+                                <div className="text-[10px]">
+                                  <span className="text-blue-600 dark:text-blue-400 font-extrabold block">
+                                    🐮 {formatNumber(d.partnerMonthlyRoi, 1)}%/m (+{formatCurrency(d.partnerMonthlyProfit)}/m)
+                                  </span>
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold block text-[9px]">
+                                    🏢 +{formatCurrency(d.farmMonthlyProfit)}/m
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-blue-600 dark:text-blue-400 font-extrabold text-[10px] block">
+                                  💰 {formatNumber(d.directMonthlyRoi, 1)}%/m (+{formatCurrency(d.directMonthlyProfit)}/m)
+                                </span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -1139,7 +1224,7 @@ export function PartnershipSettlementModal({
                 </div>
 
                 {/* Datos del Acuerdo */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
                   <div>
                     <span className="text-slate-500 block">Total Cabezas:</span>
                     <strong className="text-sm">{totals.totalHeads} Bovinos ({totals.countDirect} Directos / {totals.countPartnership} Compañía)</strong>
@@ -1156,6 +1241,10 @@ export function PartnershipSettlementModal({
                     <span className="text-slate-500 block">Kilos Ganados en Pastos:</span>
                     <strong className="text-sm text-emerald-700">+{formatNumber(totals.totalWeightGain, 1)} kg</strong>
                   </div>
+                  <div>
+                    <span className="text-slate-500 block">Rentabilidad Mensual Dueño:</span>
+                    <strong className="text-sm text-blue-700">{formatNumber(totals.avgPartnerMonthlyRoi, 2)}% / mes</strong>
+                  </div>
                 </div>
 
                 {/* Tabla de Bovinos */}
@@ -1171,7 +1260,8 @@ export function PartnershipSettlementModal({
                       <th className="p-2 border-r border-slate-200">Costo Compra</th>
                       <th className="p-2 border-r border-slate-200">Venta Bruta</th>
                       <th className="p-2 border-r border-slate-200 text-emerald-800">Total {farmPartyName}</th>
-                      <th className="p-2 text-blue-800">Total {partnerPartyName}</th>
+                      <th className="p-2 border-r border-slate-200 text-blue-800">Total {partnerPartyName}</th>
+                      <th className="p-2 text-indigo-800">Rentab. / Mes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1190,8 +1280,11 @@ export function PartnershipSettlementModal({
                         <td className="p-2 font-bold text-emerald-800 border-r border-slate-200">
                           {d.isPart ? formatCurrency(d.farmProfitOnly) : formatCurrency(d.grossSale)}
                         </td>
-                        <td className="p-2 font-bold text-blue-800">
+                        <td className="p-2 font-bold text-blue-800 border-r border-slate-200">
                           {d.isPart ? formatCurrency(d.partnerTotalReturn) : '$0'}
+                        </td>
+                        <td className="p-2 text-[10px] font-bold text-indigo-900">
+                          {d.isPart ? `${formatNumber(d.partnerMonthlyRoi, 1)}%/m` : `${formatNumber(d.directMonthlyRoi, 1)}%/m`}
                         </td>
                       </tr>
                     ))}
@@ -1203,7 +1296,8 @@ export function PartnershipSettlementModal({
                       <td className="p-2.5 border-r border-slate-300">{formatCurrency(totals.totalEntryCost)}</td>
                       <td className="p-2.5 border-r border-slate-300">{formatCurrency(totals.totalGrossSale)}</td>
                       <td className="p-2.5 border-r border-slate-300 text-emerald-900">{formatCurrency(totals.totalFarmGrossCash)}</td>
-                      <td className="p-2.5 text-blue-900">{formatCurrency(totals.partnershipPartnerReturn)}</td>
+                      <td className="p-2.5 border-r border-slate-300 text-blue-900">{formatCurrency(totals.partnershipPartnerReturn)}</td>
+                      <td className="p-2.5 text-indigo-900 font-black">{formatNumber(totals.avgPartnerMonthlyRoi, 1)}%/m</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1213,14 +1307,20 @@ export function PartnershipSettlementModal({
                   <div className="space-y-1">
                     <p className="font-extrabold text-emerald-900 uppercase">🏢 TOTAL DINERO PARA {farmPartyName.toUpperCase()}:</p>
                     <p className="text-2xl font-black text-emerald-700">{formatCurrency(totals.totalFarmGrossCash)}</p>
-                    <span className="text-slate-600 text-[11px]">
+                    <p className="text-xs font-black text-emerald-800">
+                      Ganancia Mensual Pastos: +{formatCurrency(totals.totalFarmMonthlyProfit)} / mes ({formatNumber(totals.avgFarmMonthlyRoi, 2)}% / mes)
+                    </p>
+                    <span className="text-slate-600 text-[11px] block mt-0.5">
                       Venta directa ({formatCurrency(totals.directGross)}) + Ganancia en pastos de compañía ({formatCurrency(totals.partnershipFarmProfit)}). Utilidad neta: {formatCurrency(totals.totalFarmNetProfit)}.
                     </span>
                   </div>
                   <div className="space-y-1">
                     <p className="font-extrabold text-blue-900 uppercase">👤 TOTAL A ENTREGAR A {partnerPartyName.toUpperCase()} (DUEÑO DEL ANIMAL):</p>
                     <p className="text-2xl font-black text-blue-700">{formatCurrency(totals.partnershipPartnerReturn)}</p>
-                    <span className="text-slate-600 text-[11px]">
+                    <p className="text-xs font-black text-blue-800">
+                      Rentabilidad Mensual Capital: {formatNumber(totals.avgPartnerMonthlyRoi, 2)}% / mes (+{formatCurrency(totals.totalPartnerMonthlyProfit)} / mes)
+                    </p>
+                    <span className="text-slate-600 text-[11px] block mt-0.5">
                       {totals.countPartnership > 0 
                         ? `Devolución de capital invertido (${formatCurrency(totals.partnershipPartnerCapital)}) + ${partnerPercent}% Ganancia (${formatCurrency(totals.partnershipPartnerProfit)}).`
                         : 'Sin participación de animales en compañía en este lote.'}

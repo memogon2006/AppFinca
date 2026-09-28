@@ -93,6 +93,12 @@ export function OwnerFinancialDetailModal({
   }, 0);
   const soldRoi = totalSoldCost > 0 ? (totalSoldNetProfit / totalSoldCost) * 100 : 0;
 
+  const totalSoldMonthlyProfit = soldOwnerCattle.reduce((sum, c) => {
+    const fin = calculateFinancials(c, 0, ownerMeatPrice);
+    return sum + (fin.monthlyProfit || 0);
+  }, 0);
+  const averageSoldMonthlyRoi = totalSoldCost > 0 ? (totalSoldMonthlyProfit / totalSoldCost) * 100 : 0;
+
   const totalSoldExitWeight = soldOwnerCattle.reduce((sum, c) => sum + (parseFloat(c.exitWeight) || 0), 0);
   const averageSoldExitWeight = totalSoldCount > 0 ? totalSoldExitWeight / totalSoldCount : 0;
   const averageSoldPricePerKg = totalSoldExitWeight > 0 ? totalSoldRevenue / totalSoldExitWeight : 0;
@@ -180,7 +186,7 @@ export function OwnerFinancialDetailModal({
       ['REPORTE FINANCIERO - GANADO VENDIDO & LIQUIDACIONES'],
       [`Propietario / Marca: ${ownerName}`, `Hierro: ${brandName}`, `Fecha: ${formatDate(new Date())}`],
       [],
-      ['Chapa/Arete', 'Nombre', 'Fecha Venta', 'Comprador', 'Modalidad', 'Peso Salida (kg)', 'Precio Compra ($)', 'Precio Venta ($)', 'Precio/Kg Venta ($/kg)', 'Utilidad Neta ($)', 'ROI (%)']
+      ['Chapa/Arete', 'Nombre', 'Fecha Venta', 'Comprador', 'Modalidad', 'Meses Finca', 'Peso Salida (kg)', 'Precio Compra ($)', 'Precio Venta ($)', 'Precio/Kg Venta ($/kg)', 'Utilidad Neta ($)', 'ROI Total (%)', 'Rentabilidad Mensual (%/mes)', 'Ganancia Mensual ($/mes)']
     ];
 
     soldOwnerCattle.forEach(a => {
@@ -195,12 +201,15 @@ export function OwnerFinancialDetailModal({
         formatDate(a.exitDate),
         a.saleBuyer || a.buyer || 'Venta Directa',
         a.exitType || 'En Pie',
+        formatNumber(fin.monthsInFarm, 1),
         exitW,
         fin.totalInvested,
         exitP,
         Math.round(pricePerKg),
         fin.netProfit,
-        `${fin.roi}%`
+        `${fin.roi}%`,
+        `${formatNumber(fin.monthlyRoi, 2)}%`,
+        Math.round(fin.monthlyProfit)
       ]);
     });
 
@@ -211,12 +220,15 @@ export function OwnerFinancialDetailModal({
       '',
       '',
       `Total: ${totalSoldCount} vendidos`,
+      '',
       `Prom: ${formatNumber(averageSoldExitWeight, 1)} kg`,
       totalSoldCost,
       totalSoldRevenue,
       Math.round(averageSoldPricePerKg),
       totalSoldNetProfit,
-      `${formatNumber(soldRoi, 1)}%`
+      `${formatNumber(soldRoi, 1)}%`,
+      `${formatNumber(averageSoldMonthlyRoi, 2)}%`,
+      Math.round(totalSoldMonthlyProfit)
     ]);
 
     const wsSold = XLSX.utils.aoa_to_sheet(soldData);
@@ -247,7 +259,8 @@ export function OwnerFinancialDetailModal({
     msg += `• Costo promedio por animal vendido: *${formatCurrency(averageSoldCost)}*\n`;
     msg += `• Precio promedio de venta por animal: *${formatCurrency(averageSoldRevenue)}*\n`;
     msg += `• Utilidad Neta Realizada: *${formatCurrency(totalSoldNetProfit)}*\n`;
-    msg += `• Rentabilidad (ROI): *${formatNumber(soldRoi, 1)}%*\n\n`;
+    msg += `• Rentabilidad Total (ROI): *${formatNumber(soldRoi, 1)}%*\n`;
+    msg += `• 📈 *Rentabilidad Mensual del Capital:* *${formatNumber(averageSoldMonthlyRoi, 2)}% / mes* (+${formatCurrency(totalSoldMonthlyProfit)} / mes)\n\n`;
 
     msg += `📋 *RESUMEN TOTAL REGISTRADO:* ${totalRegisteredCount} cabezas\n`;
     msg += `_Generado automáticamente por Inventario Bovino App_`;
@@ -391,9 +404,12 @@ export function OwnerFinancialDetailModal({
                 <p className={`text-base sm:text-lg font-black tabular-nums ${totalSoldNetProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   {formatCurrency(totalSoldNetProfit)}
                 </p>
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
-                  ROI: {formatNumber(soldRoi, 1)}%
-                </span>
+                <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-between flex-wrap gap-1 mt-0.5">
+                  <span>ROI: {formatNumber(soldRoi, 1)}%</span>
+                  <span className="bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded font-black text-[9px]">
+                    📈 {formatNumber(averageSoldMonthlyRoi, 2)}%/m (+{formatCurrency(totalSoldMonthlyProfit)}/m)
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -615,7 +631,7 @@ export function OwnerFinancialDetailModal({
                         <th className="p-3 text-right">Precio Compra</th>
                         <th className="p-3 text-right">Precio Venta</th>
                         <th className="p-3 text-right">Utilidad Neta</th>
-                        <th className="p-3 text-right">ROI</th>
+                        <th className="p-3 text-right">Rentab. ROI</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
@@ -664,8 +680,9 @@ export function OwnerFinancialDetailModal({
                                 {formatCurrency(fin.netProfit)}
                               </span>
                             </td>
-                            <td className="p-3 text-right tabular-nums font-bold text-slate-600 dark:text-slate-400 text-[11px]">
-                              {formatNumber(fin.roi, 1)}%
+                            <td className="p-3 text-right tabular-nums">
+                              <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px] block">{formatNumber(fin.roi, 1)}%</span>
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black block">📈 {formatNumber(fin.monthlyRoi, 1)}%/m</span>
                             </td>
                           </tr>
                         );
@@ -689,7 +706,8 @@ export function OwnerFinancialDetailModal({
                           {formatCurrency(totalSoldNetProfit)}
                         </td>
                         <td className="p-3 text-right tabular-nums text-emerald-700 dark:text-emerald-300 text-[11px]">
-                          {formatNumber(soldRoi, 1)}%
+                          <span className="block font-black">{formatNumber(soldRoi, 1)}%</span>
+                          <span className="block text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">📈 {formatNumber(averageSoldMonthlyRoi, 2)}%/m</span>
                         </td>
                       </tr>
                     </tfoot>

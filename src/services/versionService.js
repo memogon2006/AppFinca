@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.23.0";
+export const CURRENT_APP_VERSION = "2.24.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.0",
+    date: "28/09/2026",
+    title: "📈 Rentabilidad Mensual del Capital (% / mes & $/mes) para Dueño del Animal y Finca",
+    highlights: [
+      "Rentabilidad Mensual para Dueño del Ganado: Calcula automáticamente el retorno mensual del capital invertido (% / mes y $/mes) según los meses de permanencia del animal en la finca.",
+      "Rentabilidad Mensual de Pastoreo para la Finca: Visualiza la ganancia mensual generada por concepto de cuidado y pastoreo ($/mes y tasa de retorno mensual).",
+      "Liquidación por Lote y Venta Individual: Muestra en tiempo real tarjetas, resúmenes y actas oficiales con el desglose mensual para ambas partes.",
+      "Finanzas y Exportaciones Sincronizadas: Tarjetas de resumen, tablas de historial, exportación a Excel y mensajes de WhatsApp ahora incluyen el % de rentabilidad mensual del capital."
+    ]
+  },
   {
     version: "2.23.0",
     date: "28/09/2026",
