@@ -8,6 +8,9 @@ import './index.css'
 
 try {
   sessionStorage.removeItem('ganado_boot_autoreload');
+  if (typeof window !== 'undefined' && window.location.search && (window.location.search.includes('_reset') || window.location.search.includes('_v'))) {
+    localStorage.removeItem('ganado_active_ui_state');
+  }
 } catch (e) {}
 
 // Auto-recuperación ante actualización de módulos compilados (Vite chunks)

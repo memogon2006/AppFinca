@@ -17,6 +17,8 @@ export class ErrorBoundary extends React.Component {
 
   handleRecover = async () => {
     try {
+      localStorage.removeItem('ganado_active_ui_state');
+      sessionStorage.clear();
       await applyAppUpdate();
     } catch (e) {
       window.location.replace(window.location.origin + window.location.pathname + '?_v=' + Date.now());
@@ -25,6 +27,7 @@ export class ErrorBoundary extends React.Component {
 
   handleHardReset = async () => {
     try {
+      localStorage.removeItem('ganado_active_ui_state');
       sessionStorage.clear();
       if ('caches' in window) {
         const cacheKeys = await caches.keys();

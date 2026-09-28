@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
   "/apple-touch-icon.png",
   "/favicon.png",
   "/favicon.ico",
-  "/assets/index-Bfs7Z9_0.js",
+  "/assets/index-CnnqjreI.js",
   "/assets/index-D0dYjlED.css",
   "/assets/vendor-charts-DljG-sht.js",
   "/assets/vendor-db-DLsAzhYJ.js",
