@@ -44,7 +44,7 @@ import {
   CartesianGrid 
 } from 'recharts';
 import * as XLSX from 'xlsx-js-style';
-import { formatCurrency, formatNumber, formatDate, calculateFinancials, getSafeDateString } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateFinancials, calculateSaleCashFlow, getSafeDateString } from '../../services/calculations';
 import { useAuth } from '../../context/AuthContext';
 import { EXPENSE_CATEGORIES } from './ExpenseModal';
 import { INCOME_CATEGORIES } from './IncomeModal';
@@ -245,46 +245,35 @@ export function AccountingView({
       .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   }, [periodExpenses]);
 
-  // Ventas de Ganado: Total Bruto, Capital Recuperado y Utilidad Limpia
+  // Ventas de Ganado: Total Bruto, Capital Recuperado y Utilidad Limpia según rol (Finca vs Dueño)
   const cattleSalesMetrics = useMemo(() => {
     let grossRevenue = 0;
     let purchaseCapitalRecovered = 0;
     let grossProfit = 0;
+    let userCashInflow = 0;
     let kilosSold = 0;
 
     periodSoldCattle.forEach(c => {
       const exitPrice = parseFloat(c.exitPrice) || 0;
-      const purchasePrice = parseFloat(c.entryPrice || c.purchasePrice) || 0;
       const exitWeight = parseFloat(c.exitWeight) || 0;
-      const isPart = c.exitType === 'En Compañía' || !!c.partnershipDetails;
-      const part = c.partnershipDetails;
+      const flow = calculateSaleCashFlow(c, currentUser);
 
-      if (isPart && part) {
-        const farmShare = parseFloat(part.farmShare) !== undefined && !isNaN(parseFloat(part.farmShare))
-          ? parseFloat(part.farmShare)
-          : (part.farmPercent ? (exitPrice - purchasePrice) * (part.farmPercent / 100) : (exitPrice - purchasePrice) * 0.5);
-        
-        grossRevenue += exitPrice;
-        const partnerReturn = parseFloat(part.partnerTotalReturn) || (purchasePrice + (exitPrice - purchasePrice - farmShare));
-        purchaseCapitalRecovered += partnerReturn;
-        grossProfit += farmShare;
-        kilosSold += exitWeight;
-      } else {
-        grossRevenue += exitPrice;
-        purchaseCapitalRecovered += purchasePrice;
-        grossProfit += (exitPrice - purchasePrice);
-        kilosSold += exitWeight;
-      }
+      grossRevenue += exitPrice;
+      purchaseCapitalRecovered += flow.capitalReturn;
+      grossProfit += flow.netProfit;
+      userCashInflow += flow.cashInflow;
+      kilosSold += exitWeight;
     });
 
     return {
       grossRevenue,
       purchaseCapitalRecovered,
       grossProfit,
+      userCashInflow,
       kilosSold,
       count: periodSoldCattle.length
     };
-  }, [periodSoldCattle]);
+  }, [periodSoldCattle, currentUser]);
 
   // Otros ingresos (Leche, arriendos, abonos, etc.)
   const additionalIncomesTotal = useMemo(() => {
@@ -413,13 +402,12 @@ export function AccountingView({
         .filter(e => (e.date || '').startsWith(monthPrefix))
         .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
-      // Utilidad de ventas de ganado del mes
+      // Utilidad de ventas de ganado del mes según rol del usuario
       const monthCattleProfit = cattle
         .filter(c => c.status === 'Vendido' && (c.exitDate || '').startsWith(monthPrefix))
         .reduce((sum, c) => {
-          const exitPrice = parseFloat(c.exitPrice) || 0;
-          const purchasePrice = parseFloat(c.purchasePrice) || 0;
-          return sum + (exitPrice - purchasePrice);
+          const flow = calculateSaleCashFlow(c, currentUser);
+          return sum + flow.netProfit;
         }, 0);
 
       // Otros ingresos del mes (incluyendo liquidaciones de leche)
@@ -444,7 +432,7 @@ export function AccountingView({
     }
 
     return data;
-  }, [farmExpenses, effectiveIncomes, cattle]);
+  }, [farmExpenses, effectiveIncomes, cattle, currentUser]);
 
   // ==========================================
   // FILTRADO DE TABLAS

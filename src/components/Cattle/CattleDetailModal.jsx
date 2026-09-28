@@ -10,7 +10,8 @@ import {
   calculateReproduction,
   calculateMilkMetrics,
   calculateDaysInMilk,
-  calculateLactationCurve
+  calculateLactationCurve,
+  calculateSaleCashFlow
 } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
 import { DairyLactationChart } from '../Dairy/DairyLactationChart';
@@ -41,7 +42,9 @@ import {
   ExternalLink,
   Award,
   Sparkles,
-  Users
+  Users,
+  Building2,
+  UserCheck
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -1127,8 +1130,9 @@ export function CattleDetailModal({
                   </div>
                 </div>
 
-                {/* Si fue en compañía, desglose 50/50 */}
+                {/* Si fue en compañía, desglose 50/50 y rol */}
                 {(animal.exitType === 'En Compañía' || animal.partnershipDetails) && (() => {
+                  const flow = calculateSaleCashFlow(animal, currentUser);
                   const part = animal.partnershipDetails || {
                     entryPrice: parseFloat(animal.entryPrice) || 0,
                     exitPrice: parseFloat(animal.exitPrice) || 0,
@@ -1137,18 +1141,37 @@ export function CattleDetailModal({
                     partnerTotalReturn: (parseFloat(animal.entryPrice) || 0) + (Math.max(0, (parseFloat(animal.exitPrice) || 0) - (parseFloat(animal.entryPrice) || 0)) * 0.5),
                   };
                   return (
-                    <div className="mt-3 pt-2.5 border-t border-teal-200 dark:border-teal-800/80 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-800 shadow-sm">
-                        <span className="text-[10px] text-slate-600 dark:text-slate-300 block font-black">Devolución Costo Compra (Dueño):</span>
-                        <p className="font-black text-slate-950 dark:text-white mt-0.5">{formatCurrency(part.entryPrice)}</p>
+                    <div className="mt-3 pt-2.5 border-t border-teal-200 dark:border-teal-800/80 space-y-2.5 text-xs">
+                      <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                        flow.userRole === 'farm'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-200'
+                          : 'bg-blue-500/10 border-blue-500/30 text-blue-950 dark:text-blue-200'
+                      }`}>
+                        <div>
+                          <span className="text-[10px] uppercase font-black tracking-wider block opacity-75">
+                            💰 Dinero ingresado a tu caja ({flow.userRole === 'farm' ? '🏢 Finca / Tenedor' : '🐮 Dueño / Inversionista'}):
+                          </span>
+                          <p className="text-base font-black">+{formatCurrency(flow.cashInflow)}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-black tracking-wider block opacity-75">Utilidad Neta:</span>
+                          <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">+{formatCurrency(flow.netProfit)}</span>
+                        </div>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-800 shadow-sm">
-                        <span className="text-[10px] text-slate-600 dark:text-slate-300 block font-black">🏢 Ganancia Parte Finca (50%):</span>
-                        <p className="font-black text-emerald-700 dark:text-emerald-400 mt-0.5">{formatCurrency(part.farmShare)}</p>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-800 shadow-sm">
-                        <span className="text-[10px] text-slate-600 dark:text-slate-300 block font-black">👤 Pago Total al Dueño del Animal (Capital + 50%):</span>
-                        <p className="font-black text-teal-800 dark:text-teal-300 mt-0.5">{formatCurrency(part.partnerTotalReturn)}</p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-800 shadow-sm">
+                          <span className="text-[10px] text-slate-600 dark:text-slate-300 block font-black">Devolución Capital (Dueño):</span>
+                          <p className="font-black text-slate-950 dark:text-white mt-0.5">{formatCurrency(part.entryPrice)}</p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-800 shadow-sm">
+                          <span className="text-[10px] text-slate-600 dark:text-slate-300 block font-black">🏢 Ganancia Finca (50%):</span>
+                          <p className="font-black text-emerald-700 dark:text-emerald-400 mt-0.5">{formatCurrency(part.farmShare)}</p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-800 shadow-sm">
+                          <span className="text-[10px] text-slate-600 dark:text-slate-300 block font-black">👤 Pago Total al Dueño:</span>
+                          <p className="font-black text-teal-800 dark:text-teal-300 mt-0.5">{formatCurrency(part.partnerTotalReturn)}</p>
+                        </div>
                       </div>
                     </div>
                   );

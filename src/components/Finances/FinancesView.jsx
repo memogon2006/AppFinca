@@ -12,9 +12,11 @@ import {
   Calendar, 
   X, 
   Filter,
-  ArrowUpRight 
+  ArrowUpRight,
+  Building2,
+  UserCheck 
 } from 'lucide-react';
-import { formatCurrency, formatNumber, formatDate, calculateFinancials } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateFinancials, calculateSaleCashFlow } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import { OwnerFinancialDetailModal } from './OwnerFinancialDetailModal';
@@ -82,19 +84,22 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
     });
   }, [allSoldCattle, saleTypeFilter, saleStartDate, saleEndDate, searchQuery]);
 
-  // Cálculos globales sobre las ventas filtradas
-  let totalSalesRevenue = 0;
+  // Cálculos globales sobre las ventas filtradas considerando el rol del usuario (Finca vs Dueño)
+  let totalGrossSales = 0;
   let totalCostSold = 0;
-  let totalRealizedProfit = 0;
+  let totalUserCashInflow = 0;
+  let totalUserNetProfit = 0;
 
   filteredSoldCattle.forEach(c => {
     const fin = calculateFinancials(c, 0, meatPricePerKg);
-    totalSalesRevenue += parseFloat(c.exitPrice) || 0;
+    const flow = calculateSaleCashFlow(c, currentUser);
+    totalGrossSales += parseFloat(c.exitPrice) || 0;
     totalCostSold += fin.totalInvested;
-    totalRealizedProfit += fin.netProfit;
+    totalUserCashInflow += flow.cashInflow;
+    totalUserNetProfit += flow.netProfit;
   });
 
-  const overallRealizedRoi = totalCostSold > 0 ? (totalRealizedProfit / totalCostSold) * 100 : 0;
+  const overallRealizedRoi = totalCostSold > 0 ? (totalUserNetProfit / totalCostSold) * 100 : 0;
 
   const totalActiveInvestment = activeCattle.reduce((sum, c) => {
     const fin = calculateFinancials(c, 0, meatPricePerKg);
@@ -115,6 +120,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         activeInvested: 0,
         totalSales: 0,
         netProfit: 0,
+        cashInflow: 0
       };
     }
     const fin = calculateFinancials(c, 0, meatPricePerKg);
@@ -124,9 +130,11 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
       profitByOwner[owner].activeHeads++;
       profitByOwner[owner].activeInvested += fin.totalInvested;
     } else if (c.status === 'Vendido') {
+      const flow = calculateSaleCashFlow(c, currentUser);
       profitByOwner[owner].soldHeads++;
       profitByOwner[owner].totalSales += parseFloat(c.exitPrice) || 0;
-      profitByOwner[owner].netProfit += fin.netProfit;
+      profitByOwner[owner].netProfit += flow.netProfit;
+      profitByOwner[owner].cashInflow += flow.cashInflow;
     }
   });
 
@@ -164,7 +172,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
             <span>Finanzas, Ventas & Liquidación de Utilidades</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Monitoreo de ingresos por ventas, fechas de salida, utilidades netas y liquidación en compañía (50/50).
+            Monitoreo de ingresos por ventas, flujo de caja según tu rol (Finca vs Dueño), utilidades y liquidación 50/50.
           </p>
         </div>
 
@@ -183,17 +191,17 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm">
           <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">Utilidad Neta Realizada</span>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalRealizedProfit)}</p>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalUserNetProfit)}</p>
           <span className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold mt-1 inline-block">
             ROI Promedio: {formatNumber(overallRealizedRoi, 1)}%
           </span>
         </div>
 
         <div className="p-5 rounded-2xl bg-blue-50/90 dark:bg-slate-900/90 border border-blue-200/90 dark:border-blue-500/30 shadow-sm">
-          <span className="text-xs font-bold uppercase text-blue-800 dark:text-blue-400">Ingresos Totales por Ventas</span>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalSalesRevenue)}</p>
+          <span className="text-xs font-bold uppercase text-blue-800 dark:text-blue-400">Ingreso a Caja / Finanzas</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalUserCashInflow)}</p>
           <span className="text-xs text-blue-700 dark:text-blue-400 font-semibold mt-1 inline-block">
-            {filteredSoldCattle.length} animales liquidados
+            {filteredSoldCattle.length} ventas (Venta Bruta: {formatCurrency(totalGrossSales)})
           </span>
         </div>
 
@@ -206,12 +214,12 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         </div>
 
         <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm">
-          <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">Margen Comercial</span>
+          <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">Margen Comercial Neto</span>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">
-            {totalSalesRevenue > 0 ? formatNumber((totalRealizedProfit / totalSalesRevenue) * 100, 1) : 0}%
+            {totalUserCashInflow > 0 ? formatNumber((totalUserNetProfit / totalUserCashInflow) * 100, 1) : 0}%
           </p>
           <span className="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-1 inline-block">
-            Margen sobre ventas
+            Margen sobre ingresos de caja
           </span>
         </div>
       </div>
@@ -407,11 +415,12 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
               <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="p-3">Arete</th>
-                  <th className="p-3">Tipo Venta</th>
+                  <th className="p-3">Modalidad & Rol</th>
                   <th className="p-3">Fecha Venta</th>
                   <th className="p-3">Peso Salida</th>
-                  <th className="p-3">Costo Total</th>
-                  <th className="p-3">Valor Venta</th>
+                  <th className="p-3">Costo Compra</th>
+                  <th className="p-3">Venta Bruta</th>
+                  <th className="p-3 text-emerald-600 dark:text-emerald-400">Entrada a Caja</th>
                   <th className="p-3">Utilidad Neta</th>
                   <th className="p-3">Rentabilidad (ROI)</th>
                   <th className="p-3">Comprador</th>
@@ -421,7 +430,8 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {filteredSoldCattle.map(animal => {
                   const fin = calculateFinancials(animal, 0, meatPricePerKg);
-                  const isPart = animal.exitType === 'En Compañía' || animal.partnershipDetails;
+                  const flow = calculateSaleCashFlow(animal, currentUser);
+                  const isPart = flow.isPartnership;
 
                   return (
                     <tr
@@ -435,12 +445,18 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                       </td>
                       <td className="p-3">
                         {isPart ? (
-                          <span className="inline-flex items-center gap-1 font-black text-teal-800 dark:text-teal-200 bg-teal-100 dark:bg-teal-950 px-2 py-0.5 rounded-full border border-teal-400 dark:border-teal-700 text-[10px]">
-                            <Users className="w-2.5 h-2.5 text-teal-600" /> 🤝 En Compañía
-                          </span>
+                          flow.userRole === 'farm' ? (
+                            <span className="inline-flex items-center gap-1 font-black text-emerald-900 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-400 dark:border-emerald-700 text-[10px]">
+                              <Building2 className="w-2.5 h-2.5 text-emerald-600" /> 🏢 Finca (50% Utilidad)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 font-black text-blue-900 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-400 dark:border-blue-700 text-[10px]">
+                              <UserCheck className="w-2.5 h-2.5 text-blue-600" /> 🐮 Dueño (Cap + 50%)
+                            </span>
+                          )
                         ) : (
                           <span className="inline-flex items-center gap-1 font-bold text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-700 text-[10px]">
-                            💰 Directa
+                            💰 Directa (100%)
                           </span>
                         )}
                       </td>
@@ -456,17 +472,21 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                       <td className="p-3 font-bold text-slate-900 dark:text-white">
                         {formatCurrency(animal.exitPrice)}
                       </td>
-                      <td className="p-3 font-extrabold text-emerald-600 dark:text-emerald-400">
-                        {isPart && animal.partnershipDetails ? (
-                          <div>
-                            <span>Finca: {formatCurrency(animal.partnershipDetails.farmShare)}</span>
-                            <div className="text-[10px] text-teal-700 dark:text-teal-300 font-bold">
-                              Dueño: {formatCurrency(animal.partnershipDetails.partnerTotalReturn)}
+                      {/* ENTRADA A CAJA SEGÚN EL ROL DEL USUARIO */}
+                      <td className="p-3 font-black text-emerald-600 dark:text-emerald-400">
+                        <div>
+                          <span>+{formatCurrency(flow.cashInflow)}</span>
+                          {isPart && (
+                            <div className="text-[10px] text-slate-400 font-normal">
+                              {flow.userRole === 'farm'
+                                ? `(50% utilidad)`
+                                : `(${formatCurrency(flow.capitalReturn)} cap + ${formatCurrency(flow.netProfit)} ut)`}
                             </div>
-                          </div>
-                        ) : (
-                          formatCurrency(fin.netProfit)
-                        )}
+                          )}
+                        </div>
+                      </td>
+                      <td className={`p-3 font-extrabold ${flow.netProfit >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {formatCurrency(flow.netProfit)}
                       </td>
                       <td className="p-3 font-bold text-blue-600 dark:text-blue-400">
                         {fin.roi}%

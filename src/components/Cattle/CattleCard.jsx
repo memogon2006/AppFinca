@@ -315,7 +315,7 @@ export function CattleCard({
                         👤 Pago a Dueño del Animal (Capital + 50%):
                       </span>
                       <span className="font-extrabold text-blue-600 dark:text-blue-400">
-                        {formatCurrency(animal.partnershipDetails.partnerTotalReturn)}
+                        {formatCurrency(part?.partnerTotalReturn || 0)}
                       </span>
                     </div>
                   )}

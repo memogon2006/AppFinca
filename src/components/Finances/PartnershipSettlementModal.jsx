@@ -63,6 +63,7 @@ export function PartnershipSettlementModal({
   const [selectedOwnerFilter, setSelectedOwnerFilter] = useState('');
 
   // Partes del acuerdo de liquidación
+  const [myRole, setMyRole] = useState('farm'); // 'farm' (Soy la Finca / Pastos) | 'owner' (Soy el Dueño del Animal / Inversionista)
   const [farmPartyName, setFarmPartyName] = useState(() => currentUser?.farmName || currentUser?.name || 'Finca Principal');
   const [farmPartyDoc, setFarmPartyDoc] = useState(() => currentUser?.documentNumber || '');
   const [partnerPartyName, setPartnerPartyName] = useState(() => selectedOwnerFilter || owners[0] || 'Dueño del Animal');
@@ -289,6 +290,15 @@ export function PartnershipSettlementModal({
     // En venta directa, la venta bruta va 100% directa para el dueño
     const totalFarmGrossCash = directGross + partnershipFarmProfit;
     const totalFarmNetProfit = directFarmProfit + partnershipFarmProfit;
+    const userTotalCashInflow = myRole === 'farm'
+      ? (directGross + partnershipFarmProfit)
+      : (directGross + partnershipPartnerReturn);
+    const userTotalNetProfit = myRole === 'farm'
+      ? (directFarmProfit + partnershipFarmProfit)
+      : (directFarmProfit + partnershipPartnerProfit);
+    const partnerPayout = myRole === 'farm'
+      ? partnershipPartnerReturn
+      : partnershipFarmProfit;
     const avgGdpOverall = totalHeads > 0 ? (totalWeightGain / totalHeads) : 0;
     const batchRoi = totalEntryCost > 0 ? (totalProfit / totalEntryCost) * 100 : 0;
 
@@ -312,10 +322,13 @@ export function PartnershipSettlementModal({
       directFarmProfit,
       totalFarmGrossCash,
       totalFarmNetProfit,
+      userTotalCashInflow,
+      userTotalNetProfit,
+      partnerPayout,
       avgGdpOverall,
       batchRoi
     };
-  }, [selectedAnimalsData]);
+  }, [selectedAnimalsData, myRole]);
 
   // Manejar cambio de porcentaje (auto balancear a 100%)
   const handleFarmPercentChange = (val) => {
@@ -342,12 +355,10 @@ export function PartnershipSettlementModal({
     }
 
     const confirmMsg = `⚠️ ¿Confirmas la liquidación y venta de este lote (${totals.totalHeads} bovinos por un total de ${formatCurrency(totals.totalGrossSale)})?\n\n` +
-      `• 🏢 Finca / Tenedor: ${farmPartyName}\n` +
-      `• 👤 Dueño del Animal: ${partnerPartyName}\n\n` +
-      `• 💰 Animales en Venta Directa: ${totals.countDirect} cabezas (${formatCurrency(totals.directGross)})\n` +
-      `• 🤝 Animales en Compañía: ${totals.countPartnership} cabezas (${formatCurrency(totals.partnershipGross)})\n\n` +
-      `• 🏢 Total Dinero para la Finca (${farmPartyName}): ${formatCurrency(totals.totalFarmGrossCash)} (Utilidad Neta: ${formatCurrency(totals.totalFarmNetProfit)})\n` +
-      `• 👤 Total a Entregar a (${partnerPartyName}): ${formatCurrency(totals.partnershipPartnerReturn)}`;
+      `• 🎯 Tu Rol en esta Liquidación: ${myRole === 'farm' ? `🏢 Finca / Tenedor (${farmPartyName})` : `🐮 Dueño del Ganado (${partnerPartyName})`}\n` +
+      `• 💰 Dinero que entra a tu Caja / Finanzas: ${formatCurrency(totals.userTotalCashInflow)} (Utilidad Neta: ${formatCurrency(totals.userTotalNetProfit)})\n` +
+      `• 🤝 Dinero a entregar a tu socio (${myRole === 'farm' ? partnerPartyName : farmPartyName}): ${formatCurrency(totals.partnerPayout)}\n\n` +
+      `• Resumen del Lote: ${totals.countDirect} en Venta Directa (${formatCurrency(totals.directGross)}), ${totals.countPartnership} en Compañía (${formatCurrency(totals.partnershipGross)}).`;
     
     if (window.confirm(confirmMsg)) {
       try {
@@ -370,6 +381,10 @@ export function PartnershipSettlementModal({
           : 'Venta Directa de Lote',
         exitType: d.isPart ? 'En Compañía' : 'En Pie',
         partnershipDetails: d.isPart ? {
+          isPartnership: true,
+          userRole: myRole, // 'farm' | 'owner'
+          userCashInflow: myRole === 'farm' ? d.farmProfitOnly : d.partnerTotalReturn,
+          userNetProfit: myRole === 'farm' ? d.farmProfitOnly : d.partnerProfitShare,
           pricePerKg: parseFloat(pricePerKg),
           entryPrice: d.entryPrice,
           profit: d.profit,
@@ -775,6 +790,61 @@ export function PartnershipSettlementModal({
                       />
                     </div>
                   </div>
+
+                  {/* SELECTOR DE ROL: ¿QUIÉN SOY YO EN ESTA LIQUIDACIÓN? */}
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                        🎯 ¿Cuál es tu rol en esta liquidación del lote?
+                      </label>
+                      <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300">
+                        Define cómo ingresa el dinero a tu caja en Finanzas
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setMyRole('farm')}
+                        className={`p-2.5 rounded-xl text-left border transition cursor-pointer ${
+                          myRole === 'farm'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-950 dark:text-emerald-200'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-xs flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                            🏢 Soy la Finca (Tenedor / Pastoreo)
+                          </span>
+                          {myRole === 'farm' && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                        </div>
+                        <p className="text-[10px] opacity-80 mt-1">
+                          Aporte: Pastos y cuidado. <strong>Recibes {farmPercent}% de la utilidad</strong> ({formatCurrency(totals.partnershipFarmProfit)}).
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setMyRole('owner')}
+                        className={`p-2.5 rounded-xl text-left border transition cursor-pointer ${
+                          myRole === 'owner'
+                            ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 ring-2 ring-blue-500/30 text-blue-950 dark:text-blue-200'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-xs flex items-center gap-1.5">
+                            <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                            🐮 Soy el Dueño del Ganado (Inversionista)
+                          </span>
+                          {myRole === 'owner' && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
+                        </div>
+                        <p className="text-[10px] opacity-80 mt-1">
+                          Aporte: Capital de compra. <strong>Recibes Capital ({formatCurrency(totals.partnershipPartnerCapital)}) + {partnerPercent}% utilidad</strong> ({formatCurrency(totals.partnershipPartnerReturn)}).
+                        </p>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
@@ -930,6 +1000,32 @@ export function PartnershipSettlementModal({
                   </div>
                 </div>
 
+              </div>
+
+              {/* BANNER DESTACADO PARA EL USUARIO SEGÚN SU ROL */}
+              <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-sm ${
+                myRole === 'farm'
+                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-950 dark:text-emerald-200'
+                  : 'bg-blue-500/10 border-blue-500/40 text-blue-950 dark:text-blue-200'
+              }`}>
+                <div>
+                  <span className="text-[10px] uppercase font-black tracking-wider block opacity-75">
+                    💰 Dinero que entra a tu caja / Finanzas ({myRole === 'farm' ? `🏢 Finca: ${farmPartyName}` : `🐮 Dueño del Ganado: ${partnerPartyName}`}):
+                  </span>
+                  <p className="text-xl sm:text-2xl font-black mt-0.5">
+                    {formatCurrency(totals.userTotalCashInflow)}
+                  </p>
+                </div>
+                <div className="sm:text-right">
+                  <span className="text-xs font-black block">
+                    Utilidad Neta Realizada: +{formatCurrency(totals.userTotalNetProfit)}
+                  </span>
+                  <span className="text-[11px] opacity-80 block mt-0.5">
+                    {myRole === 'farm'
+                      ? `(50% utilidad de pastoreo: ${formatCurrency(totals.partnershipFarmProfit)}${totals.countDirect > 0 ? ` + ${formatCurrency(totals.directGross)} directa` : ''})`
+                      : `(${formatCurrency(totals.partnershipPartnerCapital)} retorno capital + ${formatCurrency(totals.partnershipPartnerProfit)} ganancia)`}
+                  </span>
+                </div>
               </div>
 
               {/* Desglose Tabla Animal por Animal con Selector Rápido */}

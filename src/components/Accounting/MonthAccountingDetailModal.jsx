@@ -22,7 +22,9 @@ import {
   Layers, 
   CheckCircle2, 
   Info,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  UserCheck
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -33,7 +35,8 @@ import {
   Legend 
 } from 'recharts';
 import * as XLSX from 'xlsx-js-style';
-import { formatCurrency, formatNumber, formatDate, calculateFinancials, getSafeDateString } from '../../services/calculations';
+import { formatCurrency, formatNumber, formatDate, calculateFinancials, calculateSaleCashFlow, getSafeDateString } from '../../services/calculations';
+import { useAuth } from '../../context/AuthContext';
 import { EXPENSE_CATEGORIES } from './ExpenseModal';
 import { INCOME_CATEGORIES } from './IncomeModal';
 
@@ -66,6 +69,7 @@ export function MonthAccountingDetailModal({
   onSelectAnimal,
   zIndex = 'z-[60]'
 }) {
+  const { currentUser } = useAuth();
   const monthPrefix = monthData?.monthPrefix || '';
   const monthTitle = monthData?.fullLabel || monthData?.monthName || 'Detalle del Mes';
 
@@ -148,15 +152,10 @@ export function MonthAccountingDetailModal({
 
   const totalMonthCattleProfit = useMemo(() => {
     return monthSoldCattle.reduce((sum, c) => {
-      const isPart = c.exitType === 'En Compañía' || !!c.partnershipDetails;
-      if (isPart && c.partnershipDetails) {
-        const farmShare = parseFloat(c.partnershipDetails.farmShare);
-        return sum + (!isNaN(farmShare) ? farmShare : (calculateFinancials(c).netProfit * 0.5));
-      }
-      const fin = calculateFinancials(c);
-      return sum + fin.netProfit;
+      const flow = calculateSaleCashFlow(c, currentUser);
+      return sum + flow.netProfit;
     }, 0);
-  }, [monthSoldCattle]);
+  }, [monthSoldCattle, currentUser]);
 
   // 3. Otros ingresos del mes (incluyendo liquidaciones de leche)
   const monthIncomes = useMemo(() => {
@@ -929,11 +928,12 @@ export function MonthAccountingDetailModal({
                   <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-black uppercase text-[10px]">
                     <tr>
                       <th className="p-3">Chapa / Arete</th>
+                      <th className="p-3">Modalidad & Rol</th>
                       <th className="p-3">Fecha Venta</th>
                       <th className="p-3">Comprador</th>
                       <th className="p-3 text-right">Peso Salida</th>
-                      <th className="p-3 text-right">Precio Venta ($)</th>
-                      <th className="p-3 text-right">Costo Total ($)</th>
+                      <th className="p-3 text-right">Venta Bruta ($)</th>
+                      <th className="p-3 text-right text-emerald-600 dark:text-emerald-400">Entrada a Caja ($)</th>
                       <th className="p-3 text-right">Utilidad Neta ($)</th>
                       <th className="p-3 text-center">ROI (%)</th>
                     </tr>
@@ -942,6 +942,9 @@ export function MonthAccountingDetailModal({
                     {filteredSoldCattle.length > 0 ? (
                       filteredSoldCattle.map(animal => {
                         const fin = calculateFinancials(animal);
+                        const flow = calculateSaleCashFlow(animal, currentUser);
+                        const isPart = flow.isPartnership;
+
                         return (
                           <tr 
                             key={animal.id}
@@ -955,6 +958,23 @@ export function MonthAccountingDetailModal({
                               </div>
                               {animal.name && <div className="text-[10px] text-slate-400">{animal.name}</div>}
                             </td>
+                            <td className="p-3 whitespace-nowrap">
+                              {isPart ? (
+                                flow.userRole === 'farm' ? (
+                                  <span className="inline-flex items-center gap-1 font-black text-emerald-900 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-400 dark:border-emerald-700 text-[10px]">
+                                    <Building2 className="w-2.5 h-2.5 text-emerald-600" /> 🏢 Finca (50%)
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 font-black text-blue-900 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-400 dark:border-blue-700 text-[10px]">
+                                    <UserCheck className="w-2.5 h-2.5 text-blue-600" /> 🐮 Dueño (Cap+50%)
+                                  </span>
+                                )
+                              ) : (
+                                <span className="inline-flex items-center gap-1 font-bold text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-700 text-[10px]">
+                                  💰 Directa
+                                </span>
+                              )}
+                            </td>
                             <td className="p-3 whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
                               {formatDate(animal.exitDate)}
                             </td>
@@ -964,16 +984,16 @@ export function MonthAccountingDetailModal({
                             <td className="p-3 whitespace-nowrap text-right font-semibold text-slate-800 dark:text-slate-200">
                               {animal.exitWeight ? `${animal.exitWeight} kg` : '-'}
                             </td>
-                            <td className="p-3 whitespace-nowrap text-right font-black text-emerald-600 dark:text-emerald-400">
+                            <td className="p-3 whitespace-nowrap text-right font-bold text-slate-900 dark:text-white">
                               {formatCurrency(animal.exitPrice)}
                             </td>
-                            <td className="p-3 whitespace-nowrap text-right text-slate-500 dark:text-slate-400">
-                              {formatCurrency(fin.totalInvested)}
+                            <td className="p-3 whitespace-nowrap text-right font-black text-emerald-600 dark:text-emerald-400">
+                              +{formatCurrency(flow.cashInflow)}
                             </td>
                             <td className={`p-3 whitespace-nowrap text-right font-black ${
-                              fin.netProfit >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'
+                              flow.netProfit >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'
                             }`}>
-                              {formatCurrency(fin.netProfit)}
+                              +{formatCurrency(flow.netProfit)}
                             </td>
                             <td className="p-3 whitespace-nowrap text-center">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -989,7 +1009,7 @@ export function MonthAccountingDetailModal({
                       })
                     ) : (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-slate-400 text-xs">
+                        <td colSpan={9} className="p-8 text-center text-slate-400 text-xs">
                           {cattleSearch ? 'No se encontraron animales vendidos que coincidan con la búsqueda.' : 'No se registraron ventas de ganado en este mes.'}
                         </td>
                       </tr>
@@ -998,15 +1018,15 @@ export function MonthAccountingDetailModal({
                   {filteredSoldCattle.length > 0 && (
                     <tfoot className="bg-slate-50 dark:bg-slate-800/80 font-black text-slate-900 dark:text-white">
                       <tr>
-                        <td colSpan={4} className="p-3 text-right text-xs uppercase">Totales del Mes:</td>
-                        <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 text-sm">
+                        <td colSpan={5} className="p-3 text-right text-xs uppercase">Totales del Mes:</td>
+                        <td className="p-3 text-right text-slate-900 dark:text-white text-sm">
                           {formatCurrency(filteredSoldCattle.reduce((s, a) => s + (parseFloat(a.exitPrice) || 0), 0))}
                         </td>
-                        <td className="p-3 text-right text-slate-600 dark:text-slate-300 text-xs">
-                          {formatCurrency(filteredSoldCattle.reduce((s, a) => s + calculateFinancials(a).totalInvested, 0))}
+                        <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 text-sm">
+                          +{formatCurrency(filteredSoldCattle.reduce((s, a) => s + calculateSaleCashFlow(a, currentUser).cashInflow, 0))}
                         </td>
                         <td className="p-3 text-right text-indigo-600 dark:text-indigo-400 text-sm">
-                          {formatCurrency(filteredSoldCattle.reduce((s, a) => s + calculateFinancials(a).netProfit, 0))}
+                          +{formatCurrency(filteredSoldCattle.reduce((s, a) => s + calculateSaleCashFlow(a, currentUser).netProfit, 0))}
                         </td>
                         <td></td>
                       </tr>

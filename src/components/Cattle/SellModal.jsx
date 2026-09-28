@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../Common/Modal';
 import { formatCurrency, formatNumber, getLocalDateString } from '../../services/calculations';
 import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
-import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, ShieldCheck } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
 
@@ -29,6 +29,7 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
 
   // Modalidad: 'direct' (Solo yo / 100% utilidad finca) | 'partnership' (En compañía 50/50)
   const [settlementMode, setSettlementMode] = useState('direct');
+  const [myRole, setMyRole] = useState('farm'); // 'farm' (Soy la Finca) | 'owner' (Soy el Dueño del Animal)
   const [farmPercent, setFarmPercent] = useState(50);
   const [partnerPercent, setPartnerPercent] = useState(50);
 
@@ -127,10 +128,14 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
       currentWeight: parseFloat(saleData.exitWeight),
       partnershipDetails: isPartnership ? {
         isPartnership: true,
+        userRole: myRole, // 'farm' | 'owner'
+        userCashInflow: myRole === 'farm' ? farmProfitShare : partnerTotalReturn,
+        userNetProfit: myRole === 'farm' ? farmProfitShare : partnerProfitShare,
         farmPercent,
         partnerPercent,
         farmShare: farmProfitShare,
         partnerTotalReturn,
+        partnerProfitShare,
         entryPrice,
         profit: netProfit,
         owner: animal.owner || partnerPartyName,
@@ -361,19 +366,69 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold text-teal-950 dark:text-teal-200 flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                Reparto de Ganancia de Compañía
+                Reparto de Ganancia en Compañía
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-200 dark:bg-teal-800 text-teal-900 dark:text-teal-100">
                 {farmPercent}% Finca / {partnerPercent}% Dueño
               </span>
             </div>
 
-            {/* SELECCIÓN DE FINCA Y DUEÑO */}
+            {/* SELECTOR DE ROL: ¿QUIÉN SOY YO EN ESTE NEGOCIO? */}
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700/80 space-y-2">
+              <label className="block text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                🎯 ¿Cuál es tu rol en esta liquidación?
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMyRole('farm')}
+                  className={`p-2 rounded-xl text-left border transition cursor-pointer ${
+                    myRole === 'farm'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-950 dark:text-emerald-200'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-xs flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                      🏢 Soy la Finca (Tenedor)
+                    </span>
+                    {myRole === 'farm' && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                  </div>
+                  <p className="text-[10px] opacity-80 mt-0.5">
+                    Aporte: Pastos y cuidado. <strong>Recibes {farmPercent}% de la ganancia</strong>.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMyRole('owner')}
+                  className={`p-2 rounded-xl text-left border transition cursor-pointer ${
+                    myRole === 'owner'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 ring-2 ring-blue-500/30 text-blue-950 dark:text-blue-200'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-xs flex items-center gap-1.5">
+                      <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                      🐮 Soy el Dueño (Inversionista)
+                    </span>
+                    {myRole === 'owner' && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
+                  </div>
+                  <p className="text-[10px] opacity-80 mt-0.5">
+                    Aporte: Capital de compra. <strong>Recibes tu capital + {partnerPercent}% de ganancia</strong>.
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* SELECCIÓN DE NOMBRES DE PARTES */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 text-xs">
               <div>
                 <label className="block text-[10px] font-bold text-emerald-800 dark:text-emerald-300 mb-1 flex items-center gap-1">
                   <Building2 className="w-3 h-3 text-emerald-600" />
-                  <span>🏢 ¿Quién es la Finca? (Tenedor):</span>
+                  <span>🏢 1. ¿Quién es la Finca? (Tenedor):</span>
                 </label>
                 <input
                   type="text"
@@ -387,7 +442,7 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
               <div>
                 <label className="block text-[10px] font-bold text-blue-800 dark:text-blue-300 mb-1 flex items-center gap-1">
                   <UserCheck className="w-3 h-3 text-blue-600" />
-                  <span>👤 ¿Quién es el Dueño? (Inversionista):</span>
+                  <span>👤 2. ¿Quién es el Dueño? (Inversionista):</span>
                 </label>
                 <input
                   type="text"
@@ -437,15 +492,39 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
               </div>
 
               {exitPriceNum > 0 && (
-                <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700">
-                  <div>
-                    <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 block">🏢 PARTE {farmPartyName.toUpperCase()} ({farmPercent}%):</span>
-                    <strong className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(farmProfitShare)}</strong>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700">
+                    <div>
+                      <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 block">🏢 PARTE {farmPartyName.toUpperCase()} ({farmPercent}%):</span>
+                      <strong className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(farmProfitShare)}</strong>
+                      <span className="text-[9px] text-slate-400 block">Ganancia en pastos</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 block">👤 PAGO TOTAL {partnerPartyName.toUpperCase()}:</span>
+                      <strong className="text-sm font-black text-blue-600 dark:text-blue-400">{formatCurrency(partnerTotalReturn)}</strong>
+                      <span className="text-[9px] text-slate-400 block">Capital ({formatCurrency(entryPrice)}) + {partnerPercent}% ganancia</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 block">👤 PAGO TOTAL {partnerPartyName.toUpperCase()}:</span>
-                    <strong className="text-sm font-black text-blue-600 dark:text-blue-400">{formatCurrency(partnerTotalReturn)}</strong>
-                    <div className="text-[9px] text-slate-400">Capital ({formatCurrency(entryPrice)}) + {partnerPercent}% ganancia</div>
+
+                  {/* DESTACADO PARA EL USUARIO */}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                    myRole === 'farm'
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-950 dark:text-emerald-200'
+                      : 'bg-blue-500/10 border-blue-500/40 text-blue-950 dark:text-blue-200'
+                  }`}>
+                    <div>
+                      <span className="text-[10px] uppercase font-black tracking-wider block opacity-75">
+                        💰 Dinero que entra a tu caja / Finanzas ({myRole === 'farm' ? 'Finca' : 'Dueño del Ganado'}):
+                      </span>
+                      <p className="text-base font-black">
+                        {myRole === 'farm' ? formatCurrency(farmProfitShare) : formatCurrency(partnerTotalReturn)}
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-semibold text-right">
+                      {myRole === 'farm'
+                        ? `(100% Utilidad de pastoreo)`
+                        : `(${formatCurrency(entryPrice)} capital + ${formatCurrency(partnerProfitShare)} ganancia)`}
+                    </span>
                   </div>
                 </div>
               )}

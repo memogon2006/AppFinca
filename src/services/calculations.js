@@ -539,7 +539,125 @@ export function calculateFinancials(animal, additionalExpenses = 0, customMarket
     estimatedMarketPricePerKg,
     isSold,
     isDead,
+    cashFlow: calculateSaleCashFlow(animal)
   };
+}
+
+/**
+ * Calcula el flujo de caja e ingresos netos de una venta según el rol del usuario:
+ * - Venta Directa: 100% de la venta bruta ingresa a caja; utilidad = venta - costo.
+ * - En Compañía como Finca (Tenedor): Ingresa el 50% de la utilidad de pastoreo (farmShare).
+ * - En Compañía como Dueño del Ganado (Inversionista): Ingresa el 100% de su capital de compra + 50% de utilidad (partnerTotalReturn).
+ */
+export function calculateSaleCashFlow(animal, currentUser = null) {
+  if (!animal) {
+    return {
+      isPartnership: false,
+      userRole: 'direct',
+      roleLabel: 'Venta Directa',
+      cashInflow: 0,
+      netProfit: 0,
+      capitalReturn: 0,
+      grossSale: 0,
+      farmShare: 0,
+      partnerTotalReturn: 0,
+      partnerProfitShare: 0
+    };
+  }
+
+  const exitPrice = parseFloat(animal.exitPrice) || 0;
+  const entryPrice = parseFloat(animal.entryPrice || animal.purchasePrice) || 0;
+  const additionalCosts = parseFloat(animal.additionalCosts) || 0;
+  const totalInvested = entryPrice + additionalCosts;
+  const isPart = animal.exitType === 'En Compañía' || !!animal.partnershipDetails;
+  const part = animal.partnershipDetails;
+
+  if (!isPart || !part) {
+    const netProfit = exitPrice - totalInvested;
+    return {
+      isPartnership: false,
+      userRole: 'direct',
+      roleLabel: 'Venta Directa',
+      cashInflow: exitPrice,
+      netProfit,
+      capitalReturn: entryPrice,
+      grossSale: exitPrice,
+      farmShare: netProfit,
+      partnerTotalReturn: 0,
+      partnerProfitShare: 0,
+      farmPartyName: 'Finca Principal',
+      partnerPartyName: animal.owner || 'Dueño'
+    };
+  }
+
+  // Determinar rol del usuario
+  let userRole = part.userRole; // 'farm' | 'owner'
+  if (!userRole) {
+    const currentName = (currentUser?.name || '').trim().toLowerCase();
+    const currentFarm = (currentUser?.farmName || '').trim().toLowerCase();
+    const partOwner = (part.partnerPartyName || part.owner || animal.owner || '').trim().toLowerCase();
+    const partFarm = (part.farmPartyName || '').trim().toLowerCase();
+
+    if (currentName && partOwner && (partOwner === currentName || partOwner.includes(currentName))) {
+      userRole = 'owner';
+    } else if (currentFarm && partOwner && partOwner.includes(currentFarm)) {
+      userRole = 'owner';
+    } else {
+      userRole = 'farm';
+    }
+  }
+
+  const farmPercent = parseFloat(part.farmPercent) || 50;
+  const partnerPercent = parseFloat(part.partnerPercent) || 50;
+  const totalProfit = parseFloat(part.profit) !== undefined && !isNaN(parseFloat(part.profit))
+    ? parseFloat(part.profit)
+    : (exitPrice - entryPrice);
+
+  const farmShare = parseFloat(part.farmShare) !== undefined && !isNaN(parseFloat(part.farmShare))
+    ? parseFloat(part.farmShare)
+    : (totalProfit * (farmPercent / 100));
+
+  const partnerProfitShare = parseFloat(part.partnerProfitShare) !== undefined && !isNaN(parseFloat(part.partnerProfitShare))
+    ? parseFloat(part.partnerProfitShare)
+    : (totalProfit * (partnerPercent / 100));
+
+  const partnerTotalReturn = parseFloat(part.partnerTotalReturn) !== undefined && !isNaN(parseFloat(part.partnerTotalReturn))
+    ? parseFloat(part.partnerTotalReturn)
+    : (entryPrice + partnerProfitShare);
+
+  if (userRole === 'owner') {
+    return {
+      isPartnership: true,
+      userRole: 'owner',
+      roleLabel: 'Dueño del Ganado (Inversionista)',
+      cashInflow: partnerTotalReturn, // Capital + 50% ganancia
+      netProfit: partnerProfitShare,   // 50% ganancia
+      capitalReturn: entryPrice,       // Devolución capital inicial
+      partnerPaid: farmShare,          // Dinero entregado a la finca
+      grossSale: exitPrice,
+      farmShare,
+      partnerTotalReturn,
+      partnerProfitShare,
+      farmPartyName: part.farmPartyName || 'Finca Socia',
+      partnerPartyName: part.partnerPartyName || 'Yo (Dueño)'
+    };
+  } else {
+    return {
+      isPartnership: true,
+      userRole: 'farm',
+      roleLabel: 'Finca (Tenedor / Pastoreo)',
+      cashInflow: farmShare,           // 50% utilidad de pastoreo
+      netProfit: farmShare,            // 50% utilidad de pastoreo
+      capitalReturn: 0,                // El capital es del socio
+      partnerPaid: partnerTotalReturn, // Dinero entregado al socio
+      grossSale: exitPrice,
+      farmShare,
+      partnerTotalReturn,
+      partnerProfitShare,
+      farmPartyName: part.farmPartyName || 'Mi Finca',
+      partnerPartyName: part.partnerPartyName || 'Socio Inversionista'
+    };
+  }
 }
 
 /**
