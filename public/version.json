@@ -1,5 +1,5 @@
 {
-  "version": "2.24.2",
-  "buildTime": 1790653000000,
-  "description": " Claridad total en el Tablero Principal: Distinción entre Totales Históricos y Mes Actual sincronizados con Contabilidad"
+  "version": "2.24.3",
+  "buildTime": 1790654000000,
+  "description": "🚀 Corrección crítica de sincronización y renderizado del Tablero Principal"
 }

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.2";
+export const CURRENT_APP_VERSION = "2.24.3";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.3",
+    date: "28/09/2026",
+    title: "🚀 Estabilidad Total en Tablero Principal y Sincronización Inmediata",
+    highlights: [
+      "Tablero Principal 100% Operativo: Resuelto error de referencia en cálculo de flujo de caja.",
+      "Métricas Claras: Visualización transparente de Totales Históricos vs Flujos del Mes Actual.",
+      "Sincronización PWA Instantánea."
+    ]
+  },
   {
     version: "2.24.2",
     date: "28/09/2026",

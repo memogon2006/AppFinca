@@ -35,7 +35,7 @@ import { FarmCalendarWidget } from '../Calendar/FarmCalendarWidget';
 import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
-import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, getSafeDateString, getLocalDateString } from '../../services/calculations';
+import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
