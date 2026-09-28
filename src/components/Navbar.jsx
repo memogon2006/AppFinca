@@ -26,7 +26,8 @@ import {
   ChevronRight,
   Wallet,
   Leaf,
-  Milk
+  Milk,
+  HeartHandshake
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -94,6 +95,9 @@ export function Navbar({
       badgeClass: 'text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 border border-teal-300/40',
       items: [
         { id: 'cattle', label: 'Inventario de Ganado', icon: Layers, desc: 'Listado completo, filtros y fichas' },
+        ...(isModuleActive(MODULE_KEYS.REPRODUCTION) || isModuleActive(MODULE_KEYS.DAIRY) ? [
+          { id: 'females', label: 'Hembras & Reproducción', icon: HeartHandshake, desc: 'Gestación, partos, secado y ordeño' }
+        ] : []),
         ...(isModuleActive(MODULE_KEYS.CEBA_BATCHES) ? [
           { id: 'batches', label: 'Lotes, Ingresos & Comparaciones', icon: Boxes, desc: 'Agrupación y control de potreros' }
         ] : []),
@@ -110,9 +114,6 @@ export function Navbar({
       items: [
         ...(isModuleActive(MODULE_KEYS.MILK) ? [
           { id: 'dairy', label: 'Lechería & Control Ordeño', icon: Milk, desc: 'Pesajes AM/PM, DEL, curvas y tanque' }
-        ] : []),
-        ...(isModuleActive(MODULE_KEYS.REPRODUCTION) || isModuleActive(MODULE_KEYS.DAIRY) ? [
-          { id: 'females', label: 'Hembras & Reproducción', icon: Stethoscope, desc: 'Gestación, partos, secado y ordeño' }
         ] : []),
         ...(isModuleActive(MODULE_KEYS.REPRODUCTION) ? [
           { id: 'palpation', label: 'Palpación & Reprod.', icon: Stethoscope, desc: 'Preñeces, tactos y estados' }

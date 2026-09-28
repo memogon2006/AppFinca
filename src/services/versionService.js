@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.17.2";
+export const CURRENT_APP_VERSION = "2.17.3";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.17.3",
+    date: "27/09/2026",
+    title: "🐄 Organización de Menú: 'Hembras & Reproducción' integrado en Ganadería & Inventario",
+    highlights: [
+      "Ubicación Natural e Intuitiva: Se reubicó el módulo 'Hembras & Reproducción' dentro del grupo principal 'Ganadería & Inventario (HATO)', consolidando toda la administración del censo, vientres y lotes en un solo lugar.",
+      "Separación Clara de Operaciones de Manga: El grupo 'Trabajo de Campo, Corral & Manga' queda enfocado en herramientas rápidas de captura en sitio ('Palpación Rápida', 'Báscula Rápida' y 'Planillas de Lechería')."
+    ]
+  },
   {
     version: "2.17.2",
     date: "27/09/2026",
