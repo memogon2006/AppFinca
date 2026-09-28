@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.18.2";
+export const CURRENT_APP_VERSION = "2.18.3";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.18.3",
+    date: "27/09/2026",
+    title: "🌾 Restauración de Menú: 'Potreros & Pastoreo' visible en la Barra Lateral",
+    highlights: [
+      "Acceso Directo Recuperado: Se reincorporó el acceso '🌾 Potreros & Pastoreo' en el menú de navegación lateral dentro de la sección de Trabajo de Campo.",
+      "Control de Aforos y Rotación: Acceso expedito al catálogo de potreros, cálculo de forraje 1m², días de descanso y rotación de lotes."
+    ]
+  },
   {
     version: "2.18.2",
     date: "27/09/2026",
