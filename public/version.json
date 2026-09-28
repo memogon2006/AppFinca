@@ -1,7 +1,5 @@
 {
-  "version": "2.18.0",
-  "buildTime": 1790580000000,
-  "description": "🍼 Módulo de Partos & Destetes Automáticos: Registro rápido en 1 clic, pre-llenado de madre, sugerencia de consecutivo y programación de destete"
+  "version": "2.18.1",
+  "buildTime": 1790585000000,
+  "description": "⚡ Botón de Registrar Parto en Tablero Principal y Listado de Ganado"
 }
-
-

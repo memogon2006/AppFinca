@@ -2450,6 +2450,7 @@ export default function App() {
             onOpenPartnershipModal={() => setIsPartnershipModalOpen(true)}
             onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
             onOpenCensusModal={() => setIsCensusModalOpen(true)}
+            onOpenCalving={handleOpenCalving}
           />
         )}
 

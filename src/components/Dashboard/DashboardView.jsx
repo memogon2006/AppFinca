@@ -253,6 +253,17 @@ export function DashboardView({
               </button>
             )}
 
+            {onOpenCalving && (
+              <button
+                onClick={() => onOpenCalving(null)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-pink-950/40 border border-pink-400/40 transition cursor-pointer active:scale-95"
+                title="Registrar nuevo nacimiento / parto y programar destete automático"
+              >
+                <Baby className="w-4 h-4 text-pink-200" />
+                <span>🍼 Registrar Parto</span>
+              </button>
+            )}
+
             {!isWorker && isModuleActive(MODULE_KEYS.PARTNERSHIPS) && onOpenPartnershipModal && (
               <button
                 onClick={onOpenPartnershipModal}

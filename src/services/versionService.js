@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.18.0";
+export const CURRENT_APP_VERSION = "2.18.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.18.1",
+    date: "27/09/2026",
+    title: "⚡ Acceso Rápido: Botón 'Registrar Parto' en Tablero Principal y Listado de Ganado",
+    highlights: [
+      "Acceso Inmediato desde el Tablero: Se incorporó el botón de acción rápida '🍼 Registrar Parto' directamente en la barra superior del Tablero Principal.",
+      "Registro Directo en Hato: Disponible también en la barra de herramientas del listado de Ganadería para registrar nacimientos sin pasos adicionales."
+    ]
+  },
   {
     version: "2.18.0",
     date: "27/09/2026",

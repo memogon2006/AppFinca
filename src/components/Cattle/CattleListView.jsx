@@ -32,7 +32,8 @@ import {
   MessageCircle,
   FileText,
   Syringe,
-  ClipboardCheck
+  ClipboardCheck,
+  Baby
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -59,7 +60,8 @@ export function CattleListView({
   onOpenWhatsAppReport,
   onOpenChecklist,
   onOpenCensusModal,
-  onOpenVaccinationModal
+  onOpenVaccinationModal,
+  onOpenCalving
 }) {
   const { isWorker } = useAuth();
   const { isModuleActive } = useActiveModules();
@@ -369,6 +371,18 @@ export function CattleListView({
               <List className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Botón Registrar Parto */}
+          {onOpenCalving && (
+            <button
+              onClick={() => onOpenCalving(null)}
+              className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-black text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-pink-600/20 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px] active:scale-95"
+              title="Registrar nuevo nacimiento / parto y programar destete automático"
+            >
+              <Baby className="w-3.5 h-3.5 shrink-0 text-pink-200" />
+              <span>🍼 Registrar Parto</span>
+            </button>
+          )}
 
           {/* Botón Ingresar Lote Completo */}
           {isModuleActive(MODULE_KEYS.CEBA_BATCHES) && onOpenBatchEntry && (
