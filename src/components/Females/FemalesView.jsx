@@ -3,7 +3,7 @@ import { HeartHandshake, Milk, Sparkles, PlusCircle, Baby, Tag, CircleDot, Activ
 import { Badge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge } from '../Common/Badge';
 import { calculateReproduction, calculateMilkMetrics, calculateWeightMetrics, formatNumber, formatDate } from '../../services/calculations';
 
-export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpenNewAnimal, onNavigate, onOpenPalpation }) {
+export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpenNewAnimal, onNavigate, onOpenPalpation, onOpenCalving }) {
   const [subTab, setSubTab] = useState('all');
 
   const femaleCattle = cattle.filter(c => c.sex === 'Hembra' && c.status === 'Activo');
@@ -78,6 +78,15 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={() => onOpenCalving && onOpenCalving(null)}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition min-h-[44px] cursor-pointer"
+            title="Registrar nuevo nacimiento y programar destete automático"
+          >
+            <Baby className="w-4 h-4" />
+            <span>🍼 Registrar Parto</span>
+          </button>
+
           <button
             onClick={handleLaunchPalpation}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-900/30 transition min-h-[44px] cursor-pointer"
@@ -451,11 +460,20 @@ export function FemalesView({ cattle = [], weighings = [], onSelectAnimal, onOpe
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1">
-                    <span>{repro.statusLabel}</span>
-                    <span className="flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400">
-                      <Tag className="w-3 h-3" /> {batch}
-                    </span>
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{repro.statusLabel}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onOpenCalving) onOpenCalving(cow);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-900/20 transition cursor-pointer shrink-0"
+                      title="Registrar parto de esta vaca"
+                    >
+                      <Baby className="w-3.5 h-3.5" />
+                      <span>Registrar Parto</span>
+                    </button>
                   </div>
                 </div>
               );

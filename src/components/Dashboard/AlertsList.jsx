@@ -1,16 +1,16 @@
 import React from 'react';
-import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2, ShieldAlert, Baby } from 'lucide-react';
 import { calculateReproduction, formatDate, getDaysDifference } from '../../services/calculations';
 import { findDuplicateCattle, normalizeTagNumber, normalizeText } from '../../services/duplicateDetectionService';
 
 const VACCINE_STORAGE_KEY = 'ganado_colombia_vaccine_status';
 
-export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onSelectAnimal }) {
+export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onSelectAnimal, onOpenCalving }) {
   const animalAlerts = [];
   const sanitaryAlerts = [];
   const duplicateAlerts = [];
 
-  // 1. Alertas individuales de bovinos prioritarios (Pesos de venta, partos, chequeos)
+  // 1. Alertas individuales de bovinos prioritarios (Pesos de venta, partos, destetes, chequeos)
   cattle.forEach(animal => {
     if (animal.status !== 'Activo') return;
 
@@ -43,11 +43,56 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
             ? '¡Fecha estimada de parto cumplida!' 
             : `Faltan aprox. ${repro.daysUntilCalving} días para el parto (${formatDate(repro.expectedCalvingDate)}).`,
           icon: HeartHandshake,
+          isCalving: true,
         });
       }
     }
 
-    // ALERTA 3: Chequeo reproductivo (+45 días post-servicio)
+    // ALERTA DESTACADA 3: Destete Programado / Pendiente en Crías
+    if ((animal.category === 'Ternero' || animal.category === 'Ternera' || animal.entryType === 'Nacimiento') && !animal.isWeaned) {
+      const birthDateStr = animal.birthDate || animal.entryDate;
+      let isDueForWeaning = false;
+      let daysUntilWeaning = null;
+      let weaningDueDateStr = animal.weaningPlannedDate || '';
+
+      if (weaningDueDateStr) {
+        try {
+          const todayMid = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime();
+          const p = weaningDueDateStr.split('-');
+          if (p.length === 3) {
+            const wMid = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+            daysUntilWeaning = Math.round((wMid - todayMid) / 86400000);
+            if (daysUntilWeaning <= 20) {
+              isDueForWeaning = true;
+            }
+          }
+        } catch (e) {}
+      } else if (birthDateStr) {
+        const ageDays = getDaysDifference(birthDateStr, new Date());
+        if (ageDays >= 195) { // >= 6.5 meses (~195 días)
+          isDueForWeaning = true;
+          daysUntilWeaning = 210 - ageDays;
+        }
+      }
+
+      if (isDueForWeaning) {
+        const motherInfo = animal.motherTag ? `(Madre: #${animal.motherTag})` : '';
+        const isOverdue = daysUntilWeaning !== null && daysUntilWeaning <= 0;
+        animalAlerts.push({
+          id: `weaning-${animal.id}`,
+          animal,
+          priority: isOverdue ? 1 : 2,
+          type: isOverdue ? 'urgent' : 'info',
+          title: `🍼 Destete ${isOverdue ? 'Cumplido' : 'Próximo'}: Cría #${animal.tagNumber} ${motherInfo}`,
+          desc: isOverdue
+            ? `Cumplió la edad de destete (${weaningDueDateStr ? formatDate(weaningDueDateStr) : '7 meses'}). Realizar pesaje de destete y separar lote.`
+            : `Destete estimado en aprox. ${daysUntilWeaning} días (${weaningDueDateStr ? formatDate(weaningDueDateStr) : 'próximamente'}).`,
+          icon: Baby,
+        });
+      }
+    }
+
+    // ALERTA 4: Chequeo reproductivo (+45 días post-servicio)
     if (animal.sex === 'Hembra' && animal.reproductiveStatus === 'En Servicio' && animal.serviceDate) {
       const serviceDays = getDaysDifference(animal.serviceDate, new Date());
       if (serviceDays >= 45) {
@@ -304,6 +349,21 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
                 ) : null}
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">{alert.desc}</p>
+              {alert.isCalving && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onOpenCalving) onOpenCalving(alert.animal);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-900/20 transition cursor-pointer"
+                  >
+                    <Baby className="w-3.5 h-3.5" />
+                    <span>🍼 Registrar Parto</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );

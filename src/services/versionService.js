@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.17.3";
+export const CURRENT_APP_VERSION = "2.18.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.18.0",
+    date: "27/09/2026",
+    title: "🍼 Módulo de Partos & Destetes Automáticos: Registro Rápido en 1 Clic con Sincronización Total",
+    highlights: [
+      "Flujo de Parto en 1 Clic: Botón dedicado '🍼 Registrar Parto' desde el módulo de Hembras, las alertas de partos próximos y la ficha técnica de la vaca.",
+      "Pre-llenado Inteligente de Madre & Genealogía: Carga instantánea de la madre, sugerencia automática del siguiente consecutivo de chapa disponible y soporte para partos gemelares (mellizos).",
+      "Actualización Multitabla Blindada: Creación de la cría en el inventario con categoría Ternero/Ternera, registro de peso inicial al nacer en báscula y transición de la madre a 'Levante de cría' o 'Producción de leche'.",
+      "Programación de Destete en Calendario: Agenda automáticamente la fecha de destete (+210 días / 7 meses) en el Calendario de la Finca y activa alertas inteligentes de destete en el Tablero Principal."
+    ]
+  },
   {
     version: "2.17.3",
     date: "27/09/2026",

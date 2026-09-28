@@ -66,7 +66,8 @@ export function DashboardView({
   onCompleteBooster,
   onOpenPartnershipModal,
   onOpenAddExpense,
-  onOpenAddIncome
+  onOpenAddIncome,
+  onOpenCalving
 }) {
   const { isWorker, currentUser } = useAuth();
   const { isModuleActive } = useActiveModules();
@@ -565,6 +566,7 @@ export function DashboardView({
             weighings={weighings}
             vaccinations={vaccinations}
             onSelectAnimal={onSelectAnimal}
+            onOpenCalving={onOpenCalving}
           />
         </div>
 

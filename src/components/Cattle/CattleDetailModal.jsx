@@ -70,6 +70,7 @@ export function CattleDetailModal({
   onRevertDeath, 
   onDelete, 
   onDeleteWeight, 
+  onOpenCalving,
   isDark = false 
 }) {
   const { isWorker } = useAuth();
@@ -295,6 +296,17 @@ export function CattleDetailModal({
           <div className="flex items-center gap-2">
             {animal.status === 'Activo' && (
               <>
+                {animal.sex === 'Hembra' && (
+                  <button
+                    onClick={() => onOpenCalving && onOpenCalving(animal)}
+                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs flex items-center gap-1.5 transition shadow-md min-h-[36px] cursor-pointer"
+                    title="Registrar nuevo parto de este vientre"
+                  >
+                    <Baby className="w-3.5 h-3.5" />
+                    <span>🍼 Parto</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => onOpenAddWeight(animal)}
                   className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 transition shadow-sm min-h-[36px] cursor-pointer"
@@ -850,6 +862,17 @@ export function CattleDetailModal({
                       </div>
                     </div>
                   )}
+
+                  {animal.status === 'Activo' && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenCalving && onOpenCalving(animal)}
+                      className="w-full mt-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-purple-900/20 transition cursor-pointer"
+                    >
+                      <Baby className="w-4 h-4" />
+                      <span>🍼 Registrar Parto de este Vientre</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -976,9 +999,21 @@ export function CattleDetailModal({
                   <Baby className="w-4 h-4 text-purple-600" />
                   <span>Historial de Crías & Partos Registrados ({offspring.length})</span>
                 </h4>
-                <span className="text-[11px] text-purple-700 dark:text-purple-300 font-bold">
-                  {offspring.length === 0 ? 'Sin crías registradas' : `${offspring.length} ${offspring.length === 1 ? 'cría registrada' : 'crías registradas'}`}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-purple-700 dark:text-purple-300 font-bold hidden sm:inline">
+                    {offspring.length === 0 ? 'Sin crías registradas' : `${offspring.length} ${offspring.length === 1 ? 'cría' : 'crías'}`}
+                  </span>
+                  {animal.status === 'Activo' && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenCalving && onOpenCalving(animal)}
+                      className="px-2.5 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center gap-1 shadow-sm transition cursor-pointer"
+                    >
+                      <Baby className="w-3.5 h-3.5" />
+                      <span>+ Parto</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {offspring.length === 0 ? (

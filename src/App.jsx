@@ -26,6 +26,7 @@ import { WeightsView } from './components/Weights/WeightsView';
 import { QuickWeighinView } from './components/Weights/QuickWeighinView';
 import { FemalesView } from './components/Females/FemalesView';
 import { QuickPalpationView } from './components/Females/QuickPalpationView';
+import { CalvingRecordModal } from './components/Females/CalvingRecordModal';
 import { DairyView } from './components/Dairy/DairyView';
 import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { PaddocksView } from './components/Paddocks/PaddocksView';
@@ -115,6 +116,14 @@ export default function App() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
+
+  const [isCalvingModalOpen, setIsCalvingModalOpen] = useState(false);
+  const [calvingMotherAnimal, setCalvingMotherAnimal] = useState(null);
+
+  const handleOpenCalving = (motherAnimal = null) => {
+    setCalvingMotherAnimal(motherAnimal);
+    setIsCalvingModalOpen(true);
+  };
 
   // Mostrar notificación de confirmación de acción
   const showToast = (text, type = 'success') => {
@@ -702,6 +711,155 @@ export default function App() {
       } else {
         showToast(`¡Bovino ${created.tagNumber} registrado y sincronizado en la nube! ☁️`);
       }
+    }
+  };
+
+  // Guardar Registro de Parto & Programación de Destete Automático
+  const handleSaveCalving = async (calvingData) => {
+    if (!userId || !calvingData) return;
+    const { mother, calvingDate, calvingType, calvingEase, motherPostStatus, selectedPaddock, scheduleWeaning, weaningDate, weaningMonths, fatherType, fatherTag, fatherId, notes, calves } = calvingData;
+
+    try {
+      const createdCalvesList = [];
+
+      // 1. Crear cría(s) en db.cattle y registrar pesaje inicial al nacer
+      for (const calf of calves) {
+        const calfId = 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        const calfAnimal = {
+          id: calfId,
+          tagNumber: String(calf.tagNumber || '').trim(),
+          name: String(calf.name || '').trim(),
+          sex: calf.sex || 'Macho',
+          category: calf.category || (calf.sex === 'Hembra' ? 'Ternera' : 'Ternero'),
+          productionType: motherPostStatus === 'Producción de leche' ? 'Lechería' : (motherPostStatus === 'Doble Propósito' ? 'Doble Propósito' : (mother?.productionType || 'Cría')),
+          status: 'Activo',
+          entryType: 'Nacimiento',
+          entryDate: calvingDate || getLocalDateString(),
+          birthDate: calvingDate || getLocalDateString(),
+          entryWeight: parseFloat(calf.birthWeight) || 35,
+          currentWeight: parseFloat(calf.birthWeight) || 35,
+          entryPrice: 0,
+          motherId: String(mother?.id || ''),
+          motherTag: String(mother?.tagNumber || ''),
+          fatherId: String(fatherId || ''),
+          fatherTag: String(fatherTag || ''),
+          fatherType: fatherType || 'Monta Natural',
+          ironBrand: mother?.ironBrand || '',
+          owner: mother?.owner || 'Hacienda Principal',
+          paddock: selectedPaddock || mother?.paddock || '',
+          entryBatch: `Cría #${mother?.tagNumber || 'S/N'}`,
+          color: calf.color || mother?.color || 'Sin color',
+          breed: calf.breed || mother?.breed || 'Cebú Comercial',
+          birthCalvingType: calvingType,
+          birthCalvingEase: calvingEase,
+          vigor: calf.vigor || 'Vigoroso',
+          navelTreated: Boolean(calf.navelTreated),
+          colostrumConsumed: Boolean(calf.colostrumConsumed),
+          weaningPlannedDate: scheduleWeaning ? (weaningDate || null) : null,
+          isWeaned: false,
+          notes: notes ? `Parto ${calvingType}. ${notes}` : `Parto ${calvingType}.`,
+          userId,
+          createdAt: new Date().toISOString(),
+        };
+
+        await db.cattle.put(calfAnimal);
+        markPendingSync(userId, calfId);
+        createdCalvesList.push(calfAnimal);
+
+        // Pesaje inicial al nacer
+        if (calf.birthWeight && parseFloat(calf.birthWeight) > 0) {
+          const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          await db.weighings.put({
+            id: weighId,
+            cattleId: String(calfId),
+            userId,
+            date: calvingDate || getLocalDateString(),
+            weight: parseFloat(calf.birthWeight),
+            conditionScore: 3.5,
+            notes: `Peso al nacer (Parto ${calvingType}${calf.vigor ? ` - ${calf.vigor}` : ''})`,
+          });
+          markPendingSync(userId, weighId);
+        }
+
+        // Tarea / Alerta de Destete en Calendario
+        if (scheduleWeaning && weaningDate && db.calendarNotes) {
+          const noteId = 'cn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          await db.calendarNotes.put({
+            id: noteId,
+            date: weaningDate,
+            title: `🍼 Destete programado: Cría #${calf.tagNumber} (Madre: #${mother?.tagNumber || 'S/N'})`,
+            category: 'reproduccion',
+            completed: false,
+            notes: `Cría ${calf.category} #${calf.tagNumber} nacida el ${calvingDate}. Peso al nacer: ${calf.birthWeight} kg. Destete programado a los ${weaningMonths || 7} meses. Realizar pesaje de destete y separación de lote.`,
+            cattleId: String(calfId),
+            motherId: String(mother?.id || ''),
+            userId,
+            createdAt: new Date().toISOString(),
+          });
+          markPendingSync(userId, noteId);
+        }
+      }
+
+      // 2. Actualizar estado productivo y reproductivo de la madre
+      if (mother?.id) {
+        let updatedFemaleStatuses = ['Levante de cría'];
+        let entersMilking = false;
+        if (motherPostStatus === 'Producción de leche') {
+          updatedFemaleStatuses = ['Producción de leche'];
+          entersMilking = true;
+        } else if (motherPostStatus === 'Doble Propósito') {
+          updatedFemaleStatuses = ['Producción de leche', 'Levante de cría'];
+          entersMilking = true;
+        }
+
+        const updatedMother = {
+          ...mother,
+          femaleStatuses: updatedFemaleStatuses,
+          femaleStatus: updatedFemaleStatuses.join(', '),
+          reproductiveStatus: 'Parida / Lactancia',
+          serviceDate: '', // Resetea gestación activa anterior
+          expectedCalvingDate: '',
+          pregnancyDays: '',
+          lastCalvingDate: calvingDate,
+          totalCalvings: (parseInt(mother.totalCalvings) || 0) + 1,
+          paddock: selectedPaddock || mother.paddock,
+          milkingStatus: entersMilking ? 'En ordeño' : (mother.milkingStatus === 'En ordeño' ? 'En ordeño' : 'Seca'),
+          daysInMilk: entersMilking ? 0 : (mother.daysInMilk || 0),
+          lactationNumber: entersMilking ? ((parseInt(mother.lactationNumber) || 0) + 1) : (mother.lactationNumber || 1),
+          userId,
+          updatedAt: new Date().toISOString()
+        };
+        await db.cattle.put(updatedMother);
+        markPendingSync(userId, updatedMother.id);
+
+        if (selectedAnimal && String(selectedAnimal.id) === String(mother.id)) {
+          setSelectedAnimal(updatedMother);
+        }
+      }
+
+      // 3. Registrar en Bitácora de Auditoría
+      const calfTagsStr = calves.map(c => `#${c.tagNumber} (${c.sex}, ${c.birthWeight} kg)`).join(', ');
+      await logActivity({
+        action: 'calving_registered',
+        description: `Registró parto ${calvingType} de vaca #${mother?.tagNumber || 'S/N'}. Nacimiento de cría(s): ${calfTagsStr}. Destete programado para el ${weaningDate ? formatDate(weaningDate) : 'N/A'}.`,
+        tagNumber: mother?.tagNumber || calves[0]?.tagNumber || '',
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+
+      // Auto-activación de módulos de cría / reproducción si corresponde
+      autoActivateModulesForAnimal({ sex: 'Hembra', femaleStatus: 'Levante de cría' });
+
+      // 4. Finalizar y sincronizar
+      setIsCalvingModalOpen(false);
+      setCalvingMotherAnimal(null);
+      cloudPushData(userId);
+      triggerFeedback('single');
+      showToast(`🍼 ¡Parto registrado exitosamente! Cría(s) ${calves.map(c => `#${c.tagNumber}`).join(', ')} agregada(s) al hato.`);
+    } catch (err) {
+      console.error('Error al guardar parto:', err);
+      showToast('Ocurrió un error al registrar el parto.', 'error');
     }
   };
 
@@ -2264,6 +2422,7 @@ export default function App() {
             milkRecords={milkRecords}
             milkDeliveries={milkDeliveries}
             milkSettlements={milkSettlements}
+            onOpenCalving={handleOpenCalving}
           />
         )}
 
@@ -2362,6 +2521,7 @@ export default function App() {
             onOpenNewAnimal={handleOpenNew}
             onNavigate={setCurrentView}
             onOpenPalpation={() => setCurrentView('palpation')}
+            onOpenCalving={handleOpenCalving}
           />
         )}
 
@@ -2449,9 +2609,23 @@ export default function App() {
         onDelete={handleDeleteAnimal}
         onDeleteWeight={handleDeleteWeight}
         onOpenGlossary={() => setIsGlossaryOpen(true)}
+        onOpenCalving={handleOpenCalving}
       />
 
       {/* 2. Modales de Acción y Formularios (Con zIndex z-[60] para superponerse con prioridad) */}
+      <CalvingRecordModal
+        isOpen={isCalvingModalOpen}
+        onClose={() => {
+          setIsCalvingModalOpen(false);
+          setCalvingMotherAnimal(null);
+        }}
+        onSave={handleSaveCalving}
+        mother={calvingMotherAnimal}
+        cattleList={cattle}
+        paddocks={paddocks}
+        zIndex="z-[70]"
+      />
+
       <CattleFormModal
         isOpen={isFormModalOpen}
         onClose={() => {
