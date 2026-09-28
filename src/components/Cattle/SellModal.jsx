@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../Common/Modal';
-import { formatCurrency, formatNumber, getLocalDateString } from '../../services/calculations';
+import { formatCurrency, formatNumber, getLocalDateString, getDaysDifference } from '../../services/calculations';
 import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
 import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';

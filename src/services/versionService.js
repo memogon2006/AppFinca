@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.4";
+export const CURRENT_APP_VERSION = "2.24.5";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.5",
+    date: "28/09/2026",
+    title: "💰 Estabilidad Total en el Módulo de Venta y Liquidación de Bovinos",
+    highlights: [
+      "Ventas 100% Estables: Corregida la apertura de la ventana de venta y liquidación (SellModal) desde la Ficha Técnica y listados.",
+      "Cálculo Inmediato de Días y Meses en Finca: Cálculo preciso de permanencia y rentabilidad mensual en el formulario de venta.",
+      "Auditoría Exhaustiva de Importaciones: Cero referencias huérfanas en todo el proyecto."
+    ]
+  },
   {
     version: "2.24.4",
     date: "28/09/2026",

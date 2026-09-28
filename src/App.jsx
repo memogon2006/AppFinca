@@ -52,7 +52,7 @@ import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCen
 import { InventoryChecklistModal } from './components/Checklist/InventoryChecklistModal';
 import { ForcePasswordChangeModal } from './components/Auth/ForcePasswordChangeModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
-import { calculateWeightMetrics, formatCurrency, formatNumber, getLocalDateString } from './services/calculations';
+import { calculateWeightMetrics, formatCurrency, formatNumber, formatDate, getLocalDateString } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
