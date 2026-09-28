@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.21.2";
+export const CURRENT_APP_VERSION = "2.22.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.22.0",
+    date: "28/09/2026",
+    title: "💰 Conexión Total de Ganado en Compañía a Finanzas y Contabilidad por Rol (Finca vs Dueño)",
+    highlights: [
+      "Selector de Rol 1 Clic (Finca vs Dueño): Tanto en ventas individuales como en liquidaciones por lote, puedes definir si eres la Finca (recibes 50% de utilidad de pastoreo) o el Dueño del Ganado (recibes 100% de capital + 50% de ganancia).",
+      "Conexión Directa en Finanzas: Las tarjetas de resumen e ingresos reflejan el flujo de caja exacto que ingresa a tu bolsillo y tu utilidad neta realizada.",
+      "Contabilidad & Cierre Mensual: El Estado de Resultados (P&L) y balances contables desglosan automáticamente los ingresos según la modalidad y rol comercial."
+    ]
+  },
   {
     version: "2.21.2",
     date: "28/09/2026",
@@ -2446,25 +2456,38 @@ export async function checkAppUpdate() {
  */
 export async function applyAppUpdate() {
   try {
-    // 1. Activar inmediatamente el Service Worker en espera
+    // 1. Activar inmediatamente el Service Worker en espera y actualizar registros
     if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg && reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        await reg.update().catch(() => {});
       }
     }
 
-    // 2. Limpiar almacenamiento de sesión temporal
+    // 2. Limpiar cachés de cacheStorage si existen
+    if (typeof window !== 'undefined' && 'caches' in window) {
+      const keys = await caches.keys();
+      for (const key of keys) {
+        if (!key.includes(CURRENT_APP_VERSION)) {
+          await caches.delete(key).catch(() => {});
+        }
+      }
+    }
+
+    // 3. Limpiar almacenamiento de sesión temporal
     try {
       sessionStorage.clear();
     } catch (e) {}
 
-    // 3. Recarga limpia del sistema
+    // 4. Recarga limpia del sistema con cache-buster
     setTimeout(() => {
-      window.location.reload();
-    }, 150);
+      window.location.href = window.location.origin + window.location.pathname + '?_v=' + Date.now();
+    }, 200);
   } catch (e) {
     console.warn('Error aplicando actualización:', e);
-    window.location.reload();
+    window.location.href = window.location.origin + window.location.pathname + '?_v=' + Date.now();
   }
 }
