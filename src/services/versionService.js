@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.21.1";
+export const CURRENT_APP_VERSION = "2.21.2";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.21.2",
+    date: "28/09/2026",
+    title: "⚡ Corrección Crítica de Importación de Hooks & Apertura Inmediata",
+    highlights: [
+      "Importación Completa de React Hooks: Corrección de la importación de useEffect en el módulo de liquidación de ganado.",
+      "Arranque Inmediato: Verificación automatizada de todos los componentes para garantizar arranque 100% libre de errores.",
+      "Sincronización Limpia: Carga directa al Tablero Principal sin pantallas de espera ni bloqueos."
+    ]
+  },
   {
     version: "2.21.1",
     date: "28/09/2026",

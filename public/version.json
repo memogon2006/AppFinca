@@ -1,5 +1,5 @@
 {
-  "version": "2.21.1",
-  "buildTime": 1790640500000,
-  "description": "⚡ Corrección de Estabilidad & Restauración Instantánea"
+  "version": "2.21.2",
+  "buildTime": 1790641000000,
+  "description": "⚡ Corrección Crítica de Importación de Hooks & Apertura Inmediata"
 }
