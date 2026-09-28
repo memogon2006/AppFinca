@@ -143,6 +143,13 @@ export function MonthAccountingDetailModal({
     return monthSoldCattle.reduce((sum, c) => sum + (parseFloat(c.exitPrice) || 0), 0);
   }, [monthSoldCattle]);
 
+  const totalMonthCapitalRecovered = useMemo(() => {
+    return monthSoldCattle.reduce((sum, c) => {
+      const flow = calculateSaleCashFlow(c, currentUser);
+      return sum + flow.capitalReturn;
+    }, 0);
+  }, [monthSoldCattle, currentUser]);
+
   const totalMonthCattleCost = useMemo(() => {
     return monthSoldCattle.reduce((sum, c) => {
       const fin = calculateFinancials(c);
@@ -167,10 +174,11 @@ export function MonthAccountingDetailModal({
   }, [monthIncomes]);
 
   // 4. Totales Consolidados del Mes
-  const totalMonthRevenue = totalMonthCattleRevenue + totalMonthOtherIncomes;
+  const totalMonthGrossIncome = totalMonthCattleRevenue + totalMonthOtherIncomes;
+  const totalMonthRevenue = totalMonthGrossIncome;
   const totalMonthOperatingProfit = totalMonthCattleProfit + totalMonthOtherIncomes;
   const netMonthProfit = totalMonthOperatingProfit - totalMonthExpenses;
-  const netProfitMargin = totalMonthRevenue > 0 ? (netMonthProfit / totalMonthRevenue) * 100 : 0;
+  const netProfitMargin = totalMonthGrossIncome > 0 ? (netMonthProfit / totalMonthGrossIncome) * 100 : 0;
 
   // 5. Desglose de Gastos por Categoría
   const expensesByCategory = useMemo(() => {
@@ -247,14 +255,14 @@ export function MonthAccountingDetailModal({
       [`INFORME FINANCIERO MENSUAL - ${monthTitle.toUpperCase()}`],
       [`Fecha de Generación: ${formatDate(new Date())}`],
       [],
-      ['INDICADOR / RUBRO', 'VALOR'],
-      ['Ventas de Ganado (Ingreso Bruto)', totalMonthCattleRevenue],
-      ['Costo Histórico de Ganado Vendido', totalMonthCattleCost],
-      ['Ganancia Neta en Venta de Ganado', totalMonthCattleProfit],
-      ['Otros Ingresos (Leche, Servicios, etc.)', totalMonthOtherIncomes],
-      ['INGRESOS TOTALES OPERATIVOS', totalMonthRevenue],
-      ['GASTOS TOTALES DE FINCA', totalMonthExpenses],
-      ['UTILIDAD NETA FINAL DEL MES', netMonthProfit],
+      ['INDICADOR / RUBRO', 'VALOR ($ COP)'],
+      ['1. TOTAL INGRESOS COBRADOS (Ganado + Otros)', totalMonthGrossIncome],
+      ['   • Capital Inicial de Ganado Recuperado', totalMonthCapitalRecovered],
+      ['   • Ganancia Bruta en Venta de Ganado', totalMonthCattleProfit],
+      ['   • Otros Ingresos (Leche, Servicios, etc.)', totalMonthOtherIncomes],
+      ['(=) GANANCIA BRUTA OPERATIVA DEL MES', totalMonthOperatingProfit],
+      ['2. GASTOS TOTALES DE FINCA', totalMonthExpenses],
+      ['3. UTILIDAD NETA REAL DEL MES', netMonthProfit],
       ['Margen de Rentabilidad (%)', `${formatNumber(netProfitMargin, 1)}%`],
       [],
       ['DESGLOSE DE GASTOS POR RUBRO'],
@@ -296,11 +304,12 @@ export function MonthAccountingDetailModal({
       const cattleRows = [
         [`GANADO VENDIDO EN ${monthTitle.toUpperCase()}`],
         [],
-        ['Chapa/Arete', 'Nombre', 'Comprador', 'Fecha Venta', 'Peso Salida (kg)', 'Precio Venta ($)', 'Costo/Compra ($)', 'Utilidad Neta ($)', 'ROI (%)']
+        ['Chapa/Arete', 'Nombre', 'Comprador', 'Fecha Venta', 'Peso Salida (kg)', 'Precio Venta ($)', 'Capital Recuperado ($)', 'Utilidad Neta ($)', 'ROI (%)']
       ];
 
       monthSoldCattle.forEach(c => {
         const fin = calculateFinancials(c);
+        const flow = calculateSaleCashFlow(c, currentUser);
         cattleRows.push([
           c.tagNumber || 'S/N',
           c.name || '-',
@@ -308,8 +317,8 @@ export function MonthAccountingDetailModal({
           formatDate(c.exitDate),
           parseFloat(c.exitWeight) || 0,
           parseFloat(c.exitPrice) || 0,
-          fin.totalInvested,
-          fin.netProfit,
+          flow.capitalReturn,
+          flow.netProfit,
           `${fin.roi}%`
         ]);
       });
@@ -351,14 +360,15 @@ export function MonthAccountingDetailModal({
     let text = `📊 *INFORME FINANCIERO MENSUAL: ${monthTitle.toUpperCase()}*\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    text += `💰 *INGRESOS OPERATIVOS:*\n`;
-    text += `• Ganado Vendido: ${formatCurrency(totalMonthCattleRevenue)} (${monthSoldCattle.length} cabezas)\n`;
+    text += `💰 *1. TOTAL INGRESOS COBRADOS:* ${formatCurrency(totalMonthGrossIncome)}\n`;
+    text += `  • Capital Inicial Recuperado: ${formatCurrency(totalMonthCapitalRecovered)} (${monthSoldCattle.length} cabezas)\n`;
+    text += `  • Utilidad Bruta Ganadera: ${formatCurrency(totalMonthCattleProfit)}\n`;
     if (totalMonthOtherIncomes > 0) {
-      text += `• Otros Ingresos (Leche/Servicios): ${formatCurrency(totalMonthOtherIncomes)}\n`;
+      text += `  • Otros Ingresos (Leche/Servicios): ${formatCurrency(totalMonthOtherIncomes)}\n`;
     }
-    text += `*Total Ingresos:* ${formatCurrency(totalMonthRevenue)}\n\n`;
+    text += `\n`;
 
-    text += `💸 *GASTOS DE FINCA:*\n`;
+    text += `💸 *2. GASTOS DE LA FINCA:*\n`;
     text += `*Total Gastos:* ${formatCurrency(totalMonthExpenses)} (${monthExpenses.length} registros)\n`;
     if (expensesByCategory.length > 0) {
       expensesByCategory.slice(0, 4).forEach(cat => {
@@ -367,8 +377,8 @@ export function MonthAccountingDetailModal({
     }
     text += `\n`;
 
-    text += `📈 *RESULTADO & UTILIDAD NETA:*\n`;
-    text += `• Utilidad Neta: ${formatCurrency(netMonthProfit)}\n`;
+    text += `📈 *3. RESULTADO & UTILIDAD NETA:*\n`;
+    text += `• Utilidad Neta Real: ${formatCurrency(netMonthProfit)}\n`;
     text += `• Margen de Rentabilidad: ${formatNumber(netProfitMargin, 1)}%\n\n`;
 
     text += `_Generado desde Software Ganadero_ 🐮🌱`;
@@ -443,26 +453,46 @@ export function MonthAccountingDetailModal({
         {/* ========================================================================= */}
         <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
           
-          {/* Card 1: Ingresos Totales */}
+          {/* Card 1: Ingresos Totales Cobrados */}
           <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40">
             <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 text-xs font-bold">
               <span className="flex items-center gap-1">
                 <ArrowUpRight className="w-3.5 h-3.5" />
-                Ingresos del Mes
+                Ingresos Totales (Cobrado)
               </span>
               <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded-md font-bold">
                 {monthSoldCattle.length + monthIncomes.length} ops
               </span>
             </div>
             <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
-              {formatCurrency(totalMonthRevenue)}
+              {formatCurrency(totalMonthGrossIncome)}
             </p>
-            <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-              Ganado: {formatCurrency(totalMonthCattleRevenue)}
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center justify-between flex-wrap gap-1">
+              <span>Capital: <strong className="text-indigo-600 dark:text-indigo-400">{formatCurrency(totalMonthCapitalRecovered)}</strong></span>
+              <span>Utilidad: <strong className="text-emerald-600 dark:text-emerald-400">{formatCurrency(totalMonthOperatingProfit)}</strong></span>
+            </div>
+          </div>
+
+          {/* Card 2: Capital Recuperado */}
+          <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/40">
+            <div className="flex items-center justify-between text-indigo-700 dark:text-indigo-400 text-xs font-bold">
+              <span className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Capital Recuperado
+              </span>
+              <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded-md font-bold">
+                Retorno
+              </span>
+            </div>
+            <p className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
+              {formatCurrency(totalMonthCapitalRecovered)}
+            </p>
+            <p className="text-[10px] text-indigo-700 dark:text-indigo-300 mt-0.5">
+              Costo inicial devuelto de {monthSoldCattle.length} animales
             </p>
           </div>
 
-          {/* Card 2: Gastos Totales */}
+          {/* Card 3: Gastos del Mes */}
           <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-800/40">
             <div className="flex items-center justify-between text-rose-700 dark:text-rose-400 text-xs font-bold">
               <span className="flex items-center gap-1">
@@ -473,53 +503,34 @@ export function MonthAccountingDetailModal({
                 {monthExpenses.length} reg
               </span>
             </div>
-            <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+            <p className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400 mt-1">
               {formatCurrency(totalMonthExpenses)}
             </p>
-            <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">
+            <p className="text-[10px] text-rose-700 dark:text-rose-400 mt-0.5">
               {expensesByCategory.length} categorías activas
             </p>
           </div>
 
-          {/* Card 3: Utilidad Neta */}
+          {/* Card 4: Utilidad Neta */}
           <div className={`p-3.5 rounded-2xl border ${
             netMonthProfit >= 0
-              ? 'bg-indigo-50/80 dark:bg-indigo-950/20 border-indigo-200/80 dark:border-indigo-800/40 text-indigo-700 dark:text-indigo-400'
-              : 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/40 text-amber-700 dark:text-amber-400'
+              ? 'bg-gradient-to-br from-emerald-500/10 to-teal-500/5 dark:from-emerald-950/30 dark:to-teal-950/20 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+              : 'bg-rose-50/80 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-800/40 text-rose-700 dark:text-rose-400'
           }`}>
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5" />
-                Utilidad Neta
+                Utilidad Neta Real
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-white/60 dark:bg-black/40">
                 {formatNumber(netProfitMargin, 1)}% margen
               </span>
             </div>
-            <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+            <p className="text-lg sm:text-xl font-black mt-1">
               {formatCurrency(netMonthProfit)}
             </p>
-            <p className="text-[11px] mt-0.5 opacity-90">
-              Ganancia ganadera neta
-            </p>
-          </div>
-
-          {/* Card 4: Resumen Comercial */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300 text-xs font-bold">
-              <span className="flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                Venta de Ganado
-              </span>
-              <span className="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded-md font-bold">
-                {monthSoldCattle.length} cabezas
-              </span>
-            </div>
-            <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
-              {formatCurrency(totalMonthCattleProfit)}
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Utilidad neta de ventas
+            <p className="text-[10px] mt-0.5 opacity-90">
+              Ganancia ganadera libre de gastos
             </p>
           </div>
 
@@ -617,6 +628,26 @@ export function MonthAccountingDetailModal({
           {/* ------------------------------------------------------------------------- */}
           {activeTab === 'summary' && (
             <div className="space-y-4">
+              
+              {/* Banner Triada: Total Cobrado = Capital + Utilidad */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-indigo-500/10 to-teal-500/10 dark:from-emerald-950/30 dark:via-indigo-950/30 dark:to-teal-950/30 border border-emerald-300/60 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-base shrink-0">⚖️</span>
+                  <div className="min-w-0">
+                    <span className="font-bold text-slate-800 dark:text-slate-200">Balance de Entradas en {monthTitle}:</span>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate sm:whitespace-normal">
+                      Total Cobrado <strong className="text-emerald-600">{formatCurrency(totalMonthGrossIncome)}</strong> = Capital <strong className="text-indigo-600">{formatCurrency(totalMonthCapitalRecovered)}</strong> + Utilidad <strong className="text-teal-600">{formatCurrency(totalMonthOperatingProfit)}</strong>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 font-black shrink-0 text-xs">
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-emerald-600">{formatCurrency(totalMonthGrossIncome)}</span>
+                  <span>=</span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600">{formatCurrency(totalMonthCapitalRecovered)}</span>
+                  <span>+</span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-teal-600">{formatCurrency(totalMonthOperatingProfit)}</span>
+                </div>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 

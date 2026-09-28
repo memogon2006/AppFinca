@@ -467,6 +467,7 @@ export function AccountingView({
   }, [periodIncomes, incomeCategoryFilter, incomeSearch]);
 
   // ==========================================
+  // ==========================================
   // EXPORTACIÓN A EXCEL CONTABLE PROFESIONAL
   // ==========================================
   const handleExportExcel = () => {
@@ -480,19 +481,19 @@ export function AccountingView({
       ['Fecha de Generación:', new Date().toLocaleDateString('es-CO')],
       [],
       ['CONCEPTO FINANCIERO', 'MONTO ($ COP)'],
-      ['Ingresos por Venta de Ganado (Total Bruto)', cattleSalesMetrics.grossRevenue],
-      ['(-) Capital de Compra de Animales Recuperado', cattleSalesMetrics.purchaseCapitalRecovered],
-      ['(=) Utilidad Bruta por Venta de Ganado', cattleSalesMetrics.grossProfit],
-      ['(+) Otros Ingresos (Leche, Arriendos, Abonos)', additionalIncomesTotal],
-      ['(=) TOTAL INGRESOS OPERATIVOS DISPONIBLES', totalOperationalProfitGenerated],
+      ['1. TOTAL INGRESOS COBRADOS (Venta Bruta + Otros)', totalGrossIncome],
+      ['   • Capital Inicial de Compra de Ganado Recuperado', cattleSalesMetrics.purchaseCapitalRecovered],
+      ['   • Ganancia Bruta por Venta de Ganado', cattleSalesMetrics.grossProfit],
+      ['   • Otros Ingresos (Leche, Arriendos, Abonos)', additionalIncomesTotal],
+      ['(=) GANANCIA BRUTA OPERATIVA DISPONIBLE', totalOperationalProfitGenerated],
       [],
-      ['GASTOS OPERATIVOS DE LA FINCA', 'MONTO ($ COP)'],
-      ['Gastos Fijos (Nómina, Servicios, Arriendos)', fixedExpenses],
-      ['Gastos Variables (Sal, Concentrado, Sanidad)', variableExpenses],
-      ['Inversiones & Mejoras', investmentExpenses],
+      ['2. GASTOS OPERATIVOS DE LA FINCA', 'MONTO ($ COP)'],
+      ['   • Gastos Fijos (Nómina, Servicios, Arriendos)', fixedExpenses],
+      ['   • Gastos Variables (Sal, Concentrado, Sanidad)', variableExpenses],
+      ['   • Inversiones & Mejoras', investmentExpenses],
       ['(=) TOTAL GASTOS DE LA FINCA', totalExpenses],
       [],
-      ['RESULTADO FINAL GANADERO', 'MONTO ($ COP)'],
+      ['3. RESULTADO FINAL GANADERO', 'MONTO ($ COP)'],
       ['UTILIDAD NETA REAL DE LA FINCA', realNetProfit],
       ['Cobertura de Gastos con Ventas', `${expenseCoveragePercent}%`],
       ['Costo por Kilo de Carne Producido', `${formatCurrency(costPerKgProduced)} / kg`],
@@ -552,20 +553,24 @@ export function AccountingView({
     const text = `📊 *BALANCE FINANCIERO GANADERO* 🐂\n` +
       `🏡 *Finca:* ${currentUser?.farmName || 'GANADERIA LA G'}\n` +
       `📅 *Período:* ${dateRange.label}\n` +
-      `--------------------------------\n` +
-      `📥 *Ingresos Operativos:* ${formatCurrency(totalOperationalProfitGenerated)}\n` +
-      `• Ganancia limpia por Ganado: ${formatCurrency(cattleSalesMetrics.grossProfit)} (${cattleSalesMetrics.count} animales)\n` +
-      `• Leche & Otros Ingresos: ${formatCurrency(additionalIncomesTotal)}\n\n` +
-      `📤 *Gastos de la Finca:* ${formatCurrency(totalExpenses)}\n` +
-      `• Fijos (Nómina/Luz/Arriendos): ${formatCurrency(fixedExpenses)}\n` +
-      `• Variables (Sal/Sanidad/Insumos): ${formatCurrency(variableExpenses)}\n` +
-      `--------------------------------\n` +
-      `💰 *UTILIDAD NETA REAL:* ${formatCurrency(realNetProfit)}\n` +
-      `🎯 *Estado:* ${financialStatus.label}\n` +
-      `📈 *Cobertura de Gastos:* ${expenseCoveragePercent}%\n` +
-      `⚖️ *Costo por Kg producido:* ${formatCurrency(costPerKgProduced)}/kg\n` +
-      `--------------------------------\n` +
-      `_Generado por Software Ganadero_`;
+      `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `💰 *1. TOTAL INGRESOS COBRADOS:* ${formatCurrency(totalGrossIncome)}\n` +
+      `  • Capital Inicial Recuperado: ${formatCurrency(cattleSalesMetrics.purchaseCapitalRecovered)} (${cattleSalesMetrics.count} animales)\n` +
+      `  • Utilidad Bruta de Ventas: ${formatCurrency(cattleSalesMetrics.grossProfit)}\n` +
+      (additionalIncomesTotal > 0 ? `  • Otros Ingresos (Leche/Arriendos): ${formatCurrency(additionalIncomesTotal)}\n` : '') +
+      `\n` +
+      `📤 *2. GASTOS DE LA FINCA:* ${formatCurrency(totalExpenses)}\n` +
+      `  • Fijos (Nómina/Luz/Arriendos): ${formatCurrency(fixedExpenses)}\n` +
+      `  • Variables (Sal/Sanidad/Insumos): ${formatCurrency(variableExpenses)}\n` +
+      (investmentExpenses > 0 ? `  • Inversiones & Mejoras: ${formatCurrency(investmentExpenses)}\n` : '') +
+      `\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `📈 *3. UTILIDAD NETA REAL:* ${formatCurrency(realNetProfit)}\n` +
+      `🎯 *Diagnóstico:* ${financialStatus.label}\n` +
+      `⚡ *Cobertura de Gastos:* ${expenseCoveragePercent}%\n` +
+      (costPerKgProduced > 0 ? `⚖️ *Costo por Kg producido:* ${formatCurrency(costPerKgProduced)}/kg\n` : '') +
+      `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `_Generado por Software Ganadero_ 🐮🌱`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -685,29 +690,51 @@ export function AccountingView({
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        {/* Card 1: Ingresos Totales */}
+        {/* Card 1: Ingresos Totales Cobrados */}
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
-              Ingresos Disponibles
+              Ingresos Totales (Cobrado)
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
               <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-2">
-            {formatCurrency(totalOperationalProfitGenerated)}
+            {formatCurrency(totalGrossIncome)}
           </div>
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-between">
-            <span>Ganancia Ventas: <strong className="text-emerald-600">{formatCurrency(cattleSalesMetrics.grossProfit)}</strong></span>
-            <span>Otros: <strong>{formatCurrency(additionalIncomesTotal)}</strong></span>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-between flex-wrap gap-1">
+            <span>Capital: <strong className="text-indigo-600 dark:text-indigo-400">{formatCurrency(cattleSalesMetrics.purchaseCapitalRecovered)}</strong></span>
+            <span>Utilidad: <strong className="text-emerald-600 dark:text-emerald-400">{formatCurrency(totalOperationalProfitGenerated)}</strong></span>
           </div>
           <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">
-            Bruto Total: {formatCurrency(totalGrossIncome)} (incluye capital recuperado)
+            Total recaudado en {dateRange.label} (Ganado + Leche + Otros)
           </div>
         </div>
 
-        {/* Card 2: Gastos Totales de Finca */}
+        {/* Card 2: Capital Inicial Recuperado */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase text-indigo-500 dark:text-indigo-400 tracking-wider">
+              Capital Recuperado
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-2">
+            {formatCurrency(cattleSalesMetrics.purchaseCapitalRecovered)}
+          </div>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 flex items-center justify-between">
+            <span>{cattleSalesMetrics.count} animales liquidados</span>
+            <span className="text-indigo-600 font-bold">Retorno a Caja</span>
+          </div>
+          <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">
+            Costo inicial de compra devuelto al bolsillo para reinversión
+          </div>
+        </div>
+
+        {/* Card 3: Gastos Totales de Finca */}
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
@@ -729,7 +756,7 @@ export function AccountingView({
           </div>
         </div>
 
-        {/* Card 3: Utilidad Neta Real Ganadera */}
+        {/* Card 4: Utilidad Neta Real Ganadera */}
         <div className={`p-4 rounded-2xl border shadow-sm relative overflow-hidden ${
           realNetProfit >= 0 
             ? 'bg-gradient-to-br from-emerald-500/10 to-teal-500/5 dark:from-emerald-950/40 dark:to-teal-950/20 border-emerald-300 dark:border-emerald-800' 
@@ -747,54 +774,57 @@ export function AccountingView({
             {formatCurrency(realNetProfit)}
           </div>
           <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-1">
-            Ganancia real tras pagar capital de compra y todos los gastos de finca
-          </div>
-        </div>
-
-        {/* Card 4: Cobertura de Gastos del Mes */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
-              Cobertura de Costos
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center">
-              <Zap className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400">
-              {expenseCoveragePercent}%
-            </span>
-            <span className="text-xs text-slate-500 font-bold">
-              {expenseCoveragePercent >= 100 ? 'Cubierto 100%' : 'En progreso'}
-            </span>
-          </div>
-          {/* Barra de Progreso */}
-          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-2 overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-500 ${
-                expenseCoveragePercent >= 100 
-                  ? 'bg-emerald-500' 
-                  : expenseCoveragePercent >= 70 
-                    ? 'bg-indigo-500' 
-                    : 'bg-amber-500'
-              }`}
-              style={{ width: `${Math.min(expenseCoveragePercent, 100)}%` }}
-            />
-          </div>
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5">
-            {expenseCoveragePercent >= 100 
-              ? `🟢 Las ventas cubrieron los gastos y dejaron ${formatCurrency(realNetProfit)} libres.` 
-              : `🟡 Faltan ${formatCurrency(Math.max(0, totalExpenses - totalOperationalProfitGenerated))} para cubrir costos.`}
+            Ganancia limpia tras recuperar capital y pagar todos los gastos de finca
           </div>
         </div>
 
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. COSTOS UNITARIOS ZOOTÉCNICOS ($/KG, $/ANIMAL/DÍA, $/LITRO)             */}
+      {/* BANNER DE BALANCE FINANCIERO: TRIADA DE RENTABILIDAD                      */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-indigo-500/10 to-teal-500/10 dark:from-emerald-950/30 dark:via-indigo-950/30 dark:to-teal-950/30 border border-emerald-300/60 dark:border-emerald-800/60 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2.5 rounded-2xl bg-emerald-600 text-white font-black text-sm shadow-md shrink-0">
+            ⚖️
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-black uppercase text-emerald-900 dark:text-emerald-300 tracking-wider flex items-center gap-2">
+              <span>Ecuación de Rentabilidad: ¿Cómo se reparte el dinero?</span>
+              <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 shrink-0">
+                {dateRange.label}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+              De los <strong className="text-emerald-700 dark:text-emerald-400">{formatCurrency(totalGrossIncome)}</strong> cobrados en total: 
+              <strong className="text-indigo-700 dark:text-indigo-400"> {formatCurrency(cattleSalesMetrics.purchaseCapitalRecovered)}</strong> corresponden a <u>Capital Inicial Recuperado</u> y 
+              <strong className="text-teal-700 dark:text-teal-400"> {formatCurrency(totalOperationalProfitGenerated)}</strong> son <u>Ganancias Brutas de Producción</u>.
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 text-xs font-black flex-wrap shrink-0">
+          <div className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-center">
+            <span className="text-[9px] uppercase font-bold text-slate-400 block">1. Total Cobrado</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{formatCurrency(totalGrossIncome)}</span>
+          </div>
+          <span className="text-slate-400 font-black text-base">=</span>
+          <div className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-center">
+            <span className="text-[9px] uppercase font-bold text-slate-400 block">2. Capital Recuperado</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-black text-sm">{formatCurrency(cattleSalesMetrics.purchaseCapitalRecovered)}</span>
+          </div>
+          <span className="text-slate-400 font-black text-base">+</span>
+          <div className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-center">
+            <span className="text-[9px] uppercase font-bold text-slate-400 block">3. Utilidad Operativa</span>
+            <span className="text-teal-600 dark:text-teal-400 font-black text-sm">{formatCurrency(totalOperationalProfitGenerated)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. COSTOS UNITARIOS ZOOTÉCNICOS & COBERTURA DE COSTOS                     */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         
         {/* Costo por Kg de Carne Producido */}
         <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center gap-3">
@@ -841,6 +871,38 @@ export function AccountingView({
               {costPerMilkLiter > 0 ? `${formatCurrency(costPerMilkLiter)} / litro` : 'No aplica / Sin ordeño'}
             </div>
             <div className="text-[9px] text-slate-400">Gastos de lechería ÷ Litros producidos</div>
+          </div>
+        </div>
+
+        {/* Cobertura de Costos de la Finca */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <Zap className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                Cobertura de Costos
+              </span>
+              <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">
+                {expenseCoveragePercent}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-1.5 overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-500 ${
+                  expenseCoveragePercent >= 100 
+                    ? 'bg-emerald-500' 
+                    : expenseCoveragePercent >= 70 
+                      ? 'bg-indigo-500' 
+                      : 'bg-amber-500'
+                }`}
+                style={{ width: `${Math.min(expenseCoveragePercent, 100)}%` }}
+              />
+            </div>
+            <div className="text-[9px] text-slate-400 mt-1 truncate">
+              {expenseCoveragePercent >= 100 ? '✅ Costos 100% cubiertos' : `Faltan ${formatCurrency(Math.max(0, totalExpenses - totalOperationalProfitGenerated))}`}
+            </div>
           </div>
         </div>
 

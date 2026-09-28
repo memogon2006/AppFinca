@@ -87,6 +87,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
   // Cálculos globales sobre las ventas filtradas considerando el rol del usuario (Finca vs Dueño)
   let totalGrossSales = 0;
   let totalCostSold = 0;
+  let totalCapitalRecovered = 0;
   let totalUserCashInflow = 0;
   let totalUserNetProfit = 0;
 
@@ -95,6 +96,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
     const flow = calculateSaleCashFlow(c, currentUser);
     totalGrossSales += parseFloat(c.exitPrice) || 0;
     totalCostSold += fin.totalInvested;
+    totalCapitalRecovered += flow.capitalReturn;
     totalUserCashInflow += flow.cashInflow;
     totalUserNetProfit += flow.netProfit;
   });
@@ -189,40 +191,82 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
 
       {/* Tarjetas de Resumen Financiero */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Card 1: Ingreso a Caja / Total Cobrado */}
+        <div className="p-5 rounded-2xl bg-blue-50/90 dark:bg-slate-900/90 border border-blue-200/90 dark:border-blue-500/30 shadow-sm">
+          <span className="text-xs font-bold uppercase text-blue-800 dark:text-blue-400">Total Cobrado (Ingreso a Caja)</span>
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalUserCashInflow)}</p>
+          <div className="text-xs text-blue-700 dark:text-blue-400 font-semibold mt-1 flex items-center justify-between flex-wrap gap-1">
+            <span>Cap: <strong>{formatCurrency(totalCapitalRecovered)}</strong></span>
+            <span>Util: <strong>{formatCurrency(totalUserNetProfit)}</strong></span>
+          </div>
+        </div>
+
+        {/* Card 2: Capital Recuperado */}
+        <div className="p-5 rounded-2xl bg-indigo-50/90 dark:bg-slate-900/90 border border-indigo-200/90 dark:border-indigo-500/30 shadow-sm">
+          <span className="text-xs font-bold uppercase text-indigo-800 dark:text-indigo-400">Capital Inicial Recuperado</span>
+          <p className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1 tabular-nums">{formatCurrency(totalCapitalRecovered)}</p>
+          <span className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold mt-1 inline-block">
+            {filteredSoldCattle.length} animales (Retorno al bolsillo)
+          </span>
+        </div>
+
+        {/* Card 3: Utilidad Neta Realizada */}
         <div className="p-5 rounded-2xl bg-emerald-50/90 dark:bg-slate-900/90 border border-emerald-200/90 dark:border-emerald-500/30 shadow-sm">
           <span className="text-xs font-bold uppercase text-emerald-800 dark:text-emerald-400">Utilidad Neta Realizada</span>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalUserNetProfit)}</p>
+          <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">{formatCurrency(totalUserNetProfit)}</p>
           <span className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold mt-1 inline-block">
             ROI Promedio: {formatNumber(overallRealizedRoi, 1)}%
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-blue-50/90 dark:bg-slate-900/90 border border-blue-200/90 dark:border-blue-500/30 shadow-sm">
-          <span className="text-xs font-bold uppercase text-blue-800 dark:text-blue-400">Ingreso a Caja / Finanzas</span>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalUserCashInflow)}</p>
-          <span className="text-xs text-blue-700 dark:text-blue-400 font-semibold mt-1 inline-block">
-            {filteredSoldCattle.length} ventas (Venta Bruta: {formatCurrency(totalGrossSales)})
-          </span>
-        </div>
-
+        {/* Card 4: Inversión en Ganado Activo */}
         <div className="p-5 rounded-2xl bg-purple-50/90 dark:bg-slate-900/90 border border-purple-200/90 dark:border-purple-500/30 shadow-sm">
           <span className="text-xs font-bold uppercase text-purple-800 dark:text-purple-400">Inversión en Ganado Activo</span>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">{formatCurrency(totalActiveInvestment)}</p>
           <span className="text-xs text-purple-700 dark:text-purple-400 font-semibold mt-1 inline-block">
-            {activeCattle.length} cabezas en finca
-          </span>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-amber-50/90 dark:bg-slate-900/90 border border-amber-200/90 dark:border-amber-500/30 shadow-sm">
-          <span className="text-xs font-bold uppercase text-amber-800 dark:text-amber-400">Margen Comercial Neto</span>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 tabular-nums">
-            {totalUserCashInflow > 0 ? formatNumber((totalUserNetProfit / totalUserCashInflow) * 100, 1) : 0}%
-          </p>
-          <span className="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-1 inline-block">
-            Margen sobre ingresos de caja
+            {activeCattle.length} cabezas activas en potrero
           </span>
         </div>
       </div>
+
+      {/* Banner de Balance Financiero: Triada */}
+      {filteredSoldCattle.length > 0 && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-indigo-500/10 to-teal-500/10 dark:from-emerald-950/30 dark:via-indigo-950/30 dark:to-teal-950/30 border border-emerald-300/60 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-2xl bg-emerald-600 text-white font-black text-sm shadow-md shrink-0">
+              ⚖️
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-black uppercase text-emerald-900 dark:text-emerald-300 tracking-wider">
+                Ecuación de Dinero Entrante en Ventas
+              </span>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                De los <strong>{formatCurrency(totalUserCashInflow)}</strong> cobrados en caja: 
+                <strong> {formatCurrency(totalCapitalRecovered)}</strong> corresponden a <u>Capital Recuperado</u> y 
+                <strong> {formatCurrency(totalUserNetProfit)}</strong> son <u>Utilidad Limpia</u>.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 text-xs font-black flex-wrap shrink-0">
+            <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-center">
+              <span className="text-[9px] uppercase font-bold text-slate-400 block">Total Cobrado</span>
+              <span className="text-blue-600 dark:text-blue-400 font-black">{formatCurrency(totalUserCashInflow)}</span>
+            </div>
+            <span className="text-slate-400 font-black">=</span>
+            <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-center">
+              <span className="text-[9px] uppercase font-bold text-slate-400 block">Capital Recuperado</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-black">{formatCurrency(totalCapitalRecovered)}</span>
+            </div>
+            <span className="text-slate-400 font-black">+</span>
+            <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-center">
+              <span className="text-[9px] uppercase font-bold text-slate-400 block">Utilidad Neta</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-black">{formatCurrency(totalUserNetProfit)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Liquidación por Dueño / Marca */}
       <div className="custom-card p-5 space-y-4">

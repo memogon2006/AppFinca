@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.22.0";
+export const CURRENT_APP_VERSION = "2.23.0";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.23.0",
+    date: "28/09/2026",
+    title: "📊 Triada Financiera Ganadera: Ingresos Totales = Capital Recuperado + Utilidad Neta Real",
+    highlights: [
+      "Triada de Rentabilidad Cristalina: Las tarjetas principales y resúmenes contables desglosan con total exactitud la ecuación: Total Cobrado ($5M) = Capital Inicial Recuperado ($3M) + Utilidad Operativa ($2M).",
+      "Tarjeta Dedicada de Capital Recuperado: Muestra de forma destacada el retorno de inversión de animales vendidos devuelto al bolsillo para reinvertir en nuevo ganado.",
+      "Utilidad Neta Real Transparente: Cálculo limpio de la ganancia operativa libre tras recuperar el capital de compra y cubrir todos los gastos operativos de la finca.",
+      "Balance Mensual y Exportaciones Sincronizadas: Módulo de desglose mensual, reportes para WhatsApp y planillas Excel actualizados con la misma triada financiera."
+    ]
+  },
   {
     version: "2.22.0",
     date: "28/09/2026",
