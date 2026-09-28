@@ -29,8 +29,6 @@ import {
 } from 'lucide-react';
 
 export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
-  if (!isOpen) return null;
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
@@ -302,6 +300,8 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
       return matchCategory && matchSearch;
     });
   }, [selectedCategory, searchTerm]);
+
+  if (!isOpen) return null;
 
   return (
     <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>

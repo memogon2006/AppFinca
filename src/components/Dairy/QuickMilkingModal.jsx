@@ -11,8 +11,6 @@ export function QuickMilkingModal({
   onSaveBatch,
   defaultDate = getLocalDateString()
 }) {
-  if (!isOpen) return null;
-
   const [date, setDate] = useState(defaultDate);
   const [session, setSession] = useState('AM'); // 'AM', 'PM', 'AM_PM'
   const [searchTerm, setSearchTerm] = useState('');
@@ -150,6 +148,8 @@ export function QuickMilkingModal({
   // Cálculo de totales rápidos en la cabecera
   const totalLitersCalculated = Object.values(entries).reduce((sum, item) => sum + (parseFloat(item.am) || 0) + (parseFloat(item.pm) || 0), 0);
   const cowsWithDataCount = Object.values(entries).filter(item => (parseFloat(item.am) || 0) + (parseFloat(item.pm) || 0) > 0).length;
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in">

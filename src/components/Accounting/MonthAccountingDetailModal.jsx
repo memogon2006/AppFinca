@@ -66,10 +66,8 @@ export function MonthAccountingDetailModal({
   onSelectAnimal,
   zIndex = 'z-[60]'
 }) {
-  if (!isOpen || !monthData) return null;
-
-  const monthPrefix = monthData.monthPrefix || '';
-  const monthTitle = monthData.fullLabel || monthData.monthName || 'Detalle del Mes';
+  const monthPrefix = monthData?.monthPrefix || '';
+  const monthTitle = monthData?.fullLabel || monthData?.monthName || 'Detalle del Mes';
 
   const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'expenses' | 'cattle_sales' | 'incomes'
   const [expenseSearch, setExpenseSearch] = useState('');
@@ -378,6 +376,8 @@ export function MonthAccountingDetailModal({
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
+
+  if (!isOpen || !monthData) return null;
 
   return (
     <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-fadeIn`}>

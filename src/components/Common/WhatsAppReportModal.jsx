@@ -31,8 +31,6 @@ export function WhatsAppReportModal({
   farmName = 'Hacienda Ganadera',
   zIndex = 'z-[70]'
 }) {
-  if (!isOpen) return null;
-
   // Estado del tipo de reporte
   const [reportType, setReportType] = useState('inventory'); // 'inventory' | 'readyToSell' | 'weighing' | 'owners'
   
@@ -588,6 +586,8 @@ export function WhatsAppReportModal({
   const handleSelectQuickContact = (contact) => {
     setPhoneNumber(contact.phone);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className={`fixed inset-0 bg-slate-950/80 backdrop-blur-sm ${zIndex} flex items-center justify-center p-3 sm:p-5 overflow-y-auto`}>

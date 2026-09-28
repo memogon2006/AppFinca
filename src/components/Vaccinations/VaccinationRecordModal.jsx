@@ -105,8 +105,6 @@ export function VaccinationRecordModal({
   onSaveVaccination,
   zIndex = 'z-[60]'
 }) {
-  if (!isOpen) return null;
-
   const todayStr = useMemo(() => getLocalDateString(new Date()), []);
 
   // Estado del Formulario: Multi-Selección de Vacunas (Array)
@@ -373,6 +371,8 @@ export function VaccinationRecordModal({
     triggerFeedback('success');
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className={`fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn`}>

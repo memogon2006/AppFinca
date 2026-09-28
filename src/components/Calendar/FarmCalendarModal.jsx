@@ -53,7 +53,6 @@ export function FarmCalendarModal({
   zIndex = 'z-[60]'
 }) {
   const { isWorker } = useAuth();
-  if (!isOpen) return null;
 
   // Fecha actual en tiempo real
   const [now, setNow] = useState(new Date());
@@ -501,6 +500,8 @@ export function FarmCalendarModal({
       };
     });
   }, [viewYear, vaccinations]);
+
+  if (!isOpen) return null;
 
   return (
     <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>

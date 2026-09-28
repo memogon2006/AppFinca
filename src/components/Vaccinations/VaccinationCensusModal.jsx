@@ -28,8 +28,6 @@ export function VaccinationCensusModal({
   onOpenVaccinationModal,
   zIndex = 'z-[60]'
 }) {
-  if (!isOpen) return null;
-
   const activeCattle = useMemo(() => cattle.filter(c => c.status === 'Activo'), [cattle]);
   const totalActive = activeCattle.length;
 
@@ -119,6 +117,8 @@ export function VaccinationCensusModal({
   const handlePrint = () => {
     window.print();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className={`fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn`}>

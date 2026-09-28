@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.21.0";
+export const CURRENT_APP_VERSION = "2.21.1";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.21.1",
+    date: "28/09/2026",
+    title: "⚡ Corrección de Estabilidad & Restauración Instantánea",
+    highlights: [
+      "Optimización de Renderizado: Corrección del ciclo de vida y orden de hooks en modales de liquidación, calendario, vacunación y contabilidad.",
+      "Carga Ininterrumpida: Eliminación de bloqueos de sincronización en el arranque de la plataforma ganadera.",
+      "Restauración de Flujo: Apertura y operación continua en todos los módulos de ventas, potreros y registros de campo."
+    ]
+  },
   {
     version: "2.21.0",
     date: "28/09/2026",

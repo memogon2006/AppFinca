@@ -36,8 +36,6 @@ export function PartnershipSettlementModal({
 }) {
   const { currentUser } = useAuth();
 
-  if (!isOpen) return null;
-
   const activeCattle = useMemo(() => {
     return cattle.filter(c => c.status === 'Activo');
   }, [cattle]);
@@ -396,6 +394,8 @@ export function PartnershipSettlementModal({
   const handlePrint = () => {
     window.print();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>

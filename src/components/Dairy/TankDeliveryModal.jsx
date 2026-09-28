@@ -12,8 +12,6 @@ export function TankDeliveryModal({
   defaultPricePerLiter = 2100,
   defaultDate = getLocalDateString()
 }) {
-  if (!isOpen) return null;
-
   const [date, setDate] = useState(defaultDate);
   const [totalLiters, setTotalLiters] = useState('');
   const [pricePerLiter, setPricePerLiter] = useState(() => String(defaultPricePerLiter || 2100)); // Precio base orientativo común
@@ -86,6 +84,8 @@ export function TankDeliveryModal({
     triggerFeedback('single');
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">

@@ -33,8 +33,6 @@ export function OwnerFinancialDetailModal({
   onSelectAnimal,
   zIndex = 'z-[60]'
 }) {
-  if (!isOpen || !ownerName) return null;
-
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'sold' | 'all'
   const [searchTerm, setSearchTerm] = useState('');
   const [batchFilter, setBatchFilter] = useState('');
@@ -257,6 +255,8 @@ export function OwnerFinancialDetailModal({
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
+
+  if (!isOpen || !ownerName) return null;
 
   return (
     <div className={`fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 ${zIndex} animate-fade-in`}>
