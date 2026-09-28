@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu,
   X,
@@ -54,6 +54,9 @@ export function Navbar({
   const { currentUser, logout, isWorker } = useAuth();
   const { isModuleActive } = useActiveModules();
 
+  const scrollPositionRef = useRef(0);
+  const isLockedRef = useRef(false);
+
   // Cerrar sidebar con la tecla Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -65,15 +68,72 @@ export function Navbar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSidebarOpen]);
 
-  // Bloquear scroll de fondo cuando el sidebar esté abierto en móvil
+  // Bloqueo y restauración precisa del scroll del body con preservación de posición
   useEffect(() => {
     if (isSidebarOpen) {
-      document.body.style.overflow = 'hidden';
+      // 1. Guardar la posición exacta actual de scroll de la página
+      const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      scrollPositionRef.current = currentScrollY;
+      isLockedRef.current = true;
+
+      // 2. Calcular el ancho del scrollbar para evitar saltos de pantalla (layout shift)
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+      // 3. Bloquear el body fijando su posición para evitar cualquier desplazamiento de fondo
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${currentScrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.style.overflowY = 'hidden';
+      if (scrollBarWidth > 0) {
+        document.body.style.paddingRight = `${scrollBarWidth}px`;
+      }
+      document.documentElement.style.overflowY = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
     } else {
-      document.body.style.overflow = 'unset';
+      if (isLockedRef.current) {
+        // 1. Desbloquear estilos de body y html
+        const restoreScrollY = scrollPositionRef.current;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflowY = '';
+        document.body.style.paddingRight = '';
+        document.documentElement.style.overflowY = '';
+        document.documentElement.style.overscrollBehavior = '';
+        isLockedRef.current = false;
+
+        // 2. Restaurar inmediatamente la posición previa exacta de scroll
+        window.scrollTo({
+          top: restoreScrollY,
+          left: 0,
+          behavior: 'instant'
+        });
+      }
     }
+
     return () => {
-      document.body.style.overflow = 'unset';
+      if (isLockedRef.current) {
+        const restoreScrollY = scrollPositionRef.current;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflowY = '';
+        document.body.style.paddingRight = '';
+        document.documentElement.style.overflowY = '';
+        document.documentElement.style.overscrollBehavior = '';
+        isLockedRef.current = false;
+        window.scrollTo({
+          top: restoreScrollY,
+          left: 0,
+          behavior: 'instant'
+        });
+      }
     };
   }, [isSidebarOpen]);
 
@@ -319,17 +379,23 @@ export function Navbar({
           isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsSidebarOpen(false)}
+        onTouchMove={(e) => isSidebarOpen && e.preventDefault()}
+        onWheel={(e) => isSidebarOpen && e.preventDefault()}
         aria-hidden="true"
       />
 
       {/* Cajón Lateral Deslizante */}
       <aside 
-        className={`fixed top-0 bottom-0 left-0 z-50 w-80 sm:w-88 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between transition-transform duration-300 ease-out transform ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-80 sm:w-88 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between transition-transform duration-300 ease-out transform overscroll-contain ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{
+          overscrollBehavior: 'contain',
+          overscrollBehaviorY: 'contain'
+        }}
       >
         {/* Cabecera del Sidebar */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-slate-950/40">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-slate-950/40 shrink-0">
           <div 
             className="flex items-center gap-2.5 min-w-0 cursor-pointer group"
             onClick={() => handleNavigate('dashboard')}
@@ -370,7 +436,14 @@ export function Navbar({
         </div>
 
         {/* Cuerpo del Sidebar con Scroll */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        <div 
+          className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-5"
+          style={{
+            overscrollBehavior: 'contain',
+            overscrollBehaviorY: 'contain',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
           
           {/* BOTÓN DE ACCIÓN DESTACADA: REGISTRAR BOVINO */}
           <div>

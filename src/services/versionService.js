@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.5";
+export const CURRENT_APP_VERSION = "2.24.6";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.6",
+    date: "28/09/2026",
+    title: "📱 Perfeccionamiento del Scroll en el Menú Lateral Desplegable",
+    highlights: [
+      "Bloqueo Total de Fondo al Abrir: Todo el contenido de la página queda estático sin saltos ni desfasajes visuales.",
+      "Scroll Independiente sin Fugas (Overscroll Contain): Recorrido fluido de arriba a abajo en el menú sin arrastrar la página de fondo.",
+      "Restauración Milimétrica de Posición al Cerrar: Al cerrar el panel lateral, la página vuelve exactamente al punto donde estabas leyendo."
+    ]
+  },
   {
     version: "2.24.5",
     date: "28/09/2026",

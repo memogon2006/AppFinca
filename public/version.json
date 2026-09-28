@@ -1,5 +1,5 @@
 {
-  "version": "2.24.5",
-  "buildTime": 1790658000000,
-  "description": "💰 Corrección definitiva del módulo de venta y liquidación de bovinos (SellModal)"
+  "version": "2.24.6",
+  "buildTime": 1790660000000,
+  "description": "📱 Perfeccionamiento del scroll en el Menú Lateral: Bloqueo de fondo, cero scroll chaining y restauración exacta"
 }
