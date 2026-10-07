@@ -1,26 +1,22 @@
 {
   "rules": {
     "users": {
+      ".read": true,
       "$safeEmail": {
         ".read": true,
-        ".write": "!data.exists() || data.child('id').val() == newData.child('id').val()",
-        ".validate": "newData.hasChildren(['id', 'email'])"
+        ".write": true
       }
     },
-    "data": {
+    "userData": {
       "$userId": {
         ".read": true,
-        ".write": true
+        ".write": true,
+        ".indexOn": ["userId", "syncedAt"]
       }
     },
-    "workers": {
-      "$farmOwnerId": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "deleted_workers": {
-      "$farmOwnerId": {
+    "deletedWorkers": {
+      ".read": true,
+      "$safeEmail": {
         ".read": true,
         ".write": true
       }
