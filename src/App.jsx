@@ -20,6 +20,7 @@ import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
 import { Navbar } from './components/Navbar';
+import { SuperAdminView } from './components/Admin/SuperAdminView';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { CattleListView } from './components/Cattle/CattleListView';
 import { WeightsView } from './components/Weights/WeightsView';
@@ -2660,6 +2661,14 @@ export default function App() {
             onOpenNewAnimal={handleOpenNew}
             farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
             currentUser={currentUser}
+          />
+        )}
+
+        {currentView === 'superadmin' && (
+          <SuperAdminView
+            currentUser={currentUser}
+            onNavigate={setCurrentView}
+            showToast={showToast}
           />
         )}
 

@@ -286,6 +286,58 @@ export function addTombstones(userId, tableName, ...itemIds) {
   }
 }
 
+const LAST_SYNCED_KEY = 'ganadera_last_synced_at_';
+
+/**
+ * Obtiene el conteo total de elementos pendientes de sincronizar (creados/modificados + eliminados)
+ */
+export function getPendingSyncCount(userId) {
+  if (!userId) return 0;
+  return getPendingSyncIds(userId).size + getPendingDeletes(userId).length;
+}
+
+/**
+ * Dispara un evento en window para que la interfaz actualice el indicador de sincronización en tiempo real
+ */
+export function notifySyncStateChange(userId) {
+  if (typeof window !== 'undefined' && userId) {
+    try {
+      const count = getPendingSyncCount(userId);
+      window.dispatchEvent(new CustomEvent('ganado_pending_sync_changed', {
+        detail: { userId, count }
+      }));
+    } catch (e) {}
+  }
+}
+
+/**
+ * Guarda y emite la marca de tiempo de la última sincronización exitosa con Firebase
+ */
+export function recordLastSyncedAt(userId) {
+  if (!userId) return;
+  try {
+    const iso = new Date().toISOString();
+    localStorage.setItem(`${LAST_SYNCED_KEY}${userId}`, iso);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ganado_last_synced_changed', {
+        detail: { userId, timestamp: iso }
+      }));
+    }
+  } catch (e) {}
+}
+
+/**
+ * Obtiene la marca de tiempo de la última sincronización exitosa guardada localmente
+ */
+export function getLastSyncedAt(userId) {
+  if (!userId) return null;
+  try {
+    return localStorage.getItem(`${LAST_SYNCED_KEY}${userId}`);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Registra IDs de elementos creados o editados localmente pendientes de sincronizar con Firebase
  */
@@ -297,6 +349,7 @@ export function markPendingSync(userId, ...itemIds) {
     const set = new Set(raw ? JSON.parse(raw) : []);
     itemIds.flat().filter(Boolean).forEach(id => set.add(String(id)));
     localStorage.setItem(key, JSON.stringify(Array.from(set)));
+    notifySyncStateChange(userId);
   } catch (e) {
     console.warn('Error saving markPendingSync:', e);
   }
@@ -336,6 +389,7 @@ export function clearPendingSync(userId, itemIds = null) {
         localStorage.removeItem(key);
       }
     }
+    notifySyncStateChange(userId);
   } catch (e) {
     console.warn('Error in clearPendingSync:', e);
   }
@@ -359,6 +413,7 @@ export function markPendingDelete(userId, tableName, ...itemIds) {
       }
     }
     localStorage.setItem(key, JSON.stringify(list));
+    notifySyncStateChange(userId);
   } catch (e) {
     console.warn('Error in markPendingDelete:', e);
   }
@@ -385,6 +440,7 @@ export function clearPendingDeletes(userId) {
   if (!userId) return;
   try {
     localStorage.removeItem(`${PENDING_DEL_KEY}${userId}`);
+    notifySyncStateChange(userId);
   } catch (e) {
     console.warn('Error in clearPendingDeletes:', e);
   }
@@ -459,6 +515,7 @@ export async function cloudPushData(userId) {
       // Limpiar cola de pendientes al confirmar que Firebase recibió los datos
       clearPendingSync(userId);
       clearPendingDeletes(userId);
+      recordLastSyncedAt(userId);
       return true;
     }
     return false;
@@ -611,6 +668,7 @@ export async function cloudPullData(userId) {
             await reconcileCollection(col, remoteData[col], userId);
           }
         }
+        recordLastSyncedAt(userId);
         return true;
       }
     }

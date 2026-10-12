@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.6";
+export const CURRENT_APP_VERSION = "2.24.7";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.7",
+    date: "12/10/2026",
+    title: "👑 Panel Maestro SuperAdmin & 📶 Indicador Visual de Sincronización Offline",
+    highlights: [
+      "Centro de Control SuperAdmin Exclusivo: Monitoreo en tiempo real de fincas activas en Firebase, censo bovino global y copias de seguridad de soporte técnico en 1 clic (solo para la cuenta administradora).",
+      "Indicador Reactivo de Sincronización en Campo: Píldora inteligente con contador de registros pendientes (verde, amarillo, azul y rojo) para máxima tranquilidad en corrales sin señal.",
+      "Popover Interactivo de Red y Nube: Cuadro de estado rápido con hora del último respaldo y botón directo de sincronización manual."
+    ]
+  },
   {
     version: "2.24.6",
     date: "28/09/2026",

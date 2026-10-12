@@ -27,13 +27,17 @@ import {
   Wallet,
   Leaf,
   Milk,
-  HeartHandshake
+  HeartHandshake,
+  Crown
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { CURRENT_APP_VERSION } from '../services/versionService';
 import { useActiveModules, MODULE_KEYS } from '../services/moduleService';
 import { ModuleSelectorModal } from './Common/ModuleSelectorModal';
+import { SyncStatusBadge } from './Common/SyncStatusBadge';
+
+const SUPERADMIN_EMAIL = 'criaderosantateresa21@gmail.com';
 
 export function Navbar({ 
   currentView, 
@@ -51,8 +55,10 @@ export function Navbar({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModuleSelectorOpen, setIsModuleSelectorOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-  const { currentUser, logout, isWorker } = useAuth();
+  const { currentUser, logout, isWorker, effectiveUserId } = useAuth();
   const { isModuleActive } = useActiveModules();
+  const isSuperAdmin = currentUser?.email?.toLowerCase().trim() === SUPERADMIN_EMAIL;
+  const targetSyncUserId = effectiveUserId || currentUser?.id;
 
   const scrollPositionRef = useRef(0);
   const isLockedRef = useRef(false);
@@ -269,18 +275,12 @@ export function Navbar({
                     <span>{activeCattleCount} {activeCattleCount === 1 ? 'animal' : 'animales'}</span>
                   </span>
 
-                  {/* Estado de Conexión */}
-                  <span 
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md font-bold text-[9px] sm:text-[10px] border transition-colors whitespace-nowrap backdrop-blur-sm ${
-                      isOnline
-                        ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30'
-                        : 'bg-amber-500/30 text-amber-200 border-amber-400/50 animate-pulse'
-                    }`}
-                    title={isOnline ? '🟢 Conectado a la nube.' : '📡 Modo Campo Offline.'}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-                    <span className="hidden xs:inline sm:inline text-white/90">{isOnline ? 'En línea' : 'Modo Campo'}</span>
-                  </span>
+                  {/* Indicador Reactivo de Sincronización y Modo Offline */}
+                  <SyncStatusBadge 
+                    userId={targetSyncUserId} 
+                    isSyncing={isSyncing} 
+                    onManualSync={onManualSync} 
+                  />
                 </div>
               </div>
             </div>
@@ -290,6 +290,22 @@ export function Navbar({
             {/* LADO DERECHO: Acciones Directas y Perfil (Adaptado a móvil y escritorio) */}
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               
+              {/* Botón Maestro SuperAdmin (Solo para criaderosantateresa21@gmail.com) */}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => handleNavigate('superadmin')}
+                  title="Centro de Monitoreo SuperAdmin (Exclusivo)"
+                  className={`px-2 py-1.5 sm:px-3 rounded-xl text-xs font-black flex items-center gap-1.5 border transition cursor-pointer shrink-0 backdrop-blur-sm shadow-md active:scale-95 ${
+                    currentView === 'superadmin'
+                      ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 border-amber-300 shadow-amber-950/40 ring-2 ring-amber-400/50'
+                      : 'bg-amber-500/25 hover:bg-amber-500/35 text-amber-200 border-amber-400/50 shadow-amber-950/20'
+                  }`}
+                >
+                  <Crown className="w-4 h-4 text-amber-300 fill-amber-400/20" />
+                  <span className="hidden md:inline">SuperAdmin</span>
+                </button>
+              )}
+
               {/* Botón Principal: + Registrar Bovino */}
               <button
                 onClick={onOpenNewAnimal}
@@ -299,8 +315,6 @@ export function Navbar({
                 <PlusCircle className="w-4 h-4 shrink-0 text-white" />
                 <span className="hidden sm:inline">Registrar Bovino</span>
               </button>
-
-
 
               {/* Botón Sincronización Nube */}
               <button
@@ -514,6 +528,42 @@ export function Navbar({
               </div>
             ))}
           </div>
+
+          {/* SECCIÓN SUPERADMIN (EXCLUSIVO PARA criaderosantateresa21@gmail.com) */}
+          {isSuperAdmin && (
+            <div className="pt-2 border-t-2 border-amber-500/40">
+              <div className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 px-3 mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Crown className="w-3.5 h-3.5 text-amber-500" />
+                  SuperAdministrador
+                </span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-md text-amber-950 bg-gradient-to-r from-amber-400 to-yellow-400 border border-amber-300 shadow-sm">
+                  Exclusivo
+                </span>
+              </div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleNavigate('superadmin')}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer group ${
+                    currentView === 'superadmin'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black shadow-md'
+                      : 'text-amber-900 dark:text-amber-200 hover:bg-amber-100/80 dark:hover:bg-amber-950/50 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-400/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-amber-500 text-slate-950 font-black group-hover:scale-105 transition shadow-sm">
+                      <Crown className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-black text-xs">Monitoreo de Fincas en Vivo</div>
+                      <div className="text-[10px] text-amber-700 dark:text-amber-300 font-normal">Supervisión global & backups de soporte</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-amber-500" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* SECCIÓN FINAL: HERRAMIENTAS DE CAMPO & GESTIÓN */}
           <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
