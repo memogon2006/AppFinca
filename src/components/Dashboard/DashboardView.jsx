@@ -540,7 +540,7 @@ export function DashboardView({
       />
 
       {/* Grid de Herramientas de Campo: Arqueo / Checklist y Pluviómetro Digital */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div className={`grid grid-cols-1 ${isModuleActive(MODULE_KEYS.RAINFALL) ? 'md:grid-cols-2' : ''} gap-4 sm:gap-6`}>
         <ChecklistAuditWidget
           latestAudit={latestAudit}
           cattle={cattle}
@@ -548,11 +548,13 @@ export function DashboardView({
           onSelectAnimal={onSelectAnimal}
           onOpenNewAnimal={onOpenNewAnimal}
         />
-        <RainfallWidget
-          rainfall={rainfall}
-          onOpenNewRain={onOpenNewRain}
-          onNavigate={onNavigate}
-        />
+        {isModuleActive(MODULE_KEYS.RAINFALL) && (
+          <RainfallWidget
+            rainfall={rainfall}
+            onOpenNewRain={onOpenNewRain}
+            onNavigate={onNavigate}
+          />
+        )}
       </div>
 
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}

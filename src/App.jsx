@@ -310,6 +310,12 @@ export default function App() {
     if (currentView === 'dairy' && !isModuleActive(MODULE_KEYS.MILK) && !isModuleActive(MODULE_KEYS.DAIRY)) {
       setCurrentView('dashboard');
     }
+    if (currentView === 'paddocks' && !isModuleActive(MODULE_KEYS.PADDOCKS)) {
+      setCurrentView('dashboard');
+    }
+    if (currentView === 'rainfall' && !isModuleActive(MODULE_KEYS.RAINFALL)) {
+      setCurrentView('dashboard');
+    }
   }, [isWorker, currentView, isModuleActive]);
 
   // Sincronización automática con la nube multi-dispositivo en tiempo real

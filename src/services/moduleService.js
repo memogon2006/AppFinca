@@ -16,10 +16,32 @@ export const MODULE_KEYS = {
   DAIRY: 'milk',                  // 🥛 Alias para compatibilidad
   IATF: 'iatf',                   // 🧬 Biotecnología: Receptoras IATF & Transferencia de Embriones
   PARTNERSHIPS: 'partnerships',   // 🤝 Ganado en Compañía / Inversión Compartida
+  PADDOCKS: 'paddocks',           // 🍃 Potreros & Pastoreo (Aforos, rotación, descansos)
+  RAINFALL: 'rainfall',           // 🌧️ Pluviómetro Digital & Registro de Lluvias
 };
 
 // Catálogo descriptivo de módulos conmutables
 export const MODULE_CATALOG = [
+  {
+    key: MODULE_KEYS.PADDOCKS,
+    name: 'Potreros & Pastoreo Rotacional',
+    shortName: 'Potreros & Pasturas',
+    icon: 'Leaf',
+    emoji: '🍃',
+    description: 'Aforos de 1m², descansos calculados, capacidad de carga animal y rotación organizada de lotes.',
+    category: 'Campo & Pasturas',
+    recommendedFor: ['Pastoreo Rotacional', 'Ceba', 'Doble Propósito', 'Cría'],
+  },
+  {
+    key: MODULE_KEYS.RAINFALL,
+    name: 'Pluviómetro Digital & Lluvias',
+    shortName: 'Pluviómetro & Lluvias',
+    icon: 'CloudRain',
+    emoji: '🌧️',
+    description: 'Precipitación diaria en mm, acumulados mensuales y anuales, alertas de sequía y calendario.',
+    category: 'Clima & Campo',
+    recommendedFor: ['Todas las Fincas', 'Planificación Forrajera'],
+  },
   {
     key: MODULE_KEYS.WEIGHTS,
     name: 'Control de Pesos & Báscula Rápida',
@@ -96,6 +118,8 @@ export const FARM_PRESETS = {
       [MODULE_KEYS.MILK]: false,
       [MODULE_KEYS.IATF]: false,
       [MODULE_KEYS.PARTNERSHIPS]: true,
+      [MODULE_KEYS.PADDOCKS]: true,
+      [MODULE_KEYS.RAINFALL]: true,
     }
   },
   LECHERIA: {
@@ -110,6 +134,8 @@ export const FARM_PRESETS = {
       [MODULE_KEYS.MILK]: true,
       [MODULE_KEYS.IATF]: false,
       [MODULE_KEYS.PARTNERSHIPS]: false,
+      [MODULE_KEYS.PADDOCKS]: true,
+      [MODULE_KEYS.RAINFALL]: true,
     }
   },
   CRIA: {
@@ -124,13 +150,15 @@ export const FARM_PRESETS = {
       [MODULE_KEYS.MILK]: false,
       [MODULE_KEYS.IATF]: true,
       [MODULE_KEYS.PARTNERSHIPS]: false,
+      [MODULE_KEYS.PADDOCKS]: true,
+      [MODULE_KEYS.RAINFALL]: true,
     }
   },
   COMPLETO: {
     key: 'completo',
     title: '⚡ Finca Integral / Todos los Módulos Activos',
     shortTitle: 'Modo Completo',
-    description: 'Acceso total a todas las herramientas: ceba, lechería, reproducción, biotecnología y finanzas.',
+    description: 'Acceso total a todas las herramientas: ceba, lechería, reproducción, biotecnología, potreros y pluviómetro.',
     modules: {
       [MODULE_KEYS.WEIGHTS]: true,
       [MODULE_KEYS.CEBA_BATCHES]: true,
@@ -138,6 +166,8 @@ export const FARM_PRESETS = {
       [MODULE_KEYS.MILK]: true,
       [MODULE_KEYS.IATF]: true,
       [MODULE_KEYS.PARTNERSHIPS]: true,
+      [MODULE_KEYS.PADDOCKS]: true,
+      [MODULE_KEYS.RAINFALL]: true,
     }
   }
 };
@@ -154,6 +184,8 @@ export const DEFAULT_MODULES = {
   [MODULE_KEYS.MILK]: true,
   [MODULE_KEYS.IATF]: true,
   [MODULE_KEYS.PARTNERSHIPS]: true,
+  [MODULE_KEYS.PADDOCKS]: true,
+  [MODULE_KEYS.RAINFALL]: true,
 };
 
 /**

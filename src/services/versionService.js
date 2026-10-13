@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.8";
+export const CURRENT_APP_VERSION = "2.24.9";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.9",
+    date: "13/10/2026",
+    title: "🎛️ Módulos de Campo Personalizables: Potreros & Pluviómetro Conmutables",
+    highlights: [
+      "Módulos a la Medida de tu Finca: Ahora 'Potreros & Pastoreo' y 'Pluviómetro & Lluvias' pueden activarse o desactivarse libremente desde 'Configurar Módulos'.",
+      "Menú y Tablero Despejados: Al desactivar cualquiera de ellos, sus opciones y widgets se ocultan automáticamente para que solo veas las herramientas que usas.",
+      "Protección Total de Datos: Desactivar un módulo no elimina información; los aforos, rotaciones y registros de lluvia permanecen 100% guardados y sincronizados en la nube."
+    ]
+  },
   {
     version: "2.24.8",
     date: "13/10/2026",

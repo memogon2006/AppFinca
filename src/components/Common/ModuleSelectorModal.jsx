@@ -22,6 +22,7 @@ import {
   ShieldCheck, 
   Layers, 
   Leaf, 
+  CloudRain,
   Wallet, 
   Calendar,
   Check
@@ -34,6 +35,8 @@ const ICON_MAP = {
   Milk: Milk,
   Dna: Dna,
   DollarSign: DollarSign,
+  Leaf: Leaf,
+  CloudRain: CloudRain,
 };
 
 export function ModuleSelectorModal({ isOpen, onClose, zIndex = 'z-[70]' }) {
@@ -138,7 +141,7 @@ export function ModuleSelectorModal({ isOpen, onClose, zIndex = 'z-[70]' }) {
             </span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Los módulos de <strong>Inventario de Ganado</strong>, <strong>Potreros & Pastoreo</strong>, <strong>Finanzas & Compras/Ventas</strong>, <strong>Sanidad Oficial</strong> y <strong>Auditoría</strong> están siempre activos para garantizar el control esencial de la finca.
+            Los módulos de <strong>Inventario de Ganado</strong>, <strong>Finanzas & Compras/Ventas</strong>, <strong>Sanidad Oficial</strong> y <strong>Auditoría de Hato</strong> están siempre activos para garantizar el control esencial de la finca.
           </p>
         </div>
 
