@@ -25,7 +25,12 @@ import {
   Tag,
   Sparkles,
   ClipboardCheck,
-  HeartPulse
+  HeartPulse,
+  CloudRain,
+  Leaf,
+  Milk,
+  Wifi,
+  Sun
 } from 'lucide-react';
 
 export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
@@ -37,6 +42,7 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
     'Zootecnia & Pesos', 
     'Ceba & Venta', 
     'Reproducción & Palpación', 
+    'Clima & Pasturas',
     'Sanidad & Censo ICA', 
     'Manejo & Trazabilidad', 
     'Finanzas & Negocios'
@@ -284,6 +290,90 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
       example: 'Una vaca inseminada o montada el 1 de Enero tendrá su fecha estimada de parto alrededor del 11 de Octubre.',
       benchmark: [
         { label: 'Alerta Preparto', value: 'Permite trasladar la vaca a potrero de maternidad 20-30 días antes del parto.', color: 'text-rose-600 dark:text-rose-400' }
+      ]
+    },
+    {
+      id: 'rainfallMm',
+      title: 'Precipitación en Milímetros (mm) & Acumulado Pluviométrico',
+      icon: CloudRain,
+      badge: 'Clima & Pasturas',
+      color: 'sky',
+      formula: '1 mm de lluvia = 1 Litro de agua por metro cuadrado (10 m³ por hectárea)',
+      summary: 'Mide la cantidad de agua caída en la finca por unidad de área. Permite anticipar la tasa de crecimiento de las pasturas, planificar siembras y calcular el volumen de forraje disponible para el hato.',
+      example: '• Lluvia de 25 mm en un potrero de 2 hectáreas: 25 L/m² × 20.000 m² = 500.000 litros de agua (500 m³).\n• Acumulado mensual de referencia en trópico: 100 - 250 mm/mes.',
+      benchmark: [
+        { label: '💧 Llovizna Suave', value: '1 - 5 mm (humedece superficie)', color: 'text-sky-600 dark:text-sky-400' },
+        { label: '🌧️ Lluvia Moderada', value: '6 - 20 mm (infiltración efectiva)', color: 'text-blue-600 dark:text-blue-400' },
+        { label: '⛈️ Lluvia Fuerte / Torrencial', value: '> 20 mm (escorrentía y recarga de aljibes)', color: 'text-indigo-600 dark:text-indigo-400' },
+      ]
+    },
+    {
+      id: 'droughtAlert',
+      title: 'Días Consecutivos Secos & Alerta Preventiva de Sequía',
+      icon: Sun,
+      badge: 'Clima & Pasturas',
+      color: 'amber',
+      formula: 'Racha Seca = Días continuos sin registro de precipitación (≥ 1 mm)',
+      summary: 'Monitorea el estrés hídrico de la finca para activar protocolos preventivos de alimentación: ajuste de días de descanso en potreros, apertura de bancos de forraje (heno/silo) y suplementación estratégica antes de que caiga la condición corporal del ganado.',
+      example: '• Si transcurren más de 14 días consecutivos sin registrar lluvia, el sistema activa automáticamente el banner de alerta en el Tablero Principal y en el módulo de Pluviómetro.',
+      benchmark: [
+        { label: '🟢 Régimen Hídrico Óptimo', value: '≤ 7 días sin lluvia', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: '🟡 Alerta Amarilla', value: '8 - 14 días sin lluvia (monitorear aforos)', color: 'text-amber-600 dark:text-amber-400' },
+        { label: '🔴 Alerta Roja de Sequía', value: '> 14 días continuos sin lluvia (activar suplementación)', color: 'text-rose-600 dark:text-rose-400' },
+      ]
+    },
+    {
+      id: 'paddockSampling',
+      title: 'Aforo de Pastura en Marco de 1 m² & Disponibilidad Forrajera',
+      icon: Leaf,
+      badge: 'Clima & Pasturas',
+      color: 'emerald',
+      formula: 'Pasto Aprovechable (kg/m²) = Peso Corte 1m² - Remanente de Rebrote',
+      summary: 'Muestreo físico en campo para cuantificar la biomasa verde real disponible en un potrero antes de ingresar los animales, garantizando un consumo voluntario óptimo y evitando el sobrepastoreo.',
+      example: '• Corte de 1m²: 2.3 kg de pasto verde. Remanente recomendado: 0.8 kg (para rebrote vigoroso).\n• Pasto aprovechable: 1.5 kg/m² = 15.000 kg de forraje verde por hectárea.',
+      benchmark: [
+        { label: 'Tiempo de Ocupación', value: '1 a 3 días máximo por potrero para proteger el rebrote.', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Tiempo de Descanso', value: '28 a 45 días (según especie de pasto y época de lluvias).', color: 'text-blue-600 dark:text-blue-400' },
+      ]
+    },
+    {
+      id: 'uggCapacity',
+      title: 'Capacidad de Carga & Carga Animal en UGG (Unidad Gran Ganado)',
+      icon: Scale,
+      badge: 'Zootecnia & Pesos',
+      color: 'teal',
+      formula: 'UGG = Peso Total del Lote ÷ 450 kg | Carga = UGG Totales ÷ Hectáreas de Pastoreo',
+      summary: 'Estandariza los diferentes pesos y edades de los animales a una unidad universal zootécnica (1 UGG = bovino adulto de 450 kg). Permite calcular objetivamente si la finca está subutilizada o sobrecargada.',
+      example: '• Lote de 30 novillos de 300 kg promedio = 9.000 kg en pie ÷ 450 kg = 20 UGG.\n• En 10 hectáreas de potrero: Carga = 2.0 UGG/ha.',
+      benchmark: [
+        { label: 'Equivalencias Comunes', value: 'Toro: 1.2 - 1.5 UGG | Vaca con cría: 1.0 UGG | Novillo: 0.6 - 0.8 UGG | Ternero: 0.3 UGG.', color: 'text-teal-600 dark:text-teal-400' }
+      ]
+    },
+    {
+      id: 'delMilk',
+      title: 'DEL (Días En Lactancia) & Curva de Producción Lechera',
+      icon: Milk,
+      badge: 'Reproducción & Palpación',
+      color: 'blue',
+      formula: 'DEL = Fecha de Ordeño Actual - Fecha de Último Parto',
+      summary: 'Métrica zootécnica reina en lechería especializada y doble propósito. Ubica a cada vaca en su curva de producción de leche para identificar picos de producción, programar servicios reproductivos oportunos y planificar la fecha límite de secado.',
+      example: '• Vaca #42 con parto el 10-Ene y pesaje el 25-Mar: 74 DEL (en pleno pico de lactancia).\n• Momento óptimo de inseminación/servicio: antes de los 100-110 DEL.\n• Secado obligatorio: a los 220-240 DEL (60 días antes del siguiente parto).',
+      benchmark: [
+        { label: 'Pico de Lactancia', value: '45 - 90 DEL (máxima producción diaria)', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Persistencia Lechera', value: 'Descenso suave no mayor al 8-10% mensual tras el pico', color: 'text-blue-600 dark:text-blue-400' },
+      ]
+    },
+    {
+      id: 'syncOffline',
+      title: 'Sincronización Offline & Indicador de Estado en Campo',
+      icon: Wifi,
+      badge: 'Manejo & Trazabilidad',
+      color: 'emerald',
+      formula: 'Cola de Pendientes = Registros guardados en IndexedDB pendientes de subir a la nube',
+      summary: 'Permite registrar pesajes, tactos, lluvias o traslados en medio del potrero sin cobertura celular ni Wi-Fi. La píldora en la barra superior muestra el estado semántico de respaldo en tiempo real.',
+      example: '• 🟢 Al día: 100% respaldado en Firebase.\n• 🟡 X pendientes: Cambios guardados en memoria del teléfono esperando conexión.\n• 🔴 Modo Campo: Sin internet, operando en almacenamiento local seguro sin riesgo de pérdida.',
+      benchmark: [
+        { label: 'Subida Automática', value: 'Sube y respalda todo solo en cuanto el teléfono recupera señal.', color: 'text-emerald-600 dark:text-emerald-400' }
       ]
     }
   ];
