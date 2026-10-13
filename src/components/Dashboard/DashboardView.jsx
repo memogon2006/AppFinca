@@ -26,7 +26,8 @@ import {
   Stethoscope,
   TrendingDown,
   Wallet,
-  Handshake
+  Handshake,
+  Tag
 } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import { AlertsList } from './AlertsList';
@@ -36,7 +37,7 @@ import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { RainfallWidget } from './RainfallWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
-import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString } from '../../services/calculations';
+import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString, getDaysDifference } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
@@ -70,13 +71,36 @@ export function DashboardView({
   onOpenPartnershipModal,
   onOpenAddExpense,
   onOpenAddIncome,
-  onOpenCalving
+  onOpenCalving,
+  onOpenBranding
 }) {
   const { isWorker, currentUser } = useAuth();
   const { isModuleActive } = useActiveModules();
   const { meatPricePerKg } = useFarmPrices(currentUser);
   const activeCattle = cattle.filter(c => c.status === 'Activo');
   const soldCattle = cattle.filter(c => c.status === 'Vendido');
+
+  // Crías con número temporal o pendientes de marcación y chapeteo oficial
+  const pendingBrandingCattle = useMemo(() => {
+    return activeCattle.filter(c => {
+      const isTemp = c.isTemporaryTag === true || 
+        (typeof c.tagNumber === 'string' && (
+          c.tagNumber.toUpperCase().startsWith('TEMP') ||
+          c.tagNumber.toUpperCase().startsWith('CRIA') ||
+          c.tagNumber.toUpperCase().startsWith('T-') ||
+          c.tagNumber.toUpperCase().startsWith('PROV')
+        ));
+      if (isTemp) return true;
+      if (c.entryType === 'Nacimiento' && (!c.ironBrand || c.ironBrand.trim() === '' || c.ironBrand === 'Sin marca')) {
+        const birth = c.birthDate || c.entryDate;
+        if (birth) {
+          const days = getDaysDifference(birth, new Date());
+          return days >= 90;
+        }
+      }
+      return false;
+    });
+  }, [activeCattle]);
 
   // Unificación de Ingresos: farmIncomes + liquidaciones de leche
   const effectiveIncomes = useMemo(() => {
@@ -405,6 +429,49 @@ export function DashboardView({
         </div>
       </div>
 
+      {/* Alerta Destacada: Crías con Número Temporal / Pendientes de Marcación y Chapeteo Oficial */}
+      {pendingBrandingCattle.length > 0 && (
+        <div 
+          onClick={() => onOpenBranding && onOpenBranding(pendingBrandingCattle[0])}
+          className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/10 border-2 border-amber-400 dark:border-amber-500/70 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-amber-500/25 transition group"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500 text-slate-950 font-black flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
+              <Tag className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-sm font-black text-amber-950 dark:text-amber-200 uppercase tracking-tight">
+                  {pendingBrandingCattle.length === 1 
+                    ? `🏷️ Toca Marcar y Chapetear: Cría #${pendingBrandingCattle[0].tagNumber}`
+                    : `🏷️ ${pendingBrandingCattle.length} Crías con Número Temporal por Marcar y Chapetear`}
+                </h4>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950 animate-pulse">
+                  Marcación Pendiente
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 dark:text-amber-300 font-medium truncate">
+                {pendingBrandingCattle.length === 1
+                  ? `Cría nacida en finca con número provisional. Haz tap aquí para asignarle su consecutivo oficial y hierro de fuego.`
+                  : `Tienen número provisional. Haz tap para asignarle a #${pendingBrandingCattle[0].tagNumber} su consecutivo oficial y marca de la finca.`}
+              </p>
+            </div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOpenBranding) onOpenBranding(pendingBrandingCattle[0]);
+            }}
+            className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs shrink-0 flex items-center justify-center gap-2 shadow-md shadow-amber-950/20 transition cursor-pointer self-end sm:self-auto min-h-[40px]"
+          >
+            <span>🏷️ Marcar Bovino</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* KPIs Clave Principales: 1. Cantidad -> 2. Rendimientos (Biomasa & GDP) -> 3. Valores (Inversión & Utilidad) */}
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${!isWorker ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3.5 sm:gap-4`}>
         
@@ -609,6 +676,7 @@ export function DashboardView({
             vaccinations={vaccinations}
             onSelectAnimal={onSelectAnimal}
             onOpenCalving={onOpenCalving}
+            onOpenBranding={onOpenBranding}
           />
         </div>
 

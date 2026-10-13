@@ -13,12 +13,12 @@ const STATIC_ASSETS = [
   "/apple-touch-icon.png",
   "/favicon.png",
   "/favicon.ico",
-  "/assets/index-88EwJ-1A.js",
-  "/assets/index-PGnqw44V.css",
+  "/assets/index-BU25ZANX.css",
+  "/assets/index-DmiMjAds.js",
   "/assets/vendor-charts-DljG-sht.js",
   "/assets/vendor-db-DLsAzhYJ.js",
   "/assets/vendor-export-BKvfhyNn.js",
-  "/assets/vendor-icons-bVjWZt8U.js"
+  "/assets/vendor-icons-B018lt1m.js"
 ];
 
 // Instalación del Service Worker con precaching total

@@ -41,6 +41,7 @@ import { ExpenseModal } from './components/Accounting/ExpenseModal';
 import { IncomeModal } from './components/Accounting/IncomeModal';
 import { CattleFormModal } from './components/Cattle/CattleFormModal';
 import { CattleDetailModal } from './components/Cattle/CattleDetailModal';
+import { BrandingRecordModal } from './components/Cattle/BrandingRecordModal';
 import { SellModal } from './components/Cattle/SellModal';
 import { DeathModal } from './components/Cattle/DeathModal';
 import { WeightLogModal } from './components/Weights/WeightLogModal';
@@ -128,9 +129,17 @@ export default function App() {
   const [isRainfallModalOpen, setIsRainfallModalOpen] = useState(false);
   const [editingRainfall, setEditingRainfall] = useState(null);
 
+  const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
+  const [brandingAnimal, setBrandingAnimal] = useState(null);
+
   const handleOpenCalving = (motherAnimal = null) => {
     setCalvingMotherAnimal(motherAnimal);
     setIsCalvingModalOpen(true);
+  };
+
+  const handleOpenBranding = (animal = null) => {
+    setBrandingAnimal(animal);
+    setIsBrandingModalOpen(true);
   };
 
   // Mostrar notificación de confirmación de acción
@@ -822,6 +831,10 @@ export default function App() {
           vigor: calf.vigor || 'Vigoroso',
           navelTreated: Boolean(calf.navelTreated),
           colostrumConsumed: Boolean(calf.colostrumConsumed),
+          isTemporaryTag: Boolean(calf.isTemporaryTag),
+          temporaryTagNumber: calf.isTemporaryTag ? String(calf.tagNumber || '').trim() : '',
+          earTattoo: String(calf.earTattoo || '').trim(),
+          tattooEarLocation: String(calf.tattooEarLocation || 'OD'),
           weaningPlannedDate: scheduleWeaning ? (weaningDate || null) : null,
           isWeaned: false,
           notes: notes ? `Parto ${calvingType}. ${notes}` : `Parto ${calvingType}.`,
@@ -927,6 +940,69 @@ export default function App() {
     } catch (err) {
       console.error('Error al guardar parto:', err);
       showToast('Ocurrió un error al registrar el parto.', 'error');
+    }
+  };
+
+  // Guardar Marcación, Chapeteo Oficial y Consecutivo Definitivo
+  const handleSaveBranding = async (brandingData) => {
+    const targetUserId = effectiveUserId || currentUser?.id;
+    if (!targetUserId || !brandingData?.animal) return;
+    const { animal, newTagNumber, ironBrand, brandingDate, weighingWeight, earTattoo, tattooEarLocation, category, paddock, notes } = brandingData;
+
+    try {
+      const prevTag = animal.tagNumber;
+      const updatedAnimal = {
+        ...animal,
+        tagNumber: String(newTagNumber).trim(),
+        previousTemporaryTag: animal.isTemporaryTag ? prevTag : (animal.previousTemporaryTag || ''),
+        isTemporaryTag: false,
+        ironBrand: String(ironBrand || '').trim(),
+        brandedDate: brandingDate || getLocalDateString(),
+        earTattoo: String(earTattoo || '').trim(),
+        tattooEarLocation: earTattoo ? tattooEarLocation : '',
+        category: category || animal.category,
+        paddock: paddock || animal.paddock,
+        notes: notes ? `${animal.notes ? animal.notes + ' | ' : ''}Marcación oficial el ${brandingDate}: Chapa #${newTagNumber} con marca ${ironBrand}. ${notes}` : animal.notes,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (weighingWeight && parseFloat(weighingWeight) > 0) {
+        updatedAnimal.currentWeight = parseFloat(weighingWeight);
+      }
+
+      await db.cattle.put(updatedAnimal);
+      markPendingSync(targetUserId, updatedAnimal.id);
+
+      // Si se registró pesaje en manga durante la marcación
+      if (weighingWeight && parseFloat(weighingWeight) > 0) {
+        const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        await db.weighings.put({
+          id: weighId,
+          cattleId: String(updatedAnimal.id),
+          userId: targetUserId,
+          date: brandingDate || getLocalDateString(),
+          weight: parseFloat(weighingWeight),
+          conditionScore: 3.5,
+          notes: `Pesaje en manga durante marcación y chapeteo oficial (Chapa anterior #${prevTag})`,
+        });
+        markPendingSync(targetUserId, weighId);
+      }
+
+      await logActivity(
+        'cattle_branded',
+        `Marcación y chapeteo oficial: Cría #${prevTag} pasa a ser #${newTagNumber} con marca ${ironBrand || 'de la finca'}.`,
+        targetUserId,
+        { cattleId: updatedAnimal.id, oldTag: prevTag, newTag: newTagNumber }
+      ).catch(() => null);
+
+      setIsBrandingModalOpen(false);
+      setBrandingAnimal(null);
+      cloudPushData(targetUserId);
+      triggerFeedback('success');
+      showToast(`🏷️ ¡Bovino #${newTagNumber} marcado y chapeteado oficialmente con éxito!`, 'success');
+    } catch (err) {
+      console.error('Error al guardar marcación:', err);
+      showToast('Error al oficializar el animal: ' + err.message, 'error');
     }
   };
 
@@ -2573,6 +2649,7 @@ export default function App() {
             rainfall={rainfall}
             onOpenNewRain={handleOpenNewRain}
             onOpenCalving={handleOpenCalving}
+            onOpenBranding={handleOpenBranding}
           />
         )}
 
@@ -2601,6 +2678,7 @@ export default function App() {
             onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
             onOpenCensusModal={() => setIsCensusModalOpen(true)}
             onOpenCalving={handleOpenCalving}
+            onOpenBranding={handleOpenBranding}
           />
         )}
 
@@ -2781,6 +2859,7 @@ export default function App() {
         onDeleteWeight={handleDeleteWeight}
         onOpenGlossary={() => setIsGlossaryOpen(true)}
         onOpenCalving={handleOpenCalving}
+        onOpenBranding={handleOpenBranding}
       />
 
       {/* 2. Modales de Acción y Formularios (Con zIndex z-[60] para superponerse con prioridad) */}
@@ -2795,6 +2874,19 @@ export default function App() {
         cattleList={cattle}
         paddocks={paddocks}
         zIndex="z-[70]"
+      />
+
+      <BrandingRecordModal
+        isOpen={isBrandingModalOpen}
+        onClose={() => {
+          setIsBrandingModalOpen(false);
+          setBrandingAnimal(null);
+        }}
+        onSave={handleSaveBranding}
+        animal={brandingAnimal}
+        cattleList={cattle}
+        paddocks={paddocks}
+        zIndex="z-[75]"
       />
 
       <CattleFormModal

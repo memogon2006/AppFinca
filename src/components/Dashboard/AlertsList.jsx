@@ -1,11 +1,11 @@
 import React from 'react';
-import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2, ShieldAlert, Baby } from 'lucide-react';
+import { AlertCircle, Sparkles, Scale, HeartHandshake, Flame, Syringe, Clock, CheckCircle2, ShieldAlert, Baby, Tag } from 'lucide-react';
 import { calculateReproduction, formatDate, getDaysDifference } from '../../services/calculations';
 import { findDuplicateCattle, normalizeTagNumber, normalizeText } from '../../services/duplicateDetectionService';
 
 const VACCINE_STORAGE_KEY = 'ganado_colombia_vaccine_status';
 
-export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onSelectAnimal, onOpenCalving }) {
+export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onSelectAnimal, onOpenCalving, onOpenBranding }) {
   const animalAlerts = [];
   const sanitaryAlerts = [];
   const duplicateAlerts = [];
@@ -106,6 +106,44 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
           icon: AlertCircle,
         });
       }
+    }
+
+    // ALERTA DESTACADA 5: Cría con Número Temporal / Pendiente de Marcación y Chapeteo Oficial
+    const isTemporary = animal.isTemporaryTag === true || 
+      (typeof animal.tagNumber === 'string' && (
+        animal.tagNumber.toUpperCase().startsWith('TEMP') ||
+        animal.tagNumber.toUpperCase().startsWith('CRIA') ||
+        animal.tagNumber.toUpperCase().startsWith('T-') ||
+        animal.tagNumber.toUpperCase().startsWith('PROV')
+      ));
+
+    const birthDateStr = animal.birthDate || animal.entryDate;
+    const ageInDays = birthDateStr ? getDaysDifference(birthDateStr, new Date()) : 0;
+    const ageInMonths = Math.floor(ageInDays / 30.4);
+
+    const needsBranding = isTemporary || (
+      animal.entryType === 'Nacimiento' && 
+      (!animal.ironBrand || animal.ironBrand.trim() === '' || animal.ironBrand === 'Sin marca') &&
+      (animal.category === 'Ternero' || animal.category === 'Ternera') &&
+      ageInMonths >= 3
+    );
+
+    if (isTemporary || needsBranding) {
+      const motherInfo = animal.motherTag ? `(Madre: #${animal.motherTag})` : '';
+      animalAlerts.push({
+        id: `branding-${animal.id}`,
+        animal,
+        priority: isTemporary ? 1 : 2,
+        type: 'branding_needed',
+        badge: isTemporary ? '🏷️ N° TEMPORAL' : 'MARCA PENDIENTE',
+        badgeClass: 'bg-amber-500 text-slate-950 font-black',
+        title: `🏷️ Toca Marcar y Chapetear: #${animal.tagNumber} ${motherInfo}`,
+        desc: isTemporary
+          ? `Cría registrada con número provisional. Haz tap aquí para asignarle su chapa definitiva, el consecutivo del hato y el hierro de la finca.`
+          : `Cría con ${ageInMonths} meses pendiente por colocarle la marca de hierro y el consecutivo de la finca. Haz tap para registrarla.`,
+        icon: Tag,
+        isBrandingAction: true,
+      });
     }
   });
 
@@ -321,15 +359,24 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
           fat_ready: 'bg-gradient-to-r from-amber-500/20 to-orange-500/10 border-amber-400 dark:border-amber-500/50 text-amber-950 dark:text-amber-200',
           booster_today: 'bg-gradient-to-r from-rose-500/20 via-red-500/10 to-transparent border-rose-400 dark:border-rose-500/60 text-rose-950 dark:text-rose-200 ring-1 ring-rose-500/30',
           booster_tomorrow: 'bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-transparent border-amber-400 dark:border-amber-500/60 text-amber-950 dark:text-amber-200 ring-1 ring-amber-500/30',
+          branding_needed: 'bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-transparent border-amber-400 dark:border-amber-500/60 text-amber-950 dark:text-amber-200 ring-1 ring-amber-500/30',
           urgent: 'bg-rose-50 dark:bg-rose-500/15 border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300',
           warning: 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300',
           info: 'bg-blue-50 dark:bg-blue-500/15 border-blue-200 dark:border-blue-500/30 text-blue-900 dark:text-blue-300',
         };
 
+        const handleCardClick = () => {
+          if (alert.isBrandingAction && onOpenBranding) {
+            onOpenBranding(alert.animal);
+          } else if (alert.animal && onSelectAnimal) {
+            onSelectAnimal(alert.animal);
+          }
+        };
+
         return (
           <div
             key={alert.id}
-            onClick={() => alert.animal && onSelectAnimal && onSelectAnimal(alert.animal)}
+            onClick={handleCardClick}
             className={`p-3.5 rounded-2xl border flex items-start gap-3 transition shadow-sm ${alert.animal ? 'cursor-pointer hover:opacity-95' : ''} ${colorStyles[alert.type] || colorStyles.info}`}
           >
             <div className="p-2 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 mt-0.5 flex-shrink-0">
@@ -349,6 +396,8 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
                 ) : null}
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">{alert.desc}</p>
+              
+              {/* Acción directa de Parto */}
               {alert.isCalving && (
                 <div className="mt-2 flex justify-end">
                   <button
@@ -361,6 +410,23 @@ export function AlertsList({ cattle = [], weighings = [], vaccinations = [], onS
                   >
                     <Baby className="w-3.5 h-3.5" />
                     <span>🍼 Registrar Parto</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Acción directa de Marcación / Chapeteo */}
+              {alert.isBrandingAction && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onOpenBranding) onOpenBranding(alert.animal);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-950/20 transition cursor-pointer"
+                  >
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>🏷️ Marcar / Chapetear</span>
                   </button>
                 </div>
               )}

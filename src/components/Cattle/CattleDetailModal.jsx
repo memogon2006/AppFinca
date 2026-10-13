@@ -74,6 +74,7 @@ export function CattleDetailModal({
   onDelete, 
   onDeleteWeight, 
   onOpenCalving,
+  onOpenBranding,
   isDark = false 
 }) {
   const { currentUser, isWorker } = useAuth();
@@ -273,6 +274,37 @@ export function CattleDetailModal({
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Restaurar a Activo</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Banner de Animal con Número Temporal / Pendiente de Marcación */}
+        {animal.status === 'Activo' && (animal.isTemporaryTag || (animal.tagNumber && animal.tagNumber.toUpperCase().startsWith('TEMP'))) && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/10 border-2 border-amber-400 dark:border-amber-500/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950 dark:text-amber-200 font-bold shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <Tag className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-black text-sm text-amber-900 dark:text-amber-200">
+                  Animal con Número Temporal (Prerregistro de Nacimiento)
+                </p>
+                <p className="text-xs mt-0.5 font-medium text-amber-800 dark:text-amber-300">
+                  Pendiente por asignarle su consecutivo oficial de la finca y colocarle la marca de fuego (hierro).
+                  {animal.earTattoo ? ` • Tatuaje en oreja: ${animal.earTattoo} (${animal.tattooEarLocation || 'OD'})` : ''}
+                </p>
+              </div>
+            </div>
+
+            {onOpenBranding && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenBranding(animal);
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-950/20 transition whitespace-nowrap self-end sm:self-auto cursor-pointer"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                <span>🏷️ Marcar / Chapetear</span>
               </button>
             )}
           </div>

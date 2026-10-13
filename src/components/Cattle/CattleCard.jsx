@@ -104,10 +104,16 @@ export function CattleCard({
       <div>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
                 {animal.tagNumber}
               </span>
+              {Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP'))) && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 text-[10px] font-black border border-amber-300 dark:border-amber-700" title="Animal con número provisional, pendiente por marcar y chapetear con consecutivo oficial">
+                  <Tag className="w-2.5 h-2.5 text-amber-700 dark:text-amber-300" />
+                  TEMPORAL
+                </span>
+              )}
               {animal.name && (
                 <span className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate max-w-[120px]">
                   ({animal.name})

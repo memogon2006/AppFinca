@@ -94,6 +94,9 @@ export function CalvingRecordModal({
   // Datos de Cría 1
   const [calf1, setCalf1] = useState({
     tagNumber: '',
+    isTemporaryTag: true,
+    earTattoo: '',
+    tattooEarLocation: 'OD',
     name: '',
     sex: 'Macho',
     birthWeight: '35',
@@ -107,6 +110,9 @@ export function CalvingRecordModal({
   // Datos de Cría 2 (Parto Gemelar)
   const [calf2, setCalf2] = useState({
     tagNumber: '',
+    isTemporaryTag: true,
+    earTattoo: '',
+    tattooEarLocation: 'OD',
     name: '',
     sex: 'Hembra',
     birthWeight: '32',
@@ -133,14 +139,14 @@ export function CalvingRecordModal({
       
       setCalf1(prev => ({
         ...prev,
-        tagNumber: prev.tagNumber || String(nextSug),
+        tagNumber: prev.tagNumber || `TEMP-${nextSug}`,
         color: prev.color || selectedMother?.color || farmColors[0] || 'Blanco',
         breed: prev.breed || selectedMother?.breed || 'Brahman Blanco',
       }));
 
       setCalf2(prev => ({
         ...prev,
-        tagNumber: prev.tagNumber || String(nextSug + 1),
+        tagNumber: prev.tagNumber || `TEMP-${nextSug + 1}`,
         color: prev.color || selectedMother?.color || farmColors[0] || 'Blanco',
         breed: prev.breed || selectedMother?.breed || 'Brahman Blanco',
       }));
@@ -284,6 +290,9 @@ export function CalvingRecordModal({
           vigor: calf1.vigor,
           navelTreated: calf1.navelTreated,
           colostrumConsumed: calf1.colostrumConsumed,
+          isTemporaryTag: Boolean(calf1.isTemporaryTag),
+          earTattoo: calf1.earTattoo ? calf1.earTattoo.trim() : '',
+          tattooEarLocation: calf1.earTattoo ? (calf1.tattooEarLocation || 'OD') : '',
         },
         ...(calvingType === 'Gemelar' ? [{
           tagNumber: calf2.tagNumber.trim(),
@@ -296,6 +305,9 @@ export function CalvingRecordModal({
           vigor: calf2.vigor,
           navelTreated: calf2.navelTreated,
           colostrumConsumed: calf2.colostrumConsumed,
+          isTemporaryTag: Boolean(calf2.isTemporaryTag),
+          earTattoo: calf2.earTattoo ? calf2.earTattoo.trim() : '',
+          tattooEarLocation: calf2.earTattoo ? (calf2.tattooEarLocation || 'OD') : '',
         }] : [])
       ]
     };
@@ -459,12 +471,42 @@ export function CalvingRecordModal({
               </span>
             </div>
 
+            {/* Conmutador de Número Temporal / Prerregistro */}
+            <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/40 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700/60">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={calf1.isTemporaryTag}
+                  onChange={(e) => {
+                    const isTemp = e.target.checked;
+                    const nextSug = farmConsecutiveStats?.nextSuggestedConsecutive || 1;
+                    setCalf1({
+                      ...calf1,
+                      isTemporaryTag: isTemp,
+                      tagNumber: isTemp
+                        ? (calf1.tagNumber.startsWith('TEMP-') ? calf1.tagNumber : `TEMP-${nextSug}`)
+                        : (calf1.tagNumber.replace('TEMP-', '') || String(nextSug))
+                    });
+                  }}
+                  className="w-4 h-4 text-amber-600 rounded"
+                />
+                <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                  🏷️ Número Temporal / Prerregistro (pendiente de marcación y chapeteo oficial)
+                </span>
+              </label>
+              {calf1.isTemporaryTag && (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                  Provisional
+                </span>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               
               {/* Chapa / Arete */}
               <div className="sm:col-span-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                  <span>Chapa / Arete *</span>
+                  <span>{calf1.isTemporaryTag ? 'N° Temporal *' : 'Chapa Oficial *'}</span>
                   {farmConsecutiveStats?.nextSuggestedConsecutive && (
                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
                       Sug: #{farmConsecutiveStats.nextSuggestedConsecutive}
@@ -475,7 +517,7 @@ export function CalvingRecordModal({
                   type="text"
                   value={calf1.tagNumber}
                   onChange={(e) => setCalf1({ ...calf1, tagNumber: e.target.value })}
-                  placeholder="Ej: 105 o 105-1"
+                  placeholder={calf1.isTemporaryTag ? 'Ej: TEMP-105' : 'Ej: 105'}
                   className={`w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border text-slate-900 dark:text-white text-xs font-extrabold focus:ring-2 focus:ring-emerald-500 min-h-[42px] ${
                     errors.calf1Tag ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'
                   }`}
@@ -483,7 +525,7 @@ export function CalvingRecordModal({
                 {errors.calf1Tag && <p className="text-rose-500 text-[10px] font-bold mt-1">{errors.calf1Tag}</p>}
                 
                 {/* Advertencia de Consecutivo */}
-                {calf1ConsecutiveEval && !calf1ConsecutiveEval.isValid && (
+                {!calf1.isTemporaryTag && calf1ConsecutiveEval && !calf1ConsecutiveEval.isValid && (
                   <p className="text-amber-600 dark:text-amber-400 text-[10px] font-bold mt-1">
                     {calf1ConsecutiveEval.warningType === 'JUMP_AHEAD' ? '⚠️ Salto en consecutivo' : 'ℹ️ Número ya usado o anterior'}
                   </p>
@@ -569,8 +611,34 @@ export function CalvingRecordModal({
 
             </div>
 
-            {/* Fila 2: Nombre opcional, Raza, Cuidados Neonatales */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
+            {/* Fila 2: Tatuaje en Oreja (Ganado Puro), Nombre opcional, Raza, Cuidados Neonatales */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
+              
+              {/* Tatuaje en Oreja */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  Tatuaje Oreja (Ganado Puro)
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={calf1.earTattoo || ''}
+                    onChange={(e) => setCalf1({ ...calf1, earTattoo: e.target.value })}
+                    placeholder="N° pinza"
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs min-h-[38px]"
+                  />
+                  <select
+                    value={calf1.tattooEarLocation || 'OD'}
+                    onChange={(e) => setCalf1({ ...calf1, tattooEarLocation: e.target.value })}
+                    className="w-16 px-1.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs min-h-[38px]"
+                  >
+                    <option value="OD">OD</option>
+                    <option value="OI">OI</option>
+                    <option value="Ambas">Ambas</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
                   Nombre / Apodo (Opcional)
@@ -579,8 +647,8 @@ export function CalvingRecordModal({
                   type="text"
                   value={calf1.name}
                   onChange={(e) => setCalf1({ ...calf1, name: e.target.value })}
-                  placeholder="Ej: Pintón, Mona, Lucero"
-                  className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                  placeholder="Ej: Pintón, Mona"
+                  className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs min-h-[38px]"
                 />
               </div>
 
@@ -594,7 +662,7 @@ export function CalvingRecordModal({
                   value={calf1.breed}
                   onChange={(e) => setCalf1({ ...calf1, breed: e.target.value })}
                   placeholder="Ej: Brahman x Gyr"
-                  className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                  className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs min-h-[38px]"
                 />
                 <datalist id="calf1-breeds">
                   {COMMON_BREEDS.map(b => <option key={b} value={b} />)}
@@ -620,7 +688,7 @@ export function CalvingRecordModal({
                     onChange={(e) => setCalf1({ ...calf1, colostrumConsumed: e.target.checked })}
                     className="w-4 h-4 text-emerald-600 rounded"
                   />
-                  <span>Mamó Calostro</span>
+                  <span>Calostro</span>
                 </label>
               </div>
             </div>
@@ -639,16 +707,46 @@ export function CalvingRecordModal({
                 </span>
               </div>
 
+              {/* Conmutador de Número Temporal / Prerregistro para Cría 2 */}
+              <div className="flex items-center justify-between bg-purple-100/50 dark:bg-purple-950/40 px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-700/60">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={calf2.isTemporaryTag}
+                    onChange={(e) => {
+                      const isTemp = e.target.checked;
+                      const nextSug = farmConsecutiveStats?.nextSuggestedConsecutive || 1;
+                      setCalf2({
+                        ...calf2,
+                        isTemporaryTag: isTemp,
+                        tagNumber: isTemp
+                          ? (calf2.tagNumber.startsWith('TEMP-') ? calf2.tagNumber : `TEMP-${nextSug + 1}`)
+                          : (calf2.tagNumber.replace('TEMP-', '') || String(nextSug + 1))
+                      });
+                    }}
+                    className="w-4 h-4 text-purple-600 rounded"
+                  />
+                  <span className="text-xs font-bold text-purple-900 dark:text-purple-200">
+                    🏷️ Número Temporal / Prerregistro (pendiente de marcación y chapeteo)
+                  </span>
+                </label>
+                {calf2.isTemporaryTag && (
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-200">
+                    Provisional
+                  </span>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Chapa / Arete *
+                    {calf2.isTemporaryTag ? 'N° Temporal *' : 'Chapa Oficial *'}
                   </label>
                   <input
                     type="text"
                     value={calf2.tagNumber}
                     onChange={(e) => setCalf2({ ...calf2, tagNumber: e.target.value })}
-                    placeholder="Ej: 106"
+                    placeholder={calf2.isTemporaryTag ? 'Ej: TEMP-106' : 'Ej: 106'}
                     className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-extrabold focus:ring-2 focus:ring-purple-500 min-h-[42px]"
                   />
                   {errors.calf2Tag && <p className="text-rose-500 text-[10px] font-bold mt-1">{errors.calf2Tag}</p>}
@@ -715,6 +813,46 @@ export function CalvingRecordModal({
                   <datalist id="calf2-colors">
                     {farmColors.map(c => <option key={c} value={c} />)}
                   </datalist>
+                </div>
+              </div>
+
+              {/* Fila 2 Cría 2: Tatuaje en Oreja */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-200 dark:border-purple-800/60 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    Tatuaje Oreja (Ganado Puro)
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={calf2.earTattoo || ''}
+                      onChange={(e) => setCalf2({ ...calf2, earTattoo: e.target.value })}
+                      placeholder="N° pinza"
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs min-h-[38px]"
+                    />
+                    <select
+                      value={calf2.tattooEarLocation || 'OD'}
+                      onChange={(e) => setCalf2({ ...calf2, tattooEarLocation: e.target.value })}
+                      className="w-16 px-1.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs min-h-[38px]"
+                    >
+                      <option value="OD">OD</option>
+                      <option value="OI">OI</option>
+                      <option value="Ambas">Ambas</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    Nombre / Apodo (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={calf2.name}
+                    onChange={(e) => setCalf2({ ...calf2, name: e.target.value })}
+                    placeholder="Ej: Mellizo B"
+                    className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs min-h-[38px]"
+                  />
                 </div>
               </div>
             </div>
