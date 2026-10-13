@@ -14,7 +14,9 @@ import {
   saveDailyMilkLog,
   deleteDailyMilkLog,
   saveMilkSettlement,
-  deleteMilkSettlement
+  deleteMilkSettlement,
+  saveRainfallRecord,
+  deleteRainfallRecord
 } from './services/db';
 import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete } from './services/cloudSync';
@@ -31,6 +33,8 @@ import { CalvingRecordModal } from './components/Females/CalvingRecordModal';
 import { DairyView } from './components/Dairy/DairyView';
 import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { PaddocksView } from './components/Paddocks/PaddocksView';
+import { RainfallView } from './components/Rainfall/RainfallView';
+import { RainfallModal } from './components/Rainfall/RainfallModal';
 import { FinancesView } from './components/Finances/FinancesView';
 import { AccountingView } from './components/Accounting/AccountingView';
 import { ExpenseModal } from './components/Accounting/ExpenseModal';
@@ -120,6 +124,9 @@ export default function App() {
 
   const [isCalvingModalOpen, setIsCalvingModalOpen] = useState(false);
   const [calvingMotherAnimal, setCalvingMotherAnimal] = useState(null);
+
+  const [isRainfallModalOpen, setIsRainfallModalOpen] = useState(false);
+  const [editingRainfall, setEditingRainfall] = useState(null);
 
   const handleOpenCalving = (motherAnimal = null) => {
     setCalvingMotherAnimal(motherAnimal);
@@ -490,6 +497,14 @@ export default function App() {
     () => {
       if (!userId && !currentUser?.id) return [];
       return db.milkSettlements ? db.milkSettlements.filter(s => !s.userId || allowedUserIds.has(s.userId)).toArray() : [];
+    },
+    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
+  ) || [];
+
+  const rainfall = useLiveQuery(
+    () => {
+      if (!userId && !currentUser?.id) return [];
+      return db.rainfall ? db.rainfall.filter(r => !r.userId || allowedUserIds.has(r.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -2309,6 +2324,58 @@ export default function App() {
     showToast(`¡Lote "${batchName}" rotado exitosamente hacia ${destPaddockName}! 🌾🔄`, 'success');
   };
 
+  const handleSaveRainfall = async (record) => {
+    if (!userId) return null;
+    try {
+      const saved = await saveRainfallRecord({ ...record, userId });
+      if (saved?.id) {
+        markPendingSync(userId, saved.id);
+        await logActivity({
+          action: 'rainfall_recorded',
+          description: `Registró precipitación de ${saved.amountMm} mm (${saved.intensity || 'Normal'}) para el ${saved.date}`,
+          operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+          operatorRole: currentUser?.role || 'admin',
+          userId,
+        }).catch(() => null);
+        cloudPushData(userId).catch(() => null);
+      }
+      return saved;
+    } catch (err) {
+      console.error('Error guardando lluvia:', err);
+      throw err;
+    }
+  };
+
+  const handleDeleteRainfall = async (id) => {
+    if (!userId || !id) return;
+    try {
+      await deleteRainfallRecord(id);
+      markPendingDelete(userId, 'rainfall', id);
+      await logActivity({
+        action: 'rainfall_deleted',
+        description: `Eliminó lectura pluviométrica`,
+        operatorName: currentUser?.name || currentUser?.username || 'Administrador',
+        operatorRole: currentUser?.role || 'admin',
+        userId,
+      }).catch(() => null);
+      cloudPushData(userId).catch(() => null);
+      showToast('Lectura pluviométrica eliminada 🗑️', 'info');
+    } catch (err) {
+      console.error('Error eliminando lluvia:', err);
+      showToast('Error al eliminar registro', 'error');
+    }
+  };
+
+  const handleOpenNewRain = () => {
+    setEditingRainfall(null);
+    setIsRainfallModalOpen(true);
+  };
+
+  const handleEditRain = (record) => {
+    setEditingRainfall(record);
+    setIsRainfallModalOpen(true);
+  };
+
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
@@ -2497,6 +2564,8 @@ export default function App() {
             milkRecords={milkRecords}
             milkDeliveries={milkDeliveries}
             milkSettlements={milkSettlements}
+            rainfall={rainfall}
+            onOpenNewRain={handleOpenNewRain}
             onOpenCalving={handleOpenCalving}
           />
         )}
@@ -2660,6 +2729,18 @@ export default function App() {
             onSelectAnimal={handleSelectAnimal}
             onOpenNewAnimal={handleOpenNew}
             farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
+            currentUser={currentUser}
+          />
+        )}
+
+        {currentView === 'rainfall' && (
+          <RainfallView
+            rainfall={rainfall}
+            onOpenNewRain={handleOpenNewRain}
+            onEditRain={handleEditRain}
+            onDeleteRain={handleDeleteRainfall}
+            onNavigate={setCurrentView}
+            showToast={showToast}
             currentUser={currentUser}
           />
         )}
@@ -2883,6 +2964,18 @@ export default function App() {
         onSave={handleSaveFarmIncome}
         income={editingIncome}
         zIndex="z-[60]"
+      />
+
+      {/* 7. Modal del Pluviómetro Digital & Registro de Lluvias */}
+      <RainfallModal
+        isOpen={isRainfallModalOpen}
+        onClose={() => {
+          setIsRainfallModalOpen(false);
+          setEditingRainfall(null);
+        }}
+        onSave={handleSaveRainfall}
+        editingRecord={editingRainfall}
+        showToast={showToast}
       />
 
     </div>

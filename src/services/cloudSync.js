@@ -479,6 +479,7 @@ export async function cloudPushData(userId) {
     const farmIncomes = db.farmIncomes ? await db.farmIncomes.filter(isTarget).toArray() : [];
     const activityLogs = db.activityLogs ? await db.activityLogs.filter(isTarget).toArray() : [];
     const calendarNotes = db.calendarNotes ? await db.calendarNotes.filter(isTarget).toArray() : [];
+    const rainfall = db.rainfall ? await db.rainfall.filter(isTarget).toArray() : [];
 
     const activeModules = getActiveModules(userId);
     const activeModulesUpdatedAt = getModulesUpdatedAt(userId) || Date.now();
@@ -502,6 +503,7 @@ export async function cloudPushData(userId) {
       transactions,
       activityLogs,
       calendarNotes,
+      rainfall,
       syncedAt: new Date().toISOString(),
     };
 
@@ -660,7 +662,8 @@ export async function cloudPullData(userId) {
           'milkSettlements',
           'transactions',
           'activityLogs',
-          'calendarNotes'
+          'calendarNotes',
+          'rainfall'
         ];
 
         for (const col of collections) {

@@ -33,6 +33,7 @@ import { AlertsList } from './AlertsList';
 import { VaccinationCalendar } from './VaccinationCalendar';
 import { FarmCalendarWidget } from '../Calendar/FarmCalendarWidget';
 import { ChecklistAuditWidget } from './ChecklistAuditWidget';
+import { RainfallWidget } from './RainfallWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString } from '../../services/calculations';
@@ -46,6 +47,7 @@ export function DashboardView({
   vaccinations = [],
   audits = [],
   calendarNotes = [],
+  rainfall = [],
   farmExpenses = [],
   farmIncomes = [],
   milkRecords = [],
@@ -54,6 +56,7 @@ export function DashboardView({
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
+  onOpenNewRain,
   onOpenBatchEntry,
   onOpenExportImport,
   onOpenWhatsAppReport,
@@ -536,14 +539,21 @@ export function DashboardView({
         onOpenCalendar={onOpenCalendar}
       />
 
-      {/* Widget de Último Arqueo & Checklist de Inventario Físico */}
-      <ChecklistAuditWidget
-        latestAudit={latestAudit}
-        cattle={cattle}
-        onOpenChecklist={onOpenChecklist}
-        onSelectAnimal={onSelectAnimal}
-        onOpenNewAnimal={onOpenNewAnimal}
-      />
+      {/* Grid de Herramientas de Campo: Arqueo / Checklist y Pluviómetro Digital */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <ChecklistAuditWidget
+          latestAudit={latestAudit}
+          cattle={cattle}
+          onOpenChecklist={onOpenChecklist}
+          onSelectAnimal={onSelectAnimal}
+          onOpenNewAnimal={onOpenNewAnimal}
+        />
+        <RainfallWidget
+          rainfall={rainfall}
+          onOpenNewRain={onOpenNewRain}
+          onNavigate={onNavigate}
+        />
+      </div>
 
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}
       <div className={`grid grid-cols-1 ${isModuleActive(MODULE_KEYS.WEIGHTS) ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>

@@ -180,6 +180,27 @@ db.version(15).stores({
   settings: 'key, userId'
 });
 
+db.version(16).stores({
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, motherId, motherTag, fatherId, fatherTag, fatherType, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  farmExpenses: '++id, date, type, category, concept, amount, isRecurring, recurrenceFrequency, paymentMethod, userId, createdAt',
+  farmIncomes: '++id, date, type, category, concept, amount, paymentMethod, userId, createdAt',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  calendarNotes: '++id, date, title, category, completed, userId, createdAt',
+  paddocks: '++id, name, areaHa, pastureType, waterSource, status, currentBatchId, currentBatchName, entryDate, exitDate, lastRestStartDate, targetRestDays, targetGrazingDays, notes, userId, createdAt',
+  milkRecords: '++id, date, cattleId, tagNumber, milkingSession, amLiters, pmLiters, totalLiters, lactationNumber, daysInMilk, userId, createdAt',
+  milkDeliveries: '++id, date, totalLiters, pricePerLiter, totalValue, buyer, milkDestination, destination, rejectedLiters, temperature, paymentStatus, userId, createdAt',
+  dailyMilkLogs: '++id, date, amLiters, pmLiters, totalLiters, cowsMilked, calvesLiters, farmLiters, salesLiters, rejectedLiters, pricePerLiter, settlementId, isSettled, notes, userId, createdAt',
+  milkSettlements: '++id, startDate, endDate, periodType, totalLiters, pricePerLiter, baseAmount, bonuses, deductions, totalValue, buyer, paymentStatus, paymentDate, registerIncome, incomeId, notes, userId, createdAt',
+  rainfall: '++id, date, amountMm, intensity, notes, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Registrar una acción en la bitácora de auditoría
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {
@@ -1266,5 +1287,58 @@ export async function deleteMilkSettlement(id) {
     return false;
   }
 }
+
+/**
+ * Guarda o actualiza un registro de precipitación / lluvia en el pluviómetro
+ */
+export async function saveRainfallRecord(record) {
+  try {
+    if (!db.rainfall) return null;
+    const isEdit = !!record.id;
+    const now = new Date().toISOString();
+    const payload = {
+      ...record,
+      amountMm: Number(record.amountMm || 0),
+      date: record.date || getLocalDateString(),
+      intensity: record.intensity || 'Normal',
+      notes: record.notes || '',
+      userId: record.userId || 'default',
+      updatedAt: now,
+      createdAt: record.createdAt || now,
+    };
+
+    if (isEdit) {
+      await db.rainfall.put(payload);
+      return payload;
+    } else {
+      const generatedId = 'rain_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      payload.id = generatedId;
+      await db.rainfall.put(payload);
+      return payload;
+    }
+  } catch (err) {
+    console.error('Error guardando registro de lluvia:', err);
+    throw err;
+  }
+}
+
+/**
+ * Elimina un registro de precipitación del pluviómetro
+ */
+export async function deleteRainfallRecord(id) {
+  try {
+    if (!db.rainfall || !id) return false;
+    await db.rainfall.delete(id).catch(() => null);
+    if (!isNaN(Number(id))) {
+      await db.rainfall.delete(Number(id)).catch(() => null);
+    }
+    await db.rainfall.delete(String(id)).catch(() => null);
+    return true;
+  } catch (err) {
+    console.error('Error eliminando registro de lluvia:', err);
+    return false;
+  }
+}
+
 
 

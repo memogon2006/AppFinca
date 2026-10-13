@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.7";
+export const CURRENT_APP_VERSION = "2.24.8";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.8",
+    date: "13/10/2026",
+    title: "🌧️ Pluviómetro Digital & Registro de Lluvias de la Finca",
+    highlights: [
+      "Captura Rápida de Precipitaciones: Registro ágil en milímetros (mm), intensidad de lluvia y notas de clima para la finca.",
+      "Tablero y Curva Anual de Lluvias: Gráfica mensual de barras (Recharts) con acumulados de agua y días lluviosos.",
+      "Calendario Pluviométrico Interactivo: Visualización día a día con gotas de agua y acceso directo a edición.",
+      "Semáforo de Sequía & Alerta Preventiva: Detección automática de días sin lluvia para cuidar pasturas y planear suplementación.",
+      "Exportación a Excel: Descarga inmediata de planillas pluviométricas completas para el archivo de la finca."
+    ]
+  },
   {
     version: "2.24.7",
     date: "12/10/2026",

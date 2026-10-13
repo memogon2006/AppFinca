@@ -28,7 +28,8 @@ import {
   Leaf,
   Milk,
   HeartHandshake,
-  Crown
+  Crown,
+  CloudRain
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -179,6 +180,7 @@ export function Navbar({
       badgeClass: 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 border border-purple-300/40',
       items: [
         { id: 'paddocks', label: 'Potreros & Pastoreo', icon: Leaf, desc: 'Aforos 1m², descansos y rotación de lotes' },
+        { id: 'rainfall', label: 'Pluviómetro & Lluvias', icon: CloudRain, desc: 'Precipitación diaria, acumulados y sequía' },
         ...(isModuleActive(MODULE_KEYS.MILK) ? [
           { id: 'dairy', label: 'Lechería & Control Ordeño', icon: Milk, desc: 'Pesajes AM/PM, DEL, curvas y tanque' }
         ] : []),
