@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.9";
+export const CURRENT_APP_VERSION = "2.24.10";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.10",
+    date: "13/10/2026",
+    title: "📐 Corrección Definitiva del Encabezado Superior (Header & Scroll)",
+    highlights: [
+      "Encabezado Completo y Siempre Visible: Corregido el desplazamiento vertical que provocaba que la barra superior se cortara a la mitad en navegadores de escritorio y móviles.",
+      "Eliminación de Bloqueo Invasivo: Removido el estilo 'position: fixed' en body al abrir menús que desfasaba el scroll a valores negativos.",
+      "Sticky Header 100% Estable: Sustituido 'overflow-x: hidden' en body por 'overflow-x: clip' para garantizar que el encabezado permanezca anclado de forma impecable sin desbordes."
+    ]
+  },
   {
     version: "2.24.9",
     date: "13/10/2026",

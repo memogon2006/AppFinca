@@ -75,72 +75,33 @@ export function Navbar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSidebarOpen]);
 
-  // Bloqueo y restauración precisa del scroll del body con preservación de posición
+  // Limpieza inicial de cualquier estilo residual en document.body
+  useEffect(() => {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    document.body.style.overflowY = '';
+    document.body.style.paddingRight = '';
+    document.documentElement.style.overflowY = '';
+    document.documentElement.style.overscrollBehavior = '';
+  }, []);
+
+  // Bloqueo y restauración limpia del scroll del body cuando el menú lateral está abierto
   useEffect(() => {
     if (isSidebarOpen) {
-      // 1. Guardar la posición exacta actual de scroll de la página
-      const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      scrollPositionRef.current = currentScrollY;
-      isLockedRef.current = true;
-
-      // 2. Calcular el ancho del scrollbar para evitar saltos de pantalla (layout shift)
-      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-      // 3. Bloquear el body fijando su posición para evitar cualquier desplazamiento de fondo
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${currentScrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.width = '100%';
-      document.body.style.overflowY = 'hidden';
-      if (scrollBarWidth > 0) {
-        document.body.style.paddingRight = `${scrollBarWidth}px`;
-      }
-      document.documentElement.style.overflowY = 'hidden';
-      document.documentElement.style.overscrollBehavior = 'none';
+      document.body.style.overflow = 'hidden';
     } else {
-      if (isLockedRef.current) {
-        // 1. Desbloquear estilos de body y html
-        const restoreScrollY = scrollPositionRef.current;
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.width = '';
-        document.body.style.overflowY = '';
-        document.body.style.paddingRight = '';
-        document.documentElement.style.overflowY = '';
-        document.documentElement.style.overscrollBehavior = '';
-        isLockedRef.current = false;
-
-        // 2. Restaurar inmediatamente la posición previa exacta de scroll
-        window.scrollTo({
-          top: restoreScrollY,
-          left: 0,
-          behavior: 'instant'
-        });
-      }
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
     }
 
     return () => {
-      if (isLockedRef.current) {
-        const restoreScrollY = scrollPositionRef.current;
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.width = '';
-        document.body.style.overflowY = '';
-        document.body.style.paddingRight = '';
-        document.documentElement.style.overflowY = '';
-        document.documentElement.style.overscrollBehavior = '';
-        isLockedRef.current = false;
-        window.scrollTo({
-          top: restoreScrollY,
-          left: 0,
-          behavior: 'instant'
-        });
-      }
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
     };
   }, [isSidebarOpen]);
 
@@ -240,7 +201,7 @@ export function Navbar({
       {/* ========================================================================= */}
       {/* 1. TOP HEADER (Limpio, elegante, con botón hamburguesa siempre accesible)  */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-emerald-900 via-teal-950 to-emerald-950 text-white backdrop-blur-md border-b-2 border-emerald-500/30 shadow-lg shadow-emerald-950/25 transition-all duration-200">
+      <header className="sticky top-0 left-0 right-0 z-40 w-full bg-gradient-to-r from-emerald-900 via-teal-950 to-emerald-950 text-white backdrop-blur-md border-b-2 border-emerald-500/30 shadow-lg shadow-emerald-950/25 transition-all duration-200">
         <div className="w-full mx-auto px-2 sm:px-4 lg:px-6 max-w-[1700px]">
           <div className="flex items-center justify-between h-14 sm:h-16 gap-1.5 sm:gap-2">
             
