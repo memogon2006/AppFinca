@@ -473,7 +473,7 @@ export function DashboardView({
       )}
 
       {/* KPIs Clave Principales: 1. Cantidad -> 2. Rendimientos (Biomasa & GDP) -> 3. Valores (Inversión & Utilidad) */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 ${!isWorker ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3.5 sm:gap-4`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${!isWorker ? 'lg:grid-cols-3 xl:grid-cols-5' : 'lg:grid-cols-4'} gap-3.5 sm:gap-4`}>
         
         {/* 1. Cantidad / Inventario Físico */}
         <KpiCard
@@ -482,6 +482,8 @@ export function DashboardView({
           subtitle={`${malesCount} machos • ${femalesCount} hembras`}
           icon={Users}
           color="emerald"
+          onClick={() => onNavigate && onNavigate('cattle')}
+          tooltip="Ver inventario de bovinos activos"
         />
 
         {/* 2. Rendimiento en Báscula: Biomasa */}
@@ -491,6 +493,8 @@ export function DashboardView({
           subtitle={activeCattle.length > 0 ? `Prom: ${formatNumber(totalCurrentWeight / activeCattle.length, 1)} kg/cab` : 'Sin inventario'}
           icon={Scale}
           color="teal"
+          onClick={() => onNavigate && onNavigate('weights')}
+          tooltip="Ver pesajes e historial de báscula"
         />
 
         {/* 3. Rendimiento en Báscula: GDP */}
@@ -500,6 +504,8 @@ export function DashboardView({
           subtitle={gdpValidAnimals > 0 ? `${gdpValidAnimals} animales con pesaje continuo` : 'Registra pesajes continuos'}
           icon={TrendingUp}
           color="blue"
+          onClick={() => onNavigate && onNavigate('weights')}
+          tooltip="Ganancia Diaria de Peso promedio de animales con pesajes consecutivos"
         />
 
         {/* 4. Valores Económicos: Inversión en Ganado Activo */}
@@ -507,9 +513,11 @@ export function DashboardView({
           <KpiCard
             title="Inversión Activa"
             value={formatCurrency(totalInvestedActive)}
-            subtitle={soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Ganado activo en finca'}
+            subtitle={activeCattle.length > 0 ? `Prom: ${formatCurrency(totalInvestedActive / activeCattle.length)}/cab` : 'Ganado activo en finca'}
             icon={DollarSign}
             color="amber"
+            onClick={() => onNavigate && onNavigate('cattle')}
+            tooltip={`Capital total invertido en los ${activeCattle.length} bovinos activos en finca (compra + costos directos)`}
           />
         )}
 
@@ -529,6 +537,8 @@ export function DashboardView({
             subtitle={totalGrossIncome > 0 || totalFarmExpenses > 0 ? `Ingresos: ${formatCurrency(totalGrossIncome)} • Gastos: ${formatCurrency(totalFarmExpenses)}` : (soldCattle.length > 0 ? `Utilidad Ventas: ${formatCurrency(totalRealizedProfit)}` : 'Balance libre de costos')}
             icon={realNetProfit >= 0 ? TrendingUp : TrendingDown}
             color={realNetProfit >= 0 ? 'emerald' : 'rose'}
+            onClick={() => onNavigate && onNavigate('accounting')}
+            tooltip="Utilidad neta real de la finca (Ventas de ganado + Leche + Otros ingresos - Gastos de operación)"
           />
         )}
 

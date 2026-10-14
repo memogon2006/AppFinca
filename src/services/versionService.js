@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.11";
+export const CURRENT_APP_VERSION = "2.24.12";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.12",
+    date: "14/10/2026",
+    title: "💰 Claridad Total en Tarjeta de Inversión Activa y Métricas KPI",
+    highlights: [
+      "Inversión Activa sin Cortes: Rediseño completo de la tarjeta para que cifras millonarias completas se lean sin puntos suspensivos.",
+      "Subtítulo Zootécnico Intuitivo: Ahora muestra el costo promedio por cabeza activa (ej. Prom: $ 1.333.305/cab) en lugar de ventas.",
+      "Distribución Responsiva: Cuadrícula optimizada en 3 y 5 columnas para laptops, tablets y móviles con tarjetas espaciosas.",
+      "Interacción Rápida: Clic en Inversión Activa lleva directo al inventario para auditar los costos de cada animal."
+    ]
+  },
   {
     version: "2.24.11",
     date: "14/10/2026",

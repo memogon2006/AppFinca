@@ -52,23 +52,54 @@ const colorThemes = {
   },
 };
 
-export function KpiCard({ title, value, subtitle, icon: Icon, color = 'emerald', badge }) {
+export function KpiCard({ title, value, subtitle, icon: Icon, color = 'emerald', badge, onClick, tooltip }) {
   const theme = colorThemes[color] || colorThemes.emerald;
 
+  const strVal = String(value ?? '');
+  // Adaptar tamaño de letra para que cifras millonarias nunca se corten
+  const valueFontSize = strVal.length > 14
+    ? 'text-lg sm:text-xl xl:text-2xl'
+    : strVal.length > 10
+    ? 'text-xl sm:text-2xl xl:text-3xl'
+    : 'text-2xl sm:text-3xl';
+
   return (
-    <div className={`relative overflow-hidden rounded-2xl ${theme.card} p-5 border shadow-sm dark:shadow-lg dark:backdrop-blur-md transition-all hover:-translate-y-0.5`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1 min-w-0">
-          <p className={`text-[11px] sm:text-xs font-bold uppercase tracking-wider ${theme.title}`}>{title}</p>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums truncate">{value}</p>
+    <div
+      onClick={onClick}
+      title={tooltip || (typeof title === 'string' ? `${title}: ${strVal}` : undefined)}
+      className={`relative overflow-hidden rounded-2xl ${theme.card} p-4 sm:p-5 border shadow-sm dark:shadow-lg dark:backdrop-blur-md transition-all hover:-translate-y-0.5 flex flex-col justify-between ${
+        onClick ? 'cursor-pointer hover:shadow-md' : ''
+      }`}
+    >
+      <div>
+        {/* Cabecera: Título e Icono alineados en la fila superior */}
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className={`text-[11px] sm:text-xs font-bold uppercase tracking-wider ${theme.title} truncate`}>
+            {title}
+          </p>
+          {Icon && (
+            <div className={`p-2 sm:p-2.5 rounded-xl border shadow-sm shrink-0 ${theme.iconBox}`}>
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+          )}
         </div>
-        <div className={`p-2.5 sm:p-3 rounded-xl border shadow-sm shrink-0 ${theme.iconBox}`}>
-          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+
+        {/* Valor numérico principal: ancho 100% de la tarjeta */}
+        <div className="min-w-0">
+          <p
+            className={`${valueFontSize} font-black text-slate-900 dark:text-white tracking-tight tabular-nums whitespace-nowrap overflow-hidden text-ellipsis`}
+          >
+            {value}
+          </p>
         </div>
       </div>
+
+      {/* Subtítulo zootécnico / financiero */}
       {(subtitle || badge) && (
         <div className={`mt-3 pt-2.5 border-t ${theme.divider} flex items-center justify-between text-xs gap-2`}>
-          <span className={`${theme.subtext} font-medium truncate`}>{subtitle}</span>
+          <span className={`${theme.subtext} font-medium truncate`} title={typeof subtitle === 'string' ? subtitle : undefined}>
+            {subtitle}
+          </span>
           {badge && (
             <span className="px-2 py-0.5 rounded-full bg-white/90 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 text-[10px] shrink-0 shadow-sm">
               {badge}
