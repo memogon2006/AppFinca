@@ -55,10 +55,21 @@ export function SuperAdminView({ currentUser, onNavigate, showToast }) {
         return;
       }
 
-      const usersList = Object.entries(usersData).map(([key, u]) => ({
-        key,
-        ...u
-      }));
+      const usersList = Object.entries(usersData).map(([key, u]) => {
+        let decodedEmail = '';
+        try {
+          decodedEmail = decodeURIComponent(key.replace(/_dot_/g, '.'));
+        } catch (e) {
+          decodedEmail = key.replace(/_dot_/g, '.');
+        }
+        return {
+          key,
+          ...u,
+          email: u?.email || (decodedEmail.includes('@') ? decodedEmail : ''),
+          name: u?.name || (decodedEmail.includes('@') ? decodedEmail.split('@')[0] : 'En registro'),
+          farmName: u?.farmName || (decodedEmail.includes('@') ? `Finca (${decodedEmail.split('@')[0]})` : 'Sin Nombre de Finca')
+        };
+      });
 
       // 2. Para cada finca, consultar métricas de su nodo /userData/{id}
       const farmsWithData = await Promise.all(
@@ -492,7 +503,8 @@ export function SuperAdminView({ currentUser, onNavigate, showToast }) {
                     </div>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      <strong className="text-slate-700 dark:text-slate-300 font-semibold">{farm.name}</strong> • {farm.email}
+                      <strong className="text-slate-700 dark:text-slate-300 font-semibold">{farm.name || 'Sin nombre'}</strong>
+                      {farm.email ? ` • ${farm.email}` : ''}
                     </p>
 
                     {/* Módulos Activos */}
