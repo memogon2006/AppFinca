@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.10";
+export const CURRENT_APP_VERSION = "2.24.11";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.11",
+    date: "14/10/2026",
+    title: "🏷️ Alerta de Marcación Oficial para Crías & Mejoras en SuperAdmin",
+    highlights: [
+      "Alerta Interactiva de Marcación: Aviso en el inicio y lista de alertas zootécnicas para crías con número temporal con acceso directo en 1 clic.",
+      "Modal Especializado de Chapeteo Oficial: Asignación de consecutivo definitivo, marca de fuego (hierro), tatuaje en oreja (ganado puro) y pesaje en manga con sugerencia automática de consecutivos.",
+      "Prerregistro de Partos: Casilla para registrar crías con número provisional y control de tatuajes de oreja (OD/OI/Ambas).",
+      "SuperAdmin Perfeccionado: Detección inteligente de correos y nombres en registros en proceso de configuración."
+    ]
+  },
   {
     version: "2.24.10",
     date: "13/10/2026",
