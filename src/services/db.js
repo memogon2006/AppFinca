@@ -664,6 +664,40 @@ export async function exportBackupData(userId, userDetails = {}) {
     if (db.milkSettlements) {
       milkSettlements = await db.milkSettlements.where('userId').equals(userId).toArray();
     }
+
+    // Si localmente no hay animales en Dexie, verificar sin filtro de userId o consultar la nube
+    if (cattle.length === 0) {
+      const allLocalCattle = await db.cattle.toArray();
+      if (allLocalCattle.length > 0) {
+        cattle = allLocalCattle;
+      } else {
+        // Consultar directamente a la nube Firebase para asegurar que el respaldo lleve datos
+        try {
+          const res = await fetch(`https://ganadera-plataforma-default-rtdb.firebaseio.com/userData/${userId}.json?_t=${Date.now()}`);
+          if (res.ok) {
+            const cloudData = await res.json();
+            if (cloudData && cloudData.cattle) {
+              const toArr = (v) => (!v ? [] : Array.isArray(v) ? v : Object.values(v));
+              cattle = toArr(cloudData.cattle);
+              if (weighings.length === 0) weighings = toArr(cloudData.weighings);
+              if (expenses.length === 0) expenses = toArr(cloudData.expenses);
+              if (farmExpenses.length === 0) farmExpenses = toArr(cloudData.farmExpenses);
+              if (farmIncomes.length === 0) farmIncomes = toArr(cloudData.farmIncomes);
+              if (vaccinations.length === 0) vaccinations = toArr(cloudData.vaccinations);
+              if (palpations.length === 0) palpations = toArr(cloudData.palpations);
+              if (audits.length === 0) audits = toArr(cloudData.audits);
+              if (activityLogs.length === 0) activityLogs = toArr(cloudData.activityLogs);
+              if (calendarNotes.length === 0) calendarNotes = toArr(cloudData.calendarNotes);
+              if (paddocks.length === 0) paddocks = toArr(cloudData.paddocks);
+              if (dailyMilkLogs.length === 0) dailyMilkLogs = toArr(cloudData.dailyMilkLogs);
+              if (milkRecords.length === 0) milkRecords = toArr(cloudData.milkRecords);
+            }
+          }
+        } catch (err) {
+          console.warn('Error obteniendo datos remotos para respaldo:', err);
+        }
+      }
+    }
   } else {
     cattle = await db.cattle.toArray();
     weighings = await db.weighings.toArray();
@@ -706,14 +740,20 @@ export async function exportBackupData(userId, userDetails = {}) {
     milkSettlements: milkSettlements || [],
   };
 
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
+  // Descarga robusta usando Blob y URL.createObjectURL compatible con todos los navegadores modernos
+  const jsonString = JSON.stringify(backup, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
   const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.href = url;
   const cleanFarm = (userDetails.farmName || "finca").toLowerCase().replace(/[^a-z0-9]/g, '_');
-  downloadAnchor.setAttribute("download", `respaldo_${cleanFarm}_${new Date().toISOString().slice(0, 10)}.json`);
+  downloadAnchor.download = `respaldo_${cleanFarm}_${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
-  downloadAnchor.remove();
+  setTimeout(() => {
+    document.body.removeChild(downloadAnchor);
+    URL.revokeObjectURL(url);
+  }, 200);
 }
 
 // Importar datos desde un archivo JSON para el usuario activo
@@ -729,7 +769,15 @@ export async function importBackupData(jsonData, userId) {
       data = { cattle: data };
     }
 
-    // 2. Si el archivo es un volcado completo de Firebase (contiene { users, userData, ... })
+    // 2. Si el archivo viene de SuperAdmin ({ farmProfile, farmData: { cattle, ... } })
+    if (!data.cattle && data.farmData && typeof data.farmData === 'object') {
+      data = {
+        ...data.farmData,
+        farmName: data.farmProfile?.farmName || data.farmData.farmName || 'Finca Importada'
+      };
+    }
+
+    // 3. Si el archivo es un volcado completo de Firebase (contiene { users, userData, ... })
     if (!data.cattle && data.userData && typeof data.userData === 'object') {
       const userKeys = Object.keys(data.userData);
       for (const k of userKeys) {
