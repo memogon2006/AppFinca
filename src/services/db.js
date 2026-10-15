@@ -615,6 +615,8 @@ export async function exportBackupData(userId, userDetails = {}) {
   let cattle = [];
   let weighings = [];
   let expenses = [];
+  let farmExpenses = [];
+  let farmIncomes = [];
   let vaccinations = [];
   let palpations = [];
   let audits = [];
@@ -623,6 +625,8 @@ export async function exportBackupData(userId, userDetails = {}) {
   let paddocks = [];
   let milkRecords = [];
   let milkDeliveries = [];
+  let dailyMilkLogs = [];
+  let milkSettlements = [];
 
   if (userId) {
     cattle = await db.cattle.where('userId').equals(userId).toArray();
