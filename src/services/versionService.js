@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.12";
+export const CURRENT_APP_VERSION = "2.24.13";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.13",
+    date: "15/10/2026",
+    title: "📥 Importador Inteligente y Universal de Respaldos JSON",
+    highlights: [
+      "Compatibilidad Total de Respaldos: Soporta archivos de respaldo directo de la app, exportaciones de Firebase (diccionarios/objetos), volcados completos y listas directas de bovinos.",
+      "Migración Flexible entre Fincas: Permite cargar los animales y su historial zootécnico en cualquier predio activo sin errores de formato.",
+      "Normalización Automática: Convierte diccionarios de pesajes, vacunas, palpaciones y lechería para que no se pierda ningún registro."
+    ]
+  },
   {
     version: "2.24.12",
     date: "14/10/2026",

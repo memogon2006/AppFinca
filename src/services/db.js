@@ -719,10 +719,65 @@ export async function exportBackupData(userId, userDetails = {}) {
 // Importar datos desde un archivo JSON para el usuario activo
 export async function importBackupData(jsonData, userId) {
   try {
-    const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-    if (!data.cattle || !Array.isArray(data.cattle)) {
-      throw new Error('Formato de respaldo no válido. El archivo debe contener la lista de ganado.');
+    let data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+    if (!data || typeof data !== 'object') {
+      throw new Error('El archivo está vacío o no contiene un formato JSON válido.');
     }
+
+    // 1. Si el archivo es un array plano directo de animales: [ {...}, {...} ]
+    if (Array.isArray(data)) {
+      data = { cattle: data };
+    }
+
+    // 2. Si el archivo es un volcado completo de Firebase (contiene { users, userData, ... })
+    if (!data.cattle && data.userData && typeof data.userData === 'object') {
+      const userKeys = Object.keys(data.userData);
+      for (const k of userKeys) {
+        const uNode = data.userData[k];
+        if (uNode && (uNode.cattle || uNode.ganado || uNode.animales)) {
+          data = {
+            ...uNode,
+            farmName: (data.users && data.users[k] && data.users[k].farmName) || uNode.farmName || 'Finca Importada'
+          };
+          break;
+        }
+      }
+    }
+
+    // 3. Normalizar nombres alternativos para la lista de ganado
+    if (!data.cattle && (data.ganado || data.animales || data.bovinos)) {
+      data.cattle = data.ganado || data.animales || data.bovinos;
+    }
+
+    // Función auxiliar para normalizar cualquier estructura (Array, Objeto o Diccionario) a Array plano
+    const toCleanArray = (val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val.filter(Boolean);
+      if (typeof val === 'object') return Object.values(val).filter(Boolean);
+      return [];
+    };
+
+    data.cattle = toCleanArray(data.cattle);
+
+    if (data.cattle.length === 0) {
+      throw new Error('Formato no válido. El archivo no contiene registros de ganado o la finca exportada estaba vacía.');
+    }
+
+    // 4. Normalizar todas las subcolecciones para que acepten tanto Array como Object
+    data.weighings = toCleanArray(data.weighings);
+    data.expenses = toCleanArray(data.expenses);
+    data.farmExpenses = toCleanArray(data.farmExpenses);
+    data.farmIncomes = toCleanArray(data.farmIncomes);
+    data.vaccinations = toCleanArray(data.vaccinations);
+    data.palpations = toCleanArray(data.palpations);
+    data.audits = toCleanArray(data.audits);
+    data.activityLogs = toCleanArray(data.activityLogs);
+    data.calendarNotes = toCleanArray(data.calendarNotes);
+    data.paddocks = toCleanArray(data.paddocks);
+    data.milkRecords = toCleanArray(data.milkRecords);
+    data.milkDeliveries = toCleanArray(data.milkDeliveries);
+    data.dailyMilkLogs = toCleanArray(data.dailyMilkLogs);
+    data.milkSettlements = toCleanArray(data.milkSettlements);
 
     const tables = [db.cattle, db.weighings, db.expenses];
     if (db.vaccinations) tables.push(db.vaccinations);
