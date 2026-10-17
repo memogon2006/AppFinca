@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.13";
+export const CURRENT_APP_VERSION = "2.24.14";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.14",
+    date: "16/10/2026",
+    title: "📲 Acceso Móvil Universal (Login por Finca, Usuario o Correo)",
+    highlights: [
+      "Identificación Flexible en Campo: Ahora puedes iniciar sesión en cualquier celular nuevo ingresando el nombre de tu finca (ej. LA JULIA, GANADERIA LA G), tu usuario o tu correo.",
+      "Búsqueda Profunda en la Nube: Consulta automática en Firebase cuando el dispositivo móvil aún no tiene datos locales almacenados.",
+      "Desbloqueo Inmediato tras Recuperación: Generar una clave temporal elimina de inmediato cualquier bloqueo por intentos fallidos sin esperar 5 minutos.",
+      "Tolerancia a Teclados Móviles: Limpieza automática de espacios accidentales al escribir correo, usuario o contraseña en pantallas táctiles."
+    ]
+  },
   {
     version: "2.24.13",
     date: "15/10/2026",

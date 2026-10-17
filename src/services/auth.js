@@ -372,8 +372,11 @@ export async function loginUser({ email, password }) {
 
   // 1. Si hay conexión a internet, verificar primero que la cuenta exista y esté activa en la nube Firebase
   const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+  let remoteUser = null;
+  let isDeletedRemote = false;
+
   if (isOnline) {
-    const [remoteUser, isDeletedRemote] = await Promise.all([
+    [remoteUser, isDeletedRemote] = await Promise.all([
       cloudFindUser(cleanInput).catch(() => null),
       cloudIsWorkerDeleted(cleanInput).catch(() => false)
     ]);
@@ -507,10 +510,12 @@ export async function loginUser({ email, password }) {
   }
 
   // 2. RUTA EN LA NUBE (Primer inicio de sesión en un dispositivo nuevo o credenciales actualizadas)
-  const [remoteUser, isDeletedRemote] = await Promise.all([
-    cloudFindUser(cleanInput).catch(() => null),
-    cloudIsWorkerDeleted(cleanInput).catch(() => false)
-  ]);
+  if (!remoteUser && isOnline) {
+    [remoteUser, isDeletedRemote] = await Promise.all([
+      cloudFindUser(cleanInput).catch(() => null),
+      cloudIsWorkerDeleted(cleanInput).catch(() => false)
+    ]);
+  }
 
   if (isDeletedRemote) {
     try {
@@ -564,6 +569,7 @@ export async function loginUser({ email, password }) {
   const effectiveHash = user.passwordHash || localUser?.passwordHash;
   if (!effectiveHash || effectiveHash !== inputHash) {
     recordFailedLoginAttempt(cleanInput);
+    if (user.email && user.email !== cleanInput) recordFailedLoginAttempt(user.email);
     throw new Error('Usuario o contraseña incorrectos.');
   }
 
@@ -574,9 +580,11 @@ export async function loginUser({ email, password }) {
     await db.users.put(user).catch(() => null);
   }
 
-  // Limpiar bloqueo tras éxito
+  // Limpiar bloqueo tras éxito en todas las variantes (identificador ingresado, correo, nombre de finca y usuario)
   clearLoginLockout(cleanInput);
   if (user.email) clearLoginLockout(user.email);
+  if (user.farmName) clearLoginLockout(user.farmName);
+  if (user.username) clearLoginLockout(user.username);
 
   // Reconciliar módulos activos de la finca desde la nube para trabajadores o administradores
   const effectiveFarmId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;

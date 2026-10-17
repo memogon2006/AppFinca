@@ -219,7 +219,70 @@ export async function cloudFindUser(email) {
     }
   }
 
-  // 4. Si no se encontró en /users/, verificar si está en la lista de eliminados
+  // 4. Búsqueda profunda en la colección de usuarios de Firebase
+  // Permite encontrar la cuenta ingresando:
+  // - Prefijo del correo (ej: 'juliayema' para 'juliayema@gmail.com')
+  // - Nombre de la finca o hacienda (ej: 'LA JULIA', 'GANADERIA LA G', 'San Lorenzo')
+  // - Nombre del administrador o ganadero (ej: 'LUIS GUILLERMO GONZALEZ ARIAS')
+  try {
+    const res = await safeFetch(`${FIREBASE_URL}/users.json?_t=${Date.now()}`);
+    if (res && res.ok) {
+      const allUsersMap = await res.json();
+      if (allUsersMap && typeof allUsersMap === 'object') {
+        const normalizeStr = (str) => (str || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '');
+
+        const normClean = normalizeStr(cleanEmail);
+        const entries = Object.values(allUsersMap).filter(u => u && typeof u === 'object');
+
+        // A. Coincidencia exacta por correo
+        let found = entries.find(u => u.email && u.email.trim().toLowerCase() === cleanEmail);
+
+        // B. Coincidencia por prefijo del correo (ej: 'juliayema' => 'juliayema@gmail.com')
+        if (!found) {
+          found = entries.find(u => {
+            if (!u.email) return false;
+            const prefix = u.email.split('@')[0].trim().toLowerCase();
+            return prefix === cleanEmail || (normClean && normalizeStr(prefix) === normClean);
+          });
+        }
+
+        // C. Coincidencia por nombre de la Finca / Hacienda (ej: 'LA JULIA', 'GANADERIA LA G')
+        if (!found) {
+          found = entries.find(u => {
+            if (!u.farmName) return false;
+            const farm = u.farmName.trim().toLowerCase();
+            return farm === cleanEmail || (normClean && normalizeStr(u.farmName) === normClean);
+          });
+        }
+
+        // D. Coincidencia por nombre de usuario o nombre completo
+        if (!found) {
+          found = entries.find(u => {
+            const uName = (u.name || '').trim().toLowerCase();
+            const uUser = (u.username || '').trim().toLowerCase();
+            return uUser === cleanEmail || uName === cleanEmail ||
+                   (normClean && (normalizeStr(u.username) === normClean || normalizeStr(u.name) === normClean));
+          });
+        }
+
+        if (found && (found.id || found.email)) {
+          const isDel = await cloudIsWorkerDeleted(found.email || cleanEmail);
+          if (isDel) {
+            return { ...found, isDeleted: true };
+          }
+          return found;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Error en cloudFindUser Firebase (búsqueda profunda):', e);
+  }
+
+  // 5. Si no se encontró en /users/, verificar si está en la lista de eliminados
   const isDel = await cloudIsWorkerDeleted(cleanEmail);
   if (isDel) {
     return { isDeleted: true, email: cleanEmail, role: 'worker' };

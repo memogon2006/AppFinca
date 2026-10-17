@@ -30,7 +30,7 @@ import {
 
 import { PrivacyPolicyModal } from '../Common/PrivacyPolicyModal';
 import { checkAppUpdate, isVersionGreater } from '../../services/versionService';
-import { getLoginLockoutStatus } from '../../services/auth';
+import { getLoginLockoutStatus, clearLoginLockout } from '../../services/auth';
 import { FARM_PRESETS, applyFarmPreset } from '../../services/moduleService';
 
 export function AuthView() {
@@ -138,7 +138,10 @@ export function AuthView() {
       setLoading(true);
       const res = await (requestResetPassword ? requestResetPassword(email) : Promise.reject(new Error('Función no disponible')));
       setRecoveredData(res);
-      setSuccessMsg(`¡Clave temporal generada! Revisa tu correo ${email} o usa la clave que aparece en pantalla.`);
+      clearLoginLockout(email);
+      if (res && res.email) clearLoginLockout(res.email);
+      setLockoutStatus({ isLocked: false, remainingMs: 0, attempts: 0 });
+      setSuccessMsg(`¡Clave temporal generada! Revisa tu correo ${res?.email || email} o usa la clave que aparece en pantalla.`);
     } catch (err) {
       setError(err.message || 'Error al restablecer la contraseña.');
     } finally {
@@ -494,6 +497,8 @@ export function AuthView() {
                         setFormData(prev => ({ ...prev, email: recoveredData.email, password: recoveredData.tempPassword }));
                         setMode('login');
                         setError(null);
+                        clearLoginLockout(recoveredData.email);
+                        setLockoutStatus({ isLocked: false, remainingMs: 0, attempts: 0 });
                         setSuccessMsg('¡Clave cargada! Pulsa "Ingresar a Mi Finca" para acceder.');
                       }}
                       className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition min-h-[46px] cursor-pointer"
@@ -517,14 +522,14 @@ export function AuthView() {
                   <form onSubmit={handleForgotPassword} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Correo Electrónico Registrado <span className="text-rose-500">*</span>
+                        Correo, Usuario o Finca Registrada <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           name="email"
-                          placeholder="ejemplo@miganaderia.com"
+                          placeholder="ejemplo@gmail.com, usuario o finca"
                           value={formData.email}
                           onChange={handleChange}
                           autoCapitalize="none"
@@ -672,17 +677,17 @@ export function AuthView() {
                   </div>
                 )}
 
-                {/* Correo / Usuario */}
+                {/* Correo / Usuario / Finca */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Correo Electrónico o Usuario <span className="text-rose-500">*</span>
+                    {mode === 'login' ? 'Correo, Usuario o Finca' : 'Correo Electrónico o Usuario'} <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       name="email"
-                      placeholder={mode === 'login' ? 'ejemplo@gmail.com o usuario' : 'ejemplo@miganaderia.com'}
+                      placeholder={mode === 'login' ? 'ejemplo@gmail.com, usuario o finca' : 'ejemplo@miganaderia.com'}
                       value={formData.email}
                       onChange={handleChange}
                       autoCapitalize="none"
