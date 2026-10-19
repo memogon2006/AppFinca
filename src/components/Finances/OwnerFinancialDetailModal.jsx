@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateFinancials, getLocalDateString } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
+import { SettlementDetailCard, getSettlementCardPropsFromAnimal } from './SettlementDetailCard';
 import * as XLSX from 'xlsx-js-style';
 import { useScrollLock } from '../../hooks/useScrollLock';
 
@@ -40,6 +41,7 @@ export function OwnerFinancialDetailModal({
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'sold' | 'all'
   const [searchTerm, setSearchTerm] = useState('');
   const [batchFilter, setBatchFilter] = useState('');
+  const [expandedAnimalId, setExpandedAnimalId] = useState(null);
 
   // Animales de este dueño
   const ownerCattle = useMemo(() => {
@@ -833,9 +835,39 @@ export function OwnerFinancialDetailModal({
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <span>Mostrando <strong>{filteredSoldList.length}</strong> de {totalSoldCount} animales vendidos</span>
                 <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">
-                  👆 Haz clic en cualquier venta para ver la liquidación
+                  👆 Toca cualquier fila para ver el desglose completo de la liquidación
                 </span>
               </div>
+
+              {/* Ficha de Liquidación Consolidada para todo el lote vendido */}
+              {filteredSoldList.length > 0 && (
+                <SettlementDetailCard
+                  title="Detalle de Liquidación Consolidada"
+                  badge={hasCompanySales ? `🤝 En Compañía (${companySoldCattle.length} / ${totalSoldCount} cabezas)` : `💰 Venta Directa (${totalSoldCount} cabezas)`}
+                  isCompany={hasCompanySales}
+                  exitPrice={totalSoldRevenue}
+                  exitWeight={totalSoldExitWeight}
+                  pricePerKg={averageSoldPricePerKg}
+                  buyer={`${totalSoldCount} cabezas liquidadas • ${ownerName}`}
+                  date={soldOwnerCattle[0]?.exitDate}
+                  cashInflow={totalPartnerCashInflow}
+                  userRoleLabel={hasCompanySales ? "🐮 Dueño / Inversionista" : "Total Cobrado"}
+                  userRole="owner"
+                  netProfit={hasCompanySales ? totalPartnerProfitShare : totalSoldNetProfit}
+                  capitalReturn={totalPartnerCapitalReturn}
+                  farmShare={totalFarmProfitShare}
+                  partnerProfitShare={totalPartnerProfitShare}
+                  partnerTotalReturn={totalPartnerCashInflow}
+                  ownerMonthlyRoi={averageSoldMonthlyRoi}
+                  ownerMonthlyProfit={totalSoldMonthlyProfit * 0.5}
+                  farmMonthlyRoi={averageSoldMonthlyRoi}
+                  farmMonthlyProfit={totalSoldMonthlyProfit * 0.5}
+                  directMonthlyRoi={averageSoldMonthlyRoi}
+                  directMonthlyProfit={totalSoldMonthlyProfit}
+                  directRoi={soldRoi}
+                  totalInvested={totalSoldCost}
+                />
+              )}
 
               {filteredSoldList.length > 0 ? (
                 <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -866,87 +898,129 @@ export function OwnerFinancialDetailModal({
                         const exitW = parseFloat(animal.exitWeight) || 0;
                         const exitP = parseFloat(animal.exitPrice) || 0;
                         const isComp = split.isCompany;
+                        const isExpanded = expandedAnimalId === animal.id;
 
                         return (
-                          <tr
-                            key={animal.id}
-                            onClick={() => onSelectAnimal && onSelectAnimal(animal)}
-                            className="hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition cursor-pointer"
-                          >
-                            <td className="p-3 whitespace-nowrap">
-                              <span className="font-extrabold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                                #{animal.tagNumber || 'S/N'}
-                              </span>
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                              {formatDate(animal.exitDate)}
-                            </td>
-                            <td className="p-3 text-slate-800 dark:text-slate-200 font-bold whitespace-nowrap">
-                              {animal.saleBuyer || animal.buyer || 'Venta Directa'}
-                            </td>
-                            <td className="p-3 whitespace-nowrap">
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                isComp
-                                  ? 'bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300'
-                                  : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300'
-                              }`}>
-                                {isComp ? '🤝 En Compañía' : (animal.exitType || 'En Pie')}
-                              </span>
-                            </td>
-                            <td className="p-3 text-right tabular-nums text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                              {exitW > 0 ? `${formatNumber(exitW, 0)} kg` : '-'}
-                            </td>
-                            <td className="p-3 text-right tabular-nums text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                              {formatCurrency(fin.totalInvested)}
-                            </td>
-                            <td className="p-3 text-right tabular-nums font-extrabold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                              {formatCurrency(exitP)}
-                            </td>
-                            <td className="p-3 text-right tabular-nums font-black whitespace-nowrap">
-                              <span className={fin.netProfit >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}>
-                                {formatCurrency(fin.netProfit)}
-                              </span>
-                            </td>
-                            {/* Finca (50%) */}
-                            <td className="p-3 text-right tabular-nums font-black whitespace-nowrap bg-emerald-50/50 dark:bg-emerald-950/20">
-                              {isComp ? (
-                                <div>
-                                  <span className="text-emerald-600 dark:text-emerald-400 text-xs">
-                                    +{formatCurrency(split.farmShare)}
+                          <React.Fragment key={animal.id}>
+                            <tr
+                              onClick={() => setExpandedAnimalId(prev => prev === animal.id ? null : animal.id)}
+                              className={`transition cursor-pointer ${
+                                isExpanded 
+                                  ? 'bg-blue-100/70 dark:bg-blue-950/60 ring-2 ring-blue-400 dark:ring-blue-600' 
+                                  : 'hover:bg-blue-50/60 dark:hover:bg-blue-950/20'
+                              }`}
+                            >
+                              <td className="p-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-extrabold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    #{animal.tagNumber || 'S/N'}
                                   </span>
-                                  <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold block">
-                                    {split.farmPercent}% utilidad
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition ${
+                                    isExpanded 
+                                      ? 'bg-blue-600 text-white border-blue-600' 
+                                      : 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                  }`}>
+                                    {isExpanded ? '▼ Cerrar' : '▶ Liquidación'}
                                   </span>
                                 </div>
-                              ) : (
-                                <span className="text-slate-400 text-[11px]">-</span>
-                              )}
-                            </td>
-                            {/* Dueño Ganado (50% utilidad y retorno) */}
-                            <td className="p-3 text-right tabular-nums whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20">
-                              {isComp ? (
-                                <div>
-                                  <span className="text-blue-600 dark:text-blue-400 font-black text-xs">
-                                    +{formatCurrency(split.partnerProfitShare)}
-                                  </span>
-                                  <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-semibold" title="Capital inicial recuperado + 50% de ganancia">
-                                    Total: {formatCurrency(split.partnerTotalReturn)}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div>
-                                  <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">
-                                    +{formatCurrency(fin.netProfit)}
-                                  </span>
-                                  <span className="text-[9px] text-slate-400 block">100% Dueño</span>
-                                </div>
-                              )}
-                            </td>
-                            <td className="p-3 text-right tabular-nums whitespace-nowrap">
-                              <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px] block">{formatNumber(fin.roi, 1)}%</span>
-                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black block">📈 {formatNumber(fin.monthlyRoi, 1)}%/m</span>
-                            </td>
-                          </tr>
+                              </td>
+                              <td className="p-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                {formatDate(animal.exitDate)}
+                              </td>
+                              <td className="p-3 text-slate-800 dark:text-slate-200 font-bold whitespace-nowrap">
+                                {animal.saleBuyer || animal.buyer || 'Venta Directa'}
+                              </td>
+                              <td className="p-3 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                  isComp
+                                    ? 'bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300'
+                                    : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300'
+                                }`}>
+                                  {isComp ? '🤝 En Compañía' : (animal.exitType || 'En Pie')}
+                                </span>
+                              </td>
+                              <td className="p-3 text-right tabular-nums text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                {exitW > 0 ? `${formatNumber(exitW, 0)} kg` : '-'}
+                              </td>
+                              <td className="p-3 text-right tabular-nums text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                {formatCurrency(fin.totalInvested)}
+                              </td>
+                              <td className="p-3 text-right tabular-nums font-extrabold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                                {formatCurrency(exitP)}
+                              </td>
+                              <td className="p-3 text-right tabular-nums font-black whitespace-nowrap">
+                                <span className={fin.netProfit >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}>
+                                  {formatCurrency(fin.netProfit)}
+                                </span>
+                              </td>
+                              {/* Finca (50%) */}
+                              <td className="p-3 text-right tabular-nums font-black whitespace-nowrap bg-emerald-50/50 dark:bg-emerald-950/20">
+                                {isComp ? (
+                                  <div>
+                                    <span className="text-emerald-600 dark:text-emerald-400 text-xs">
+                                      +{formatCurrency(split.farmShare)}
+                                    </span>
+                                    <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold block">
+                                      {split.farmPercent}% utilidad
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 text-[11px]">-</span>
+                                )}
+                              </td>
+                              {/* Dueño Ganado (50% utilidad y retorno) */}
+                              <td className="p-3 text-right tabular-nums whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20">
+                                {isComp ? (
+                                  <div>
+                                    <span className="text-blue-600 dark:text-blue-400 font-black text-xs">
+                                      +{formatCurrency(split.partnerProfitShare)}
+                                    </span>
+                                    <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-semibold" title="Capital inicial recuperado + 50% de ganancia">
+                                      Total: {formatCurrency(split.partnerTotalReturn)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">
+                                      +{formatCurrency(fin.netProfit)}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 block">100% Dueño</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                                <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px] block">{formatNumber(fin.roi, 1)}%</span>
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black block">📈 {formatNumber(fin.monthlyRoi, 1)}%/m</span>
+                              </td>
+                            </tr>
+
+                            {/* Desglose Expandible Completo (Idéntico a la Ficha Técnica) */}
+                            {isExpanded && (
+                              <tr className="bg-slate-50/90 dark:bg-slate-950 border-y-2 border-teal-400 dark:border-teal-600 animate-fade-in">
+                                <td colSpan="11" className="p-3 sm:p-5">
+                                  <div className="max-w-4xl mx-auto space-y-3">
+                                    <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-bold px-1">
+                                      <span className="flex items-center gap-1.5 text-slate-900 dark:text-white font-extrabold">
+                                        <span>📄 Liquidación Individual Completa</span>
+                                        <span className="text-emerald-600 dark:text-emerald-400">#{animal.tagNumber}</span>
+                                      </span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onSelectAnimal && onSelectAnimal(animal);
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer transition shadow-md"
+                                      >
+                                        <span>Abrir Ficha Técnica Completa</span>
+                                        <ArrowUpRight className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    <SettlementDetailCard {...getSettlementCardPropsFromAnimal(animal, null)} />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         );
                       })}
                     </tbody>

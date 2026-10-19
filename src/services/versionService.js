@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.18";
+export const CURRENT_APP_VERSION = "2.24.19";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.19",
+    date: "19/10/2026",
+    title: "💰 Tarjeta Uniforme y Completa de Liquidación de Venta en Todo el Sistema",
+    highlights: [
+      "Diseño Idéntico de Liquidación: Incorporación del componente unificado SettlementDetailCard con el diseño exacto solicitado: cabecera con modalidad (🤝 En Compañía 50/50 o 💰 Directa 100%), 4 métricas de venta (Precio Total, Peso Salida, Precio/kg, Comprador y Fecha), banner principal de Dinero Ingresado a Caja y Utilidad Neta, 4 tarjetas de reparto (Devolución Capital, Ganancia Finca 50%, Ganancia Dueño 50%, Pago Total Dueño) y rentabilidades mensuales de ambas partes.",
+      "Integrado en Todos los Módulos: Disponible ahora en la Ficha Técnica del Animal (pestaña Liquidación de Venta destacada al abrir bovinos vendidos), en el Resumen Financiero por Propietario (tanto a nivel de lote completo como desplegable individual por animal) y en la tabla general de Ventas del módulo Finanzas con filas expandibles con un solo clic.",
+      "Modal Layering Corregido: Jerarquía de capas optimizada (z-[70]) para que abrir la ficha técnica desde el modal de propietario no quede oculta detrás de este."
+    ]
+  },
   {
     version: "2.24.18",
     date: "19/10/2026",

@@ -14,12 +14,15 @@ import {
   Filter,
   ArrowUpRight,
   Building2,
-  UserCheck 
+  UserCheck,
+  ChevronDown,
+  ChevronRight 
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateFinancials, calculateSaleCashFlow } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import { OwnerFinancialDetailModal } from './OwnerFinancialDetailModal';
+import { SettlementDetailCard, getSettlementCardPropsFromAnimal } from './SettlementDetailCard';
 
 export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRevertSale, onDeleteAnimal, onOpenPartnershipModal }) {
   const { isWorker, currentUser } = useAuth();
@@ -29,6 +32,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
   const [saleEndDate, setSaleEndDate] = useState('');
   const [saleTypeFilter, setSaleTypeFilter] = useState('');
   const [selectedOwnerForDetail, setSelectedOwnerForDetail] = useState(null);
+  const [expandedSaleId, setExpandedSaleId] = useState(null);
 
   if (isWorker) {
     return (
@@ -505,116 +509,171 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         </div>
 
         {filteredSoldCattle.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[700px]">
-              <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                  <th className="p-3">Arete</th>
-                  <th className="p-3">Modalidad & Rol</th>
-                  <th className="p-3">Fecha Venta</th>
-                  <th className="p-3">Peso Salida</th>
-                  <th className="p-3">Costo Compra</th>
-                  <th className="p-3">Venta Bruta</th>
-                  <th className="p-3 text-emerald-600 dark:text-emerald-400">Entrada a Caja</th>
-                  <th className="p-3">Utilidad Neta</th>
-                  <th className="p-3">Rentabilidad (ROI)</th>
-                  <th className="p-3">Comprador</th>
-                  <th className="p-3 text-right">Opciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {filteredSoldCattle.map(animal => {
-                  const fin = calculateFinancials(animal, 0, meatPricePerKg);
-                  const flow = calculateSaleCashFlow(animal, currentUser);
-                  const isPart = flow.isPartnership;
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span>Registros: <strong>{filteredSoldCattle.length}</strong> ventas</span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                👆 Toca cualquier fila para ver el desglose detallado de la liquidación
+              </span>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 min-w-[700px]">
+                <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th className="p-3">Arete / Chapeta</th>
+                    <th className="p-3">Modalidad & Rol</th>
+                    <th className="p-3">Fecha Venta</th>
+                    <th className="p-3">Peso Salida</th>
+                    <th className="p-3">Costo Compra</th>
+                    <th className="p-3">Venta Bruta</th>
+                    <th className="p-3 text-emerald-600 dark:text-emerald-400">Entrada a Caja</th>
+                    <th className="p-3">Utilidad Neta</th>
+                    <th className="p-3">Rentabilidad (ROI)</th>
+                    <th className="p-3">Comprador</th>
+                    <th className="p-3 text-right">Opciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {filteredSoldCattle.map(animal => {
+                    const fin = calculateFinancials(animal, 0, meatPricePerKg);
+                    const flow = calculateSaleCashFlow(animal, currentUser);
+                    const isPart = flow.isPartnership;
+                    const isExpanded = expandedSaleId === animal.id;
 
-                  return (
-                    <tr
-                      key={animal.id}
-                      onClick={() => onSelectAnimal(animal)}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition"
-                    >
-                      <td className="p-3 font-bold text-slate-900 dark:text-white">
-                        <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{animal.tagNumber}</span>
-                        {animal.name && <span className="text-slate-500 dark:text-slate-400 font-normal ml-1">({animal.name})</span>}
-                      </td>
-                      <td className="p-3">
-                        {isPart ? (
-                          flow.userRole === 'farm' ? (
-                            <span className="inline-flex items-center gap-1 font-black text-emerald-900 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-400 dark:border-emerald-700 text-[10px]">
-                              <Building2 className="w-2.5 h-2.5 text-emerald-600" /> 🏢 Finca (50% Utilidad)
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 font-black text-blue-900 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-400 dark:border-blue-700 text-[10px]">
-                              <UserCheck className="w-2.5 h-2.5 text-blue-600" /> 🐮 Dueño (Cap + 50%)
-                            </span>
-                          )
-                        ) : (
-                          <span className="inline-flex items-center gap-1 font-bold text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-700 text-[10px]">
-                            💰 Directa (100%)
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">
-                        {animal.exitDate ? formatDate(animal.exitDate) : '-'}
-                      </td>
-                      <td className="p-3 font-bold text-slate-800 dark:text-slate-200">
-                        {animal.exitWeight ? `${animal.exitWeight} kg` : '-'}
-                      </td>
-                      <td className="p-3 text-slate-600 dark:text-slate-400">
-                        {formatCurrency(fin.totalInvested)}
-                      </td>
-                      <td className="p-3 font-bold text-slate-900 dark:text-white">
-                        {formatCurrency(animal.exitPrice)}
-                      </td>
-                      {/* ENTRADA A CAJA SEGÚN EL ROL DEL USUARIO */}
-                      <td className="p-3 font-black text-emerald-600 dark:text-emerald-400">
-                        <div>
-                          <span>+{formatCurrency(flow.cashInflow)}</span>
-                          {isPart && (
-                            <div className="text-[10px] text-slate-400 font-normal">
-                              {flow.userRole === 'farm'
-                                ? `(50% utilidad)`
-                                : `(${formatCurrency(flow.capitalReturn)} cap + ${formatCurrency(flow.netProfit)} ut)`}
+                    return (
+                      <React.Fragment key={animal.id}>
+                        <tr
+                          onClick={() => setExpandedSaleId(prev => prev === animal.id ? null : animal.id)}
+                          className={`cursor-pointer transition ${
+                            isExpanded 
+                              ? 'bg-emerald-50/70 dark:bg-emerald-950/40 ring-1 ring-emerald-400 dark:ring-emerald-600' 
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                          }`}
+                        >
+                          <td className="p-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`p-1 rounded transition text-xs flex items-center justify-center ${
+                                isExpanded ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                              }`}>
+                                {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                              </span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{animal.tagNumber}</span>
+                              {animal.name && <span className="text-slate-500 dark:text-slate-400 font-normal ml-0.5">({animal.name})</span>}
                             </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className={`p-3 font-extrabold ${flow.netProfit >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {formatCurrency(flow.netProfit)}
-                      </td>
-                      <td className="p-3">
-                        <span className="font-bold text-blue-600 dark:text-blue-400 block">{fin.roi}%</span>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold block">
-                          📈 {isPart ? `${flow.userMonthlyRoi}%/m` : `${fin.monthlyRoi}%/m`}
-                        </span>
-                      </td>
-                      <td className="p-3 text-slate-600 dark:text-slate-400">
-                        {animal.saleBuyer || animal.buyer || 'No registrado'}
-                      </td>
-                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={(e) => handleRevert(animal, e)}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
-                            title="Anular venta y devolver a finca"
-                          >
-                            <Undo2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => handleDelete(animal, e)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
-                            title="Eliminar registro"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          </td>
+                          <td className="p-3">
+                            {isPart ? (
+                              flow.userRole === 'farm' ? (
+                                <span className="inline-flex items-center gap-1 font-black text-emerald-900 dark:text-emerald-200 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-400 dark:border-emerald-700 text-[10px]">
+                                  <Building2 className="w-2.5 h-2.5 text-emerald-600" /> 🏢 Finca (50% Utilidad)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 font-black text-blue-900 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-400 dark:border-blue-700 text-[10px]">
+                                  <UserCheck className="w-2.5 h-2.5 text-blue-600" /> 🐮 Dueño (Cap + 50%)
+                                </span>
+                              )
+                            ) : (
+                              <span className="inline-flex items-center gap-1 font-bold text-blue-800 dark:text-blue-200 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-700 text-[10px]">
+                                💰 Directa (100%)
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                            {animal.exitDate ? formatDate(animal.exitDate) : '-'}
+                          </td>
+                          <td className="p-3 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                            {animal.exitWeight ? `${animal.exitWeight} kg` : '-'}
+                          </td>
+                          <td className="p-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                            {formatCurrency(fin.totalInvested)}
+                          </td>
+                          <td className="p-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                            {formatCurrency(animal.exitPrice)}
+                          </td>
+                          {/* ENTRADA A CAJA SEGÚN EL ROL DEL USUARIO */}
+                          <td className="p-3 font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            <div>
+                              <span>+{formatCurrency(flow.cashInflow)}</span>
+                              {isPart && (
+                                <div className="text-[10px] text-slate-400 font-normal">
+                                  {flow.userRole === 'farm'
+                                    ? `(50% utilidad)`
+                                    : `(${formatCurrency(flow.capitalReturn)} cap + ${formatCurrency(flow.netProfit)} ut)`}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className={`p-3 font-extrabold whitespace-nowrap ${flow.netProfit >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {formatCurrency(flow.netProfit)}
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="font-bold text-blue-600 dark:text-blue-400 block">{fin.roi}%</span>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold block">
+                              📈 {isPart ? `${flow.userMonthlyRoi}%/m` : `${fin.monthlyRoi}%/m`}
+                            </span>
+                          </td>
+                          <td className="p-3 text-slate-600 dark:text-slate-400 truncate max-w-[140px]">
+                            {animal.saleBuyer || animal.buyer || 'No registrado'}
+                          </td>
+                          <td className="p-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => onSelectAnimal && onSelectAnimal(animal)}
+                                className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition cursor-pointer"
+                                title="Ver ficha técnica completa del animal"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => handleRevert(animal, e)}
+                                className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition cursor-pointer"
+                                title="Anular venta y devolver a finca"
+                              >
+                                <Undo2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => handleDelete(animal, e)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                                title="Eliminar registro"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Desglose de Liquidación de Venta Completo Expandible */}
+                        {isExpanded && (
+                          <tr className="bg-slate-50/90 dark:bg-slate-950 border-y-2 border-emerald-400 dark:border-emerald-600 animate-fade-in">
+                            <td colSpan="11" className="p-3 sm:p-5">
+                              <div className="max-w-4xl mx-auto space-y-3">
+                                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-bold px-1">
+                                  <span className="flex items-center gap-1.5 text-slate-900 dark:text-white font-extrabold">
+                                    <span>📄 Liquidación Individual Completa</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400">#{animal.tagNumber}</span>
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onSelectAnimal && onSelectAnimal(animal);
+                                    }}
+                                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer transition shadow-md"
+                                  >
+                                    <span>Abrir Ficha Técnica Completa</span>
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <SettlementDetailCard {...getSettlementCardPropsFromAnimal(animal, currentUser)} />
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">
