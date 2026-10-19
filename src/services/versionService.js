@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.18";
+export const CURRENT_APP_VERSION = "2.24.19";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.19",
+    date: "19/10/2026",
+    title: "🏷️ Unificación de Aretes en Amarillo Ganadero y Limpieza Visual de Tarjetas",
+    highlights: [
+      "Unificación Cromática de Aretes: Todas las chapetas activas se unifican al auténtico amarillo ganadero de alta visibilidad, evitando confusiones de colores en el inventario.",
+      "Eliminación de Texto Redundante: Se retira la etiqueta redundante y truncada 'Bovino {chapa}' al lado del arete; ahora se muestra el nombre del ejemplar o su categoría zootécnica de forma clara y sin puntos suspensivos."
+    ]
+  },
   {
     version: "2.24.18",
     date: "19/10/2026",

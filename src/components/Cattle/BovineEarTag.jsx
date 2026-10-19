@@ -21,12 +21,12 @@ export function BovineEarTag({
   customColor = null,
   farmName = null
 }) {
-  // Determinar paleta según procedencia y estado
+  // Determinar paleta según estado
   let theme = {
-    bg: 'bg-amber-400 dark:bg-amber-500',
-    border: 'border-amber-500 dark:border-amber-600',
-    text: 'text-amber-950 dark:text-slate-950',
-    pin: 'bg-amber-600/40 border-amber-700/50',
+    bg: 'bg-amber-400 dark:bg-amber-400',
+    border: 'border-amber-500 dark:border-amber-500',
+    text: 'text-slate-950',
+    pin: 'bg-amber-600/50 border-amber-700/60',
     shadow: 'shadow-amber-500/20',
   };
 
@@ -53,22 +53,6 @@ export function BovineEarTag({
       text: 'text-amber-900 dark:text-amber-200',
       pin: 'bg-amber-400/30 border-amber-500/40',
       shadow: 'shadow-amber-500/10',
-    };
-  } else if (isBornInFarm) {
-    theme = {
-      bg: 'bg-emerald-400 dark:bg-emerald-500',
-      border: 'border-emerald-500 dark:border-emerald-600',
-      text: 'text-slate-950',
-      pin: 'bg-emerald-700/40 border-emerald-800/50',
-      shadow: 'shadow-emerald-500/25',
-    };
-  } else if (isCompany) {
-    theme = {
-      bg: 'bg-teal-300 dark:bg-teal-400',
-      border: 'border-teal-400 dark:border-teal-500',
-      text: 'text-teal-950',
-      pin: 'bg-teal-600/40 border-teal-700/50',
-      shadow: 'shadow-teal-500/20',
     };
   }
 

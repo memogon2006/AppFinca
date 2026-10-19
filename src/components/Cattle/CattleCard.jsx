@@ -115,9 +115,15 @@ export function CattleCard({
             />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition truncate max-w-[140px]">
-                  {animal.name || `Bovino ${animal.tagNumber}`}
-                </span>
+                {animal.name && animal.name.trim() !== '' && animal.name.trim().toLowerCase() !== animal.tagNumber?.trim().toLowerCase() ? (
+                  <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition truncate max-w-[150px]">
+                    {animal.name}
+                  </span>
+                ) : (
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                    {animal.category || 'Bovino'}
+                  </span>
+                )}
                 {Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP'))) && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 text-[9px] font-black border border-amber-300 dark:border-amber-700">
                     TEMP
