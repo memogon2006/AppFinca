@@ -378,18 +378,25 @@ export default function App() {
   }, [currentView]);
 
   // Identificadores autorizados para consultar datos del predio (incluye dueño y trabajador)
-  const allowedUserIds = new Set([
+  const rawAllowedIds = [
     userId,
     currentUser?.id,
     currentUser?.ownerId,
-    effectiveUserId
-  ].filter(Boolean));
+    effectiveUserId,
+    'default'
+  ].filter(Boolean);
+
+  const allowedUserIds = new Set([
+    ...rawAllowedIds,
+    ...rawAllowedIds.map(id => String(id)),
+    ...rawAllowedIds.map(id => (typeof id === 'string' && !isNaN(Number(id)) ? Number(id) : null)).filter(n => n !== null)
+  ]);
 
   // Consultas reactivas filtradas por el usuario y predio activo (Multi-Tenancy)
   const cattle = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.cattle.filter(c => !c.userId || allowedUserIds.has(c.userId)).toArray();
+      return db.cattle.filter(c => !c.userId || allowedUserIds.has(c.userId) || allowedUserIds.has(String(c.userId))).toArray();
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -438,8 +445,13 @@ export default function App() {
 
   const audits = useLiveQuery(
     () => {
-      if (!userId && !currentUser?.id) return [];
-      return db.audits ? db.audits.filter(a => !a.userId || allowedUserIds.has(a.userId)).toArray() : [];
+      if (!userId && !currentUser?.id) {
+        return db.audits ? db.audits.toArray() : [];
+      }
+      return db.audits ? db.audits.filter(a => {
+        if (!a.userId || a.userId === 'default') return true;
+        return allowedUserIds.has(a.userId) || allowedUserIds.has(String(a.userId));
+      }).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];

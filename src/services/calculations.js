@@ -143,6 +143,50 @@ export function parseDateOnly(dateInput) {
 }
 
 /**
+ * Parsea el timestamp numérico (milisegundos) más preciso de un registro de arqueo/auditoría.
+ * Soporta de forma infalible: createdAt (ISO), date (DD/MM/YYYY o YYYY-MM-DD), time con AM/PM y fallback a id autoincremental.
+ */
+export function parseAuditTimestamp(audit) {
+  if (!audit) return 0;
+  
+  // 1. Prioridad: createdAt (ISO timestamp generado al guardar)
+  if (audit.createdAt) {
+    const t = new Date(audit.createdAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+
+  // 2. Fecha y hora combinada
+  if (audit.date) {
+    const baseDate = parseDateOnly(audit.date);
+    if (baseDate) {
+      // Si tiene campo time (ej: "11:13 p.m." o "23:13" o "11:13")
+      if (audit.time && typeof audit.time === 'string') {
+        const timeStr = audit.time.trim().toLowerCase();
+        const isPM = timeStr.includes('p.m.') || timeStr.includes('pm');
+        const isAM = timeStr.includes('a.m.') || timeStr.includes('am');
+        const cleanTime = timeStr.replace(/\s*[ap]\.?m\.?/i, '').trim();
+        const timeParts = cleanTime.split(':').map(Number);
+        if (timeParts.length >= 2 && !isNaN(timeParts[0]) && !isNaN(timeParts[1])) {
+          let hours = timeParts[0];
+          const mins = timeParts[1];
+          if (isPM && hours < 12) hours += 12;
+          if (isAM && hours === 12) hours = 0;
+          baseDate.setHours(hours, mins, timeParts[2] || 0, 0);
+        }
+      }
+      return baseDate.getTime();
+    }
+  }
+
+  // 3. Fallback a ID numérico autoincremental de Dexie
+  if (typeof audit.id === 'number' && audit.id > 0) {
+    return audit.id;
+  }
+
+  return 0;
+}
+
+/**
  * Calcula la diferencia exacta en días entre dos fechas (YYYY-MM-DD, DD/MM/YYYY o Date)
  */
 export function getDaysDifference(date1, date2 = new Date()) {

@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.20";
+export const CURRENT_APP_VERSION = "2.24.21";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.21",
+    date: "19/10/2026",
+    title: "📋 Reactividad y Actualización en Tiempo Real del Arqueo & Checklist de Inventario",
+    highlights: [
+      "Algoritmo Infalible de Fechas y Tiempos: Se implementó parseAuditTimestamp() para ordenar con precisión astronómica arqueos con fechas DD/MM/YYYY, ISO createdAt, horas AM/PM y fallback a IDs autoincrementales, eliminando el fallo donde un arqueo antiguo (ej. 25/09 con 20 cabezas) bloqueaba los números por evaluación NaN.",
+      "Reactividad Inmediata en el Tablero: Se conectaron eventos personalizados (ganado_audit_updated y storage) y clave activa unificada en localStorage para que cualquier conteo finalizado actualice las tarjetas de inventario y efectividad en vivo sin requerir recargar la página.",
+      "Auto-Guardado Inteligente en WhatsApp: Al presionar 'Enviar a WhatsApp' desde el resumen de arqueo, el sistema guarda de forma silenciosa e instantánea los datos en base de datos local y nube para evitar pérdida de conteos por olvido.",
+      "Historial de Arqueos y Gestor de Registros: Se incorporó en el widget del tablero un botón de 'Historial' para revisar conteos anteriores, alternar la vista entre el arqueo más reciente y los pasados, y eliminar arqueos obsoletos o de prueba con un solo clic.",
+      "Multi-Tenancy y Tipado Robusto: Se normalizaron los identificadores numéricos y en texto del usuario para que las consultas reactivas de Dexie jamás omitan auditorías de campo."
+    ]
+  },
   {
     version: "2.24.20",
     date: "19/10/2026",

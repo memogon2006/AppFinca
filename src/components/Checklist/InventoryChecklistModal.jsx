@@ -97,7 +97,7 @@ export function InventoryChecklistModal({
 
   // Fecha y hora del arqueo
   const [auditDate] = useState(() => getLocalDateString());
-  const [auditTime, setAuditTime] = useState('');
+  const [auditTime, setAuditTime] = useState(() => new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }));
 
   const searchInputRef = useRef(null);
 
@@ -509,6 +509,9 @@ export function InventoryChecklistModal({
 
   // Enviar reporte estructurado a WhatsApp
   const handleSendWhatsApp = () => {
+    // Auto-guardar silenciosamente en la base de datos para que el tablero se actualice de inmediato
+    handleSaveAuditToDatabase({ silent: true, keepOpen: true }).catch(() => null);
+
     const farm = currentUser?.farmName || 'Finca Ganadera';
     const scopeLabel = scopeType === 'batch' 
       ? `Lote ${selectedBatch}` 
@@ -562,7 +565,7 @@ export function InventoryChecklistModal({
   };
 
   // Guardar y asentar en base de datos local
-  const handleSaveAuditToDatabase = async () => {
+  const handleSaveAuditToDatabase = async ({ silent = false, keepOpen = false } = {}) => {
     try {
       // 1. Actualizar fecha de verificación, notas y pesajes si aplica
       const updates = [];
@@ -664,7 +667,7 @@ export function InventoryChecklistModal({
         missingList,
         observedList,
         extraAnimals: extraList,
-        userId: currentUser?.id,
+        userId: currentUser?.id || 'default',
         createdAt: new Date().toISOString()
       };
 
@@ -681,6 +684,9 @@ export function InventoryChecklistModal({
         operatorRole: currentUser?.role || 'admin',
         userId: currentUser?.id || 'default',
       }).catch(err => console.warn('Error registrando auditoría en bitácora:', err));
+
+      // Guardar en localStorage bajo clave activa global y clave por usuario
+      localStorage.setItem('ganado_latest_audit_active', JSON.stringify(auditRecord));
       if (currentUser?.id) {
         localStorage.setItem(`ganado_latest_audit_${currentUser.id}`, JSON.stringify(auditRecord));
         
@@ -699,18 +705,31 @@ export function InventoryChecklistModal({
         }
       }
 
+      // Notificar reactivamente a toda la aplicación para actualizar el tablero al instante
+      window.dispatchEvent(new CustomEvent('ganado_audit_updated', { detail: auditRecord }));
+
       await Promise.all(updates);
       triggerFeedback('success');
-      const weighMsg = totalWeighedCount > 0 ? ` y se registraron ${totalWeighedCount} pesajes en báscula` : '';
-      const extraMsg = metrics.extraCount > 0 ? ` (${metrics.extraCount} animal(es) extra generaron alerta en el tablero)` : '';
-      alert(`✅ ¡Arqueo de inventario guardado con éxito! Se actualizó el tablero${weighMsg}${extraMsg}.`);
       
       if (onDataChanged) {
         onDataChanged();
       }
-      onClose();
+
+      if (!silent) {
+        const weighMsg = totalWeighedCount > 0 ? ` y se registraron ${totalWeighedCount} pesajes en báscula` : '';
+        const extraMsg = metrics.extraCount > 0 ? ` (${metrics.extraCount} animal(es) extra generaron alerta en el tablero)` : '';
+        alert(`✅ ¡Arqueo de inventario guardado con éxito! Se actualizó el tablero${weighMsg}${extraMsg}.`);
+      }
+
+      if (!keepOpen) {
+        onClose();
+      }
     } catch (e) {
-      alert(`Error al guardar arqueo: ${e.message}`);
+      if (!silent) {
+        alert(`Error al guardar arqueo: ${e.message}`);
+      } else {
+        console.warn('Error al auto-guardar arqueo silencioso:', e);
+      }
     }
   };
 

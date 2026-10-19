@@ -359,9 +359,11 @@ export function QuickWeighinView({
       if (db.audits) {
         await db.audits.add(auditRecord);
       }
+      localStorage.setItem('ganado_latest_audit_active', JSON.stringify(auditRecord));
       if (currentUser?.id) {
         localStorage.setItem(`ganado_latest_audit_${currentUser.id}`, JSON.stringify(auditRecord));
       }
+      window.dispatchEvent(new CustomEvent('ganado_audit_updated', { detail: auditRecord }));
 
       // Actualizar fecha de última verificación en el ganado verificado
       const verifiedUpdates = auditMetrics.verifiedList.map(a => 

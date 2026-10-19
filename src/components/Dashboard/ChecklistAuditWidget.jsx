@@ -19,12 +19,18 @@ import {
   Plus,
   Trash2,
   Check,
-  AlertCircle
+  AlertCircle,
+  RotateCw,
+  History,
+  X,
+  Eye
 } from 'lucide-react';
-import { formatNumber, formatDate } from '../../services/calculations';
+import { formatNumber, formatDate, parseAuditTimestamp } from '../../services/calculations';
+import { db } from '../../services/db';
 
 export function ChecklistAuditWidget({ 
   latestAudit, 
+  audits = [],
   cattle = [], 
   onOpenChecklist, 
   onSelectAnimal,
@@ -32,11 +38,65 @@ export function ChecklistAuditWidget({
 }) {
   const [searchMissing, setSearchMissing] = useState('');
   const [isExpanded, setIsExpanded] = useState(true);
+  const [selectedAuditId, setSelectedAuditId] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Lista ordenada de todos los arqueos disponibles
+  const sortedAudits = useMemo(() => {
+    const list = Array.isArray(audits) ? [...audits] : [];
+    return list.sort((a, b) => {
+      const diff = parseAuditTimestamp(b) - parseAuditTimestamp(a);
+      if (diff !== 0 && !isNaN(diff)) return diff;
+      return (b.id || 0) - (a.id || 0);
+    });
+  }, [audits]);
+
+  // Arqueo actualmente activo para visualización (seleccionado o el más reciente)
+  const audit = useMemo(() => {
+    if (selectedAuditId) {
+      const match = sortedAudits.find(a => a.id === selectedAuditId);
+      if (match) return match;
+    }
+    return latestAudit || sortedAudits[0] || null;
+  }, [selectedAuditId, sortedAudits, latestAudit]);
 
   // Determinar si hay un arqueo registrado
-  const hasAudit = Boolean(latestAudit && (latestAudit.totalExpected > 0 || latestAudit.date));
+  const hasAudit = Boolean(audit && (audit.totalExpected > 0 || audit.date));
 
-  const userId = latestAudit?.userId;
+  const userId = audit?.userId;
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    window.dispatchEvent(new CustomEvent('ganado_audit_updated'));
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  const handleDeleteAudit = async (auditToDelete, e) => {
+    if (e) e.stopPropagation();
+    const dateLabel = formatDate(auditToDelete.date);
+    if (!window.confirm(`¿Deseas eliminar este registro de arqueo (${dateLabel} - ${auditToDelete.totalExpected} cabezas)?`)) return;
+    try {
+      if (db.audits && auditToDelete.id) {
+        await db.audits.delete(auditToDelete.id);
+      }
+      try {
+        const activeRaw = localStorage.getItem('ganado_latest_audit_active');
+        if (activeRaw) {
+          const parsed = JSON.parse(activeRaw);
+          if (parsed.id === auditToDelete.id || (parsed.date === auditToDelete.date && parsed.time === auditToDelete.time)) {
+            localStorage.removeItem('ganado_latest_audit_active');
+          }
+        }
+      } catch (err) {}
+      if (selectedAuditId === auditToDelete.id) {
+        setSelectedAuditId(null);
+      }
+      window.dispatchEvent(new CustomEvent('ganado_audit_updated'));
+    } catch (err) {
+      alert(`Error al eliminar arqueo: ${err.message}`);
+    }
+  };
 
   // Estado para alertas de animales extra no registrados
   const [extraAlerts, setExtraAlerts] = useState(() => {
@@ -49,13 +109,13 @@ export function ChecklistAuditWidget({
         list = [];
       }
     }
-    if (list.length === 0 && Array.isArray(latestAudit?.extraAnimals) && latestAudit.extraAnimals.length > 0) {
-      list = latestAudit.extraAnimals;
+    if (list.length === 0 && Array.isArray(audit?.extraAnimals) && audit.extraAnimals.length > 0) {
+      list = audit.extraAnimals;
     }
     return list;
   });
 
-  // Re-sincronizar cuando cambie latestAudit
+  // Re-sincronizar cuando cambie audit
   useEffect(() => {
     if (userId) {
       try {
@@ -66,10 +126,10 @@ export function ChecklistAuditWidget({
         }
       } catch (e) {}
     }
-    if (Array.isArray(latestAudit?.extraAnimals) && latestAudit.extraAnimals.length > 0) {
-      setExtraAlerts(latestAudit.extraAnimals);
+    if (Array.isArray(audit?.extraAnimals) && audit.extraAnimals.length > 0) {
+      setExtraAlerts(audit.extraAnimals);
     }
-  }, [latestAudit, userId]);
+  }, [audit, userId]);
 
   // Guardar estado de alertas
   const saveAlerts = (newList) => {
@@ -118,9 +178,9 @@ export function ChecklistAuditWidget({
 
   // Lista de faltantes del último arqueo filtrados por búsqueda
   const missingList = useMemo(() => {
-    if (!latestAudit || !Array.isArray(latestAudit.missingList)) return [];
+    if (!audit || !Array.isArray(audit.missingList)) return [];
     
-    let list = latestAudit.missingList;
+    let list = audit.missingList;
     if (searchMissing.trim()) {
       const q = searchMissing.toLowerCase().trim();
       list = list.filter(a => {
@@ -133,20 +193,20 @@ export function ChecklistAuditWidget({
       });
     }
     return list;
-  }, [latestAudit, searchMissing]);
+  }, [audit, searchMissing]);
 
   // Compartir solo la lista de faltantes por WhatsApp
   const handleShareMissingWhatsApp = () => {
-    if (!latestAudit || !latestAudit.missingList || latestAudit.missingList.length === 0) return;
+    if (!audit || !audit.missingList || audit.missingList.length === 0) return;
 
     let msg = `🚨 *ALERTA DE ANIMALES FALTANTES / EXTRAVIADOS*\n`;
-    msg += `📍 *Finca:* ${latestAudit.farmName || 'Hacienda'}\n`;
-    msg += `📅 *Fecha Arqueo:* ${latestAudit.date} ${latestAudit.time ? `(${latestAudit.time})` : ''}\n`;
-    msg += `👤 *Responsable:* ${latestAudit.inspectorName || 'Administrador'}\n`;
-    msg += `📊 *Balance:* ${latestAudit.totalMissing} faltantes de ${latestAudit.totalExpected} esperados\n\n`;
+    msg += `📍 *Finca:* ${audit.farmName || 'Hacienda'}\n`;
+    msg += `📅 *Fecha Arqueo:* ${audit.date} ${audit.time ? `(${audit.time})` : ''}\n`;
+    msg += `👤 *Responsable:* ${audit.inspectorName || 'Administrador'}\n`;
+    msg += `📊 *Balance:* ${audit.totalMissing} faltantes de ${audit.totalExpected} esperados\n\n`;
     msg += `*DETALLE DE ANIMALES POR BUSCAR:*\n`;
 
-    latestAudit.missingList.forEach((a, idx) => {
+    audit.missingList.forEach((a, idx) => {
       msg += `\n${idx + 1}. *No. ${a.tagNumber || 'S/N'}*\n`;
       msg += `   • *Dueño:* ${a.owner || 'Hacienda'}\n`;
       if (a.ironBrand) msg += `   • *Marca Hierro:* ${a.ironBrand}\n`;
@@ -196,11 +256,11 @@ export function ChecklistAuditWidget({
     );
   }
 
-  const progressPercent = latestAudit.totalExpected > 0 
-    ? Math.round((latestAudit.totalVerified / latestAudit.totalExpected) * 100) 
+  const progressPercent = audit.totalExpected > 0 
+    ? Math.round((audit.totalVerified / audit.totalExpected) * 100) 
     : 0;
 
-  const isComplete = (latestAudit.totalMissing || 0) === 0;
+  const isComplete = (audit.totalMissing || 0) === 0;
 
   return (
     <div className="custom-card p-5 sm:p-6 space-y-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-lg bg-white dark:bg-slate-900/90 transition">
@@ -223,24 +283,39 @@ export function ChecklistAuditWidget({
                   ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
                   : 'bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700'
               }`}>
-                {isComplete ? '✓ 100% Verificado' : `⚠️ ${latestAudit.totalMissing} Faltantes`}
+                {isComplete ? '✓ 100% Verificado' : `⚠️ ${audit.totalMissing} Faltantes`}
               </span>
+
+              {selectedAuditId && (
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                    👁️ Vista Histórica
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAuditId(null)}
+                    className="text-[10px] text-amber-600 dark:text-amber-400 underline font-bold hover:text-amber-500 cursor-pointer"
+                  >
+                    Volver al Más Reciente
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Metadatos del Arqueo: Fecha, Inspector, Ámbito */}
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
               <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
                 <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                Fecha: <strong>{formatDate(latestAudit.date)} {latestAudit.time && `• ${latestAudit.time}`}</strong>
+                Fecha: <strong>{formatDate(audit.date)} {audit.time && `• ${audit.time}`}</strong>
               </span>
               <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
                 <User className="w-3.5 h-3.5 text-emerald-500" />
-                Responsable: <strong>{latestAudit.inspectorName || 'Administrador'}</strong>
+                Responsable: <strong>{audit.inspectorName || 'Administrador'}</strong>
               </span>
-              {latestAudit.scopeValue && (
+              {audit.scopeValue && (
                 <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
                   <Layers className="w-3.5 h-3.5 text-teal-500" />
-                  Ámbito: <strong>{latestAudit.scopeValue}</strong>
+                  Ámbito: <strong>{audit.scopeValue}</strong>
                 </span>
               )}
             </div>
@@ -248,8 +323,29 @@ export function ChecklistAuditWidget({
         </div>
 
         {/* Acciones Rápidas del Widget */}
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-          {latestAudit.totalMissing > 0 && (
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
+          {sortedAudits.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setShowHistoryModal(true)}
+              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border border-slate-200 dark:border-slate-700"
+              title="Ver historial de arqueos y conteos pasados"
+            >
+              <History className="w-3.5 h-3.5 text-amber-500" />
+              <span>Historial ({sortedAudits.length})</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer border border-slate-200 dark:border-slate-700"
+            title="Refrescar datos del arqueo"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-amber-500' : ''}`} />
+          </button>
+
+          {audit.totalMissing > 0 && (
             <button
               onClick={handleShareMissingWhatsApp}
               className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold text-xs flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-700 transition cursor-pointer shadow-sm"
@@ -282,7 +378,7 @@ export function ChecklistAuditWidget({
             Totales en Finca / Grupo
           </span>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
-            {formatNumber(latestAudit.totalExpected || 0, 0)}
+            {formatNumber(audit.totalExpected || 0, 0)}
           </p>
           <span className="text-[10px] text-slate-400 font-medium">Cabezas registradas</span>
         </div>
@@ -293,7 +389,7 @@ export function ChecklistAuditWidget({
             Total Contados
           </span>
           <p className="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5">
-            {formatNumber(latestAudit.totalVerified || 0, 0)}
+            {formatNumber(audit.totalVerified || 0, 0)}
           </p>
           <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
             {progressPercent}% de efectividad
@@ -314,7 +410,7 @@ export function ChecklistAuditWidget({
           <p className={`text-2xl sm:text-3xl font-black tabular-nums mt-0.5 ${
             isComplete ? 'text-slate-700 dark:text-slate-300' : 'text-rose-600 dark:text-rose-400'
           }`}>
-            {formatNumber(latestAudit.totalMissing || 0, 0)}
+            {formatNumber(audit.totalMissing || 0, 0)}
           </p>
           <span className={`text-[10px] font-bold ${
             isComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
@@ -329,10 +425,10 @@ export function ChecklistAuditWidget({
             Infiltrados / Novedades
           </span>
           <p className="text-2xl sm:text-3xl font-black text-amber-700 dark:text-amber-400 tabular-nums mt-0.5">
-            {(latestAudit.totalInfiltrated || 0) + (latestAudit.observedList?.length || 0)}
+            {(audit.totalInfiltrated || 0) + (audit.observedList?.length || 0)}
           </p>
           <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-            {latestAudit.totalInfiltrated || 0} infiltrados • {latestAudit.observedList?.length || 0} obs.
+            {audit.totalInfiltrated || 0} infiltrados • {audit.observedList?.length || 0} obs.
           </span>
         </div>
 
@@ -341,7 +437,7 @@ export function ChecklistAuditWidget({
       {/* ========================================================================= */}
       {/* SECCIÓN DE ANIMALES FALTANTES (TABLA / TARJETAS DETALLADAS) */}
       {/* ========================================================================= */}
-      {latestAudit.totalMissing > 0 ? (
+      {audit.totalMissing > 0 ? (
         <div className="p-4 sm:p-5 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-800/80 space-y-3.5">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -351,7 +447,7 @@ export function ChecklistAuditWidget({
               </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-black text-rose-950 dark:text-rose-200 uppercase tracking-wide">
-                  Animales Faltantes por Ubicar ({latestAudit.totalMissing}):
+                  Animales Faltantes por Ubicar ({audit.totalMissing}):
                 </h4>
                 <p className="text-[11px] text-rose-800 dark:text-rose-300">
                   Desglose con Número de Arete, Dueño, Marca de Hierro y Color:
@@ -360,7 +456,7 @@ export function ChecklistAuditWidget({
             </div>
 
             {/* Buscador de faltantes */}
-            {latestAudit.missingList && latestAudit.missingList.length > 4 && (
+            {audit.missingList && audit.missingList.length > 4 && (
               <div className="relative max-w-xs w-full">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -453,7 +549,7 @@ export function ChecklistAuditWidget({
                 ¡Inventario 100% Completo! Cero Animales Faltantes
               </h4>
               <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
-                Todas las {latestAudit.totalExpected} cabezas del grupo fueron verificadas físicamente en campo.
+                Todas las {audit.totalExpected} cabezas del grupo fueron verificadas físicamente en campo.
               </p>
             </div>
           </div>
@@ -569,6 +665,152 @@ export function ChecklistAuditWidget({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL DE HISTORIAL DE ARQUEOS Y AUDITORÍAS */}
+      {/* ========================================================================= */}
+      {showHistoryModal && (
+        <div 
+          className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={() => setShowHistoryModal(false)}
+        >
+          <div 
+            className="w-full max-w-xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-5 sm:p-6 space-y-4 max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Cabecera del modal */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                    Historial de Arqueos & Checklist
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {sortedAudits.length} conteo(s) registrado(s) en la base de datos
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Listado de Arqueos Históricos */}
+            <div className="overflow-y-auto space-y-2.5 flex-1 pr-1">
+              {sortedAudits.map((item, idx) => {
+                const isLatest = idx === 0;
+                const isViewing = (audit?.id && item.id === audit.id) || (!audit?.id && isLatest);
+                return (
+                  <div
+                    key={item.id || idx}
+                    className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
+                      isViewing
+                        ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                            📅 {formatDate(item.date)} {item.time && `• ${item.time}`}
+                          </span>
+                          {isLatest && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                              ⭐ Más Reciente
+                            </span>
+                          )}
+                          {isViewing && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              👁️ Activo en Pantalla
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                          <span>👤 {item.inspectorName || 'Administrador'}</span>
+                          <span>•</span>
+                          <span>📍 {item.scopeValue || 'Hato General'}</span>
+                        </div>
+
+                        {/* Mini Métricas del Arqueo */}
+                        <div className="flex items-center gap-2 pt-1 text-xs font-bold">
+                          <span className="text-slate-700 dark:text-slate-300">
+                            Total: <strong>{item.totalExpected || 0}</strong>
+                          </span>
+                          <span>•</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">
+                            Contados: <strong>{item.totalVerified || 0}</strong>
+                          </span>
+                          <span>•</span>
+                          <span className={(item.totalMissing || 0) > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500'}>
+                            Faltantes: <strong>{item.totalMissing || 0}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedAuditId(item.id || null);
+                            setShowHistoryModal(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition cursor-pointer ${
+                            isViewing
+                              ? 'bg-amber-500 text-slate-950'
+                              : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white'
+                          }`}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>{isViewing ? 'Viendo' : 'Ver'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteAudit(item, e)}
+                          className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/60 transition cursor-pointer"
+                          title="Eliminar este arqueo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pie del modal */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAuditId(null);
+                  setShowHistoryModal(false);
+                }}
+                className="text-xs text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
+              >
+                Volver siempre al Más Reciente
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -37,7 +37,7 @@ import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { RainfallWidget } from './RainfallWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
-import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString, getDaysDifference } from '../../services/calculations';
+import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString, getDaysDifference, parseAuditTimestamp } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
@@ -238,22 +238,61 @@ export function DashboardView({
   });
   const avgGdp = gdpValidAnimals > 0 ? (totalGdpSum / gdpValidAnimals) : 0;
 
-  // Obtener el arqueo / checklist más reciente
+  // Escuchar eventos de actualización de arqueos / checklist en tiempo real
+  const [auditTick, setAuditTick] = React.useState(0);
+
+  React.useEffect(() => {
+    const handleAuditUpdate = () => {
+      setAuditTick(t => t + 1);
+    };
+    window.addEventListener('ganado_audit_updated', handleAuditUpdate);
+    window.addEventListener('storage', handleAuditUpdate);
+    return () => {
+      window.removeEventListener('ganado_audit_updated', handleAuditUpdate);
+      window.removeEventListener('storage', handleAuditUpdate);
+    };
+  }, []);
+
+  // Obtener el arqueo / checklist más reciente de forma 100% robusta
   const latestAudit = React.useMemo(() => {
-    if (audits && audits.length > 0) {
-      const sorted = [...audits].sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-      return sorted[0];
+    const allCandidates = [];
+
+    // 1. Recoger todos los arqueos de Dexie (audits prop)
+    if (Array.isArray(audits) && audits.length > 0) {
+      allCandidates.push(...audits);
     }
-    // Fallback de localStorage
+
+    // 2. Recoger arqueos de localStorage (por si Dexie no los indexó o está en fallback offline)
     try {
+      const activeRaw = localStorage.getItem('ganado_latest_audit_active');
+      if (activeRaw) {
+        try { allCandidates.push(JSON.parse(activeRaw)); } catch (e) {}
+      }
+
       const keys = Object.keys(localStorage).filter(k => k.startsWith('ganado_latest_audit_'));
-      if (keys.length > 0) {
-        const raw = localStorage.getItem(keys[0]);
-        if (raw) return JSON.parse(raw);
+      for (const k of keys) {
+        try {
+          const raw = localStorage.getItem(k);
+          if (raw) allCandidates.push(JSON.parse(raw));
+        } catch (e) {}
       }
     } catch (e) {}
-    return null;
-  }, [audits]);
+
+    // Filtrar elementos válidos con datos
+    const valid = allCandidates.filter(a => a && (a.totalExpected > 0 || a.date || a.createdAt));
+    if (valid.length === 0) return null;
+
+    // Ordenar de más reciente a más antiguo por timestamp infalible y fallback a ID
+    valid.sort((a, b) => {
+      const tB = parseAuditTimestamp(b);
+      const tA = parseAuditTimestamp(a);
+      const diff = tB - tA;
+      if (diff !== 0 && !isNaN(diff)) return diff;
+      return (b.id || 0) - (a.id || 0);
+    });
+
+    return valid[0];
+  }, [audits, auditTick]);
 
   return (
     <div className="space-y-6">
@@ -620,6 +659,7 @@ export function DashboardView({
       <div className={`grid grid-cols-1 ${isModuleActive(MODULE_KEYS.RAINFALL) ? 'md:grid-cols-2' : ''} gap-4 sm:gap-6`}>
         <ChecklistAuditWidget
           latestAudit={latestAudit}
+          audits={audits}
           cattle={cattle}
           onOpenChecklist={onOpenChecklist}
           onSelectAnimal={onSelectAnimal}
