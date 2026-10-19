@@ -47,19 +47,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 antialiased font-sans selection:bg-emerald-500 selection:text-white min-h-screen">
-    <div id="root" class="min-h-screen flex flex-col">
-      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #020617; color: #ffffff; font-family: sans-serif; gap: 16px;">
-        <div style="width: 72px; height: 72px; border-radius: 20px; background-color: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px;">
-          <img src="/icon-512.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 18px;" />
-        </div>
-        <div style="text-align: center;">
-          <h2 style="font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 4px 0;">INVENTARIO GANADERO</h2>
-          <p id="splash-status" style="font-size: 12px; color: #94a3b8; margin: 0;">Iniciando sistema seguro...</p>
-        </div>
-      </div>
-    </div>
     <script>
       // 1. Función de limpieza total y auto-recuperación ante desfases de versión
       window.limpiarYEntrar = function() {
@@ -82,8 +69,8 @@
           }
         } catch(e) {}
         setTimeout(function() {
-          window.location.href = window.location.origin + window.location.pathname + '?_v=' + Date.now();
-        }, 300);
+          window.location.replace(window.location.origin + window.location.pathname + '?_reset=' + Date.now());
+        }, 250);
       };
 
       // 2. Capturar errores globales antes de que React cargue para auto-recuperar
@@ -98,31 +85,38 @@
         }
       });
     </script>
+  </head>
+  <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 antialiased font-sans selection:bg-emerald-500 selection:text-white min-h-screen">
+    <div id="root" class="min-h-screen flex flex-col">
+      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #020617; color: #ffffff; font-family: sans-serif; gap: 16px;">
+        <div style="width: 72px; height: 72px; border-radius: 20px; background-color: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px;">
+          <img src="/icon-512.png" alt="Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 18px;" />
+        </div>
+        <div style="text-align: center;">
+          <h2 style="font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px 0;">INVENTARIO GANADERO</h2>
+          <div id="splash-status" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <p style="font-size: 12px; color: #94a3b8; margin: 0;">Iniciando sistema seguro...</p>
+            <button onclick="window.limpiarYEntrar()" style="background: #10b981; color: #020617; font-weight: 800; font-size: 13px; padding: 8px 20px; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+              <span>🚀 Entrar a la Finca</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
       (function() {
-        // Asistencia automática tras 4.5 segundos si la app aún no ha montado
+        // Auto-reparación tras 3.5 segundos si la app aún no ha montado
         setTimeout(function() {
           var rootEl = document.getElementById('root');
           var statusEl = document.getElementById('splash-status');
           if (statusEl && rootEl && rootEl.querySelector('#splash-status')) {
-            statusEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:8px;">' +
-              '<span style="color:#34d399;font-weight:600;font-size:12px;">⚡ Optimizando carga...</span>' +
-              '<button onclick="window.limpiarYEntrar()" style="background:#10b981;color:#020617;font-weight:800;font-size:13px;padding:8px 18px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.35);display:flex;align-items:center;gap:6px;">' +
-              '<span>🔄 Entrar a la Finca</span>' +
-              '</button>' +
-              '</div>';
-
             if (!sessionStorage.getItem('ganado_boot_autoreload')) {
               sessionStorage.setItem('ganado_boot_autoreload', 'true');
-              setTimeout(function() {
-                if (rootEl.querySelector('#splash-status')) {
-                  window.limpiarYEntrar();
-                }
-              }, 2000);
+              window.limpiarYEntrar();
             }
           }
-        }, 4500);
+        }, 3500);
       })();
     </script>
   </body>

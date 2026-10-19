@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.22";
+export const CURRENT_APP_VERSION = "2.24.23";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.23",
+    date: "19/10/2026",
+    title: "🚀 Arranque Instantáneo: Botón de Entrada Inmediata y Resistencia de Red",
+    highlights: [
+      "Botón Directo en Pantalla de Inicio: Acceso inmediato con un solo toque que purga automáticamente cualquier conflicto de caché o versión anterior.",
+      "Plantilla de Service Worker Fortalecida: Eliminación de límites estrictos de tiempo en red para permitir navegación fluida en conexiones celulares y satelitales."
+    ]
+  },
   {
     version: "2.24.22",
     date: "19/10/2026",
