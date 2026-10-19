@@ -33,6 +33,7 @@ import {
 import { db, logActivity } from '../../services/db';
 import { triggerFeedback } from '../../services/soundService';
 import { formatNumber, getLocalDateString } from '../../services/calculations';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 const QUICK_NOTES = [
   { id: 'bichera', label: '🐛 Bichera / Gusanera', color: 'bg-rose-100 text-rose-800 border-rose-300' },
@@ -53,6 +54,7 @@ export function InventoryChecklistModal({
   onDataChanged,
   zIndex = 'z-[60]'
 }) {
+  useScrollLock(isOpen);
   // Estados de vista: 'setup' -> 'counting' -> 'summary' -> 'print'
   const [viewStep, setViewStep] = useState('setup');
 
@@ -116,7 +118,6 @@ export function InventoryChecklistModal({
     };
 
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
       setInspectorName(currentUser?.name || 'Administrador');
       setAuditTime(new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }));
@@ -138,7 +139,6 @@ export function InventoryChecklistModal({
     }
 
     return () => {
-      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose, currentUser, activeNoteAnimal, showAddInfiltratedModal, showAddExtraModal]);
@@ -718,10 +718,19 @@ export function InventoryChecklistModal({
 
   return (
     <div 
-      className={`fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto`}
+      className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
       onClick={onClose}
     >
       <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
         className="relative w-full max-w-4xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[94vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -764,7 +773,11 @@ export function InventoryChecklistModal({
         {/* ========================================================================= */}
         {/* CUERPO DEL MODAL */}
         {/* ========================================================================= */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5"
+        >
           
           {/* --------------------------------------------------------------------- */}
           {/* PASO 1: SETUP / CONFIGURACIÓN DE ÁMBITO */}

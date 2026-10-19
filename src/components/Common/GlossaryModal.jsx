@@ -32,8 +32,10 @@ import {
   Wifi,
   Sun
 } from 'lucide-react';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
+  useScrollLock(isOpen);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
@@ -394,8 +396,21 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
   if (!isOpen) return null;
 
   return (
-    <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>
-      <div className="relative w-full max-w-3xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="relative w-full max-w-3xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+      >
         
         {/* Header */}
         <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
@@ -465,7 +480,11 @@ export function GlossaryModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
         </div>
 
         {/* Lista de Conceptos Explicados */}
-        <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 text-slate-800 dark:text-slate-200">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 text-slate-800 dark:text-slate-200"
+        >
           
           <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30 text-xs text-emerald-950 dark:text-emerald-200 flex items-start gap-2.5">
             <Lightbulb className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />

@@ -40,6 +40,7 @@ import { formatCurrency, formatNumber, formatDate, calculateFinancials, calculat
 import { useAuth } from '../../context/AuthContext';
 import { EXPENSE_CATEGORIES } from './ExpenseModal';
 import { INCOME_CATEGORIES } from './IncomeModal';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 const CATEGORY_COLORS = {
   nomina: '#3b82f6',       // Blue
@@ -70,6 +71,7 @@ export function MonthAccountingDetailModal({
   onSelectAnimal,
   zIndex = 'z-[60]'
 }) {
+  useScrollLock(isOpen);
   const { currentUser } = useAuth();
   const monthPrefix = monthData?.monthPrefix || '';
   const monthTitle = monthData?.fullLabel || monthData?.monthName || 'Detalle del Mes';
@@ -390,8 +392,21 @@ export function MonthAccountingDetailModal({
   if (!isOpen || !monthData) return null;
 
   return (
-    <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-fadeIn`}>
-      <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden my-auto">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-fadeIn`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden my-auto"
+      >
         
         {/* ========================================================================= */}
         {/* HEADER DEL MODAL                                                          */}
@@ -622,7 +637,11 @@ export function MonthAccountingDetailModal({
         {/* ========================================================================= */}
         {/* CONTENIDO DE LA PESTAÑA SELECCIONADA                                      */}
         {/* ========================================================================= */}
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4"
+        >
 
           {/* ------------------------------------------------------------------------- */}
           {/* TAB 1: RESUMEN & GRÁFICAS DEL MES                                         */}

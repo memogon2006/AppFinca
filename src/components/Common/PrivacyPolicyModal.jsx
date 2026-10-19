@@ -19,6 +19,7 @@ import {
   Sparkles,
   Layers
 } from 'lucide-react';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export function PrivacyPolicyModal({ 
   isOpen, 
@@ -27,6 +28,7 @@ export function PrivacyPolicyModal({
   defaultTab = 'terms', // 'terms' | 'privacy' | 'all'
   zIndex = 'z-[70]' 
 }) {
+  useScrollLock(isOpen);
   if (!isOpen) return null;
 
   const [activeMainTab, setActiveMainTab] = useState(defaultTab); // 'terms' | 'privacy' | 'all'
@@ -60,8 +62,19 @@ export function PrivacyPolicyModal({
   };
 
   return (
-    <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in`}>
+    <div 
+      className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
       <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
         className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden text-slate-800 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
@@ -211,7 +224,11 @@ export function PrivacyPolicyModal({
         {/* ========================================================================= */}
         {/* CUERPO DEL DOCUMENTO CON SCROLL                                           */}
         {/* ========================================================================= */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300"
+        >
 
           {/* ----------------------------------------------------------------------- */}
           {/* SECCIÓN A: TÉRMINOS Y CONDICIONES DE USO                                */}

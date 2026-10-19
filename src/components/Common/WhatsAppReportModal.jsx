@@ -19,6 +19,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials } from '../../services/calculations';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 const STORAGE_PHONE_KEY = 'finca_whatsapp_default_phone';
 const STORAGE_CONTACTS_KEY = 'finca_whatsapp_quick_contacts';
@@ -31,6 +32,7 @@ export function WhatsAppReportModal({
   farmName = 'Hacienda Ganadera',
   zIndex = 'z-[70]'
 }) {
+  useScrollLock(isOpen);
   // Estado del tipo de reporte
   const [reportType, setReportType] = useState('inventory'); // 'inventory' | 'readyToSell' | 'weighing' | 'owners'
   
@@ -590,8 +592,21 @@ export function WhatsAppReportModal({
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 bg-slate-950/80 backdrop-blur-sm ${zIndex} flex items-center justify-center p-3 sm:p-5 overflow-y-auto`}>
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in my-auto">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 bg-slate-950/80 backdrop-blur-sm ${zIndex} flex items-center justify-center p-3 sm:p-5 overflow-y-auto`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in my-auto"
+      >
         
         {/* Cabecera del Modal */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0 shadow-md">
@@ -621,7 +636,11 @@ export function WhatsAppReportModal({
         </div>
 
         {/* Cuerpo con 2 Columnas (Opciones & Vista Previa) */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5"
+        >
           
           {/* COLUMNA IZQUIERDA: Configuración y Filtros (5 cols) */}
           <div className="lg:col-span-5 space-y-4">

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
 import { formatCurrency, formatDate, getLocalDateString } from '../../services/calculations';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 const VACCINE_OPTIONS = [
   {
@@ -105,6 +106,7 @@ export function VaccinationRecordModal({
   onSaveVaccination,
   zIndex = 'z-[60]'
 }) {
+  useScrollLock(isOpen);
   const todayStr = useMemo(() => getLocalDateString(new Date()), []);
 
   // Estado del Formulario: Multi-Selección de Vacunas (Array)
@@ -375,8 +377,21 @@ export function VaccinationRecordModal({
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn`}>
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto"
+      >
         
         {/* Encabezado */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 shrink-0">
@@ -402,7 +417,12 @@ export function VaccinationRecordModal({
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+        <form 
+          onSubmit={handleSubmit} 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1"
+        >
 
           {/* 1. SELECCIÓN MÚLTIPLE DE VACUNAS / BIOLÓGICOS */}
           <div className="space-y-2">

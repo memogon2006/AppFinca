@@ -17,6 +17,7 @@ import {
   Plus
 } from 'lucide-react';
 import { formatDate } from '../../services/calculations';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export function VaccinationCensusModal({
   isOpen,
@@ -28,6 +29,7 @@ export function VaccinationCensusModal({
   onOpenVaccinationModal,
   zIndex = 'z-[60]'
 }) {
+  useScrollLock(isOpen);
   const activeCattle = useMemo(() => cattle.filter(c => c.status === 'Activo'), [cattle]);
   const totalActive = activeCattle.length;
 
@@ -121,8 +123,21 @@ export function VaccinationCensusModal({
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn`}>
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto"
+      >
         
         {/* Encabezado */}
         <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 print:hidden">
@@ -162,7 +177,11 @@ export function VaccinationCensusModal({
         </div>
 
         {/* Contenido imprimible */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 print:p-0 print:space-y-4">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-6 overflow-y-auto space-y-6 print:p-0 print:space-y-4"
+        >
 
           {/* Membrete Oficial del Reporte */}
           <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3">

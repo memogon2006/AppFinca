@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import { 
   ShieldAlert, 
   Lock, 
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export function ForcePasswordChangeModal({ isOpen }) {
+  useScrollLock(isOpen);
   const { currentUser, forceSetNewPassword, logout } = useAuth();
 
   const [newPassword, setNewPassword] = useState('');
@@ -52,8 +54,21 @@ export function ForcePasswordChangeModal({ isOpen }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-300/80 dark:border-amber-500/40 rounded-3xl shadow-2xl shadow-amber-500/10 overflow-hidden flex flex-col my-auto">
+    <div 
+      className="modal-backdrop-root fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fade-in"
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-300/80 dark:border-amber-500/40 rounded-3xl shadow-2xl shadow-amber-500/10 overflow-hidden flex flex-col my-auto"
+      >
         
         {/* Banner Superior Decorativo */}
         <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-600 p-1.5" />
@@ -79,7 +94,12 @@ export function ForcePasswordChangeModal({ isOpen }) {
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-5">
+        <form 
+          onSubmit={handleSubmit} 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-6 sm:p-7 space-y-5 overflow-y-auto"
+        >
           
           <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5">
             <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />

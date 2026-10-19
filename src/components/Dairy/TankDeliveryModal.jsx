@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Milk, X, CheckCircle2, DollarSign, Truck, AlertTriangle, Sparkles, Building2 } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
 import { formatCurrency, getLocalDateString } from '../../services/calculations';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export function TankDeliveryModal({
   isOpen,
@@ -12,6 +13,7 @@ export function TankDeliveryModal({
   defaultPricePerLiter = 2100,
   defaultDate = getLocalDateString()
 }) {
+  useScrollLock(isOpen);
   const [date, setDate] = useState(defaultDate);
   const [totalLiters, setTotalLiters] = useState('');
   const [pricePerLiter, setPricePerLiter] = useState(() => String(defaultPricePerLiter || 2100)); // Precio base orientativo común
@@ -88,8 +90,21 @@ export function TankDeliveryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700/80 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div 
+      className="modal-backdrop-root fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="bg-slate-900 border border-slate-700/80 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+      >
         
         {/* Cabecera */}
         <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
@@ -116,7 +131,12 @@ export function TankDeliveryModal({
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+        <form 
+          onSubmit={handleSubmit} 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4"
+        >
           
           {/* Fecha y Destino */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

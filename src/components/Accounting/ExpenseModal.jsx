@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, getLocalDateString } from '../../services/calculations';
 import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export const EXPENSE_CATEGORIES = [
   { id: 'nomina', label: 'Nómina & Mano de Obra', icon: '🤠', defaultType: 'Fijo', examples: 'Sueldos, jornales, bonificaciones, seguridad social' },
@@ -34,6 +35,7 @@ export function ExpenseModal({
   expense = null, 
   zIndex = "z-[60]" 
 }) {
+  useScrollLock(isOpen);
   const [formData, setFormData] = useState({
     date: getLocalDateString(),
     type: 'Variable',
@@ -163,8 +165,21 @@ export function ExpenseModal({
   };
 
   return (
-    <div className={`fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto animate-fade-in`}>
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto animate-fade-in`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+      >
         
         {/* Cabecera del Modal */}
         <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-rose-50/50 dark:bg-rose-950/20">
@@ -190,7 +205,12 @@ export function ExpenseModal({
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
+        <form 
+          onSubmit={handleSubmit} 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1"
+        >
           
           {/* BANNER DE BORRADOR RESTAURADO */}
           {isDraftRestored && !expense && (

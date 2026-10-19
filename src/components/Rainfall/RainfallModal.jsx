@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { getLocalDateString } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 const RAIN_INTENSITIES = [
   { id: 'Llovizna', label: 'Llovizna', icon: '🌦️', desc: '< 5 mm (Ligera)' },
@@ -29,6 +30,7 @@ export function RainfallModal({
   editingRecord = null,
   showToast
 }) {
+  useScrollLock(isOpen);
   const [date, setDate] = useState(getLocalDateString());
   const [amountMm, setAmountMm] = useState('');
   const [intensity, setIntensity] = useState('Normal');
@@ -102,8 +104,19 @@ export function RainfallModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+    <div 
+      className="modal-backdrop-root fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150 overflow-y-auto"
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
       <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
         className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -133,7 +146,12 @@ export function RainfallModal({
         </div>
 
         {/* Contenido / Formulario */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
+        <form 
+          onSubmit={handleSubmit} 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1"
+        >
           
           {/* Fecha */}
           <div>

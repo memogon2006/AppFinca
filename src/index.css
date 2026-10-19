@@ -6,6 +6,7 @@
   html {
     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     overflow-x: clip;
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -108,5 +109,28 @@
 .group:hover .animate-marquee-ticker,
 .animate-marquee-ticker:hover {
   animation-play-state: paused;
+}
+
+/* ========================================================================= */
+/* BLOQUEO ESTRICTO DE SCROLL DE FONDO & CONTENCIÓN PARA MODALES Y PANELES   */
+/* ========================================================================= */
+html.modal-scroll-locked,
+body.modal-scroll-locked {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: none;
+}
+
+/* Permitir scroll táctil independiente y contención estricta en modales y paneles */
+html.modal-scroll-locked .modal-backdrop-root,
+html.modal-scroll-locked [data-modal-container],
+html.modal-scroll-locked [data-modal-scrollable],
+html.modal-scroll-locked .overflow-y-auto,
+html.modal-scroll-locked .overflow-auto,
+html.modal-scroll-locked aside {
+  touch-action: pan-y !important;
+  overscroll-behavior: contain !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch;
 }
 

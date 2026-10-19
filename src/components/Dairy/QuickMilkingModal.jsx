@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Milk, X, Sparkles, CheckCircle2, ChevronRight, ChevronLeft, Search, Plus, Minus, ArrowUpRight, ArrowDownRight, AlertCircle } from 'lucide-react';
 import { triggerFeedback } from '../../services/soundService';
 import { getLocalDateString } from '../../services/calculations';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export function QuickMilkingModal({
   isOpen,
@@ -11,6 +12,7 @@ export function QuickMilkingModal({
   onSaveBatch,
   defaultDate = getLocalDateString()
 }) {
+  useScrollLock(isOpen);
   const [date, setDate] = useState(defaultDate);
   const [session, setSession] = useState('AM'); // 'AM', 'PM', 'AM_PM'
   const [searchTerm, setSearchTerm] = useState('');
@@ -152,8 +154,21 @@ export function QuickMilkingModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700/80 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div 
+      className="modal-backdrop-root fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in"
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="bg-slate-900 border border-slate-700/80 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+      >
         
         {/* Cabecera del Modal */}
         <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
@@ -223,7 +238,11 @@ export function QuickMilkingModal({
         </div>
 
         {/* Cuerpo: Selector y Ficha de Vaca Activa en Sala */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4"
+        >
           
           {/* Navegador de Vacas & Tarjeta Principal */}
           {filteredCows.length === 0 ? (

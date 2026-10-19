@@ -23,6 +23,7 @@ import {
 import { formatCurrency, formatNumber, formatDate, calculateFinancials, getLocalDateString } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
 import * as XLSX from 'xlsx-js-style';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export function OwnerFinancialDetailModal({
   isOpen,
@@ -33,6 +34,7 @@ export function OwnerFinancialDetailModal({
   onSelectAnimal,
   zIndex = 'z-[60]'
 }) {
+  useScrollLock(isOpen);
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'sold' | 'all'
   const [searchTerm, setSearchTerm] = useState('');
   const [batchFilter, setBatchFilter] = useState('');
@@ -272,8 +274,21 @@ export function OwnerFinancialDetailModal({
   if (!isOpen || !ownerName) return null;
 
   return (
-    <div className={`fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 ${zIndex} animate-fade-in`}>
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 ${zIndex} animate-fade-in overflow-y-auto`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up"
+      >
         
         {/* Header Principal */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-900 text-white flex items-center justify-between gap-4">
@@ -500,7 +515,11 @@ export function OwnerFinancialDetailModal({
         </div>
 
         {/* Contenido de Tablas Detalladas */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4"
+        >
 
           {/* TAB 1: GANADO ACTIVO */}
           {activeTab === 'active' && (

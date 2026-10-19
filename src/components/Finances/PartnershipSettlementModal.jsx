@@ -25,6 +25,7 @@ import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, getLo
 import { getFarmMeatPrice, setFarmMeatPrice } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export function PartnershipSettlementModal({ 
   isOpen, 
@@ -34,6 +35,7 @@ export function PartnershipSettlementModal({
   onConfirmBatchSale,
   zIndex = 'z-[60]'
 }) {
+  useScrollLock(isOpen);
   const { currentUser } = useAuth();
 
   const activeCattle = useMemo(() => {
@@ -468,8 +470,21 @@ export function PartnershipSettlementModal({
   if (!isOpen) return null;
 
   return (
-    <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>
-      <div className="relative w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        data-modal-container="true"
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="relative w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+      >
         
         {/* Header del Modal */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 flex-shrink-0">
@@ -528,7 +543,11 @@ export function PartnershipSettlementModal({
         </div>
 
         {/* Contenido Dinámico según Pestaña */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
+        <div 
+          data-modal-scrollable="true"
+          style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+          className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5"
+        >
           
           {/* ========================================================================= */}
           {/* PESTAÑA 1: SELECCIÓN DE BOVINOS & ASIGNACIÓN DE MODALIDAD                 */}

@@ -1,5 +1,5 @@
 // Service Worker Auto-generado para Modo Offline 100% Blindado
-const CACHE_NAME = 'ganado-app-cache-v2.24.14';
+const CACHE_NAME = 'ganado-app-cache-v2.24.15';
 
 // Todos los recursos estáticos y paquetes JS/CSS compilados precacheados
 const STATIC_ASSETS = [
@@ -13,8 +13,8 @@ const STATIC_ASSETS = [
   "/apple-touch-icon.png",
   "/favicon.png",
   "/favicon.ico",
-  "/assets/index-CoaXpyJw.js",
-  "/assets/index-D3WXbxEq.css",
+  "/assets/index-CGfxWmwU.css",
+  "/assets/index-CWsneJ7K.js",
   "/assets/vendor-charts-DljG-sht.js",
   "/assets/vendor-db-DLsAzhYJ.js",
   "/assets/vendor-export-BKvfhyNn.js",

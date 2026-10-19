@@ -29,6 +29,7 @@ import {
 import { formatDate, formatNumber, formatCurrency, BOVINE_GESTATION_DAYS, calculateReproduction } from '../../services/calculations';
 import { triggerFeedback } from '../../services/soundService';
 import { useAuth } from '../../context/AuthContext';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import {
   SANITARY_CYCLES_INFO,
   MONTH_NAMES,
@@ -501,11 +502,34 @@ export function FarmCalendarModal({
     });
   }, [viewYear, vaccinations]);
 
+  // Bloqueo y contención estricta de scroll
+  useScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (
-    <div className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}>
-      <div className="relative w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
+    <div 
+      className={`modal-backdrop-root fixed inset-0 ${zIndex} flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto`}
+      style={{
+        overscrollBehavior: 'contain',
+        overscrollBehaviorY: 'contain'
+      }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault();
+      }}
+    >
+      <div 
+        className="relative w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[94vh]"
+        style={{
+          overscrollBehavior: 'contain',
+          overscrollBehaviorY: 'contain'
+        }}
+        data-modal-container="true"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Cabecera del Calendario */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
@@ -649,7 +673,15 @@ export function FarmCalendarModal({
         </div>
 
         {/* Cuerpo Principal del Calendario (Grid Dividido: Calendario + Agenda del Día) */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div 
+          className="p-4 sm:p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6"
+          style={{
+            overscrollBehavior: 'contain',
+            overscrollBehaviorY: 'contain',
+            WebkitOverflowScrolling: 'touch'
+          }}
+          data-modal-scrollable="true"
+        >
           
           {/* COLUMNA 1 (lg:col-span-7): Cuadrícula del Calendario Mensual */}
           <div className="lg:col-span-7 space-y-3">

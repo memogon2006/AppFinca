@@ -37,6 +37,7 @@ import { CURRENT_APP_VERSION } from '../services/versionService';
 import { useActiveModules, MODULE_KEYS } from '../services/moduleService';
 import { ModuleSelectorModal } from './Common/ModuleSelectorModal';
 import { SyncStatusBadge } from './Common/SyncStatusBadge';
+import { useScrollLock } from '../hooks/useScrollLock';
 
 const SUPERADMIN_EMAIL = 'criaderosantateresa21@gmail.com';
 
@@ -75,35 +76,8 @@ export function Navbar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSidebarOpen]);
 
-  // Limpieza inicial de cualquier estilo residual en document.body
-  useEffect(() => {
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    document.body.style.width = '';
-    document.body.style.overflowY = '';
-    document.body.style.paddingRight = '';
-    document.documentElement.style.overflowY = '';
-    document.documentElement.style.overscrollBehavior = '';
-  }, []);
-
-  // Bloqueo y restauración limpia del scroll del body cuando el menú lateral está abierto
-  useEffect(() => {
-    if (isSidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-    };
-  }, [isSidebarOpen]);
+  // Bloqueo y restauración limpia de scroll de la página de fondo al abrir el menú lateral
+  useScrollLock(isSidebarOpen);
 
   // Agrupación estructurada de módulos con filtrado dinámico según la orientación de la finca
   const rawNavigationGroups = [
@@ -374,6 +348,8 @@ export function Navbar({
           overscrollBehavior: 'contain',
           overscrollBehaviorY: 'contain'
         }}
+        data-modal-container="true"
+        data-modal-scrollable="true"
       >
         {/* Cabecera del Sidebar */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-slate-950/40 shrink-0">

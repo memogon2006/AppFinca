@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.14";
+export const CURRENT_APP_VERSION = "2.24.15";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.15",
+    date: "18/10/2026",
+    title: "🛡️ Bloqueo Total del Scroll de Fondo y Contención de Desplazamiento",
+    highlights: [
+      "Inmovilización del Fondo: Al abrir cualquier ventana modal, ficha o panel secundario, el fondo de la página queda 100% inmóvil sin permitir fugas de scroll.",
+      "Scroll Independiente sin Traspaso: Al llegar al tope superior o final inferior del contenido de un modal o panel, el scroll se detiene inmediatamente y no arrastra la página trasera.",
+      "Restauración Milimétrica: Al cerrar la ventana o panel, la página principal regresa a su posición exacta anterior sin saltos, parpadeos ni desplazamiento no deseado.",
+      "Soporte para Múltiples Modales y Menú Lateral: Conteo de bloqueos inteligente que mantiene la protección activa si se abren ventanas anidadas o el menú lateral de navegación."
+    ]
+  },
   {
     version: "2.24.14",
     date: "16/10/2026",
