@@ -57,6 +57,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { SettlementDetailCard, getSettlementCardPropsFromAnimal } from '../Finances/SettlementDetailCard';
+import { BovineEarTag } from './BovineEarTag';
 
 export function CattleDetailModal({ 
   isOpen, 
@@ -249,7 +250,19 @@ export function CattleDetailModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${animal.tagNumber} ${animal.name ? `• ${animal.name}` : ''}`}
+      title={
+        <div className="flex items-center gap-2.5">
+          <BovineEarTag 
+            tagNumber={animal.tagNumber}
+            isTemporary={Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP')))}
+            isBornInFarm={animal.origin === 'Nacido en finca' || animal.entryType === 'Nacimiento'}
+            isCompany={animal.entryType === 'En Compañía' || animal.exitType === 'En Compañía' || Boolean(animal.partnershipDetails)}
+            status={animal.status}
+            size="sm"
+          />
+          <span className="truncate">{animal.tagNumber} {animal.name ? `• ${animal.name}` : ''}</span>
+        </div>
+      }
       subtitle={`Ficha Técnica • Hierro: ${animal.ironBrand || 'N/A'} • ${batchName} • Dueño: ${animal.owner || 'N/A'}`}
       maxWidth="max-w-4xl"
       zIndex={zIndex}

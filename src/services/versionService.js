@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.19";
+export const CURRENT_APP_VERSION = "2.24.20";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.20",
+    date: "19/10/2026",
+    title: "🏷️ Números Troquelados dentro de la Silueta Real de Chapeta Ganadera",
+    highlights: [
+      "Silueta Real de Arete Zootécnico: Creación del componente BovineEarTag con la forma auténtica de una chapeta ganadera (cuello superior con ojal/remache de aplicación, hombros angulados y paleta ancha inferior para el número).",
+      "Tipografía Proporcional y Auto-Ajustable: El número de arete se troquela centrado con ajuste de escala dinámico para garantizar máxima legibilidad en cualquier dispositivo sin desbordarse.",
+      "Integrado en Tarjetas, Tablas y Ficha Técnica: Presente en cada tarjeta del hato, en la vista tabular detallada y en la cabecera de la ficha técnica oficial del bovino.",
+      "Identificación Visual Inteligente: Soporte para aretes en amarillo clásico Allflex, verde esmeralda para nacidos en finca, azul turquesa para animales en compañía y borde punteado para aretes temporales."
+    ]
+  },
   {
     version: "2.24.19",
     date: "19/10/2026",
