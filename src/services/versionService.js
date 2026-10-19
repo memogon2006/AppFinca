@@ -1,74 +1,10 @@
-export const CURRENT_APP_VERSION = "2.24.24";
+export const CURRENT_APP_VERSION = "2.24.17";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
-  {
-    version: "2.24.24",
-    date: "19/10/2026",
-    title: "⚡ Carga Directa sin Caché: Purgado de Service Worker y Apertura Inmediata",
-    highlights: [
-      "Purga Definitiva de Service Worker: Desactivación de cachés interceptoras para garantizar que el navegador siempre reciba el código más reciente directamente de la nube.",
-      "Cabecera Clear-Site-Data: Limpieza forzada de cachés obsoletas en el navegador del cliente manteniendo intactos los datos de animales, pesajes y finanzas en IndexedDB."
-    ]
-  },
-  {
-    version: "2.24.23",
-    date: "19/10/2026",
-    title: "🚀 Arranque Instantáneo: Botón de Entrada Inmediata y Resistencia de Red",
-    highlights: [
-      "Botón Directo en Pantalla de Inicio: Acceso inmediato con un solo toque que purga automáticamente cualquier conflicto de caché o versión anterior.",
-      "Plantilla de Service Worker Fortalecida: Eliminación de límites estrictos de tiempo en red para permitir navegación fluida en conexiones celulares y satelitales."
-    ]
-  },
-  {
-    version: "2.24.22",
-    date: "19/10/2026",
-    title: "🛡️ Blindaje de Arranque: Auto-Recuperación de Caché PWA y Carga Fluida",
-    highlights: [
-      "Auto-Recuperación de Caché: Detección proactiva de desfases de versión y eliminación inmediata de cachés viejas para evitar pantallas de carga congeladas.",
-      "Entrada a la Finca Blindada: El botón de inicio ahora purga residuos del Service Worker y garantiza el ingreso inmediato a los datos ganaderos actualizados."
-    ]
-  },
-  {
-    version: "2.24.21",
-    date: "19/10/2026",
-    title: "🧹 Limpieza Visual: Retiro de Barra de Meta de Ceba en Tarjetas",
-    highlights: [
-      "Tarjetas Despejadas: Se retira la barra horizontal de avance de meta de ceba de las tarjetas del hato, recuperando un diseño más compacto y limpio.",
-      "Métricas Intactas: El seguimiento de peso, rentabilidad y estado del lote continúan operando con normalidad en la ficha técnica y reportes zootécnicos."
-    ]
-  },
-  {
-    version: "2.24.20",
-    date: "19/10/2026",
-    title: "🏷️ Aretes Diferenciados por Origen: Verde (Nacidos en Finca) y Amarillo (Comprados)",
-    highlights: [
-      "Distinción Visual Inmediata: Aretes verde esmeralda para bovinos nacidos en la finca y amarillo ganadero oficial para ejemplares comprados/comerciales.",
-      "Identidad Limpia y Sin Redundancias: Se conserva la visualización limpia de la categoría o nombre propio del bovino al lado del arete, sin textos redundantes ni truncados."
-    ]
-  },
-  {
-    version: "2.24.19",
-    date: "19/10/2026",
-    title: "🏷️ Unificación de Aretes en Amarillo Ganadero y Limpieza Visual de Tarjetas",
-    highlights: [
-      "Unificación Cromática de Aretes: Todas las chapetas activas se unifican al auténtico amarillo ganadero de alta visibilidad, evitando confusiones de colores en el inventario.",
-      "Eliminación de Texto Redundante: Se retira la etiqueta redundante y truncada 'Bovino {chapa}' al lado del arete; ahora se muestra el nombre del ejemplar o su categoría zootécnica de forma clara y sin puntos suspensivos."
-    ]
-  },
-  {
-    version: "2.24.18",
-    date: "19/10/2026",
-    title: "🏷️ Arete Ganadero Digital Zootécnico y Barra Visual de Meta de Ceba",
-    highlights: [
-      "Arete Zootécnico Digital: Nueva representación visual del número de chapa como chapeta ganadera oficial, con distintivos de color según su origen (nacido en finca, compañía, comercial o provisional).",
-      "Barra Gráfica de Meta de Ceba: Seguimiento visual de engorde hacia los 480 kg con barra de avance dinámico y conteo de kilos restantes para venta.",
-      "Ficha Técnica Hero: Encabezado zootécnico destacado con arete digital en alta resolución en la ficha de cada animal."
-    ]
-  },
   {
     version: "2.24.17",
     date: "19/10/2026",

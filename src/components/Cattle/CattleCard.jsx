@@ -2,9 +2,8 @@ import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
-import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Zap, Syringe, Heart, Layers } from 'lucide-react';
+import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { BovineEarTag } from './BovineEarTag';
 
 export function CattleCard({ 
   animal, 
@@ -103,37 +102,27 @@ export function CattleCard({
     >
       {/* Top Banner Tag & Badges */}
       <div>
-        <div className="flex items-start justify-between gap-2.5 mb-2.5">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <BovineEarTag 
-              tagNumber={animal.tagNumber}
-              size="md"
-              isTemporary={Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP')))}
-              isBornInFarm={isBornInFarm}
-              isCompany={isCompany}
-              status={animal.status}
-            />
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {animal.name && animal.name.trim() !== '' && animal.name.trim().toLowerCase() !== animal.tagNumber?.trim().toLowerCase() ? (
-                  <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition truncate max-w-[150px]">
-                    {animal.name}
-                  </span>
-                ) : (
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate">
-                    {animal.category || 'Bovino'}
-                  </span>
-                )}
-                {Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP'))) && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 text-[9px] font-black border border-amber-300 dark:border-amber-700">
-                    TEMP
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate">
-                Hierro: <strong className="text-slate-700 dark:text-slate-200">{animal.ironBrand || 'N/A'}</strong> • {animal.owner}
-              </p>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                {animal.tagNumber}
+              </span>
+              {Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP'))) && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 text-[10px] font-black border border-amber-300 dark:border-amber-700" title="Animal con número provisional, pendiente por marcar y chapetear con consecutivo oficial">
+                  <Tag className="w-2.5 h-2.5 text-amber-700 dark:text-amber-300" />
+                  TEMPORAL
+                </span>
+              )}
+              {animal.name && (
+                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate max-w-[120px]">
+                  ({animal.name})
+                </span>
+              )}
             </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+              Hierro: <strong className="text-slate-700 dark:text-slate-200">{animal.ironBrand || 'N/A'}</strong> • {animal.owner}
+            </p>
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -217,6 +206,19 @@ export function CattleCard({
             )
           )}
 
+          {/* ALERTA CEBA LISTO >= 480 kg */}
+          {isReadyForSale && (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-gradient-to-r from-emerald-600 to-teal-500 text-white flex items-center gap-1 shadow-sm animate-pulse">
+              <Target className="w-3.5 h-3.5" /> 🎯 Listo Venta (≥ 480 kg)
+            </span>
+          )}
+
+          {/* Progreso hacia meta 480 kg si aún no llega */}
+          {animal.status === 'Activo' && !isReadyForSale && weightMetrics.hasWeight && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700/60 flex items-center gap-1">
+              <Target className="w-3 h-3 text-blue-600 dark:text-blue-400" /> Meta 480 kg: {weightMetrics.cebaProjection.progressPercentage}%
+            </span>
+          )}
 
           {animal.status === 'Muerto' && (
             <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1">

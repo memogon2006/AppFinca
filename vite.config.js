@@ -101,40 +101,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Fallback Offline
+  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Timeout y Fallback Offline
   if (request.mode === 'navigate' || request.destination === 'document') {
-    const isBuster = url.searchParams.has('_v') || url.searchParams.has('_reset');
-
     event.respondWith(
       (async () => {
-        if (!isBuster) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4500);
-            const response = await fetch(request, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (response && response.status === 200) {
-              const responseClone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseClone);
-                cache.put('/index.html', response.clone());
-              });
-              return response;
-            }
-          } catch (e) {}
-        } else {
-          try {
-            const response = await fetch(request);
-            if (response && response.status === 200) {
-              const responseClone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseClone);
-                cache.put('/index.html', response.clone());
-              });
-              return response;
-            }
-          } catch (e) {}
-        }
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const response = await fetch(request, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+              cache.put('/index.html', response.clone());
+            });
+            return response;
+          }
+        } catch (e) {}
 
         const cachedResponse = await caches.match(request);
         if (cachedResponse) return cachedResponse;
@@ -157,10 +141,6 @@ self.addEventListener('fetch', (event) => {
           fetch(request)
             .then((networkResponse) => {
               if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-                const cType = networkResponse.headers.get('content-type') || '';
-                if ((url.pathname.endsWith('.js') || url.pathname.endsWith('.mjs')) && cType.includes('text/html')) {
-                  return;
-                }
                 const clone = networkResponse.clone();
                 caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
               }
@@ -173,13 +153,6 @@ self.addEventListener('fetch', (event) => {
       try {
         const networkResponse = await fetch(request);
         if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-          const cType = networkResponse.headers.get('content-type') || '';
-          if ((url.pathname.endsWith('.js') || url.pathname.endsWith('.mjs')) && cType.includes('text/html')) {
-            console.warn('⚠️ Chunk JS no encontrado en servidor (devolvió HTML):', url.pathname);
-            return new Response('console.warn("Chunk desactualizado detectado, recargando..."); setTimeout(function(){ window.location.reload(); }, 200);', {
-              headers: { 'Content-Type': 'application/javascript' }
-            });
-          }
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
           return networkResponse;
@@ -229,7 +202,7 @@ self.addEventListener('fetch', (event) => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), pwaPrecachePlugin()],
   server: {
     port: 5173,
     host: true
