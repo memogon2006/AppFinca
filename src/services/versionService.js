@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.23";
+export const CURRENT_APP_VERSION = "2.24.24";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.24",
+    date: "19/10/2026",
+    title: "⚡ Carga Directa sin Caché: Purgado de Service Worker y Apertura Inmediata",
+    highlights: [
+      "Purga Definitiva de Service Worker: Desactivación de cachés interceptoras para garantizar que el navegador siempre reciba el código más reciente directamente de la nube.",
+      "Cabecera Clear-Site-Data: Limpieza forzada de cachés obsoletas en el navegador del cliente manteniendo intactos los datos de animales, pesajes y finanzas en IndexedDB."
+    ]
+  },
   {
     version: "2.24.23",
     date: "19/10/2026",

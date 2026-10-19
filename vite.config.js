@@ -229,7 +229,7 @@ self.addEventListener('fetch', (event) => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), pwaPrecachePlugin()],
+  plugins: [react()],
   server: {
     port: 5173,
     host: true
