@@ -726,7 +726,9 @@ export function InventoryChecklistModal({
       onTouchMove={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
       }}
-      onClick={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
     >
       <div 
         data-modal-container="true"
@@ -1759,8 +1761,16 @@ export function InventoryChecklistModal({
         {/* MODAL EMERGENTE DE NOVEDAD RÁPIDA 🩹 */}
         {/* ========================================================================= */}
         {activeNoteAnimal && (
-          <div className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4">
+          <div 
+            className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setActiveNoteAnimal(null);
+            }}
+          >
+            <div 
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                   <Stethoscope className="w-5 h-5 text-amber-500" />
@@ -1852,8 +1862,16 @@ export function InventoryChecklistModal({
         {/* MODAL PARA AGREGAR ANIMAL INFILTRADO DE OTRO LOTE */}
         {/* ========================================================================= */}
         {showAddInfiltratedModal && (
-          <div className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4">
+          <div 
+            className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowAddInfiltratedModal(false);
+            }}
+          >
+            <div 
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-500" />
@@ -1935,8 +1953,16 @@ export function InventoryChecklistModal({
         {/* MODAL PARA AGREGAR ANIMAL EXTRA NO REGISTRADO (+1) ⚠️ */}
         {/* ========================================================================= */}
         {showAddExtraModal && (
-          <div className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4">
+          <div 
+            className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowAddExtraModal(false);
+            }}
+          >
+            <div 
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black">

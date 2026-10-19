@@ -479,11 +479,15 @@ export function PartnershipSettlementModal({
       onTouchMove={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
     >
       <div 
         data-modal-container="true"
         style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
         className="relative w-full max-w-5xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header del Modal */}

@@ -401,11 +401,15 @@ export function MonthAccountingDetailModal({
       onTouchMove={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
     >
       <div 
         data-modal-container="true"
         style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
         className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden my-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         
         {/* ========================================================================= */}

@@ -1,5 +1,5 @@
 {
-  "version": "2.24.15",
-  "buildTime": 1792350000000,
-  "description": "🛡️ Bloqueo Total del Scroll de Fondo y Contención de Desplazamiento"
+  "version": "2.24.16",
+  "buildTime": 1792378000000,
+  "description": "👆 Cierre Automático de Ventanas al Tocar el Fondo Desenfocado (Click Outside)"
 }

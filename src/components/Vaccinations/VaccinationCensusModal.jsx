@@ -124,7 +124,7 @@ export function VaccinationCensusModal({
 
   return (
     <div 
-      className={`modal-backdrop-root fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn`}
+      className={`modal-backdrop-root fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 ${zIndex} overflow-y-auto animate-fadeIn cursor-pointer`}
       style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
       onWheel={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
@@ -132,11 +132,15 @@ export function VaccinationCensusModal({
       onTouchMove={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
     >
       <div 
         data-modal-container="true"
         style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
-        className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto"
+        className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto cursor-default"
+        onClick={(e) => e.stopPropagation()}
       >
         
         {/* Encabezado */}

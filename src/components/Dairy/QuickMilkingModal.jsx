@@ -155,8 +155,11 @@ export function QuickMilkingModal({
 
   return (
     <div 
-      className="modal-backdrop-root fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in"
+      className="modal-backdrop-root fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in cursor-pointer"
       style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
       onWheel={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
       }}
@@ -167,7 +170,8 @@ export function QuickMilkingModal({
       <div 
         data-modal-container="true"
         style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
-        className="bg-slate-900 border border-slate-700/80 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 border border-slate-700/80 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] cursor-default"
       >
         
         {/* Cabecera del Modal */}

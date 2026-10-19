@@ -283,11 +283,15 @@ export function OwnerFinancialDetailModal({
       onTouchMove={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
     >
       <div 
         data-modal-container="true"
         style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up"
+        onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header Principal */}

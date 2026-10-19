@@ -35,6 +35,9 @@ export function Modal({ isOpen, onClose, title, subtitle, children, maxWidth = '
       onTouchMove={(e) => {
         if (e.target === e.currentTarget) e.preventDefault();
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
     >
       {/* Backdrop */}
       <div 

@@ -659,8 +659,16 @@ export function WorkersManagementModal({ isOpen, onClose, zIndex = 'z-[60]' }) {
 
             {/* Modal para cambiar PIN / Clave */}
             {editingWorker && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div className="w-full max-w-sm p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+              <div 
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setEditingWorker(null);
+                }}
+              >
+                <div 
+                  onClick={(e) => e.stopPropagation()} 
+                  className="w-full max-w-sm p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200 cursor-default"
+                >
                   <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-black text-sm">
                     <KeyRound className="w-4 h-4" />
                     <span>Reasignar Clave para {editingWorker.name}</span>

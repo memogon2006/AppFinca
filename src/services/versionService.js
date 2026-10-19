@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.15";
+export const CURRENT_APP_VERSION = "2.24.16";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.16",
+    date: "18/10/2026",
+    title: "👆 Cierre Automático de Ventanas al Tocar el Fondo Desenfocado (Click Outside)",
+    highlights: [
+      "Cierre Inmediato por Toque Exterior: Al tocar o hacer clic en cualquier zona desenfocada o sombreada fuera del recuadro abierto, la ventana se cierra de forma instantánea y fluida.",
+      "Protección de Datos Internos: Los toques, clics, selección de texto y scroll dentro del formulario están 100% blindados para no cerrarse por accidente.",
+      "Cobertura Completa en Toda la Plataforma: Disponible en todas las ventanas emergentes (vacunaciones, calendario, registros zootécnicos, ordeños, finanzas, censos e inventarios)."
+    ]
+  },
   {
     version: "2.24.15",
     date: "18/10/2026",
