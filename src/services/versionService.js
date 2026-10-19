@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.16";
+export const CURRENT_APP_VERSION = "2.24.17";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.17",
+    date: "19/10/2026",
+    title: "⚡ Rendimiento Ultraligero y Blindaje de Seguridad en Firebase",
+    highlights: [
+      "Depuración de Dependencias: Retiro definitivo de la librería innecesaria @supabase/supabase-js, reduciendo el consumo de memoria y acelerando la carga en celulares con señal débil de campo.",
+      "Blindaje de Base de Datos en Firebase: Reglas de seguridad que bloquean volcados masivos no autorizados de la raíz, impiden descargar el directorio completo de fincas y protegen la integridad de cada predio mediante validación de esquemas e indexación de alta velocidad."
+    ]
+  },
   {
     version: "2.24.16",
     date: "18/10/2026",

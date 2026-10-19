@@ -1,17 +1,24 @@
 {
   "rules": {
+    ".read": false,
+    ".write": false,
     "users": {
       ".read": true,
+      ".indexOn": ["email", "id", "role", "ownerId", "farmName"],
       "$safeEmail": {
         ".read": true,
-        ".write": true
+        ".write": true,
+        ".validate": "newData.val() == null || newData.hasChildren(['id', 'email']) || newData.hasChildren(['activeModules']) || newData.hasChildren(['soundProfile'])"
       }
     },
     "userData": {
+      ".read": false,
+      ".write": false,
       "$userId": {
         ".read": true,
         ".write": true,
-        ".indexOn": ["userId", "syncedAt"]
+        ".indexOn": ["userId", "syncedAt"],
+        ".validate": "newData.val() == null || newData.hasChildren(['syncedAt']) || newData.hasChildren(['cattle']) || newData.hasChildren(['workers'])"
       }
     },
     "deletedWorkers": {
