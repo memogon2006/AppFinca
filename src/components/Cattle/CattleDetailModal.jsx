@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Modal } from '../Common/Modal';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
+import { BovineEarTag } from './BovineEarTag';
 import { 
   formatCurrency, 
   formatNumber, 
@@ -208,6 +209,9 @@ export function CattleDetailModal({
     animal.reproductiveStatus === 'Preñada' ? 'Gestación' : animal.milkingStatus === 'En ordeño' ? 'Producción de leche' : 'Vacía'
   );
 
+  const isBornInFarm = animal.entryType === 'Nacimiento' || animal.origin === 'Nacido en finca' || (!animal.entryType && (animal.motherTag || animal.motherId));
+  const isCompany = animal.entryType === 'Compañía' || animal.origin === 'En Compañía' || (animal.owner && animal.owner.toLowerCase().includes('compañía'));
+
   const weightChartData = [];
   if (animal.entryWeight && parseFloat(animal.entryWeight) > 0) {
     weightChartData.push({ date: formatDate(animal.entryDate), rawDate: animal.entryDate, weight: parseFloat(animal.entryWeight), label: 'Entrada' });
@@ -309,6 +313,30 @@ export function CattleDetailModal({
             )}
           </div>
         )}
+
+        {/* Identidad Hero: Arete Ganadero Zootécnico & Datos de Ficha */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <BovineEarTag
+              tagNumber={animal.tagNumber}
+              size="lg"
+              isTemporary={Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP')))}
+              isBornInFarm={isBornInFarm}
+              isCompany={isCompany}
+              status={animal.status}
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                  {animal.name || `Bovino ${animal.tagNumber}`}
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Hierro: <strong className="text-slate-700 dark:text-slate-200">{animal.ironBrand || 'N/A'}</strong> • Lote: <strong className="text-emerald-600 dark:text-emerald-400">{batchName || 'General'}</strong> • Dueño: {animal.owner || 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Encabezado y Badges */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">

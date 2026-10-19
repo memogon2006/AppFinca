@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.17";
+export const CURRENT_APP_VERSION = "2.24.18";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.18",
+    date: "19/10/2026",
+    title: "🏷️ Arete Ganadero Digital Zootécnico y Barra Visual de Meta de Ceba",
+    highlights: [
+      "Arete Zootécnico Digital: Nueva representación visual del número de chapa como chapeta ganadera oficial, con distintivos de color según su origen (nacido en finca, compañía, comercial o provisional).",
+      "Barra Gráfica de Meta de Ceba: Seguimiento visual de engorde hacia los 480 kg con barra de avance dinámico y conteo de kilos restantes para venta.",
+      "Ficha Técnica Hero: Encabezado zootécnico destacado con arete digital en alta resolución en la ficha de cada animal."
+    ]
+  },
   {
     version: "2.24.17",
     date: "19/10/2026",

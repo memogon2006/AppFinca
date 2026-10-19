@@ -4,6 +4,7 @@ import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calcu
 import { getFarmMeatPrice } from '../../services/farmPriceService';
 import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { BovineEarTag } from './BovineEarTag';
 
 export function CattleCard({ 
   animal, 
@@ -102,27 +103,31 @@ export function CattleCard({
     >
       {/* Top Banner Tag & Badges */}
       <div>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-                {animal.tagNumber}
-              </span>
-              {Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP'))) && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 text-[10px] font-black border border-amber-300 dark:border-amber-700" title="Animal con número provisional, pendiente por marcar y chapetear con consecutivo oficial">
-                  <Tag className="w-2.5 h-2.5 text-amber-700 dark:text-amber-300" />
-                  TEMPORAL
+        <div className="flex items-start justify-between gap-2.5 mb-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <BovineEarTag 
+              tagNumber={animal.tagNumber}
+              size="md"
+              isTemporary={Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP')))}
+              isBornInFarm={isBornInFarm}
+              isCompany={isCompany}
+              status={animal.status}
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition truncate max-w-[140px]">
+                  {animal.name || `Bovino ${animal.tagNumber}`}
                 </span>
-              )}
-              {animal.name && (
-                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate max-w-[120px]">
-                  ({animal.name})
-                </span>
-              )}
+                {Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP'))) && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 text-[9px] font-black border border-amber-300 dark:border-amber-700">
+                    TEMP
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate">
+                Hierro: <strong className="text-slate-700 dark:text-slate-200">{animal.ironBrand || 'N/A'}</strong> • {animal.owner}
+              </p>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Hierro: <strong className="text-slate-700 dark:text-slate-200">{animal.ironBrand || 'N/A'}</strong> • {animal.owner}
-            </p>
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -206,18 +211,41 @@ export function CattleCard({
             )
           )}
 
-          {/* ALERTA CEBA LISTO >= 480 kg */}
-          {isReadyForSale && (
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-gradient-to-r from-emerald-600 to-teal-500 text-white flex items-center gap-1 shadow-sm animate-pulse">
-              <Target className="w-3.5 h-3.5" /> 🎯 Listo Venta (≥ 480 kg)
-            </span>
-          )}
-
-          {/* Progreso hacia meta 480 kg si aún no llega */}
-          {animal.status === 'Activo' && !isReadyForSale && weightMetrics.hasWeight && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700/60 flex items-center gap-1">
-              <Target className="w-3 h-3 text-blue-600 dark:text-blue-400" /> Meta 480 kg: {weightMetrics.cebaProjection.progressPercentage}%
-            </span>
+          {/* BARRA VISUAL DE META DE CEBA (480 kg) */}
+          {animal.status === 'Activo' && weightMetrics.hasWeight && (
+            isReadyForSale ? (
+              <div className="w-full my-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 flex items-center justify-between">
+                <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>🎯 Listo para Venta (≥ 480 kg)</span>
+                </span>
+                <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">
+                  {weightMetrics.currentWeight} kg
+                </span>
+              </div>
+            ) : (
+              <div className="w-full my-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <Target className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Meta Ceba (480 kg)</span>
+                  </span>
+                  <span className="font-black text-blue-600 dark:text-blue-400">
+                    {weightMetrics.cebaProjection?.progressPercentage || Math.min(100, Math.round((weightMetrics.currentWeight / 480) * 100))}%
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(5, weightMetrics.cebaProjection?.progressPercentage || Math.round((weightMetrics.currentWeight / 480) * 100)))}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                  <span>Actual: <strong className="text-slate-700 dark:text-slate-200">{weightMetrics.currentWeight} kg</strong></span>
+                  <span>Faltan: <strong className="text-amber-600 dark:text-amber-400">{Math.max(0, 480 - weightMetrics.currentWeight)} kg</strong></span>
+                </div>
+              </div>
+            )
           )}
 
           {animal.status === 'Muerto' && (
