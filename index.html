@@ -60,32 +60,69 @@
         </div>
       </div>
     </div>
+    <script>
+      // 1. Función de limpieza total y auto-recuperación ante desfases de versión
+      window.limpiarYEntrar = function() {
+        var statusEl = document.getElementById('splash-status');
+        if (statusEl) {
+          statusEl.innerHTML = '<span style="color:#10b981;font-weight:700;font-size:12px;">Sincronizando última versión...</span>';
+        }
+        try {
+          sessionStorage.clear();
+          localStorage.removeItem('ganado_active_ui_state');
+          if ('caches' in window) {
+            caches.keys().then(function(keys) {
+              return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+            }).catch(function() {});
+          }
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              return Promise.all(regs.map(function(r) { return r.unregister(); }));
+            }).catch(function() {});
+          }
+        } catch(e) {}
+        setTimeout(function() {
+          window.location.href = window.location.origin + window.location.pathname + '?_v=' + Date.now();
+        }, 300);
+      };
+
+      // 2. Capturar errores globales antes de que React cargue para auto-recuperar
+      window.addEventListener('error', function(e) {
+        var msg = (e && e.message) ? e.message.toLowerCase() : '';
+        if (msg.includes('unexpected token') || msg.includes('syntaxerror') || msg.includes('loading chunk') || msg.includes('dynamically imported module') || msg.includes('failed to fetch')) {
+          console.warn('⚠️ Error de versión detectado en arranque, limpiando cachés...');
+          if (!sessionStorage.getItem('ganado_auto_repaired')) {
+            sessionStorage.setItem('ganado_auto_repaired', 'true');
+            window.limpiarYEntrar();
+          }
+        }
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
     <script>
       (function() {
-        // Asistencia automática para arranque offline o actualización inmediata en campo
+        // Asistencia automática tras 4.5 segundos si la app aún no ha montado
         setTimeout(function() {
           var rootEl = document.getElementById('root');
           var statusEl = document.getElementById('splash-status');
           if (statusEl && rootEl && rootEl.querySelector('#splash-status')) {
             statusEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:8px;">' +
               '<span style="color:#34d399;font-weight:600;font-size:12px;">⚡ Optimizando carga...</span>' +
-              '<button onclick="window.location.reload()" style="background:#10b981;color:#020617;font-weight:800;font-size:13px;padding:8px 18px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.35);display:flex;align-items:center;gap:6px;">' +
+              '<button onclick="window.limpiarYEntrar()" style="background:#10b981;color:#020617;font-weight:800;font-size:13px;padding:8px 18px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.35);display:flex;align-items:center;gap:6px;">' +
               '<span>🔄 Entrar a la Finca</span>' +
               '</button>' +
               '</div>';
 
-            // Auto-recarga única si el Service Worker o el navegador requiere refresco de caché
             if (!sessionStorage.getItem('ganado_boot_autoreload')) {
               sessionStorage.setItem('ganado_boot_autoreload', 'true');
               setTimeout(function() {
                 if (rootEl.querySelector('#splash-status')) {
-                  window.location.reload();
+                  window.limpiarYEntrar();
                 }
-              }, 1200);
+              }, 2000);
             }
           }
-        }, 2200);
+        }, 4500);
       })();
     </script>
   </body>

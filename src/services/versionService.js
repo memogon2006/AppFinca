@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.21";
+export const CURRENT_APP_VERSION = "2.24.22";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.22",
+    date: "19/10/2026",
+    title: "🛡️ Blindaje de Arranque: Auto-Recuperación de Caché PWA y Carga Fluida",
+    highlights: [
+      "Auto-Recuperación de Caché: Detección proactiva de desfases de versión y eliminación inmediata de cachés viejas para evitar pantallas de carga congeladas.",
+      "Entrada a la Finca Blindada: El botón de inicio ahora purga residuos del Service Worker y garantiza el ingreso inmediato a los datos ganaderos actualizados."
+    ]
+  },
   {
     version: "2.24.21",
     date: "19/10/2026",

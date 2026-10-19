@@ -1,5 +1,5 @@
 {
-  "version": "2.24.21",
-  "buildTime": 1792424000000,
-  "description": "🧹 Limpieza Visual: Retiro de Barra de Meta de Ceba en Tarjetas"
+  "version": "2.24.22",
+  "buildTime": 1792425000000,
+  "description": "🛡️ Blindaje de Arranque: Auto-Recuperación de Caché PWA y Carga Fluida"
 }
