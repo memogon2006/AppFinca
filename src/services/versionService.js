@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.20";
+export const CURRENT_APP_VERSION = "2.24.21";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.21",
+    date: "19/10/2026",
+    title: "🧹 Limpieza Visual: Retiro de Barra de Meta de Ceba en Tarjetas",
+    highlights: [
+      "Tarjetas Despejadas: Se retira la barra horizontal de avance de meta de ceba de las tarjetas del hato, recuperando un diseño más compacto y limpio.",
+      "Métricas Intactas: El seguimiento de peso, rentabilidad y estado del lote continúan operando con normalidad en la ficha técnica y reportes zootécnicos."
+    ]
+  },
   {
     version: "2.24.20",
     date: "19/10/2026",

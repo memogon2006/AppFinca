@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
-import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart, Layers } from 'lucide-react';
+import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Zap, Syringe, Heart, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BovineEarTag } from './BovineEarTag';
 
@@ -217,42 +217,6 @@ export function CattleCard({
             )
           )}
 
-          {/* BARRA VISUAL DE META DE CEBA (480 kg) */}
-          {animal.status === 'Activo' && weightMetrics.hasWeight && (
-            isReadyForSale ? (
-              <div className="w-full my-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 flex items-center justify-between">
-                <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>🎯 Listo para Venta (≥ 480 kg)</span>
-                </span>
-                <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">
-                  {weightMetrics.currentWeight} kg
-                </span>
-              </div>
-            ) : (
-              <div className="w-full my-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-                <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <Target className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Meta Ceba (480 kg)</span>
-                  </span>
-                  <span className="font-black text-blue-600 dark:text-blue-400">
-                    {weightMetrics.cebaProjection?.progressPercentage || Math.min(100, Math.round((weightMetrics.currentWeight / 480) * 100))}%
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(5, weightMetrics.cebaProjection?.progressPercentage || Math.round((weightMetrics.currentWeight / 480) * 100)))}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                  <span>Actual: <strong className="text-slate-700 dark:text-slate-200">{weightMetrics.currentWeight} kg</strong></span>
-                  <span>Faltan: <strong className="text-amber-600 dark:text-amber-400">{Math.max(0, 480 - weightMetrics.currentWeight)} kg</strong></span>
-                </div>
-              </div>
-            )
-          )}
 
           {animal.status === 'Muerto' && (
             <span className="text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1">
