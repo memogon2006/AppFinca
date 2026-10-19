@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.19";
+export const CURRENT_APP_VERSION = "2.24.20";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.20",
+    date: "19/10/2026",
+    title: "🏷️ Aretes Diferenciados por Origen: Verde (Nacidos en Finca) y Amarillo (Comprados)",
+    highlights: [
+      "Distinción Visual Inmediata: Aretes verde esmeralda para bovinos nacidos en la finca y amarillo ganadero oficial para ejemplares comprados/comerciales.",
+      "Identidad Limpia y Sin Redundancias: Se conserva la visualización limpia de la categoría o nombre propio del bovino al lado del arete, sin textos redundantes ni truncados."
+    ]
+  },
   {
     version: "2.24.19",
     date: "19/10/2026",

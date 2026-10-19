@@ -54,6 +54,14 @@ export function BovineEarTag({
       pin: 'bg-amber-400/30 border-amber-500/40',
       shadow: 'shadow-amber-500/10',
     };
+  } else if (isBornInFarm) {
+    theme = {
+      bg: 'bg-emerald-400 dark:bg-emerald-500',
+      border: 'border-emerald-500 dark:border-emerald-600',
+      text: 'text-slate-950 font-black',
+      pin: 'bg-emerald-700/50 border-emerald-800/60',
+      shadow: 'shadow-emerald-500/25',
+    };
   }
 
   // Dimensiones según tamaño
@@ -83,7 +91,7 @@ export function BovineEarTag({
   return (
     <div 
       className={`inline-flex flex-col items-center justify-center shrink-0 select-none shadow-sm ${s.container} ${theme.bg} ${theme.border} ${theme.shadow} transition-transform group-hover:scale-105`}
-      title={`Arete / Chapeta Oficial: ${tagNumber}`}
+      title={`Arete Oficial ${tagNumber} • ${isBornInFarm ? 'Nacido en Finca (Verde)' : 'Comprado (Amarillo)'}`}
     >
       {/* Botón / Orificio de sujeción superior */}
       <div className={`rounded-full border shadow-inner ${s.pin} ${theme.pin}`} />
