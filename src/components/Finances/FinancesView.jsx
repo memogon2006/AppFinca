@@ -127,7 +127,11 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         netProfit: 0,
         cashInflow: 0,
         monthlyProfit: 0,
-        soldCost: 0
+        soldCost: 0,
+        farmShare: 0,
+        partnerProfitShare: 0,
+        partnerCashInflow: 0,
+        hasCompanySales: false
       };
     }
     const fin = calculateFinancials(c, 0, meatPricePerKg);
@@ -138,12 +142,29 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
       profitByOwner[owner].activeInvested += fin.totalInvested;
     } else if (c.status === 'Vendido') {
       const flow = calculateSaleCashFlow(c, currentUser);
+      const isComp = c.exitType === 'En Compañía' || !!c.partnershipDetails;
       profitByOwner[owner].soldHeads++;
       profitByOwner[owner].soldCost += fin.totalInvested;
       profitByOwner[owner].totalSales += parseFloat(c.exitPrice) || 0;
       profitByOwner[owner].netProfit += flow.netProfit;
       profitByOwner[owner].cashInflow += flow.cashInflow;
       profitByOwner[owner].monthlyProfit += flow.userMonthlyProfit || 0;
+
+      if (isComp) {
+        profitByOwner[owner].hasCompanySales = true;
+        const exitP = parseFloat(c.exitPrice) || 0;
+        const entryP = parseFloat(c.entryPrice || c.purchasePrice) || 0;
+        const profit = c.partnershipDetails?.profit !== undefined ? parseFloat(c.partnershipDetails.profit) : (exitP - entryP);
+        const farmPct = c.partnershipDetails?.farmPercent || 50;
+        const partnerPct = c.partnershipDetails?.partnerPercent || 50;
+        const fShare = c.partnershipDetails?.farmShare !== undefined ? parseFloat(c.partnershipDetails.farmShare) : (profit * (farmPct / 100));
+        const pProfit = c.partnershipDetails?.partnerProfitShare !== undefined ? parseFloat(c.partnershipDetails.partnerProfitShare) : (profit * (partnerPct / 100));
+        const pReturn = c.partnershipDetails?.partnerTotalReturn !== undefined ? parseFloat(c.partnershipDetails.partnerTotalReturn) : (entryP + pProfit);
+
+        profitByOwner[owner].farmShare += fShare;
+        profitByOwner[owner].partnerProfitShare += pProfit;
+        profitByOwner[owner].partnerCashInflow += pReturn;
+      }
     }
   });
 
@@ -348,6 +369,19 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                     {formatCurrency(ownerData.netProfit)}
                   </span>
                 </div>
+
+                {ownerData.hasCompanySales && (
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-1.5 text-[10px]">
+                    <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                      <span className="block font-bold opacity-75">🏢 Finca (50%):</span>
+                      <span className="font-black text-xs">+{formatCurrency(ownerData.farmShare)}</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                      <span className="block font-bold opacity-75">🐮 Dueño (50%):</span>
+                      <span className="font-black text-xs">+{formatCurrency(ownerData.partnerProfitShare)}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">
                   <span>📊 Ver balance, compras y ventas</span>

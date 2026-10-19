@@ -587,7 +587,20 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
   const additionalCosts = parseFloat(animal.additionalCosts) || 0;
   const totalInvested = entryPrice + additionalCosts;
   const isPart = animal.exitType === 'En Compañía' || !!animal.partnershipDetails;
-  const part = animal.partnershipDetails;
+  const rawProfit = exitPrice - totalInvested;
+  const part = animal.partnershipDetails || (isPart ? {
+    isPartnership: true,
+    userRole: 'farm',
+    farmPercent: 50,
+    partnerPercent: 50,
+    profit: rawProfit,
+    farmShare: rawProfit * 0.5,
+    partnerProfitShare: rawProfit * 0.5,
+    partnerTotalReturn: entryPrice + (rawProfit * 0.5),
+    entryPrice: entryPrice,
+    farmPartyName: 'Finca Principal',
+    partnerPartyName: animal.owner || 'Dueño'
+  } : null);
 
   const exitDate = animal.exitDate || animal.saleDate || getLocalDateString();
   const entryDate = animal.entryDate || getLocalDateString();

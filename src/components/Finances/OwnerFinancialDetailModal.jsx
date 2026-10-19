@@ -18,7 +18,9 @@ import {
   ChevronRight,
   Eye,
   Percent,
-  BadgeCheck
+  BadgeCheck,
+  Building2,
+  Wallet
 } from 'lucide-react';
 import { formatCurrency, formatNumber, formatDate, calculateFinancials, getLocalDateString } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
@@ -105,6 +107,95 @@ export function OwnerFinancialDetailModal({
   const averageSoldExitWeight = totalSoldCount > 0 ? totalSoldExitWeight / totalSoldCount : 0;
   const averageSoldPricePerKg = totalSoldExitWeight > 0 ? totalSoldRevenue / totalSoldExitWeight : 0;
 
+  // Desglose de ganancia en compañía (Finca vs Dueño)
+  const getCompanySplit = (animal) => {
+    const isComp = animal.exitType === 'En Compañía' || !!animal.partnershipDetails;
+    const exitP = parseFloat(animal.exitPrice) || 0;
+    const entryP = parseFloat(animal.entryPrice || animal.purchasePrice) || 0;
+    const addCosts = parseFloat(animal.additionalCosts) || 0;
+    const totalCost = entryP + addCosts;
+    const netProfit = exitP - totalCost;
+
+    if (!isComp) {
+      return {
+        isCompany: false,
+        farmShare: 0,
+        partnerProfitShare: netProfit,
+        partnerTotalReturn: exitP,
+        totalProfit: netProfit,
+        farmPercent: 0,
+        partnerPercent: 100,
+        entryPrice: entryP
+      };
+    }
+
+    const p = animal.partnershipDetails;
+    const farmPercent = parseFloat(p?.farmPercent) || 50;
+    const partnerPercent = parseFloat(p?.partnerPercent) || 50;
+
+    const totalProfit = p?.profit !== undefined && !isNaN(parseFloat(p.profit))
+      ? parseFloat(p.profit)
+      : netProfit;
+
+    const farmShare = p?.farmShare !== undefined && !isNaN(parseFloat(p.farmShare))
+      ? parseFloat(p.farmShare)
+      : (totalProfit * (farmPercent / 100));
+
+    const partnerProfitShare = p?.partnerProfitShare !== undefined && !isNaN(parseFloat(p.partnerProfitShare))
+      ? parseFloat(p.partnerProfitShare)
+      : (totalProfit * (partnerPercent / 100));
+
+    const partnerTotalReturn = p?.partnerTotalReturn !== undefined && !isNaN(parseFloat(p.partnerTotalReturn))
+      ? parseFloat(p.partnerTotalReturn)
+      : (entryP + partnerProfitShare);
+
+    return {
+      isCompany: true,
+      farmShare,
+      partnerProfitShare,
+      partnerTotalReturn,
+      totalProfit,
+      farmPercent,
+      partnerPercent,
+      entryPrice: entryP
+    };
+  };
+
+  // Animales vendidos en compañía y métricas consolidadas Finca vs Dueño
+  const companySoldCattle = useMemo(() => {
+    return soldOwnerCattle.filter(c => c.exitType === 'En Compañía' || !!c.partnershipDetails);
+  }, [soldOwnerCattle]);
+
+  const hasCompanySales = companySoldCattle.length > 0;
+
+  const totalFarmProfitShare = useMemo(() => {
+    return soldOwnerCattle.reduce((sum, c) => {
+      const split = getCompanySplit(c);
+      return sum + (split.isCompany ? split.farmShare : 0);
+    }, 0);
+  }, [soldOwnerCattle]);
+
+  const totalPartnerProfitShare = useMemo(() => {
+    return soldOwnerCattle.reduce((sum, c) => {
+      const split = getCompanySplit(c);
+      return sum + split.partnerProfitShare;
+    }, 0);
+  }, [soldOwnerCattle]);
+
+  const totalPartnerCapitalReturn = useMemo(() => {
+    return soldOwnerCattle.reduce((sum, c) => {
+      const split = getCompanySplit(c);
+      return sum + (parseFloat(c.entryPrice || c.purchasePrice) || 0);
+    }, 0);
+  }, [soldOwnerCattle]);
+
+  const totalPartnerCashInflow = useMemo(() => {
+    return soldOwnerCattle.reduce((sum, c) => {
+      const split = getCompanySplit(c);
+      return sum + (split.isCompany ? split.partnerTotalReturn : (parseFloat(c.exitPrice) || 0));
+    }, 0);
+  }, [soldOwnerCattle]);
+
   // 3. Totales Generales
   const totalRegisteredCount = ownerCattle.length;
   const totalHistoricalInvestment = totalActivePurchaseValue + totalSoldCost;
@@ -185,14 +276,33 @@ export function OwnerFinancialDetailModal({
 
     // 2. Hoja de Ganado Vendido
     const soldData = [
-      ['REPORTE FINANCIERO - GANADO VENDIDO & LIQUIDACIONES'],
-      [`Propietario / Marca: ${ownerName}`, `Hierro: ${brandName}`, `Fecha: ${formatDate(new Date())}`],
+      ['REPORTE FINANCIERO - GANADO VENDIDO & LIQUIDACIONES (FINCA VS DUEÑO)'],
+      [`Propietario / Socio: ${ownerName}`, `Hierro: ${brandName}`, `Fecha: ${formatDate(new Date())}`],
       [],
-      ['Chapa/Arete', 'Nombre', 'Fecha Venta', 'Comprador', 'Modalidad', 'Meses Finca', 'Peso Salida (kg)', 'Precio Compra ($)', 'Precio Venta ($)', 'Precio/Kg Venta ($/kg)', 'Utilidad Neta ($)', 'ROI Total (%)', 'Rentabilidad Mensual (%/mes)', 'Ganancia Mensual ($/mes)']
+      [
+        'Chapa/Arete',
+        'Nombre',
+        'Fecha Venta',
+        'Comprador',
+        'Modalidad',
+        'Meses Finca',
+        'Peso Salida (kg)',
+        'Precio Compra ($)',
+        'Precio Venta ($)',
+        'Precio/Kg Venta ($/kg)',
+        'Utilidad Total ($)',
+        'Utilidad Finca (50%) ($)',
+        'Utilidad Dueño (50%) ($)',
+        'Total Retorno Dueño ($)',
+        'ROI Total (%)',
+        'Rentabilidad Mensual (%/mes)',
+        'Ganancia Mensual ($/mes)'
+      ]
     ];
 
     soldOwnerCattle.forEach(a => {
       const fin = calculateFinancials(a, 0, ownerMeatPrice);
+      const split = getCompanySplit(a);
       const exitW = parseFloat(a.exitWeight) || 0;
       const exitP = parseFloat(a.exitPrice) || 0;
       const pricePerKg = exitW > 0 ? (exitP / exitW) : 0;
@@ -202,13 +312,16 @@ export function OwnerFinancialDetailModal({
         a.name || '-',
         formatDate(a.exitDate),
         a.saleBuyer || a.buyer || 'Venta Directa',
-        a.exitType || 'En Pie',
+        split.isCompany ? 'En Compañía' : (a.exitType || 'En Pie'),
         formatNumber(fin.monthsInFarm, 1),
         exitW,
         fin.totalInvested,
         exitP,
         Math.round(pricePerKg),
         fin.netProfit,
+        Math.round(split.isCompany ? split.farmShare : 0),
+        Math.round(split.isCompany ? split.partnerProfitShare : fin.netProfit),
+        Math.round(split.isCompany ? split.partnerTotalReturn : exitP),
         `${fin.roi}%`,
         `${formatNumber(fin.monthlyRoi, 2)}%`,
         Math.round(fin.monthlyProfit)
@@ -228,6 +341,9 @@ export function OwnerFinancialDetailModal({
       totalSoldRevenue,
       Math.round(averageSoldPricePerKg),
       totalSoldNetProfit,
+      Math.round(totalFarmProfitShare),
+      Math.round(totalPartnerProfitShare),
+      Math.round(totalPartnerCashInflow),
       `${formatNumber(soldRoi, 1)}%`,
       `${formatNumber(averageSoldMonthlyRoi, 2)}%`,
       Math.round(totalSoldMonthlyProfit)
@@ -263,6 +379,14 @@ export function OwnerFinancialDetailModal({
     msg += `• Utilidad Neta Realizada: *${formatCurrency(totalSoldNetProfit)}*\n`;
     msg += `• Rentabilidad Total (ROI): *${formatNumber(soldRoi, 1)}%*\n`;
     msg += `• 📈 *Rentabilidad Mensual del Capital:* *${formatNumber(averageSoldMonthlyRoi, 2)}% / mes* (+${formatCurrency(totalSoldMonthlyProfit)} / mes)\n\n`;
+
+    if (hasCompanySales) {
+      msg += `🤝 *LIQUIDACIÓN GANADO EN COMPAÑÍA (REPARTO 50/50):*\n`;
+      msg += `• 🏢 *Entró a la Finca (50% Utilidad):* *${formatCurrency(totalFarmProfitShare)}*\n`;
+      msg += `• 🐮 *Utilidad Dueño del Ganado (50%):* *${formatCurrency(totalPartnerProfitShare)}*\n`;
+      msg += `• 💵 *Capital Reintegrado al Dueño:* *${formatCurrency(totalPartnerCapitalReturn)}*\n`;
+      msg += `• 💰 *Total Liquidado al Dueño (Capital + 50%):* *${formatCurrency(totalPartnerCashInflow)}*\n\n`;
+    }
 
     msg += `📋 *RESUMEN TOTAL REGISTRADO:* ${totalRegisteredCount} cabezas\n`;
     msg += `_Generado automáticamente por Inventario Bovino App_`;
@@ -429,6 +553,78 @@ export function OwnerFinancialDetailModal({
                     📈 {formatNumber(averageSoldMonthlyRoi, 2)}%/m (+{formatCurrency(totalSoldMonthlyProfit)}/m)
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fila 3: Liquidación Ganado en Compañía (Reparto Finca vs Dueño) */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Liquidación & Reparto de Utilidades {hasCompanySales ? '(En Compañía 50% Finca / 50% Dueño)' : '(Finca vs Dueño)'}</span>
+              </span>
+              <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">
+                {hasCompanySales ? `🤝 ${companySoldCattle.length} en compañía` : 'Ventas registradas'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+              {/* Tarjeta 1: Entró a la Finca */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-2 border-emerald-400 dark:border-emerald-600 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Entró a la Finca (50% Utilidad)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-600 text-white shadow-xs">
+                    50% Finca
+                  </span>
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 tabular-nums mt-1.5">
+                  +{formatCurrency(totalFarmProfitShare)}
+                </p>
+                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium block mt-0.5">
+                  Ganancia neta generada para la finca por pastoreo y cuidado
+                </span>
+              </div>
+
+              {/* Tarjeta 2: Utilidad Dueño del Ganado */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-400 dark:border-blue-600 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 dark:text-blue-300 flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 text-blue-600" />
+                    Utilidad Dueño del Ganado (50%)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-600 text-white shadow-xs">
+                    50% Dueño
+                  </span>
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-blue-700 dark:text-blue-300 tabular-nums mt-1.5">
+                  +{formatCurrency(totalPartnerProfitShare)}
+                </p>
+                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium block mt-0.5">
+                  Ganancia neta correspondiente al dueño / socio inversionista
+                </span>
+              </div>
+
+              {/* Tarjeta 3: Total Retorno al Dueño (Capital + 50%) */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-2 border-indigo-400 dark:border-indigo-600 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800 dark:text-indigo-300 flex items-center gap-1">
+                    <Wallet className="w-3.5 h-3.5 text-indigo-600" />
+                    Total Entregado al Dueño
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-600 text-white shadow-xs">
+                    Cap + 50%
+                  </span>
+                </div>
+                <p className="text-xl sm:text-2xl font-black text-indigo-700 dark:text-indigo-300 tabular-nums mt-1.5">
+                  {formatCurrency(totalPartnerCashInflow)}
+                </p>
+                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium block mt-0.5">
+                  Capital ({formatCurrency(totalPartnerCapitalReturn)}) + Utilidad ({formatCurrency(totalPartnerProfitShare)})
+                </span>
               </div>
             </div>
           </div>
@@ -643,7 +839,7 @@ export function OwnerFinancialDetailModal({
 
               {filteredSoldList.length > 0 ? (
                 <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[850px]">
                     <thead className="bg-slate-50 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="p-3">Chapa / Arete</th>
@@ -653,15 +849,23 @@ export function OwnerFinancialDetailModal({
                         <th className="p-3 text-right">Peso Salida</th>
                         <th className="p-3 text-right">Precio Compra</th>
                         <th className="p-3 text-right">Precio Venta</th>
-                        <th className="p-3 text-right">Utilidad Neta</th>
+                        <th className="p-3 text-right">Utilidad Total</th>
+                        <th className="p-3 text-right bg-emerald-100/40 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300">
+                          🏢 Finca (50%)
+                        </th>
+                        <th className="p-3 text-right bg-blue-100/40 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300">
+                          🐮 Dueño Ganado
+                        </th>
                         <th className="p-3 text-right">Rentab. ROI</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                       {filteredSoldList.map(animal => {
                         const fin = calculateFinancials(animal, 0, ownerMeatPrice);
+                        const split = getCompanySplit(animal);
                         const exitW = parseFloat(animal.exitWeight) || 0;
                         const exitP = parseFloat(animal.exitPrice) || 0;
+                        const isComp = split.isCompany;
 
                         return (
                           <tr
@@ -669,41 +873,76 @@ export function OwnerFinancialDetailModal({
                             onClick={() => onSelectAnimal && onSelectAnimal(animal)}
                             className="hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition cursor-pointer"
                           >
-                            <td className="p-3">
+                            <td className="p-3 whitespace-nowrap">
                               <span className="font-extrabold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                                 #{animal.tagNumber || 'S/N'}
                               </span>
                             </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
+                            <td className="p-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                               {formatDate(animal.exitDate)}
                             </td>
-                            <td className="p-3 text-slate-800 dark:text-slate-200 font-bold">
+                            <td className="p-3 text-slate-800 dark:text-slate-200 font-bold whitespace-nowrap">
                               {animal.saleBuyer || animal.buyer || 'Venta Directa'}
                             </td>
-                            <td className="p-3">
+                            <td className="p-3 whitespace-nowrap">
                               <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                animal.exitType === 'En Compañía' || animal.partnershipDetails
+                                isComp
                                   ? 'bg-teal-100 text-teal-800 dark:bg-teal-950/50 dark:text-teal-300'
                                   : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300'
                               }`}>
-                                {animal.exitType || 'En Pie'}
+                                {isComp ? '🤝 En Compañía' : (animal.exitType || 'En Pie')}
                               </span>
                             </td>
-                            <td className="p-3 text-right tabular-nums text-slate-800 dark:text-slate-200">
+                            <td className="p-3 text-right tabular-nums text-slate-800 dark:text-slate-200 whitespace-nowrap">
                               {exitW > 0 ? `${formatNumber(exitW, 0)} kg` : '-'}
                             </td>
-                            <td className="p-3 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                            <td className="p-3 text-right tabular-nums text-slate-600 dark:text-slate-400 whitespace-nowrap">
                               {formatCurrency(fin.totalInvested)}
                             </td>
-                            <td className="p-3 text-right tabular-nums font-extrabold text-blue-600 dark:text-blue-400">
+                            <td className="p-3 text-right tabular-nums font-extrabold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                               {formatCurrency(exitP)}
                             </td>
-                            <td className="p-3 text-right tabular-nums font-black">
-                              <span className={fin.netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                            <td className="p-3 text-right tabular-nums font-black whitespace-nowrap">
+                              <span className={fin.netProfit >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}>
                                 {formatCurrency(fin.netProfit)}
                               </span>
                             </td>
-                            <td className="p-3 text-right tabular-nums">
+                            {/* Finca (50%) */}
+                            <td className="p-3 text-right tabular-nums font-black whitespace-nowrap bg-emerald-50/50 dark:bg-emerald-950/20">
+                              {isComp ? (
+                                <div>
+                                  <span className="text-emerald-600 dark:text-emerald-400 text-xs">
+                                    +{formatCurrency(split.farmShare)}
+                                  </span>
+                                  <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold block">
+                                    {split.farmPercent}% utilidad
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">-</span>
+                              )}
+                            </td>
+                            {/* Dueño Ganado (50% utilidad y retorno) */}
+                            <td className="p-3 text-right tabular-nums whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20">
+                              {isComp ? (
+                                <div>
+                                  <span className="text-blue-600 dark:text-blue-400 font-black text-xs">
+                                    +{formatCurrency(split.partnerProfitShare)}
+                                  </span>
+                                  <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-semibold" title="Capital inicial recuperado + 50% de ganancia">
+                                    Total: {formatCurrency(split.partnerTotalReturn)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div>
+                                  <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">
+                                    +{formatCurrency(fin.netProfit)}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 block">100% Dueño</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-3 text-right tabular-nums whitespace-nowrap">
                               <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px] block">{formatNumber(fin.roi, 1)}%</span>
                               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black block">📈 {formatNumber(fin.monthlyRoi, 1)}%/m</span>
                             </td>
@@ -716,19 +955,33 @@ export function OwnerFinancialDetailModal({
                         <td className="p-3" colSpan="4">
                           TOTALES ({filteredSoldList.length} VENDIDOS)
                         </td>
-                        <td className="p-3 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                        <td className="p-3 text-right tabular-nums text-slate-600 dark:text-slate-400 whitespace-nowrap">
                           Prom: {formatNumber(averageSoldExitWeight, 1)} kg
                         </td>
-                        <td className="p-3 text-right tabular-nums text-purple-600 dark:text-purple-400">
+                        <td className="p-3 text-right tabular-nums text-purple-600 dark:text-purple-400 whitespace-nowrap">
                           {formatCurrency(totalSoldCost)}
                         </td>
-                        <td className="p-3 text-right tabular-nums text-blue-600 dark:text-blue-400 text-sm">
+                        <td className="p-3 text-right tabular-nums text-blue-600 dark:text-blue-400 text-sm whitespace-nowrap">
                           {formatCurrency(totalSoldRevenue)}
                         </td>
-                        <td className="p-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400 text-sm">
+                        <td className="p-3 text-right tabular-nums text-slate-900 dark:text-white text-sm whitespace-nowrap">
                           {formatCurrency(totalSoldNetProfit)}
                         </td>
-                        <td className="p-3 text-right tabular-nums text-emerald-700 dark:text-emerald-300 text-[11px]">
+                        <td className="p-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap bg-emerald-100/50 dark:bg-emerald-950/40">
+                          <div>
+                            <span>+{formatCurrency(totalFarmProfitShare)}</span>
+                            <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold block">50% Finca</span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-right tabular-nums text-blue-600 dark:text-blue-400 text-sm whitespace-nowrap bg-blue-100/50 dark:bg-blue-950/40">
+                          <div>
+                            <span>+{formatCurrency(totalPartnerProfitShare)}</span>
+                            <span className="text-[9px] text-slate-600 dark:text-slate-300 font-bold block">
+                              Total: {formatCurrency(totalPartnerCashInflow)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-right tabular-nums text-emerald-700 dark:text-emerald-300 text-[11px] whitespace-nowrap">
                           <span className="block font-black">{formatNumber(soldRoi, 1)}%</span>
                           <span className="block text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">📈 {formatNumber(averageSoldMonthlyRoi, 2)}%/m</span>
                         </td>

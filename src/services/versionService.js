@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.17";
+export const CURRENT_APP_VERSION = "2.24.18";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.18",
+    date: "19/10/2026",
+    title: "🤝 Desglose Financiero de Ganado en Compañía (50% Finca vs 50% Dueño y Total Liquidado)",
+    highlights: [
+      "Transparencia en Ganado en Compañía: Visualización exacta del dinero que ingresa a la finca (50% de utilidad de pastoreo) y lo que le corresponde al dueño del ganado (su 50% de ganancia + la devolución del 100% de su capital de compra).",
+      "Balance Financiero por Propietario: En el modal de detalle financiero del dueño se añadió una fila destacada con el reparto consolidado y dos nuevas columnas en la tabla de ventas vendidas ('🏢 Finca (50%)' y '🐮 Dueño Ganado').",
+      "Tarjetas de Dueños en Finanzas: Cada tarjeta de propietario ahora muestra el desglose de utilidad neta para la finca y para el dueño cuando existen ventas en compañía.",
+      "Exportación en Excel y Reporte WhatsApp: Reportes descargables y mensajes compartibles ahora integran las columnas y textos con el desglose exacto de utilidades 50/50 y retorno de capital."
+    ]
+  },
   {
     version: "2.24.17",
     date: "19/10/2026",
