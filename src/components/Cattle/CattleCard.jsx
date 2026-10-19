@@ -110,7 +110,7 @@ export function CattleCard({
               tagNumber={animal.tagNumber}
               isTemporary={Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP')))}
               isBornInFarm={isBornInFarm}
-              isCompany={isCompanyCattle}
+              isCompany={isCompany}
               status={animal.status}
               size="md"
             />

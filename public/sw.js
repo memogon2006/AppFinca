@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
   "/favicon.png",
   "/favicon.ico",
   "/assets/index-5D2ic8Oc.css",
-  "/assets/index-B1M63fE0.js",
+  "/assets/index-B-MXsZTz.js",
   "/assets/vendor-charts-DljG-sht.js",
   "/assets/vendor-db-DLsAzhYJ.js",
   "/assets/vendor-export-BKvfhyNn.js",
