@@ -29,8 +29,7 @@ import {
   Milk,
   HeartHandshake,
   Crown,
-  CloudRain,
-  Radio
+  CloudRain
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -51,7 +50,6 @@ export function Navbar({
   onOpenWorkers,
   onOpenProfile, 
   onManualSync,
-  onOpenMarketModal,
   isSyncing = false,
   isOnline = true,
   activeCattleCount = 0 
@@ -279,18 +277,6 @@ export function Navbar({
                 >
                   <Crown className="w-4 h-4 text-amber-300 fill-amber-400/20" />
                   <span className="hidden md:inline">SuperAdmin</span>
-                </button>
-              )}
-
-              {/* Radar de Subastas en Vivo */}
-              {onOpenMarketModal && (
-                <button
-                  onClick={onOpenMarketModal}
-                  title="📡 Radar de Precios de Subastas Ganaderas en Vivo"
-                  className="px-2 sm:px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-emerald-500/20 to-teal-500/25 hover:from-amber-500/35 hover:to-emerald-500/35 text-amber-200 border border-amber-400/50 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm backdrop-blur-sm transition active:scale-95 shrink-0 min-h-[34px]"
-                >
-                  <Radio className="w-3.5 h-3.5 text-amber-300 animate-pulse shrink-0" />
-                  <span className="hidden lg:inline">Subastas</span>
                 </button>
               )}
 
@@ -565,28 +551,6 @@ export function Navbar({
             </div>
             <div className="space-y-1">
               
-              {/* Radar de Precios de Subastas Ganaderas */}
-              {onOpenMarketModal && (
-                <button
-                  onClick={() => {
-                    setIsSidebarOpen(false);
-                    onOpenMarketModal();
-                  }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-900 dark:hover:text-emerald-200 transition cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition">
-                      <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-black text-xs">📡 Radar de Subastas & Precios</div>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Precios de subastas colombianas y valuador</div>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </button>
-              )}
-
               {/* Vaqueros y Mayordomos (Admin) */}
               {!isWorker && (
                 <button

@@ -35,7 +35,6 @@ import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { PaddocksView } from './components/Paddocks/PaddocksView';
 import { RainfallView } from './components/Rainfall/RainfallView';
 import { RainfallModal } from './components/Rainfall/RainfallModal';
-import { MarketPricesModal } from './components/Market/MarketPricesModal';
 import { FinancesView } from './components/Finances/FinancesView';
 import { AccountingView } from './components/Accounting/AccountingView';
 import { ExpenseModal } from './components/Accounting/ExpenseModal';
@@ -132,7 +131,6 @@ export default function App() {
 
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
   const [brandingAnimal, setBrandingAnimal] = useState(null);
-  const [isMarketModalOpen, setIsMarketModalOpen] = useState(false);
 
   const handleOpenCalving = (motherAnimal = null) => {
     setCalvingMotherAnimal(motherAnimal);
@@ -2586,7 +2584,6 @@ export default function App() {
         onOpenWorkers={() => setIsWorkersModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onManualSync={handleManualSync}
-        onOpenMarketModal={() => setIsMarketModalOpen(true)}
         isSyncing={isSyncing}
         isOnline={isOnline}
         activeCattleCount={activeCattleCount}
@@ -2669,7 +2666,6 @@ export default function App() {
             onOpenNewRain={handleOpenNewRain}
             onOpenCalving={handleOpenCalving}
             onOpenBranding={handleOpenBranding}
-            onOpenMarketModal={() => setIsMarketModalOpen(true)}
           />
         )}
 
@@ -2699,7 +2695,6 @@ export default function App() {
             onOpenCensusModal={() => setIsCensusModalOpen(true)}
             onOpenCalving={handleOpenCalving}
             onOpenBranding={handleOpenBranding}
-            onOpenMarketModal={() => setIsMarketModalOpen(true)}
           />
         )}
 
@@ -3095,16 +3090,6 @@ export default function App() {
         onSave={handleSaveRainfall}
         editingRecord={editingRainfall}
         showToast={showToast}
-      />
-
-      {/* 8. Modal de Precios de Subastas Ganaderas en Colombia & Valuador del Hato */}
-      <MarketPricesModal
-        isOpen={isMarketModalOpen}
-        onClose={() => setIsMarketModalOpen(false)}
-        activeCattle={cattle.filter(c => c.status === 'Activo')}
-        weighings={weighings}
-        currentUser={currentUser}
-        zIndex="z-[60]"
       />
 
     </div>
