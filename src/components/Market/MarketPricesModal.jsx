@@ -561,8 +561,8 @@ export function MarketPricesModal({
                       <th className="p-3">Categoría</th>
                       <th className="p-3 text-center">Sugaberrío</th>
                       <th className="p-3 text-center">Central Ganadera</th>
-                      <th className="p-3 text-center">Suganus (San José del Nus)</th>
                       <th className="p-3 text-center">Sugamagdalena</th>
+                      <th className="p-3 text-center">Suganusa</th>
                       <th className="p-3 text-center">Subastar</th>
                       <th className="p-3 text-center">Promedio FEDEGÁN</th>
                     </tr>
@@ -571,12 +571,12 @@ export function MarketPricesModal({
                     {Object.keys(MARKET_CATEGORIES).map(catId => {
                       const catObj = MARKET_CATEGORIES[catId];
                       const prices = [
-                        marketData.sugaberrio?.categories[catId]?.currentPrice || 0,
-                        marketData.central_ganadera?.categories[catId]?.currentPrice || 0,
-                        marketData.suganus?.categories[catId]?.currentPrice || 0,
-                        marketData.sugamagdalena?.categories[catId]?.currentPrice || 0,
-                        marketData.subastar?.categories[catId]?.currentPrice || 0,
-                        marketData.fedegan_nacional?.categories[catId]?.currentPrice || 0
+                        marketData.sugaberrio.categories[catId]?.currentPrice || 0,
+                        marketData.central_ganadera.categories[catId]?.currentPrice || 0,
+                        marketData.sugamagdalena.categories[catId]?.currentPrice || 0,
+                        marketData.suganusa.categories[catId]?.currentPrice || 0,
+                        marketData.subastar.categories[catId]?.currentPrice || 0,
+                        marketData.fedegan_nacional.categories[catId]?.currentPrice || 0
                       ];
                       const maxPrice = Math.max(...prices);
 
