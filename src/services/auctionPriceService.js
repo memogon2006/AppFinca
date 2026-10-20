@@ -33,6 +33,15 @@ export const AUCTION_HOUSES = {
     color: 'blue',
     badgeClass: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-300 dark:border-blue-800'
   },
+  suganus: {
+    id: 'suganus',
+    name: 'Suganus (San José del Nus)',
+    location: 'San José del Nus / Cisneros (Antioquia)',
+    auctionDays: 'Sábados (Remates periódicos)',
+    logo: '🌄',
+    color: 'orange',
+    badgeClass: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300 border-orange-300 dark:border-orange-800'
+  },
   sugamagdalena: {
     id: 'sugamagdalena',
     name: 'Sugamagdalena',
@@ -134,6 +143,16 @@ const DEFAULT_AUCTION_DATA = {
       hembra_ceba: { current: 7620, previous: 7500 },
       hembra_levante: { current: 8300, previous: 8200 },
       vaca_descarte: { current: 6450, previous: 6550 }
+    }
+  },
+  suganus: {
+    lastDate: '18/10/2026',
+    prices: {
+      macho_ceba: { current: 8490, previous: 8350 },
+      macho_levante: { current: 9240, previous: 9080 },
+      hembra_ceba: { current: 7590, previous: 7480 },
+      hembra_levante: { current: 8240, previous: 8150 },
+      vaca_descarte: { current: 6380, previous: 6460 }
     }
   },
   sugamagdalena: {

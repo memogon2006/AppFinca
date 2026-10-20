@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.24";
+export const CURRENT_APP_VERSION = "2.24.25";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.25",
+    date: "19/10/2026",
+    title: "📡 Integración de Suganus (San José del Nus, Antioquia) & Sección Independiente del Radar de Mercado",
+    highlights: [
+      "Inclusión de Suganus (San José del Nus, Antioquia): Incorporación de la histórica plaza de remates de San José del Nus en el Nordeste y Magdalena Medio antioqueño con cotizaciones semanales por kilo y comparación directa con Central Ganadera y Sugaberrío.",
+      "Reubicación con Espacio Independiente en el Tablero: El widget de Radar de Subastas y Valuador del Hato ahora cuenta con su propia sección distinguida tras las métricas zootécnicas, con encabezado dedicado, respiración visual y sin sobrecargar la cabecera.",
+      "Matriz Comparativa Enriquecida: La tabla de comparación inter-plazas ahora confronta a Suganus frente a Sugaberrío, Central Ganadera, Sugamagdalena, Subastar y FEDEGÁN, destacando la mejor cotización en verde.",
+      "Diferenciación Geográfica Precisa: Claridad entre Suganus (San José del Nus, Antioquia) y Suganusa (Altiplano Cundiboyacense en Ubaté y Chiquinquirá)."
+    ]
+  },
   {
     version: "2.24.24",
     date: "19/10/2026",
