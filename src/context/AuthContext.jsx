@@ -14,6 +14,7 @@ import {
   getFarmWorkers,
   toggleWorkerStatus,
   updateWorkerPassword,
+  updateWorkerModules,
   deleteWorkerAccount
 } from '../services/auth';
 import { db } from '../services/db';
@@ -170,6 +171,8 @@ export function AuthProvider({ children }) {
             name: remoteUser.name || session.name,
             farmName,
             role: remoteUser.role || session.role || 'admin',
+            workerRole: remoteUser.workerRole || session.workerRole || (remoteUser.role === 'worker' || session.role === 'worker' ? 'vaquero' : null),
+            allowedModules: remoteUser.allowedModules || session.allowedModules || null,
             ownerId: remoteUser.ownerId || session.ownerId || null,
             ownerEmail: ownerEmail || null,
             activeModules: activeModules || session.activeModules || null,
@@ -292,9 +295,9 @@ export function AuthProvider({ children }) {
   };
 
   // Métodos de gestión de trabajadores para el Administrador
-  const handleCreateWorker = async ({ name, username, password }) => {
+  const handleCreateWorker = async ({ name, username, password, workerRole, allowedModules }) => {
     if (!currentUser) throw new Error('No hay sesión activa.');
-    return await createWorkerAccount({ name, username, password, ownerUser: currentUser });
+    return await createWorkerAccount({ name, username, password, workerRole, allowedModules, ownerUser: currentUser });
   };
 
   const handleGetWorkers = async () => {
@@ -312,6 +315,11 @@ export function AuthProvider({ children }) {
     return await updateWorkerPassword(workerId, workerEmail, currentUser.id, newPassword, currentUser.name);
   };
 
+  const handleUpdateWorkerModules = async (workerId, workerEmail, allowedModules, workerRole) => {
+    if (!currentUser) return false;
+    return await updateWorkerModules(workerId, workerEmail, currentUser.id, allowedModules, workerRole, currentUser.name);
+  };
+
   const handleDeleteWorker = async (workerId, workerEmail, workerName = null) => {
     if (!currentUser) return false;
     return await deleteWorkerAccount(workerId, workerEmail, currentUser.id, currentUser.name, workerName, currentUser.email);
@@ -320,6 +328,18 @@ export function AuthProvider({ children }) {
   const isWorker = currentUser?.role === 'worker';
   const isAdmin = !isWorker;
   const effectiveUserId = isWorker ? (currentUser.ownerId || currentUser.id) : (currentUser?.id || 'default');
+
+  // Evalúa si el usuario activo tiene permiso para acceder a un módulo específico
+  const canAccessModule = (moduleId) => {
+    if (!isWorker) return true; // Administrador tiene acceso a todo según la orientación de su finca
+    const allowed = currentUser?.allowedModules;
+    if (Array.isArray(allowed) && allowed.length > 0) {
+      return allowed.includes(moduleId);
+    }
+    // Fallback por defecto para cuentas previas de trabajador
+    const defaultFallback = ['dashboard', 'cattle', 'weights', 'quickWeigh', 'checklist'];
+    return defaultFallback.includes(moduleId);
+  };
 
   return (
     <AuthContext.Provider
@@ -339,9 +359,11 @@ export function AuthProvider({ children }) {
         getWorkers: handleGetWorkers,
         toggleWorker: handleToggleWorker,
         updateWorkerPassword: handleUpdateWorkerPassword,
+        updateWorkerModules: handleUpdateWorkerModules,
         deleteWorker: handleDeleteWorker,
         isWorker,
         isAdmin,
+        canAccessModule,
         effectiveUserId,
         isAuthenticated: !!currentUser,
       }}

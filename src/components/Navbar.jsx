@@ -57,7 +57,7 @@ export function Navbar({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModuleSelectorOpen, setIsModuleSelectorOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-  const { currentUser, logout, isWorker, effectiveUserId } = useAuth();
+  const { currentUser, logout, isWorker, canAccessModule, effectiveUserId } = useAuth();
   const { isModuleActive } = useActiveModules();
   const isSuperAdmin = currentUser?.email?.toLowerCase().trim() === SUPERADMIN_EMAIL;
   const targetSyncUserId = effectiveUserId || currentUser?.id;
@@ -142,11 +142,44 @@ export function Navbar({
           { id: 'finances', label: 'Ventas & Liquidación', icon: DollarSign, desc: 'Ingresos, compras y ventas' },
         ]
       }
-    ] : [])
+    ] : ((canAccessModule && (canAccessModule('accounting') || canAccessModule('finances'))) ? [
+      {
+        id: 'finances',
+        title: 'Finanzas Autorizadas',
+        badge: 'Finanzas',
+        badgeClass: 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 border border-amber-300/40',
+        items: [
+          ...(canAccessModule('accounting') ? [{ id: 'accounting', label: 'Contabilidad & Gastos', icon: Wallet, desc: 'Costos fijos e insumos' }] : []),
+          ...(canAccessModule('finances') ? [{ id: 'finances', label: 'Ventas & Liquidación', icon: DollarSign, desc: 'Ingresos y liquidaciones' }] : []),
+        ]
+      }
+    ] : []))
   ];
 
-  // Filtrar grupos que tengan al menos 1 ítem disponible
-  const navigationGroups = rawNavigationGroups.filter(group => group.items && group.items.length > 0);
+  // Filtrar grupos e ítems según la orientación de la finca Y los permisos modulares asignados al usuario
+  const navigationGroups = rawNavigationGroups
+    .map(group => ({
+      ...group,
+      items: (group.items || []).filter(item => !canAccessModule || canAccessModule(item.id))
+    }))
+    .filter(group => group.items && group.items.length > 0);
+
+  const workerRole = currentUser?.workerRole || 'vaquero';
+  const roleEmoji = {
+    vaquero: '🤠',
+    veterinario: '🩺',
+    mayordomo: '🚜',
+    admin_campo: '📋',
+    personalizado: '🛠️'
+  }[workerRole] || '🤠';
+
+  const roleLabel = {
+    vaquero: 'Vaquero',
+    veterinario: 'Veterinario',
+    mayordomo: 'Mayordomo',
+    admin_campo: 'Encargado',
+    personalizado: 'Colaborador'
+  }[workerRole] || 'Trabajador';
 
   const handleLogout = () => {
     setIsSidebarOpen(false);

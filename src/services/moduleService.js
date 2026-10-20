@@ -20,6 +20,181 @@ export const MODULE_KEYS = {
   RAINFALL: 'rainfall',           // 🌧️ Pluviómetro Digital & Registro de Lluvias
 };
 
+// Roles preconfigurados de colaboradores / trabajadores de finca
+export const WORKER_ROLES = {
+  VAQUERO: 'vaquero',
+  VETERINARIO: 'veterinario',
+  MAYORDOMO: 'mayordomo',
+  ADMIN_CAMPO: 'admin_campo',
+  PERSONALIZADO: 'personalizado'
+};
+
+// Catálogo descriptivo completo de módulos asignables a trabajadores
+export const WORKER_MODULES_CATALOG = [
+  {
+    id: 'dashboard',
+    name: 'Tablero Principal',
+    icon: 'LayoutDashboard',
+    emoji: '📊',
+    category: 'General',
+    desc: 'Resumen ejecutivo del hato, alertas zootécnicas y bitácora de actividad.'
+  },
+  {
+    id: 'cattle',
+    name: 'Inventario de Ganado',
+    icon: 'Layers',
+    emoji: '🐮',
+    category: 'Manejo de Hato',
+    desc: 'Listado completo de bovinos, fichas técnicas individuales y altas.'
+  },
+  {
+    id: 'weights',
+    name: 'Control de Pesos & GDP',
+    icon: 'Scale',
+    emoji: '⚖️',
+    category: 'Manejo de Hato',
+    desc: 'Historial individual de pesajes y cálculo de ganancia diaria de peso.'
+  },
+  {
+    id: 'quickWeigh',
+    name: 'Báscula Rápida en Manga',
+    icon: 'Zap',
+    emoji: '⚡',
+    category: 'Manejo de Hato',
+    desc: 'Captura ágil de pesajes animal por animal en corral o manga.'
+  },
+  {
+    id: 'checklist',
+    name: 'Arqueo & Checklist en Campo',
+    icon: 'ClipboardCheck',
+    emoji: '📋',
+    category: 'Campo & Manga',
+    desc: 'Auditoría física de inventario en manga/potrero y detección de faltantes.'
+  },
+  {
+    id: 'palpation',
+    name: 'Palpación & Reprod. Rápida',
+    icon: 'Stethoscope',
+    emoji: '🩺',
+    category: 'Reproducción & Cría',
+    desc: 'Registro ágil de tactos rectales, diagnóstico gestacional y servicios.'
+  },
+  {
+    id: 'females',
+    name: 'Hembras, Vientres & Partos',
+    icon: 'HeartHandshake',
+    emoji: '🤰',
+    category: 'Reproducción & Cría',
+    desc: 'Control de vacas reproductoras, semáforo preparto, secado y partos.'
+  },
+  {
+    id: 'dairy',
+    name: 'Lechería & Control Ordeño',
+    icon: 'Milk',
+    emoji: '🥛',
+    category: 'Producción Lechera',
+    desc: 'Pesajes de leche AM/PM, control de tanque frío y curvas DEL.'
+  },
+  {
+    id: 'paddocks',
+    name: 'Potreros & Pasturas',
+    icon: 'Leaf',
+    emoji: '🍃',
+    category: 'Campo & Manga',
+    desc: 'Aforos de 1m², rotación de lotes, descansos y capacidad de carga.'
+  },
+  {
+    id: 'batches',
+    name: 'Lotes, Ceba & Engorde',
+    icon: 'Boxes',
+    emoji: '🥩',
+    category: 'Ceba & Rendimiento',
+    desc: 'Agrupaciones de animales, rendimiento por lote y comparativas.'
+  },
+  {
+    id: 'rainfall',
+    name: 'Pluviómetro & Lluvias',
+    icon: 'CloudRain',
+    emoji: '🌧️',
+    category: 'Campo & Manga',
+    desc: 'Precipitación diaria en mm, acumulados y alertas de sequía.'
+  },
+  {
+    id: 'vaccinations',
+    name: 'Plan Sanitario & Vacunas',
+    icon: 'Syringe',
+    emoji: '💉',
+    category: 'Sanidad & Salud',
+    desc: 'Registro de vacunas, censo sanitario de dosis y refuerzos.'
+  },
+  {
+    id: 'accounting',
+    name: 'Contabilidad & Gastos',
+    icon: 'Wallet',
+    emoji: '💼',
+    category: 'Finanzas & Costos',
+    desc: 'Costos de finca, compras de insumos, nómina y facturas (restringido).'
+  },
+  {
+    id: 'finances',
+    name: 'Ventas, Precios & Liquidación',
+    icon: 'DollarSign',
+    emoji: '💰',
+    category: 'Finanzas & Costos',
+    desc: 'Ventas de ganado, liquidaciones 50/50 y balances económicos (restringido).'
+  }
+];
+
+// Presets de roles con módulos por defecto
+export const WORKER_ROLE_PRESETS = {
+  vaquero: {
+    key: 'vaquero',
+    label: 'Vaquero / Corralero',
+    icon: '🤠',
+    description: 'Enfocado en manejo físico de animales en corral, pesajes en báscula y conteo de inventario.',
+    modules: ['dashboard', 'cattle', 'weights', 'quickWeigh', 'checklist']
+  },
+  veterinario: {
+    key: 'veterinario',
+    label: 'Veterinario / Zootecnista',
+    icon: '🩺',
+    description: 'Enfocado en salud animal, palpación, diagnóstico gestacional, lechería y sanidad.',
+    modules: ['dashboard', 'cattle', 'palpation', 'females', 'dairy', 'vaccinations', 'weights']
+  },
+  mayordomo: {
+    key: 'mayordomo',
+    label: 'Mayordomo / Encargado',
+    icon: '🚜',
+    description: 'Gestión operativa integral de campo: inventario, báscula, potreros, lechería, lluvias y arqueos.',
+    modules: ['dashboard', 'cattle', 'weights', 'quickWeigh', 'checklist', 'palpation', 'females', 'dairy', 'paddocks', 'batches', 'rainfall', 'vaccinations']
+  },
+  admin_campo: {
+    key: 'admin_campo',
+    label: 'Administrador de Campo',
+    icon: '📋',
+    description: 'Acceso amplio a tareas técnicas, zootécnicas y contabilidad básica de campo.',
+    modules: ['dashboard', 'cattle', 'weights', 'quickWeigh', 'checklist', 'palpation', 'females', 'dairy', 'paddocks', 'batches', 'rainfall', 'vaccinations', 'accounting']
+  },
+  personalizado: {
+    key: 'personalizado',
+    label: 'Perfil Personalizado',
+    icon: '🛠️',
+    description: 'Selecciona manualmente cada casilla con total libertad según las tareas del colaborador.',
+    modules: []
+  }
+};
+
+export function getWorkerRoleInfo(roleKey) {
+  return WORKER_ROLE_PRESETS[roleKey] || WORKER_ROLE_PRESETS.personalizado;
+}
+
+export function getDefaultWorkerModules(roleKey = 'vaquero') {
+  const preset = WORKER_ROLE_PRESETS[roleKey];
+  return preset && preset.modules && preset.modules.length > 0
+    ? [...preset.modules]
+    : ['dashboard', 'cattle', 'weights', 'quickWeigh', 'checklist'];
+}
+
 // Catálogo descriptivo de módulos conmutables
 export const MODULE_CATALOG = [
   {

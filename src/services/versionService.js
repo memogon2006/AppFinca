@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.21";
+export const CURRENT_APP_VERSION = "2.24.22";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.22",
+    date: "19/10/2026",
+    title: "🤠 Perfiles de Colaboradores & Asignación Modular Granular (Vaquero, Veterinario, Mayordomo)",
+    highlights: [
+      "Presets de Roles Inteligentes: Selección inmediata de perfiles con módulos recomendados precargados (🤠 Vaquero / Corralero, 🩺 Veterinario / Zootecnista, 🚜 Mayordomo / Encargado, 📋 Administrador de Campo y 🛠️ Personalizado).",
+      "Activación Granular Módulo por Módulo: Casillas interactivas organizadas por categorías zootécnicas para activar o desactivar con total libertad cualquiera de los 14 módulos del sistema (Inventario, Báscula Rápida, Palpación, Lechería, Potreros, Pluviómetro, Lotes de Ceba, etc.).",
+      "Seguridad Estricta y Redirección Automática: El menú de navegación oculta por completo las opciones no concedidas, y la aplicación redirige de inmediato cualquier intento de acceso no autorizado a la primera vista operativa permitida.",
+      "Editor Dinámico de Permisos en Cuentas Existentes: Nuevo botón '⚙️ Módulos' en cada colaborador registrado para modificar sus permisos en caliente con sincronización instantánea en Dexie y Firebase Cloud.",
+      "Entrega de Credenciales Enriquecida: Al compartir accesos por WhatsApp o portapapeles, el mensaje incluye automáticamente el rol asignado y el listado de herramientas habilitadas para el trabajador."
+    ]
+  },
   {
     version: "2.24.21",
     date: "19/10/2026",

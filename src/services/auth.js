@@ -14,7 +14,7 @@ import {
   cloudIsWorkerDeleted
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
-import { setActiveModules, getActiveModules, DEFAULT_MODULES, FARM_PRESETS } from './moduleService';
+import { setActiveModules, getActiveModules, DEFAULT_MODULES, FARM_PRESETS, getDefaultWorkerModules } from './moduleService';
 import { setSoundProfile, setSoundEnabled, getSoundProfile, isSoundEnabled } from './soundService';
 
 const STORAGE_KEY = 'ganado_current_user_session';
@@ -487,6 +487,8 @@ export async function loginUser({ email, password }) {
       email: localUser.email,
       username: localUser.username || localUser.email?.replace('@finca.local', '') || '',
       role: localUser.role || 'admin',
+      workerRole: localUser.workerRole || (localUser.role === 'worker' ? 'vaquero' : null),
+      allowedModules: localUser.allowedModules || null,
       ownerId: localUser.ownerId || null,
       ownerEmail: localUser.ownerEmail || null,
       farmPreset: localUser.farmPreset || null,
@@ -648,6 +650,8 @@ export async function loginUser({ email, password }) {
     email: user.email,
     username: user.username || user.email?.replace('@finca.local', '') || '',
     role: user.role || 'admin',
+    workerRole: user.workerRole || (user.role === 'worker' ? 'vaquero' : null),
+    allowedModules: user.allowedModules || null,
     ownerId: user.ownerId || null,
     ownerEmail: user.ownerEmail || null,
     farmPreset: user.farmPreset || null,
@@ -1046,9 +1050,9 @@ export async function adminResendCredentials(userId) {
 }
 
 /**
- * Crea una nueva cuenta de trabajador/vaquero asociada a la finca del administrador
+ * Crea una nueva cuenta de trabajador/colaborador asociada a la finca del administrador
  */
-export async function createWorkerAccount({ name, username, password, ownerUser }) {
+export async function createWorkerAccount({ name, username, password, workerRole = 'vaquero', allowedModules = null, ownerUser }) {
   const cleanName = (name || '').trim();
   const rawInput = (username || '').trim().toLowerCase();
   const cleanPassword = (password || '').trim();
@@ -1061,6 +1065,11 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
   // Formato estandarizado de correo y alias
   const alias = rawInput.replace('@finca.local', '').replace(/[^a-z0-9_.-]/g, '');
   const cleanEmail = rawInput.includes('@') ? rawInput : `${alias}@finca.local`;
+
+  // Módulos permitidos iniciales
+  const effectiveModules = Array.isArray(allowedModules) && allowedModules.length > 0
+    ? allowedModules
+    : getDefaultWorkerModules(workerRole);
 
   // Verificar si ya existe una cuenta principal o trabajador ACTIVO
   const existingCloud = await cloudFindUser(cleanEmail);
@@ -1108,6 +1117,8 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
     email: cleanEmail,
     passwordHash,
     role: 'worker',
+    workerRole: workerRole || 'vaquero',
+    allowedModules: effectiveModules,
     ownerId: ownerUser.id,
     ownerEmail: (ownerUser.email || '').trim().toLowerCase(),
     isActive: true,
@@ -1121,7 +1132,7 @@ export async function createWorkerAccount({ name, username, password, ownerUser 
 
   await logActivity({
     action: 'worker_created',
-    description: `Creó la cuenta de trabajador para ${cleanName} (${cleanEmail})`,
+    description: `Creó la cuenta de perfil (${workerRole}) para ${cleanName} (${cleanEmail}) con ${effectiveModules.length} módulos habilitados`,
     operatorName: ownerUser.name,
     operatorRole: 'admin',
     userId: ownerUser.id,
@@ -1240,6 +1251,45 @@ export async function updateWorkerPassword(workerId, workerEmail, ownerId, newPa
   await logActivity({
     action: 'worker_password_updated',
     description: `Actualizó la contraseña/PIN de ${local?.name || workerEmail}`,
+    operatorName: adminName,
+    operatorRole: 'admin',
+    userId: ownerId,
+  });
+  return true;
+}
+
+/**
+ * Actualiza los permisos y módulos asignados a un perfil de trabajador
+ */
+export async function updateWorkerModules(workerId, workerEmail, ownerId, allowedModules, workerRole = 'personalizado', adminName = 'Administrador') {
+  if (!workerEmail && !workerId) throw new Error('Correo/usuario de trabajador no especificado.');
+  const cleanModules = Array.isArray(allowedModules) ? allowedModules : [];
+  const updates = { 
+    allowedModules: cleanModules, 
+    workerRole: workerRole || 'personalizado',
+    updatedAt: new Date().toISOString()
+  };
+  await cloudUpdateWorker(ownerId, workerId, workerEmail, updates);
+  const local = await db.users.get(workerId);
+  if (local) {
+    await db.users.put({ ...local, ...updates });
+  }
+
+  // Si la sesión activa en este dispositivo es la del trabajador, actualizarla inmediatamente
+  try {
+    const currentRaw = localStorage.getItem(STORAGE_KEY);
+    if (currentRaw) {
+      const current = JSON.parse(currentRaw);
+      if (current.id === workerId || current.email === workerEmail) {
+        const updatedSession = { ...current, ...updates };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSession));
+      }
+    }
+  } catch (e) {}
+
+  await logActivity({
+    action: 'worker_permissions_updated',
+    description: `Actualizó permisos y módulos (${workerRole}) de ${local?.name || workerEmail} (${cleanModules.length} módulos habilitados)`,
     operatorName: adminName,
     operatorRole: 'admin',
     userId: ownerId,

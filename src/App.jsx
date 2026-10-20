@@ -66,7 +66,7 @@ import { useActiveModules, MODULE_KEYS, autoActivateModulesForAnimal, setActiveM
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
-  const { currentUser, isAuthenticated, loading: authLoading, isWorker, effectiveUserId } = useAuth();
+  const { currentUser, isAuthenticated, loading: authLoading, isWorker, effectiveUserId, canAccessModule } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -302,10 +302,14 @@ export default function App() {
 
   const { isModuleActive } = useActiveModules();
 
-  // Redirigir a vista permitida si un trabajador o usuario intenta acceder a un módulo inactivo
+  // Redirigir a vista permitida si un trabajador o usuario intenta acceder a un módulo inactivo o no autorizado
   useEffect(() => {
-    if (isWorker && (currentView === 'finances' || currentView === 'accounting')) {
-      setCurrentView('dashboard');
+    // Si es trabajador y no tiene permitido el módulo de la vista actual, redirigir a su primera vista autorizada
+    if (isWorker && canAccessModule && !canAccessModule(currentView)) {
+      const candidateViews = ['dashboard', 'cattle', 'quickWeigh', 'weights', 'checklist', 'palpation', 'females', 'dairy', 'paddocks', 'batches', 'rainfall'];
+      const firstAllowed = candidateViews.find(v => canAccessModule(v)) || 'cattle';
+      setCurrentView(firstAllowed);
+      return;
     }
     if (currentView === 'batches' && !isModuleActive(MODULE_KEYS.CEBA_BATCHES)) {
       setCurrentView('dashboard');
@@ -325,7 +329,7 @@ export default function App() {
     if (currentView === 'rainfall' && !isModuleActive(MODULE_KEYS.RAINFALL)) {
       setCurrentView('dashboard');
     }
-  }, [isWorker, currentView, isModuleActive]);
+  }, [isWorker, currentView, isModuleActive, canAccessModule, currentUser?.allowedModules]);
 
   // Sincronización automática con la nube multi-dispositivo en tiempo real
   useEffect(() => {
