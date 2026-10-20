@@ -546,6 +546,13 @@ export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-
                     </span>
                   </div>
 
+                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between">
+                    <span>🤝 Descuento liquidado a {myRole === 'farm' ? partnerPartyName : farmPartyName}:</span>
+                    <span className="font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                      -{formatCurrency(myRole === 'farm' ? partnerTotalReturn : farmProfitShare)}
+                    </span>
+                  </div>
+
                   {/* INDICADORES DE RENTABILIDAD MENSUAL DEL CAPITAL */}
                   <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 space-y-2">
                     <div className="flex items-center justify-between text-[11px] font-black uppercase text-teal-900 dark:text-teal-300">

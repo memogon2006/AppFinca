@@ -166,18 +166,21 @@ export function DashboardView({
   let totalUserCashInflow = 0;
   let totalCapitalRecovered = 0;
   let totalRealizedProfit = 0;
+  let totalGrossCattleSales = 0;
 
   soldCattle.forEach(animal => {
     const flow = calculateSaleCashFlow(animal, currentUser);
     totalRealizedProfit += flow.netProfit;
     totalUserCashInflow += flow.cashInflow;
     totalCapitalRecovered += flow.capitalReturn;
+    totalGrossCattleSales += (parseFloat(animal.exitPrice) || 0);
   });
 
   // Cálculos Financieros Integrales de la Finca (Contabilidad + Ventas + Lechería)
   const totalFarmExpenses = farmExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const totalOtherIncomes = effectiveIncomes.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
-  const totalCattleSalesRevenue = soldCattle.reduce((sum, c) => sum + (parseFloat(c.exitPrice) || 0), 0);
+  // El ingreso por ganado a la caja es el flujo real que entra al bolsillo del usuario (descontando la parte del socio)
+  const totalCattleSalesRevenue = totalUserCashInflow;
   const totalGrossIncome = totalCattleSalesRevenue + totalOtherIncomes;
   const realNetProfit = totalRealizedProfit + totalOtherIncomes - totalFarmExpenses;
 
@@ -206,7 +209,7 @@ export function DashboardView({
     });
 
   const currentMonthNetProfit = currentMonthCattleProfit + currentMonthIncomes - currentMonthExpenses;
-  const currentMonthGrossIncome = currentMonthCattleSalesGross + currentMonthIncomes;
+  const currentMonthGrossIncome = currentMonthUserCashInflow + currentMonthIncomes;
 
   // Cobertura de Gastos del Mes
   const expenseCoveragePct = currentMonthExpenses > 0 
@@ -788,7 +791,7 @@ export function DashboardView({
                   {formatCurrency(totalGrossIncome)}
                 </p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                  📅 Mes actual: {formatCurrency(currentMonthGrossIncome)} • Ventas: {formatCurrency(totalCattleSalesRevenue)}
+                  📅 Mes actual: {formatCurrency(currentMonthGrossIncome)} • Ganado a Caja: {formatCurrency(totalCattleSalesRevenue)}
                 </p>
               </div>
 

@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.22";
+export const CURRENT_APP_VERSION = "2.24.23";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.23",
+    date: "19/10/2026",
+    title: "🤝 Asignación y Unificación Financiera de Ganado en Compañía 50/50 (Capital + Ganancia vs Utilidad Finca)",
+    highlights: [
+      "Ecuación Financiera de Compañía Transparente: Cuando el usuario es el dueño del animal, ingresa a su caja el 100% del capital de compra más su 50% de ganancia (ej. $1.5M en un animal vendido en $2M con $1M de costo), descontando el 50% correspondiente a la finca. Si es el dueño de la finca, ingresa únicamente su 50% de utilidad ($500.000), descontando el capital y ganancia del dueño.",
+      "Unificación en Tablero Principal: Las tarjetas de ingresos por ventas y recaudos del mes ahora computan con total veracidad el dinero real ingresado a la caja del ganadero, sin inflar las cifras con la venta bruta pagada por el frigorífico.",
+      "Unificación en Contabilidad y Exportación Excel: El libro contable y las planillas Excel computan el flujo de caja real e incorporan la fila explícita 'Dinero Liquidado / Descontado a Socios en Compañía'.",
+      "Selector Dinámico de Perspectiva en Finanzas: Pestañas interactivas ('🔄 Según Liquidación', '🏢 Ver como Finca' y '🐮 Ver como Dueño') para auditar y simular balances desde cualquier ángulo con un solo clic.",
+      "Descuento Visible en Liquidaciones: Tarjetas individuales y por lote muestran explícitamente el valor descontado que se transfiere a la contraparte."
+    ]
+  },
   {
     version: "2.24.22",
     date: "19/10/2026",

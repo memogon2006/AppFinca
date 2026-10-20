@@ -251,6 +251,7 @@ export function AccountingView({
     let purchaseCapitalRecovered = 0;
     let grossProfit = 0;
     let userCashInflow = 0;
+    let partnerPayout = 0;
     let kilosSold = 0;
 
     periodSoldCattle.forEach(c => {
@@ -262,6 +263,9 @@ export function AccountingView({
       purchaseCapitalRecovered += flow.capitalReturn;
       grossProfit += flow.netProfit;
       userCashInflow += flow.cashInflow;
+      if (flow.isPartnership) {
+        partnerPayout += (flow.partnerPaid || 0);
+      }
       kilosSold += exitWeight;
     });
 
@@ -270,6 +274,7 @@ export function AccountingView({
       purchaseCapitalRecovered,
       grossProfit,
       userCashInflow,
+      partnerPayout,
       kilosSold,
       count: periodSoldCattle.length
     };
@@ -280,8 +285,8 @@ export function AccountingView({
     return periodIncomes.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
   }, [periodIncomes]);
 
-  // Ingresos Totales de la Finca (Brutos)
-  const totalGrossIncome = cattleSalesMetrics.grossRevenue + additionalIncomesTotal;
+  // Ingresos Totales Reales que entran a la Caja de la Finca (Cobro real de ganado + Otros ingresos)
+  const totalGrossIncome = cattleSalesMetrics.userCashInflow + additionalIncomesTotal;
 
   // Utilidad Neta Real Ganadera = (Utilidad Bruta de Ganado + Otros Ingresos) - Gastos Operativos de Finca
   const realNetProfit = (cattleSalesMetrics.grossProfit + additionalIncomesTotal) - totalExpenses;
@@ -481,9 +486,12 @@ export function AccountingView({
       ['Fecha de Generación:', new Date().toLocaleDateString('es-CO')],
       [],
       ['CONCEPTO FINANCIERO', 'MONTO ($ COP)'],
-      ['1. TOTAL INGRESOS COBRADOS (Venta Bruta + Otros)', totalGrossIncome],
-      ['   • Capital Inicial de Compra de Ganado Recuperado', cattleSalesMetrics.purchaseCapitalRecovered],
-      ['   • Ganancia Bruta por Venta de Ganado', cattleSalesMetrics.grossProfit],
+      ['1. TOTAL DINERO INGRESADO A CAJA (Ganado + Otros)', totalGrossIncome],
+      ['   • Dinero Ingresado por Ganado a Caja', cattleSalesMetrics.userCashInflow],
+      ['     - Capital Inicial de Compra Recuperado', cattleSalesMetrics.purchaseCapitalRecovered],
+      ['     - Ganancia Neta Realizada de Ganado', cattleSalesMetrics.grossProfit],
+      ['   • Dinero Descontado / Liquidado a Socios en Compañía', cattleSalesMetrics.partnerPayout],
+      ['   • Venta Bruta Total en Báscula / Frigorífico', cattleSalesMetrics.grossRevenue],
       ['   • Otros Ingresos (Leche, Arriendos, Abonos)', additionalIncomesTotal],
       ['(=) GANANCIA BRUTA OPERATIVA DISPONIBLE', totalOperationalProfitGenerated],
       [],
@@ -554,9 +562,10 @@ export function AccountingView({
       `🏡 *Finca:* ${currentUser?.farmName || 'GANADERIA LA G'}\n` +
       `📅 *Período:* ${dateRange.label}\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `💰 *1. TOTAL INGRESOS COBRADOS:* ${formatCurrency(totalGrossIncome)}\n` +
+      `💰 *1. TOTAL INGRESOS A CAJA:* ${formatCurrency(totalGrossIncome)}\n` +
       `  • Capital Inicial Recuperado: ${formatCurrency(cattleSalesMetrics.purchaseCapitalRecovered)} (${cattleSalesMetrics.count} animales)\n` +
-      `  • Utilidad Bruta de Ventas: ${formatCurrency(cattleSalesMetrics.grossProfit)}\n` +
+      `  • Ganancia Limpia de Ganado: ${formatCurrency(cattleSalesMetrics.grossProfit)}\n` +
+      (cattleSalesMetrics.partnerPayout > 0 ? `  • 🤝 Descontado a Socios: ${formatCurrency(cattleSalesMetrics.partnerPayout)}\n` : '') +
       (additionalIncomesTotal > 0 ? `  • Otros Ingresos (Leche/Arriendos): ${formatCurrency(additionalIncomesTotal)}\n` : '') +
       `\n` +
       `📤 *2. GASTOS DE LA FINCA:* ${formatCurrency(totalExpenses)}\n` +
@@ -707,6 +716,11 @@ export function AccountingView({
             <span>Capital: <strong className="text-indigo-600 dark:text-indigo-400">{formatCurrency(cattleSalesMetrics.purchaseCapitalRecovered)}</strong></span>
             <span>Utilidad: <strong className="text-emerald-600 dark:text-emerald-400">{formatCurrency(totalOperationalProfitGenerated)}</strong></span>
           </div>
+          {cattleSalesMetrics.partnerPayout > 0 && (
+            <div className="text-[9px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+              🤝 Liquidado a socios: {formatCurrency(cattleSalesMetrics.partnerPayout)}
+            </div>
+          )}
           <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">
             Total recaudado en {dateRange.label} (Ganado + Leche + Otros)
           </div>

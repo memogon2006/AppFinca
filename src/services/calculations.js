@@ -599,7 +599,7 @@ export function calculateFinancials(animal, additionalExpenses = 0, customMarket
  * 
  * Además calcula la Rentabilidad Mensual del Capital (% mensual) y ganancia por mes para ambas partes.
  */
-export function calculateSaleCashFlow(animal, currentUser = null) {
+export function calculateSaleCashFlow(animal, currentUser = null, overrideRole = null) {
   if (!animal) {
     return {
       isPartnership: false,
@@ -684,8 +684,8 @@ export function calculateSaleCashFlow(animal, currentUser = null) {
     };
   }
 
-  // Determinar rol del usuario
-  let userRole = part.userRole; // 'farm' | 'owner'
+  // Determinar rol del usuario (soporta overrideRole para simulación 'farm' o 'owner')
+  let userRole = overrideRole || part.userRole; // 'farm' | 'owner'
   if (!userRole) {
     const currentName = (currentUser?.name || '').trim().toLowerCase();
     const currentFarm = (currentUser?.farmName || '').trim().toLowerCase();

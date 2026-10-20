@@ -136,6 +136,16 @@ export function SettlementDetailCard({
             </div>
           </div>
 
+          {/* Fila Informativa de Descuento / Entrega a Contraparte */}
+          <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+              🤝 Descuento entregado al socio ({userRole === 'farm' ? '🐮 Dueño del Ganado' : '🏢 Finca Tenedora'}):
+            </span>
+            <span className="font-black text-rose-600 dark:text-rose-400 tabular-nums">
+              -{formatCurrency(userRole === 'farm' ? partnerTotalReturn : farmShare)}
+            </span>
+          </div>
+
           {/* Fila Inferior: Rentabilidad Mensual de Ambas Partes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
             <div className="p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-300 dark:border-blue-800">

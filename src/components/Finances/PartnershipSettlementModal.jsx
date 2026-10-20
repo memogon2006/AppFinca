@@ -1119,6 +1119,17 @@ export function PartnershipSettlementModal({
                 </div>
               </div>
 
+              {totals.partnerPayout > 0 && (
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                    🤝 Descuento entregado al socio ({myRole === 'farm' ? partnerPartyName : farmPartyName}):
+                  </span>
+                  <span className="font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                    -{formatCurrency(totals.partnerPayout)}
+                  </span>
+                </div>
+              )}
+
               {/* Desglose Tabla Animal por Animal con Selector Rápido */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">

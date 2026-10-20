@@ -33,6 +33,8 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
   const [saleTypeFilter, setSaleTypeFilter] = useState('');
   const [selectedOwnerForDetail, setSelectedOwnerForDetail] = useState(null);
   const [expandedSaleId, setExpandedSaleId] = useState(null);
+  // Perspectiva financiera: 'auto' (según liquidación de cada animal) | 'farm' (simular como Finca: solo 50% utilidad) | 'owner' (simular como Dueño: capital + 50% utilidad)
+  const [financialPerspective, setFinancialPerspective] = useState('auto');
 
   if (isWorker) {
     return (
@@ -95,16 +97,20 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
   let totalUserCashInflow = 0;
   let totalUserNetProfit = 0;
   let totalUserMonthlyProfit = 0;
+  let totalPartnerPayout = 0; // Dinero descontado y transferido a socios
 
   filteredSoldCattle.forEach(c => {
     const fin = calculateFinancials(c, 0, meatPricePerKg);
-    const flow = calculateSaleCashFlow(c, currentUser);
+    const flow = calculateSaleCashFlow(c, currentUser, financialPerspective === 'auto' ? null : financialPerspective);
     totalGrossSales += parseFloat(c.exitPrice) || 0;
     totalCostSold += fin.totalInvested;
     totalCapitalRecovered += flow.capitalReturn;
     totalUserCashInflow += flow.cashInflow;
     totalUserNetProfit += flow.netProfit;
     totalUserMonthlyProfit += flow.userMonthlyProfit || 0;
+    if (flow.isPartnership) {
+      totalPartnerPayout += (flow.partnerPaid || 0);
+    }
   });
 
   const overallRealizedRoi = totalCostSold > 0 ? (totalUserNetProfit / totalCostSold) * 100 : 0;
@@ -145,7 +151,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
       profitByOwner[owner].activeHeads++;
       profitByOwner[owner].activeInvested += fin.totalInvested;
     } else if (c.status === 'Vendido') {
-      const flow = calculateSaleCashFlow(c, currentUser);
+      const flow = calculateSaleCashFlow(c, currentUser, financialPerspective === 'auto' ? null : financialPerspective);
       const isComp = c.exitType === 'En Compañía' || !!c.partnershipDetails;
       profitByOwner[owner].soldHeads++;
       profitByOwner[owner].soldCost += fin.totalInvested;
@@ -221,6 +227,56 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
         )}
       </div>
 
+      {/* Selector de Perspectiva Financiera (Finca vs Dueño vs Auto) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <span>🎯 Perspectiva de Cuentas:</span>
+          </span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            {financialPerspective === 'auto' && '(Mostrando según rol asignado en cada liquidación)'}
+            {financialPerspective === 'farm' && '(Modo Finca: Solo 50% ganancia de pastoreo, $0 capital)'}
+            {financialPerspective === 'owner' && '(Modo Dueño: 100% Capital recuperado + 50% ganancia)'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold self-start sm:self-auto shadow-xs">
+          <button
+            type="button"
+            onClick={() => setFinancialPerspective('auto')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+              financialPerspective === 'auto'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>🔄 Según Liquidación</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFinancialPerspective('farm')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+              financialPerspective === 'farm'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>🏢 Ver como Finca (50%)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFinancialPerspective('owner')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+              financialPerspective === 'owner'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>🐮 Ver como Dueño (Cap + 50%)</span>
+          </button>
+        </div>
+      </div>
+
       {/* Tarjetas de Resumen Financiero */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
@@ -232,6 +288,11 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
             <span>Cap: <strong>{formatCurrency(totalCapitalRecovered)}</strong></span>
             <span>Util: <strong>{formatCurrency(totalUserNetProfit)}</strong></span>
           </div>
+          {totalPartnerPayout > 0 && (
+            <div className="text-[10px] text-amber-700 dark:text-amber-400 font-bold mt-1.5 pt-1.5 border-t border-blue-200/60 dark:border-blue-900/40">
+              🤝 Descontado a socios: -{formatCurrency(totalPartnerPayout)}
+            </div>
+          )}
         </div>
 
         {/* Card 2: Capital Recuperado */}
@@ -277,9 +338,12 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                 Ecuación de Dinero Entrante en Ventas
               </span>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
-                De los <strong>{formatCurrency(totalUserCashInflow)}</strong> cobrados en caja: 
+                De los <strong>{formatCurrency(totalUserCashInflow)}</strong> cobrados en tu caja: 
                 <strong> {formatCurrency(totalCapitalRecovered)}</strong> corresponden a <u>Capital Recuperado</u> y 
                 <strong> {formatCurrency(totalUserNetProfit)}</strong> son <u>Utilidad Limpia</u>.
+                {totalPartnerPayout > 0 && (
+                  <span> (Se descontaron <strong>{formatCurrency(totalPartnerPayout)}</strong> liquidados a socios por su parte).</span>
+                )}
               </p>
             </div>
           </div>
@@ -536,7 +600,7 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {filteredSoldCattle.map(animal => {
                     const fin = calculateFinancials(animal, 0, meatPricePerKg);
-                    const flow = calculateSaleCashFlow(animal, currentUser);
+                    const flow = calculateSaleCashFlow(animal, currentUser, financialPerspective === 'auto' ? null : financialPerspective);
                     const isPart = flow.isPartnership;
                     const isExpanded = expandedSaleId === animal.id;
 
@@ -596,9 +660,21 @@ export function FinancesView({ cattle = [], weighings = [], onSelectAnimal, onRe
                               <span>+{formatCurrency(flow.cashInflow)}</span>
                               {isPart && (
                                 <div className="text-[10px] text-slate-400 font-normal">
-                                  {flow.userRole === 'farm'
-                                    ? `(50% utilidad)`
-                                    : `(${formatCurrency(flow.capitalReturn)} cap + ${formatCurrency(flow.netProfit)} ut)`}
+                                  {flow.userRole === 'farm' ? (
+                                    <>
+                                      <span>(50% utilidad de pastos)</span>
+                                      <span className="block text-amber-600 dark:text-amber-400 font-bold">
+                                        🤝 Descontado a dueño: -{formatCurrency(flow.partnerPaid)}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>({formatCurrency(flow.capitalReturn)} cap + {formatCurrency(flow.netProfit)} ut)</span>
+                                      <span className="block text-amber-600 dark:text-amber-400 font-bold">
+                                        🤝 Descontado a finca: -{formatCurrency(flow.partnerPaid)}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               )}
                             </div>
