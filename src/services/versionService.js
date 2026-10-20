@@ -1,10 +1,24 @@
-export const CURRENT_APP_VERSION = "2.24.23";
+export const CURRENT_APP_VERSION = "2.24.24";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.24",
+    date: "19/10/2026",
+    title: "📡 Radar de Subastas Ganaderas en Vivo (Colombia), Comparativa Semanal & Valuador Comercial del Hato",
+    highlights: [
+      "Monitoreo de Principales Subastas de Colombia: Conexión y boletines semanales de remate para Sugaberrío (Puerto Berrío / Cimitarra), Central Ganadera de Medellín, Sugamagdalena (La Dorada / Puerto Salgar), Suganusa (Ubaté / Chiquinquirá), Subastar S.A. (Montería / Costa) y Consolidado Nacional FEDEGÁN.",
+      "Comparativa Semanal con Variaciones (▲/▼): Monitoreo de precios por kilo en 5 categorías zootécnicas clave (Macho Ceba 1ra, Macho Levante/Desteto, Hembra Ceba, Hembra Levante/Vientre y Vaca de Descarte) con badges de variación de precio y porcentaje frente a la semana anterior.",
+      "Valuador Comercial en Vivo de Todo el Hato: Avalúo patrimonial automático en COP que clasifica y multiplica en tiempo real cada bovino activo por sus kilos registrados y el precio de subasta seleccionado, entregando kilos totales en pie, valor comercial de venta y precio promedio ponderado.",
+      "Radar de Mercado en el Tablero Principal: Widget interactivo con selector rápido de plaza, cotizaciones del día, valuación patrimonial y botones de adopción inmediata.",
+      "Botón 'Adoptar en mi Finca': Permite transferir cualquier precio de subasta con un solo clic como precio oficial de carne de la finca, recalculando proyecciones de venta de inmediato.",
+      "Generador de Boletines para WhatsApp: Exportación con un clic de boletines oficiales listos para compartir con ganaderos, socios y mayordomos con emojis, precios y valuación de finca.",
+      "Gráficos de Tendencias Históricas & Subasta Local: Curvas de evolución de 8 semanas mediante Recharts y módulo para registrar boletines de ferias o subastas municipales locales."
+    ]
+  },
   {
     version: "2.24.23",
     date: "19/10/2026",
