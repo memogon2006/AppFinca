@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.23";
+export const CURRENT_APP_VERSION = "2.24.26";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.26",
+    date: "22/10/2026",
+    title: "🏷️ Restauración del Formato Original de Identificación de Bovinos",
+    highlights: [
+      "Retorno a la Tipografía Original: Se retiró el icono de chapeta plástica troquelada y se restableció la visualización original del número de arete en tipografía grande y negrita, limpia y directa, tal como estaba concebida originalmente.",
+      "Optimización en Fichas y Tablas: Encabezados limpios sin redundancias de texto en tarjetas de ganado, vista de lista y modal de ficha técnica."
+    ]
+  },
   {
     version: "2.24.23",
     date: "19/10/2026",

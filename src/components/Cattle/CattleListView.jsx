@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { CattleCard } from './CattleCard';
 import { CattleFilters } from './CattleFilters';
-import { BovineEarTag } from './BovineEarTag';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { 
   formatCurrency, 
@@ -525,21 +524,11 @@ export function CattleListView({
                     >
                       {/* Arete y Nombre */}
                       <td className="p-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <BovineEarTag 
-                            tagNumber={animal.tagNumber}
-                            size="xs"
-                            isTemporary={Boolean(animal.isTemporaryTag || (animal.tagNumber && typeof animal.tagNumber === 'string' && animal.tagNumber.toUpperCase().startsWith('TEMP')))}
-                            isBornInFarm={isBornInFarm}
-                            isCompany={isCompany}
-                            status={animal.status}
-                          />
-                          <div>
-                            <span className={`font-extrabold block ${isSold ? 'text-amber-800 dark:text-amber-300' : isDead ? 'text-rose-700 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
-                              {animal.tagNumber}
-                            </span>
-                            {animal.name && <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal block">({animal.name})</span>}
-                          </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`font-extrabold ${isSold ? 'text-amber-800 dark:text-amber-300' : isDead ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {animal.tagNumber}
+                          </span>
+                          {animal.name && <span className="text-slate-500 dark:text-slate-400 font-normal">({animal.name})</span>}
                           
                           {/* Badge de Origen / Procedencia */}
                           {isBornInFarm && (
