@@ -19,7 +19,7 @@ import {
   deleteRainfallRecord
 } from './services/db';
 import { useAuth } from './context/AuthContext';
-import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete } from './services/cloudSync';
+import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete, isInitialPullCompleted } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
 import { Navbar } from './components/Navbar';
 import { SuperAdminView } from './components/Admin/SuperAdminView';
@@ -351,10 +351,11 @@ export default function App() {
     // 1. Sincronizar de inmediato al entrar
     sync();
 
-    // 2. Sincronizar al reconectarse, volver a la ventana o enfocar la pantalla
+    // 2. Sincronizar al reconectarse, volver a la ventana, enfocar la pantalla o restaurar desde hibernación móvil (pageshow)
     const handleSyncTrigger = () => sync();
     window.addEventListener('online', handleSyncTrigger);
     window.addEventListener('focus', handleSyncTrigger);
+    window.addEventListener('pageshow', handleSyncTrigger);
     
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') sync();
@@ -371,6 +372,7 @@ export default function App() {
     return () => {
       window.removeEventListener('online', handleSyncTrigger);
       window.removeEventListener('focus', handleSyncTrigger);
+      window.removeEventListener('pageshow', handleSyncTrigger);
       document.removeEventListener('visibilitychange', handleVisibility);
       clearInterval(syncInterval);
     };
@@ -540,9 +542,9 @@ export default function App() {
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
 
-  // Auto-reparación y optimización de datos de pesajes al cargar
+  // Auto-reparación y optimización de datos de pesajes al cargar (SOLO tras PULL inicial confirmado)
   useEffect(() => {
-    if (!userId || cattle.length === 0 || weighings.length === 0) return;
+    if (!userId || !isInitialPullCompleted() || cattle.length === 0 || weighings.length === 0) return;
 
     let changed = false;
 
@@ -577,6 +579,7 @@ export default function App() {
         if (metrics.currentWeight > 0 && animal.currentWeight !== metrics.currentWeight) {
           await db.cattle.update(animal.id, {
             currentWeight: metrics.currentWeight,
+            updatedAt: new Date().toISOString()
           });
           changed = true;
         }
@@ -592,7 +595,7 @@ export default function App() {
 
   // Sincronización Automática de Liquidaciones de Leche existentes hacia Contabilidad (farmIncomes)
   useEffect(() => {
-    if (!userId || !milkSettlements || milkSettlements.length === 0 || !db.farmIncomes) return;
+    if (!userId || !isInitialPullCompleted() || !milkSettlements || milkSettlements.length === 0 || !db.farmIncomes) return;
 
     const syncMissingMilkIncomes = async () => {
       try {
@@ -644,7 +647,7 @@ export default function App() {
 
   // Sincronización automática de costos de vacunaciones históricas hacia farmExpenses
   useEffect(() => {
-    if (!userId || !vaccinations || vaccinations.length === 0 || !db.farmExpenses) return;
+    if (!userId || !isInitialPullCompleted() || !vaccinations || vaccinations.length === 0 || !db.farmExpenses) return;
 
     const syncMissingVaccinationExpenses = async () => {
       try {
@@ -713,8 +716,10 @@ export default function App() {
     // Detectar y auto-activar módulos si el animal tiene características de leche, cría, IATF, compañía, lote, peso, etc.
     const activatedModules = autoActivateModulesForAnimal(animalData);
 
+    const nowIso = new Date().toISOString();
+
     if (animalData.id) {
-      const updated = { ...animalData, userId };
+      const updated = { ...animalData, userId, updatedAt: nowIso };
       await db.cattle.put(updated);
       markPendingSync(userId, updated.id);
 
@@ -726,7 +731,8 @@ export default function App() {
           if (initialWeighing) {
             await db.weighings.update(initialWeighing.id, {
               weight: parseFloat(updated.entryWeight) || 0,
-              date: updated.entryDate || initialWeighing.date
+              date: updated.entryDate || initialWeighing.date,
+              updatedAt: nowIso
             });
             markPendingSync(userId, initialWeighing.id);
           }
@@ -765,7 +771,8 @@ export default function App() {
         ...animalData,
         id: newId,
         userId,
-        createdAt: new Date().toISOString(),
+        createdAt: nowIso,
+        updatedAt: nowIso,
       };
       await db.cattle.put(created);
       markPendingSync(userId, newId);
@@ -780,6 +787,8 @@ export default function App() {
           weight: parseFloat(created.entryWeight),
           conditionScore: 3.5,
           notes: 'Peso inicial de registro',
+          createdAt: nowIso,
+          updatedAt: nowIso,
         });
         markPendingSync(userId, weighId);
       }
@@ -1037,6 +1046,7 @@ export default function App() {
     const activatedList = Array.from(allActivated);
 
     const createdIds = [];
+    const nowIso = new Date().toISOString();
     for (let i = 0; i < batchAnimals.length; i++) {
       const animalData = batchAnimals[i];
       const newId = 'c_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
@@ -1044,7 +1054,8 @@ export default function App() {
         ...animalData,
         id: newId,
         userId,
-        createdAt: new Date().toISOString(),
+        createdAt: nowIso,
+        updatedAt: nowIso,
       };
       await db.cattle.put(created);
       createdIds.push(newId);
@@ -1059,6 +1070,8 @@ export default function App() {
           weight: parseFloat(created.entryWeight),
           conditionScore: 3.5,
           notes: 'Peso inicial de registro por lote',
+          createdAt: nowIso,
+          updatedAt: nowIso,
         });
         createdIds.push(weighId);
       }
@@ -1093,6 +1106,7 @@ export default function App() {
       setActiveModules({ [MODULE_KEYS.WEIGHTS]: true });
     }
     const weighId = 'w_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const nowIso = new Date().toISOString();
     
     const animal = await db.cattle.get(cattleId) || await db.cattle.get(Number(cattleId));
     const targetId = animal ? animal.id : cattleId;
@@ -1105,6 +1119,8 @@ export default function App() {
       weight: parseFloat(weight),
       conditionScore: parseFloat(conditionScore),
       notes: notes || '',
+      createdAt: nowIso,
+      updatedAt: nowIso,
     });
 
     const allWeighs = await db.weighings.where('cattleId').equals(String(targetId)).toArray();
@@ -1113,6 +1129,7 @@ export default function App() {
 
     await db.cattle.update(targetId, {
       currentWeight: newWeight,
+      updatedAt: nowIso,
     });
 
     if (selectedAnimal && String(selectedAnimal.id) === String(targetId)) {
@@ -1168,6 +1185,7 @@ export default function App() {
 
       await db.cattle.update(animal.id, {
         currentWeight: newCurrentWeight > 0 ? newCurrentWeight : undefined,
+        updatedAt: new Date().toISOString()
       });
       markPendingSync(userId, animal.id);
 
@@ -1208,6 +1226,7 @@ export default function App() {
       exitType: exitType || 'En Pie',
       currentWeight: parseFloat(exitWeight),
       partnershipDetails: partnershipDetails || null,
+      updatedAt: new Date().toISOString(),
     };
 
     await db.cattle.update(targetId, saleUpdates);
@@ -1252,6 +1271,7 @@ export default function App() {
         exitType: item.exitType || 'En Compañía',
         currentWeight: parseFloat(item.exitWeight),
         partnershipDetails: item.partnershipDetails || null,
+        updatedAt: new Date().toISOString(),
       });
       updatedIds.push(targetId);
     }
@@ -1297,6 +1317,7 @@ export default function App() {
       deathDate: deathDate || getLocalDateString(),
       deathReason: deathReason || 'Enfermedad',
       deathNotes: deathNotes || '',
+      updatedAt: new Date().toISOString(),
     };
 
     await db.cattle.update(targetId, deathUpdates);

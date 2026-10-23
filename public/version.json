@@ -1,5 +1,5 @@
 {
-  "version": "2.24.27",
-  "buildTime": 1792723000000,
-  "description": "🗂️ Corrección de Capas Z-Index: Modal de Venta, Pesajes y Acciones se abren siempre por encima de la Ficha Técnica"
+  "version": "2.24.28",
+  "buildTime": 1792724000000,
+  "description": "🛡️ Blindaje de Sincronización Multidispositivo (PC / Móvil) con PULL-First y Motor Last-Write-Wins"
 }

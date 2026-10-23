@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.27";
+export const CURRENT_APP_VERSION = "2.24.28";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.28",
+    date: "22/10/2026",
+    title: "🛡️ Blindaje de Sincronización Multidispositivo (PC / Móvil) con PULL-First y Motor Last-Write-Wins",
+    highlights: [
+      "Salvaguarda PULL-First Obligatoria: Ningún dispositivo puede subir datos (PUSH) a Firebase sin haber descargado y reconciliado primero la versión fresca de la nube, impidiendo que celulares abiertos tras días de inactividad sobrescriban liquidaciones realizadas desde el computador.",
+      "Motor Last-Write-Wins (LWW) con updatedAt: Reconciliación estricta por marcas de tiempo en todas las operaciones (ventas, muertes, pesajes, traslados) garantizando que una liquidación reciente de salida nunca pueda ser revertida a 'Activo' por una copia vieja.",
+      "Protección contra Resurrección de Animales: Soporte para restauración rápida en móviles vía evento pageshow y purga automática de pendientes obsoletos huérfanos."
+    ]
+  },
   {
     version: "2.24.27",
     date: "22/10/2026",

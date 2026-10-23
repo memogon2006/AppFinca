@@ -509,6 +509,43 @@ export function clearPendingDeletes(userId) {
   }
 }
 
+let isInitialPullDone = false;
+let isSyncInProgress = false;
+
+/**
+ * Indica si este cliente ya completó su descarga inicial desde la nube en la sesión actual
+ */
+export function isInitialPullCompleted() {
+  return isInitialPullDone;
+}
+
+/**
+ * Marca la descarga inicial como completada
+ */
+export function markInitialPullCompleted() {
+  isInitialPullDone = true;
+}
+
+/**
+ * Helper para extraer una marca de tiempo numérica confiable de cualquier registro
+ */
+function parseRecordTimestamp(item) {
+  if (!item) return 0;
+  if (item.updatedAt) {
+    const t = new Date(item.updatedAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (item.createdAt) {
+    const t = new Date(item.createdAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (item.date) {
+    const t = new Date(item.date).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  return 0;
+}
+
 /**
  * Indica si este dispositivo tiene creaciones, ediciones o eliminaciones locales pendientes de subir a la nube
  */
@@ -523,6 +560,18 @@ export function hasPendingSync(userId) {
 export async function cloudPushData(userId) {
   if (!userId) return false;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
+
+  // SALVAGUARDA VITAL: Ningún dispositivo puede subir datos (PUSH) sin haber completado
+  // primero su descarga (PULL) inicial en esta sesión. Esto evita que una caché vieja
+  // de un celular recién abierto sobreescriba la nube antes de estar al día.
+  if (!isInitialPullDone) {
+    try {
+      await cloudPullData(userId);
+      isInitialPullDone = true;
+    } catch (pullErr) {
+      console.warn('⚠️ No se pudo completar pull previo a push:', pullErr);
+    }
+  }
 
   try {
     const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
@@ -603,7 +652,7 @@ function normalizeRemoteList(val) {
 
 /**
  * Reconcilia y sincroniza una tabla local con la versión remota de Firebase
- * Protege estrictamente cualquier registro pendiente creado offline localmente
+ * Aplica resolución Last-Write-Wins (LWW) y blindaje estricto de liquidaciones de salida
  */
 async function reconcileCollection(tableName, rawRemoteData, userId) {
   if (!db[tableName] || rawRemoteData === undefined || rawRemoteData === null) return;
@@ -629,12 +678,64 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
            (tableName === 'milkDeliveries' && (tombstones.has(`farmIncomes_inc_tank_${strId}`) || pendingDeleteSet.has(`inc_tank_${strId}`)));
   };
 
-  // 1. Guardar o actualizar todos los registros recibidos en una sola operación batch ultrarrápida
-  // Excluir registros eliminados localmente (pendientes o en tombstones) Y registros modificados/creados localmente pendientes de subida
-  const validItems = remoteList
-    .filter(item => item && item.id && !isDeleted(item.id) && !pendingIds.has(String(item.id)))
-    .map(item => ({ ...item, userId }));
+  // Obtener los registros locales existentes para comparar marcas de tiempo (LWW)
+  const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
+  const localItems = await db[tableName].filter(isTarget).toArray();
+  const localItemMap = new Map();
+  for (const loc of localItems) {
+    if (loc && (loc.id !== undefined && loc.id !== null)) {
+      localItemMap.set(String(loc.id), loc);
+    }
+  }
 
+  const validItems = [];
+  const supersededPendingIds = [];
+
+  for (const remoteItem of remoteList) {
+    if (!remoteItem || (remoteItem.id === undefined && remoteItem.id === null) || isDeleted(remoteItem.id)) continue;
+
+    const strId = String(remoteItem.id);
+    const localItem = localItemMap.get(strId);
+
+    if (!localItem) {
+      // Registro nuevo que no existe localmente: se acepta directamente
+      validItems.push({ ...remoteItem, userId });
+      continue;
+    }
+
+    const remoteTs = parseRecordTimestamp(remoteItem);
+    const localTs = parseRecordTimestamp(localItem);
+
+    // REGLA FUNDAMENTAL DE CICLO DE VIDA (Liquidaciones / Ventas / Bajas):
+    // Si en la nube el animal está marcado como 'Vendido' o 'Muerto' y localmente sigue 'Activo',
+    // el estado de salida de la nube GANA SIEMPRE. Esto blinda contra celulares desactualizados.
+    const isRemoteLiquidated = (remoteItem.status === 'Vendido' || remoteItem.status === 'Muerto') && localItem.status === 'Activo';
+
+    if (pendingIds.has(strId)) {
+      if (isRemoteLiquidated || (remoteTs >= localTs && remoteTs > 0)) {
+        // La versión remota es igual o más reciente, o trae una liquidación de salida definitiva:
+        // La nube gana y se limpia el pendiente obsoleto de este dispositivo.
+        validItems.push({ ...remoteItem, userId });
+        supersededPendingIds.push(strId);
+      } else {
+        // El cliente local tiene una mutación deliberada más reciente (offline real).
+        // Se preserva la versión local intacta.
+      }
+    } else {
+      // Sin pendientes locales:
+      // Se actualiza si la versión remota es igual o más reciente, si el local carece de timestamp,
+      // o si hay un cambio de estado de vida o salida.
+      if (isRemoteLiquidated || remoteTs >= localTs || (remoteItem.status && remoteItem.status !== localItem.status)) {
+        validItems.push({ ...remoteItem, userId });
+      }
+    }
+  }
+
+  if (supersededPendingIds.length > 0) {
+    clearPendingSync(userId, supersededPendingIds);
+  }
+
+  // 1. Guardar o actualizar todos los registros reconciliados en IndexedDB
   if (validItems.length > 0) {
     try {
       await db[tableName].bulkPut(validItems);
@@ -661,14 +762,19 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
   // 3. Eliminar registros locales obsoletos que ya no existen en Firebase o que fueron eliminados
   try {
     const remoteIds = new Set(remoteList.map(item => String(item.id)));
-    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
-    const localItems = await db[tableName].filter(isTarget).toArray();
     const idsToDelete = localItems
-      .filter(localItem => 
-        localItem.id && 
-        (!remoteIds.has(String(localItem.id)) || isDeleted(localItem.id)) && 
-        !pendingIds.has(String(localItem.id))
-      )
+      .filter(localItem => {
+        if (!localItem.id && localItem.id !== 0) return false;
+        const strId = String(localItem.id);
+        if (isDeleted(localItem.id)) return true;
+        if (!remoteIds.has(strId)) {
+          if (!pendingIds.has(strId)) return true;
+          // Si estaba pendiente pero su fecha es de hace más de 24 horas, es huérfano
+          const localTs = parseRecordTimestamp(localItem);
+          if (localTs > 0 && (Date.now() - localTs > 24 * 60 * 60 * 1000)) return true;
+        }
+        return false;
+      })
       .map(localItem => localItem.id);
 
     if (idsToDelete.length > 0) {
@@ -734,6 +840,7 @@ export async function cloudPullData(userId) {
             await reconcileCollection(col, remoteData[col], userId);
           }
         }
+        isInitialPullDone = true;
         recordLastSyncedAt(userId);
         return true;
       }
@@ -793,26 +900,29 @@ export async function cloudDeleteUserData(userId, email) {
 
 
 /**
- * Sincronización bidireccional inteligente y segura para múltiples computadores simultáneos
- * Si hay cambios locales offline pendientes: PULL de la nube (protegiendo lo offline) y luego PUSH de la unión.
- * Si NO hay cambios pendientes en este equipo: SOLAMENTE PULL para recibir de inmediato lo hecho en otros equipos sin sobreescribir.
+ * Sincronización bidireccional inteligente y segura para múltiples computadores y celulares simultáneos
+ * Garantiza estrictamente PULL-First: Descarga siempre primero lo más reciente de la nube.
+ * Solo si hay cambios locales legítimos posteriores al PULL, realiza PUSH.
  */
 export async function syncCloudAndLocal(userId) {
   if (!userId) return;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+  if (isSyncInProgress) return;
+  isSyncInProgress = true;
   try {
+    // 1. SIEMPRE PULL-First: Descargar primero lo más reciente de la nube
+    await cloudPullData(userId);
+    isInitialPullDone = true;
+
+    // 2. Solo si después del PULL aún hay pendientes locales legítimos, hacer PUSH
     const hasPending = hasPendingSync(userId);
     if (hasPending) {
-      // 1. Descargar cambios remotos (reconcilia y preserva pendientes locales)
-      await cloudPullData(userId);
-      // 2. Subir base de datos completa unificada a Firebase
       await cloudPushData(userId);
-    } else {
-      // 3. Solo descargar cambios nuevos de otros equipos en tiempo real
-      await cloudPullData(userId);
     }
   } catch (e) {
     console.warn('⚠️ Error en syncCloudAndLocal Firebase:', e);
+  } finally {
+    isSyncInProgress = false;
   }
 }
 
