@@ -6,7 +6,7 @@ import { DollarSign, TrendingUp, Users, Building2, UserCheck, HelpCircle, Shield
 import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
 
-export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-[60]' }) {
+export function SellModal({ isOpen, onClose, animal, onConfirmSale, zIndex = 'z-[80]' }) {
   const { currentUser } = useAuth();
 
   const entryPrice = parseFloat(animal?.entryPrice) || 0;

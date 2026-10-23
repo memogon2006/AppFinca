@@ -77,7 +77,7 @@ export function CattleDetailModal({
   onOpenCalving,
   onOpenBranding,
   isDark = false,
-  zIndex = 'z-[70]'
+  zIndex = 'z-[50]'
 }) {
   const { currentUser, isWorker } = useAuth();
   const [ancestorModalAnimal, setAncestorModalAnimal] = useState(null);
@@ -1580,6 +1580,7 @@ export function CattleDetailModal({
         onDelete={onDelete}
         onDeleteWeight={onDeleteWeight}
         isDark={isDark}
+        zIndex="z-[75]"
       />
     )}
     </>

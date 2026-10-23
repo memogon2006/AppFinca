@@ -4,7 +4,7 @@ import { Scale, Flame } from 'lucide-react';
 import { formatNumber, formatDate, getDaysDifference, calculateWeightMetrics, getLocalDateString } from '../../services/calculations';
 import { triggerWeighingFeedback } from '../../services/soundService';
 
-export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight, zIndex = 'z-[60]' }) {
+export function WeightLogModal({ isOpen, onClose, animal, weighings = [], onSaveWeight, zIndex = 'z-[80]' }) {
   const animalWeighs = useMemo(() => {
     if (!animal) return [];
     return (weighings || []).filter(w => String(w.cattleId) === String(animal.id));

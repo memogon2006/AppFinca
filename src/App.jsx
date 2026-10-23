@@ -2876,9 +2876,10 @@ export default function App() {
         onOpenGlossary={() => setIsGlossaryOpen(true)}
         onOpenCalving={handleOpenCalving}
         onOpenBranding={handleOpenBranding}
+        zIndex="z-50"
       />
 
-      {/* 2. Modales de Acción y Formularios (Con zIndex z-[60] para superponerse con prioridad) */}
+      {/* 2. Modales de Acción y Formularios (Con zIndex z-[80] para superponerse siempre por encima de Ficha Técnica) */}
       <CalvingRecordModal
         isOpen={isCalvingModalOpen}
         onClose={() => {
@@ -2889,7 +2890,7 @@ export default function App() {
         mother={calvingMotherAnimal}
         cattleList={cattle}
         paddocks={paddocks}
-        zIndex="z-[70]"
+        zIndex="z-[80]"
       />
 
       <BrandingRecordModal
@@ -2902,7 +2903,7 @@ export default function App() {
         animal={brandingAnimal}
         cattleList={cattle}
         paddocks={paddocks}
-        zIndex="z-[75]"
+        zIndex="z-[80]"
       />
 
       <CattleFormModal
@@ -2914,7 +2915,7 @@ export default function App() {
         onSave={handleSaveAnimal}
         animal={editingAnimal}
         cattleList={cattle}
-        zIndex="z-[60]"
+        zIndex="z-[80]"
       />
 
       <SellModal
@@ -2925,7 +2926,7 @@ export default function App() {
         }}
         animal={sellingAnimal}
         onConfirmSale={handleConfirmSale}
-        zIndex="z-[60]"
+        zIndex="z-[80]"
       />
 
       <DeathModal
@@ -2936,7 +2937,7 @@ export default function App() {
         }}
         animal={deathAnimal}
         onConfirmDeath={handleConfirmDeath}
-        zIndex="z-[60]"
+        zIndex="z-[80]"
       />
 
       <WeightLogModal
@@ -2948,7 +2949,7 @@ export default function App() {
         animal={weighingAnimal}
         weighings={weighings}
         onSaveWeight={handleSaveWeight}
-        zIndex="z-[60]"
+        zIndex="z-[80]"
       />
 
       <BatchEntryModal
@@ -2971,7 +2972,7 @@ export default function App() {
       <GlossaryModal
         isOpen={isGlossaryOpen}
         onClose={() => setIsGlossaryOpen(false)}
-        zIndex="z-[60]"
+        zIndex="z-[80]"
       />
 
       <ProfileModal

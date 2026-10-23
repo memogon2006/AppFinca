@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.26";
+export const CURRENT_APP_VERSION = "2.24.27";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.27",
+    date: "22/10/2026",
+    title: "🗂️ Corrección de Capas Z-Index: Modales de Venta, Pesajes y Acciones por Encima de la Ficha Técnica",
+    highlights: [
+      "Prioridad de Capas Visuales: Se recalibraron los índices z-index de todos los modales para que al presionar 'Vender', '+ Pesaje', 'Parto', 'Muerto' o 'Editar' desde adentro de la Ficha Técnica de un animal, el nuevo formulario se superponga siempre por encima de la ficha.",
+      "Flujo Intacto de Liquidación: Al completar o cerrar la venta, el modal de liquidación se cierra limpiamente revelando la ficha técnica actualizada con el estado 'Vendido' y su pestaña de finanzas activa."
+    ]
+  },
   {
     version: "2.24.26",
     date: "22/10/2026",

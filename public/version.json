@@ -1,5 +1,5 @@
 {
-  "version": "2.24.26",
-  "buildTime": 1792686400000,
-  "description": "🏷️ Restauración del Formato Original de Identificación de Bovinos (Tipografía Limpia)"
+  "version": "2.24.27",
+  "buildTime": 1792723000000,
+  "description": "🗂️ Corrección de Capas Z-Index: Modal de Venta, Pesajes y Acciones se abren siempre por encima de la Ficha Técnica"
 }

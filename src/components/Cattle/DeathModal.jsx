@@ -16,7 +16,7 @@ const COMMON_DEATH_REASONS = [
   'Otra causa específica',
 ];
 
-export function DeathModal({ isOpen, onClose, animal, onConfirmDeath, zIndex = 'z-[60]' }) {
+export function DeathModal({ isOpen, onClose, animal, onConfirmDeath, zIndex = 'z-[80]' }) {
   const [formData, setFormData] = useState({
     deathDate: getLocalDateString(),
     deathReason: 'Enfermedad general / Infección',

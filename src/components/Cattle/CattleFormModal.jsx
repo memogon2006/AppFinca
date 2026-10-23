@@ -23,7 +23,7 @@ import {
 import { ConsecutiveWarningModal } from './ConsecutiveWarningModal';
 import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
-export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[60]', cattleList = [] }) {
+export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex = 'z-[80]', cattleList = [] }) {
   const { currentUser, isWorker } = useAuth();
   const isEditing = Boolean(animal && animal.id);
 
@@ -2403,7 +2403,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       onClose={() => setIsConsecutiveModalOpen(false)}
       onConfirmContinue={handleConfirmContinueConsecutive}
       warningData={consecutiveWarningData}
-      zIndex="z-[75]"
+      zIndex="z-[95]"
     />
 
     {/* Modal de Advertencia de Identificación Duplicada */}
@@ -2413,7 +2413,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       onConfirmContinue={handleConfirmContinueDuplicate}
       duplicates={detectedDuplicates}
       candidateData={formData}
-      zIndex="z-[70]"
+      zIndex="z-[90]"
     />
     </>
   );
