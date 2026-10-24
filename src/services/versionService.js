@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.31";
+export const CURRENT_APP_VERSION = "2.24.32";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.32",
+    date: "24/10/2026",
+    title: "📦 Desplegable de Números Libres y Consecutivos en Ingreso de Lotes de Ganado",
+    highlights: [
+      "Panel de Números Libres en Ingreso por Lote: Al registrar compras o grupos de ganado, la sección de numeración consecutiva ahora incluye el botón 'Ver libres' y la pastilla de números libres intermedios no usados en la finca.",
+      "Asignación Rápida a Filas del Lote: Al hacer clic en cualquier número libre de la grilla interactiva o en 'Usar el menor', el sistema asigna el arete automáticamente a la primera fila vacía de la tabla (o añade una nueva fila si están llenas) respetando prefijos y sufijos de año.",
+      "Sincronización con Generador de Serie: El número libre seleccionado se toma inmediatamente como 'Desde el N°' para generar series automáticas arrancando en el hueco deseado, y los botones marcan con ✓ los números que ya fueron asignados al lote actual."
+    ]
+  },
   {
     version: "2.24.31",
     date: "24/10/2026",

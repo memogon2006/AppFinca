@@ -31,12 +31,21 @@ import {
   Receipt,
   Baby,
   Dna,
-  Heart
+  Heart,
+  ListFilter,
+  ChevronDown,
+  Search,
+  Check,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
-import { analyzeFarmConsecutives, extractConsecutiveNumber } from '../../services/consecutiveService';
+import { 
+  analyzeFarmConsecutives, 
+  extractConsecutiveNumber, 
+  formatConsecutiveRanges 
+} from '../../services/consecutiveService';
 import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
 /**
@@ -129,6 +138,56 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   });
   const [showSeriesGenerator, setShowSeriesGenerator] = useState(false);
   const [enableBatchGenealogy, setEnableBatchGenealogy] = useState(false);
+  const [showFreeNumbers, setShowFreeNumbers] = useState(false);
+  const [freeNumberSearch, setFreeNumberSearch] = useState('');
+
+  // Filtrado dinámico de números libres según búsqueda
+  const displayedFreeNumbers = useMemo(() => {
+    const list = farmConsecutiveStats?.missingConsecutives || [];
+    if (!freeNumberSearch.trim()) return list;
+    const query = freeNumberSearch.trim().toLowerCase().replace('#', '');
+    return list.filter(num => String(num).includes(query));
+  }, [farmConsecutiveStats?.missingConsecutives, freeNumberSearch]);
+
+  // Asignar número libre a la serie del generador y/o a las filas del lote
+  const applyConsecutiveNumberToBatch = (num) => {
+    if (!num && num !== 0) return;
+
+    // 1. Actualizar el inicio de serie del generador
+    setSeriesConfig(prev => ({ ...prev, startNumber: num }));
+
+    // 2. Construir arete respetando prefijo o sufijo si existen
+    const prefix = seriesConfig.prefix ? seriesConfig.prefix.trim() : '';
+    const suffix = seriesConfig.suffix ? seriesConfig.suffix.trim() : '';
+    const sep = seriesConfig.separator || '-';
+    let tag = String(num);
+    if (prefix) tag = `${prefix}-${tag}`;
+    if (suffix) {
+      const cleanSuffix = suffix.replace(/^[-\/–—\\_]/, '');
+      const chosenSep = suffix.startsWith('/') ? '/' : sep;
+      tag = `${tag}${chosenSep}${cleanSuffix}`;
+    }
+
+    // 3. Buscar la primera fila vacía en la tabla para asignárselo
+    const emptyRowIndex = rows.findIndex(r => !r.tagNumber.trim());
+    if (emptyRowIndex !== -1) {
+      setRows(prev => prev.map((r, i) => i === emptyRowIndex ? { ...r, tagNumber: tag } : r));
+    } else {
+      // Si todas las filas ya tienen arete, agregar una nueva fila con este número
+      setRows(prev => [
+        ...prev,
+        {
+          id: String(Date.now() + Math.random()),
+          tagNumber: tag,
+          sex: batchInfo.sex === 'Hembra' ? 'Hembra' : (batchInfo.sex === 'Macho' ? 'Macho' : 'Macho'),
+          color: seriesConfig.defaultColor || '',
+          entryWeight: seriesConfig.defaultWeight ? String(seriesConfig.defaultWeight) : '',
+          motherTag: '',
+          motherId: '',
+        }
+      ]);
+    }
+  };
 
   // Sincronizar automáticamente el número inicial con el consecutivo sugerido de la finca
   useEffect(() => {
@@ -150,6 +209,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     }
     setIsDraftRestored(false);
     isDraftInitializedRef.current = false;
+    setShowFreeNumbers(false);
+    setFreeNumberSearch('');
 
     const nextBatchName = getSuggestedNextBatchName(cattleList);
     const nextStartNum = farmConsecutiveStats?.nextSuggestedConsecutive || 1;
@@ -1231,27 +1292,172 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                       Último Registrado: <strong className="text-slate-900 dark:text-white font-black text-sm sm:text-base">#{farmConsecutiveStats.maxConsecutive || 0}</strong>
                     </span>
                     <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-                    <span className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-200 font-bold flex items-center gap-1.5">
-                      Siguiente Sugerido:
-                      <span className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm sm:text-base shadow-md shadow-emerald-600/30 tracking-wide">
+                    <div 
+                      onClick={() => {
+                        if (farmConsecutiveStats.missingConsecutives.length > 0) {
+                          setShowFreeNumbers(prev => !prev);
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 ${farmConsecutiveStats.missingConsecutives.length > 0 ? 'cursor-pointer group' : ''}`}
+                      title={farmConsecutiveStats.missingConsecutives.length > 0 ? "Haz clic para ver o desplegar los números libres no usados en la finca" : ""}
+                    >
+                      <span className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-200 font-bold">
+                        Siguiente Sugerido:
+                      </span>
+                      <span className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm sm:text-base shadow-md shadow-emerald-600/30 tracking-wide inline-flex items-center gap-1">
                         #{farmConsecutiveStats.nextSuggestedConsecutive}
                       </span>
-                    </span>
+                      {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-800 dark:text-emerald-200 bg-white/90 dark:bg-slate-900/90 px-2 py-0.5 rounded-md border border-emerald-500/40 shadow-xs group-hover:bg-emerald-50 dark:group-hover:bg-slate-800 transition">
+                          <span>{farmConsecutiveStats.missingConsecutives.length} libres antes</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showFreeNumbers ? 'rotate-180' : ''}`} />
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFreeNumbers(prev => !prev)}
+                    className={`w-full sm:w-auto px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] ${
+                      showFreeNumbers
+                        ? 'bg-emerald-700 text-white border-emerald-700 shadow-md shadow-emerald-700/20'
+                        : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border-emerald-500/50 text-emerald-800 dark:text-emerald-200'
+                    }`}
+                  >
+                    <ListFilter className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{showFreeNumbers ? 'Ocultar libres' : `Ver libres (${farmConsecutiveStats.missingConsecutives.length})`}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showFreeNumbers ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setShowSeriesGenerator(true)}
-                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
+                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer min-h-[38px]"
                 >
                   <Wand2 className="w-4 h-4" />
-                  <span>⚡ Generar Serie desde #{farmConsecutiveStats.nextSuggestedConsecutive}</span>
+                  <span>⚡ Generar Serie desde #{seriesConfig.startNumber || farmConsecutiveStats.nextSuggestedConsecutive}</span>
                 </button>
               </div>
             </div>
+
+            {/* Banner Desplegable de Números Libres / No Usados en Finca */}
+            {showFreeNumbers && (
+              <div className="mt-3.5 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn text-xs">
+                <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                      <Hash className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white uppercase tracking-wider block">
+                        Números Libres / No Usados en la Finca
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {farmConsecutiveStats.missingConsecutives.length === 1
+                          ? 'Hay 1 número intermedio libre antes del último registrado'
+                          : `Hay ${farmConsecutiveStats.missingConsecutives.length} números intermedios libres (entre el #1 y el #${farmConsecutiveStats.maxConsecutive})`}
+                        {' '}— Haz clic en cualquiera para asignarlo a la tabla o arrancar la serie.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => applyConsecutiveNumberToBatch(farmConsecutiveStats.missingConsecutives[0])}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition cursor-pointer flex items-center gap-1 shadow-xs"
+                        title="Asignar el menor número libre disponible para llenar huecos en orden"
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Usar el menor (#{farmConsecutiveStats.missingConsecutives[0]})</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowFreeNumbers(false)}
+                      className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                      title="Cerrar panel de números libres"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rangos resumidos si hay varios */}
+                {farmConsecutiveStats.missingConsecutives.length > 3 && (
+                  <div className="mt-2 text-[11px] text-slate-600 dark:text-slate-300 bg-emerald-50/70 dark:bg-emerald-950/30 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300">Rangos libres: </span>
+                    <span className="font-mono text-slate-700 dark:text-slate-200">
+                      {farmConsecutiveStats.missingRanges || formatConsecutiveRanges(farmConsecutiveStats.missingConsecutives)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Buscador de número libre específico si hay más de 12 */}
+                {farmConsecutiveStats.missingConsecutives.length > 12 && (
+                  <div className="mt-2.5 relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={freeNumberSearch}
+                      onChange={(e) => setFreeNumberSearch(e.target.value)}
+                      placeholder="Buscar número libre específico (ej. 15)..."
+                      className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                    />
+                    {freeNumberSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setFreeNumberSearch('')}
+                        className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Grilla interactiva de botones de números libres */}
+                <div className="mt-2.5 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                  {displayedFreeNumbers.length > 0 ? (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
+                      {displayedFreeNumbers.map(num => {
+                        const isInBatch = rows.some(r => extractConsecutiveNumber(r.tagNumber) === num);
+                        const isSeriesStart = Number(seriesConfig.startNumber) === num;
+                        return (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() => applyConsecutiveNumberToBatch(num)}
+                            className={`py-1.5 px-2 rounded-lg font-black text-xs text-center transition cursor-pointer border flex items-center justify-center gap-1 shadow-xs ${
+                              isInBatch
+                                ? 'bg-emerald-700 text-white border-emerald-700 ring-2 ring-emerald-500/50'
+                                : isSeriesStart
+                                  ? 'bg-amber-500 text-slate-950 border-amber-600 ring-2 ring-amber-400'
+                                  : 'bg-slate-50 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300'
+                            }`}
+                            title={`Asignar chapa #${num} al lote (o arrancar serie aquí)`}
+                          >
+                            <span>#{num}</span>
+                            {isInBatch && <Check className="w-3 h-3 text-white" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center text-xs text-slate-500 dark:text-slate-400">
+                      No se encontró el número libre "{freeNumberSearch}".
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             
             <p className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-2 border-t border-emerald-200/60 dark:border-emerald-800/40 pt-1.5">
               ℹ️ La numeración se calcula usando exclusivamente el número <strong>antes de <code>-</code> o <code>/</code></strong> (ej. <strong>25-6 → 25</strong>). Los números posteriores no alteran el consecutivo principal.
@@ -1314,7 +1520,19 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Desde el N°:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">Desde el N°:</label>
+                    {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowFreeNumbers(prev => !prev)}
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+                        title="Ver y seleccionar números libres para la serie"
+                      >
+                        {farmConsecutiveStats.missingConsecutives.length} libres
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="number"
                     value={seriesConfig.startNumber}
