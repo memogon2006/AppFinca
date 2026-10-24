@@ -189,13 +189,21 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     }
   };
 
-  // Sincronizar automáticamente el número inicial con el consecutivo sugerido de la finca
+  // Sincronizar automáticamente el número inicial con el consecutivo sugerido al abrir si no está definido
+  const hasSetInitialConsecutiveRef = React.useRef(false);
   useEffect(() => {
-    if (farmConsecutiveStats?.nextSuggestedConsecutive) {
-      setSeriesConfig(prev => ({
-        ...prev,
-        startNumber: farmConsecutiveStats.nextSuggestedConsecutive
-      }));
+    if (isOpen && farmConsecutiveStats?.nextSuggestedConsecutive) {
+      if (!hasSetInitialConsecutiveRef.current) {
+        hasSetInitialConsecutiveRef.current = true;
+        setSeriesConfig(prev => ({
+          ...prev,
+          startNumber: prev.startNumber || farmConsecutiveStats.nextSuggestedConsecutive
+        }));
+      }
+    } else if (!isOpen) {
+      hasSetInitialConsecutiveRef.current = false;
+      setShowFreeNumbers(false);
+      setFreeNumberSearch('');
     }
   }, [farmConsecutiveStats?.nextSuggestedConsecutive, isOpen]);
 
@@ -1348,7 +1356,10 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
             {/* Banner Desplegable de Números Libres / No Usados en Finca */}
             {showFreeNumbers && (
-              <div className="mt-3.5 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn text-xs">
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="mt-3.5 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn text-xs"
+              >
                 <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">

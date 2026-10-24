@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Modal } from '../Common/Modal';
 import { 
   Baby, 
@@ -199,43 +199,56 @@ export function CalvingRecordModal({
     setErrors(prev => ({ ...prev, calf2Tag: null }));
   };
 
-  // Sugerir consecutivos iniciales al abrir
+  // Ref para inicializar formulario solo una vez al abrir
+  const lastInitMotherIdRef = useRef(null);
+
+  // Sugerir consecutivos iniciales al abrir (evitando auto-cierre durante sincronización de fondo)
   useEffect(() => {
     if (isOpen) {
-      setCalvingDate(getLocalDateString());
+      const currentMotherKey = String(mother?.id || selectedMotherId || 'mother');
+      if (lastInitMotherIdRef.current !== currentMotherKey) {
+        lastInitMotherIdRef.current = currentMotherKey;
+        setCalvingDate(getLocalDateString());
+        setShowFreeNumbers1(false);
+        setFreeNumberSearch1('');
+        setShowFreeNumbers2(false);
+        setFreeNumberSearch2('');
+        const nextSug = farmConsecutiveStats?.nextSuggestedConsecutive || 1;
+        
+        setCalf1(prev => ({
+          ...prev,
+          tagNumber: prev.tagNumber || `TEMP-${nextSug}`,
+          color: prev.color || selectedMother?.color || farmColors[0] || 'Blanco',
+          breed: prev.breed || selectedMother?.breed || 'Brahman Blanco',
+        }));
+
+        setCalf2(prev => ({
+          ...prev,
+          tagNumber: prev.tagNumber || `TEMP-${nextSug + 1}`,
+          color: prev.color || selectedMother?.color || farmColors[0] || 'Blanco',
+          breed: prev.breed || selectedMother?.breed || 'Brahman Blanco',
+        }));
+
+        if (selectedMother) {
+          setSelectedPaddock(selectedMother.paddock || '');
+          if (selectedMother.milkingStatus === 'En ordeño' || selectedMother.productionType === 'Lechería') {
+            setMotherPostStatus('Doble Propósito');
+          } else {
+            setMotherPostStatus('Levante de cría');
+          }
+          if (selectedMother.fatherTag || selectedMother.sireTag) {
+            setFatherCustomTag(selectedMother.fatherTag || selectedMother.sireTag || '');
+          }
+        }
+      }
+    } else {
+      lastInitMotherIdRef.current = null;
       setShowFreeNumbers1(false);
       setFreeNumberSearch1('');
       setShowFreeNumbers2(false);
       setFreeNumberSearch2('');
-      const nextSug = farmConsecutiveStats?.nextSuggestedConsecutive || 1;
-      
-      setCalf1(prev => ({
-        ...prev,
-        tagNumber: prev.tagNumber || `TEMP-${nextSug}`,
-        color: prev.color || selectedMother?.color || farmColors[0] || 'Blanco',
-        breed: prev.breed || selectedMother?.breed || 'Brahman Blanco',
-      }));
-
-      setCalf2(prev => ({
-        ...prev,
-        tagNumber: prev.tagNumber || `TEMP-${nextSug + 1}`,
-        color: prev.color || selectedMother?.color || farmColors[0] || 'Blanco',
-        breed: prev.breed || selectedMother?.breed || 'Brahman Blanco',
-      }));
-
-      if (selectedMother) {
-        setSelectedPaddock(selectedMother.paddock || '');
-        if (selectedMother.milkingStatus === 'En ordeño' || selectedMother.productionType === 'Lechería') {
-          setMotherPostStatus('Doble Propósito');
-        } else {
-          setMotherPostStatus('Levante de cría');
-        }
-        if (selectedMother.fatherTag || selectedMother.sireTag) {
-          setFatherCustomTag(selectedMother.fatherTag || selectedMother.sireTag || '');
-        }
-      }
     }
-  }, [isOpen, selectedMother, farmConsecutiveStats, farmColors]);
+  }, [isOpen, mother?.id]);
 
   // Actualizar potrero y color cuando cambia la madre seleccionada
   const handleMotherChange = (newMotherId) => {
@@ -613,7 +626,10 @@ export function CalvingRecordModal({
 
               {/* Banner Desplegable de Números Libres / No Usados para Cría 1 */}
               {showFreeNumbers1 && (
-                <div className="mt-2 p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500/60 shadow-md text-slate-800 dark:text-slate-100 animate-fadeIn text-xs">
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-2 p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500/60 shadow-md text-slate-800 dark:text-slate-100 animate-fadeIn text-xs"
+                >
                   <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200 dark:border-slate-800">
                     <div className="flex items-center gap-1.5">
                       <span className="p-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
@@ -1008,7 +1024,10 @@ export function CalvingRecordModal({
 
                 {/* Banner Desplegable de Números Libres para Cría 2 */}
                 {showFreeNumbers2 && (
-                  <div className="mt-2 p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-purple-500/60 shadow-md text-slate-800 dark:text-slate-100 animate-fadeIn text-xs">
+                  <div 
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-2 p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-purple-500/60 shadow-md text-slate-800 dark:text-slate-100 animate-fadeIn text-xs"
+                  >
                     <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200 dark:border-slate-800">
                       <div className="flex items-center gap-1.5">
                         <span className="p-1 rounded-lg bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold">

@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.32";
+export const CURRENT_APP_VERSION = "2.24.33";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.33",
+    date: "24/10/2026",
+    title: "🛡️ Estabilidad Total en Desplegables de Números Libres y Consecutivos (Sin Cierre Inesperado al Desplazar)",
+    highlights: [
+      "Persistencia Activa al Navegar y Desplazar: Se corrigió la condición de carrera por sincronización en segundo plano que cerraba automáticamente el panel desplegable de números libres al hacer scroll o interactuar con la lista en chapeteo oficial (manga) y partos.",
+      "Aislamiento de Inicialización por Referencia (useRef): Los estados de numeración y panel abierto quedan blindados contra re-renderizados periódicos de Dexie/CloudSync, evitando reinicios de campos o cierres repentinos mientras el ganadero examina los números disponibles.",
+      "Detención de Propagación de Eventos (stopPropagation): Toda pulsación o desplazamiento dentro de los paneles desplegables queda contenida sin disparar alternadores externos de tarjetas o modales."
+    ]
+  },
   {
     version: "2.24.32",
     date: "24/10/2026",

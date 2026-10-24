@@ -1147,7 +1147,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
             {/* Banner Desplegable de Números Libres / No Usados */}
             {showFreeNumbers && (
-              <div className="mt-3 mb-3 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn">
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="mt-3 mb-3 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn"
+              >
                 <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">

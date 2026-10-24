@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Modal } from '../Common/Modal';
 import { 
   Tag, 
@@ -90,34 +90,45 @@ export function BrandingRecordModal({
     setErrors(prev => ({ ...prev, newTagNumber: null }));
   };
 
-  // Inicializar campos cuando se abre el modal con el animal
+  // Ref para inicializar campos solo una vez al abrir el modal para el animal
+  const lastInitAnimalIdRef = useRef(null);
+
+  // Inicializar campos cuando se abre el modal con el animal (sin cerrarse en sincronizaciones de fondo)
   useEffect(() => {
     if (isOpen && animal) {
-      const nextSug = farmConsecutiveStats?.nextSuggestedConsecutive;
-      setNewTagNumber(nextSug ? String(nextSug) : '');
-      setIronBrand(animal.ironBrand || currentUser?.farmIronBrand || '');
-      setBrandingDate(getLocalDateString());
-      setWeighingWeight(animal.currentWeight ? String(animal.currentWeight) : '');
-      setEarTattoo(animal.earTattoo || '');
-      setTattooEarLocation(animal.tattooEarLocation || 'OD');
-      setPaddock(animal.paddock || '');
-      setNotes('');
-      setErrors({});
+      const animalKey = String(animal.id || animal.tagNumber || 'animal');
+      if (lastInitAnimalIdRef.current !== animalKey) {
+        lastInitAnimalIdRef.current = animalKey;
+        const nextSug = farmConsecutiveStats?.nextSuggestedConsecutive;
+        setNewTagNumber(nextSug ? String(nextSug) : '');
+        setIronBrand(animal.ironBrand || currentUser?.farmIronBrand || '');
+        setBrandingDate(getLocalDateString());
+        setWeighingWeight(animal.currentWeight ? String(animal.currentWeight) : '');
+        setEarTattoo(animal.earTattoo || '');
+        setTattooEarLocation(animal.tattooEarLocation || 'OD');
+        setPaddock(animal.paddock || '');
+        setNotes('');
+        setErrors({});
+        setShowFreeNumbers(false);
+        setFreeNumberSearch('');
+
+        // Sugerir categoría según edad y sexo
+        const birthDateStr = animal.birthDate || animal.entryDate;
+        const ageDays = birthDateStr ? getDaysDifference(birthDateStr, new Date()) : 0;
+        const ageMonths = Math.floor(ageDays / 30.4);
+
+        if (ageMonths >= 7) {
+          setCategory(animal.sex === 'Hembra' ? 'Levante Hembra' : 'Levante Macho');
+        } else {
+          setCategory(animal.category || (animal.sex === 'Hembra' ? 'Ternera' : 'Ternero'));
+        }
+      }
+    } else if (!isOpen) {
+      lastInitAnimalIdRef.current = null;
       setShowFreeNumbers(false);
       setFreeNumberSearch('');
-
-      // Sugerir categoría según edad y sexo
-      const birthDateStr = animal.birthDate || animal.entryDate;
-      const ageDays = birthDateStr ? getDaysDifference(birthDateStr, new Date()) : 0;
-      const ageMonths = Math.floor(ageDays / 30.4);
-
-      if (ageMonths >= 7) {
-        setCategory(animal.sex === 'Hembra' ? 'Levante Hembra' : 'Levante Macho');
-      } else {
-        setCategory(animal.category || (animal.sex === 'Hembra' ? 'Ternera' : 'Ternero'));
-      }
     }
-  }, [isOpen, animal, farmConsecutiveStats, currentUser]);
+  }, [isOpen, animal?.id]);
 
   // Evaluación del nuevo consecutivo en tiempo real
   const candidateConsecutiveEval = useMemo(() => {
@@ -372,7 +383,10 @@ export function BrandingRecordModal({
 
             {/* Banner Desplegable de Números Libres / No Usados */}
             {showFreeNumbers && (
-              <div className="mt-3 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn">
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="mt-3 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn"
+              >
                 <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
