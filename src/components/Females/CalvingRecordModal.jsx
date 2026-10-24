@@ -17,10 +17,21 @@ import {
   Info,
   Clock,
   Activity,
-  Plus
+  Plus,
+  Hash,
+  ListFilter,
+  ChevronDown,
+  Search,
+  Check,
+  X
 } from 'lucide-react';
 import { getLocalDateString, formatDate, calculateReproduction, BOVINE_GESTATION_DAYS } from '../../services/calculations';
-import { analyzeFarmConsecutives, evaluateCandidateConsecutive } from '../../services/consecutiveService';
+import { 
+  analyzeFarmConsecutives, 
+  evaluateCandidateConsecutive,
+  extractConsecutiveNumber,
+  formatConsecutiveRanges 
+} from '../../services/consecutiveService';
 import { getDynamicFarmColors, COMMON_BREEDS } from '../../types/cattle';
 import { useAuth } from '../../context/AuthContext';
 
@@ -131,10 +142,71 @@ export function CalvingRecordModal({
   // Notas clínicas
   const [notes, setNotes] = useState('');
 
+  const [showFreeNumbers1, setShowFreeNumbers1] = useState(false);
+  const [freeNumberSearch1, setFreeNumberSearch1] = useState('');
+  const [showFreeNumbers2, setShowFreeNumbers2] = useState(false);
+  const [freeNumberSearch2, setFreeNumberSearch2] = useState('');
+
+  // Filtrado dinámico de números libres para Cría 1
+  const displayedFreeNumbers1 = useMemo(() => {
+    const list = farmConsecutiveStats?.missingConsecutives || [];
+    if (!freeNumberSearch1.trim()) return list;
+    const query = freeNumberSearch1.trim().toLowerCase().replace('#', '');
+    return list.filter(num => String(num).includes(query));
+  }, [farmConsecutiveStats?.missingConsecutives, freeNumberSearch1]);
+
+  // Filtrado dinámico de números libres para Cría 2
+  const displayedFreeNumbers2 = useMemo(() => {
+    const list = farmConsecutiveStats?.missingConsecutives || [];
+    if (!freeNumberSearch2.trim()) return list;
+    const query = freeNumberSearch2.trim().toLowerCase().replace('#', '');
+    return list.filter(num => String(num).includes(query));
+  }, [farmConsecutiveStats?.missingConsecutives, freeNumberSearch2]);
+
+  const applyConsecutiveNumber1 = (num) => {
+    if (!num && num !== 0) return;
+    setCalf1(prev => {
+      const isTemp = prev.isTemporaryTag;
+      const str = String(prev.tagNumber || '');
+      let base = isTemp ? `TEMP-${num}` : String(num);
+      if (str.includes('-') && !str.startsWith('TEMP-')) {
+        const parts = str.split('-');
+        base = `${num}-${parts.slice(1).join('-')}`;
+      } else if (str.includes('/')) {
+        const parts = str.split('/');
+        base = `${num}/${parts.slice(1).join('/')}`;
+      }
+      return { ...prev, tagNumber: base };
+    });
+    setErrors(prev => ({ ...prev, calf1Tag: null }));
+  };
+
+  const applyConsecutiveNumber2 = (num) => {
+    if (!num && num !== 0) return;
+    setCalf2(prev => {
+      const isTemp = prev.isTemporaryTag;
+      const str = String(prev.tagNumber || '');
+      let base = isTemp ? `TEMP-${num}` : String(num);
+      if (str.includes('-') && !str.startsWith('TEMP-')) {
+        const parts = str.split('-');
+        base = `${num}-${parts.slice(1).join('-')}`;
+      } else if (str.includes('/')) {
+        const parts = str.split('/');
+        base = `${num}/${parts.slice(1).join('/')}`;
+      }
+      return { ...prev, tagNumber: base };
+    });
+    setErrors(prev => ({ ...prev, calf2Tag: null }));
+  };
+
   // Sugerir consecutivos iniciales al abrir
   useEffect(() => {
     if (isOpen) {
       setCalvingDate(getLocalDateString());
+      setShowFreeNumbers1(false);
+      setFreeNumberSearch1('');
+      setShowFreeNumbers2(false);
+      setFreeNumberSearch2('');
       const nextSug = farmConsecutiveStats?.nextSuggestedConsecutive || 1;
       
       setCalf1(prev => ({
@@ -501,17 +573,172 @@ export function CalvingRecordModal({
               )}
             </div>
 
+            {/* Barra y Desplegable de Números Libres para Cría 1 */}
+            <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                  <Hash className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-bold text-[11px]">Último: #{farmConsecutiveStats.maxConsecutive || 'Ninguno'}</span>
+                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                  <span className="font-bold text-[11px] text-emerald-700 dark:text-emerald-300">Sugerido: #{farmConsecutiveStats.nextSuggestedConsecutive}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFreeNumbers1(prev => !prev)}
+                      className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold transition flex items-center gap-1 cursor-pointer min-h-[30px] ${
+                        showFreeNumbers1
+                          ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                          : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border-emerald-500/50 text-emerald-800 dark:text-emerald-200'
+                      }`}
+                    >
+                      <ListFilter className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <span>{showFreeNumbers1 ? 'Ocultar libres' : `Ver libres (${farmConsecutiveStats.missingConsecutives.length})`}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showFreeNumbers1 ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => applyConsecutiveNumber1(farmConsecutiveStats.nextSuggestedConsecutive)}
+                    className="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] transition shadow-xs flex items-center gap-1 cursor-pointer min-h-[30px]"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-300" />
+                    <span>Usar sugerido (#{farmConsecutiveStats.nextSuggestedConsecutive})</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Banner Desplegable de Números Libres / No Usados para Cría 1 */}
+              {showFreeNumbers1 && (
+                <div className="mt-2 p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500/60 shadow-md text-slate-800 dark:text-slate-100 animate-fadeIn text-xs">
+                  <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <span className="p-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                        <Hash className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <span className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider block">
+                          Números Libres Disponibles en Finca
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {farmConsecutiveStats.missingConsecutives.length} números libres entre el #1 y el #{farmConsecutiveStats.maxConsecutive}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => applyConsecutiveNumber1(farmConsecutiveStats.missingConsecutives[0])}
+                          className="px-2 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black transition cursor-pointer flex items-center gap-1 shadow-xs"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          <span>Usar menor (#{farmConsecutiveStats.missingConsecutives[0]})</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowFreeNumbers1(false)}
+                        className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Rangos resumidos si hay varios */}
+                  {farmConsecutiveStats.missingConsecutives.length > 3 && (
+                    <div className="mt-2 text-[10px] text-slate-600 dark:text-slate-300 bg-emerald-50/70 dark:bg-emerald-950/30 p-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                      <span className="font-bold text-emerald-800 dark:text-emerald-300">Rangos libres: </span>
+                      <span className="font-mono text-slate-700 dark:text-slate-200">
+                        {farmConsecutiveStats.missingRanges || formatConsecutiveRanges(farmConsecutiveStats.missingConsecutives)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Buscador si hay más de 12 */}
+                  {farmConsecutiveStats.missingConsecutives.length > 12 && (
+                    <div className="mt-2 relative">
+                      <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={freeNumberSearch1}
+                        onChange={(e) => setFreeNumberSearch1(e.target.value)}
+                        placeholder="Buscar número libre..."
+                        className="w-full pl-7 pr-6 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                      />
+                      {freeNumberSearch1 && (
+                        <button
+                          type="button"
+                          onClick={() => setFreeNumberSearch1('')}
+                          className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Grilla interactiva de botones */}
+                  <div className="mt-2 max-h-36 overflow-y-auto custom-scrollbar p-0.5">
+                    {displayedFreeNumbers1.length > 0 ? (
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1">
+                        {displayedFreeNumbers1.map(num => {
+                          const isSelected = extractConsecutiveNumber(calf1.tagNumber) === num;
+                          return (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => applyConsecutiveNumber1(num)}
+                              className={`py-1 px-1.5 rounded-lg font-black text-xs text-center transition cursor-pointer border flex items-center justify-center gap-1 shadow-xs ${
+                                isSelected
+                                  ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-500/40'
+                                  : 'bg-slate-50 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                              }`}
+                            >
+                              <span>#{num}</span>
+                              {isSelected && <Check className="w-3 h-3 text-white" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-2 text-center text-[11px] text-slate-500">
+                        No se encontró el número libre "{freeNumberSearch1}".
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               
               {/* Chapa / Arete */}
               <div className="sm:col-span-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
                   <span>{calf1.isTemporaryTag ? 'N° Temporal *' : 'Chapa Oficial *'}</span>
-                  {farmConsecutiveStats?.nextSuggestedConsecutive && (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
-                      Sug: #{farmConsecutiveStats.nextSuggestedConsecutive}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {farmConsecutiveStats?.missingConsecutives?.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowFreeNumbers1(prev => !prev)}
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <span>{farmConsecutiveStats.missingConsecutives.length} libres</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showFreeNumbers1 ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+                    {farmConsecutiveStats?.nextSuggestedConsecutive && (
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                        Sug: #{farmConsecutiveStats.nextSuggestedConsecutive}
+                      </span>
+                    )}
+                  </div>
                 </label>
                 <input
                   type="text"
@@ -524,7 +751,13 @@ export function CalvingRecordModal({
                 />
                 {errors.calf1Tag && <p className="text-rose-500 text-[10px] font-bold mt-1">{errors.calf1Tag}</p>}
                 
-                {/* Advertencia de Consecutivo */}
+                {/* Advertencia o Confirmación de Consecutivo */}
+                {!calf1.isTemporaryTag && calf1ConsecutiveEval && calf1ConsecutiveEval.status === 'free_number_fill' && (
+                  <p className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold mt-1 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <span>Número libre disponible (#{calf1ConsecutiveEval.enteredConsecutive})</span>
+                  </p>
+                )}
                 {!calf1.isTemporaryTag && calf1ConsecutiveEval && !calf1ConsecutiveEval.isValid && (
                   <p className="text-amber-600 dark:text-amber-400 text-[10px] font-bold mt-1">
                     {calf1ConsecutiveEval.warningType === 'JUMP_AHEAD' ? '⚠️ Salto en consecutivo' : 'ℹ️ Número ya usado o anterior'}
@@ -737,10 +970,146 @@ export function CalvingRecordModal({
                 )}
               </div>
 
+              {/* Barra y Desplegable de Números Libres para Cría 2 */}
+              <div className="p-2.5 rounded-xl bg-purple-100/60 dark:bg-purple-900/40 border border-purple-200 dark:border-purple-800/60 space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                  <div className="flex items-center gap-1.5 text-purple-800 dark:text-purple-200">
+                    <Hash className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    <span className="font-bold text-[11px]">Siguiente sugerido: #{farmConsecutiveStats.nextSuggestedConsecutive + 1}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowFreeNumbers2(prev => !prev)}
+                        className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold transition flex items-center gap-1 cursor-pointer min-h-[30px] ${
+                          showFreeNumbers2
+                            ? 'bg-purple-700 text-white border-purple-700 shadow-sm'
+                            : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border-purple-400/50 text-purple-800 dark:text-purple-200'
+                        }`}
+                      >
+                        <ListFilter className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                        <span>{showFreeNumbers2 ? 'Ocultar libres' : `Ver libres (${farmConsecutiveStats.missingConsecutives.length})`}</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showFreeNumbers2 ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => applyConsecutiveNumber2(farmConsecutiveStats.nextSuggestedConsecutive + 1)}
+                      className="px-2.5 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-[11px] transition shadow-xs flex items-center gap-1 cursor-pointer min-h-[30px]"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span>Sugerido (#{farmConsecutiveStats.nextSuggestedConsecutive + 1})</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Banner Desplegable de Números Libres para Cría 2 */}
+                {showFreeNumbers2 && (
+                  <div className="mt-2 p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-purple-500/60 shadow-md text-slate-800 dark:text-slate-100 animate-fadeIn text-xs">
+                    <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center gap-1.5">
+                        <span className="p-1 rounded-lg bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold">
+                          <Hash className="w-3.5 h-3.5" />
+                        </span>
+                        <div>
+                          <span className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider block">
+                            Números Libres Disponibles (Cría 2)
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                            {farmConsecutiveStats.missingConsecutives.length} números libres en la finca
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowFreeNumbers2(false)}
+                        className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Buscador si hay más de 12 */}
+                    {farmConsecutiveStats.missingConsecutives.length > 12 && (
+                      <div className="mt-2 relative">
+                        <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
+                        <input
+                          type="text"
+                          value={freeNumberSearch2}
+                          onChange={(e) => setFreeNumberSearch2(e.target.value)}
+                          placeholder="Buscar número libre..."
+                          className="w-full pl-7 pr-6 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500"
+                        />
+                        {freeNumberSearch2 && (
+                          <button
+                            type="button"
+                            onClick={() => setFreeNumberSearch2('')}
+                            className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Grilla interactiva de botones */}
+                    <div className="mt-2 max-h-36 overflow-y-auto custom-scrollbar p-0.5">
+                      {displayedFreeNumbers2.length > 0 ? (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1">
+                          {displayedFreeNumbers2.map(num => {
+                            const isSelected = extractConsecutiveNumber(calf2.tagNumber) === num;
+                            return (
+                              <button
+                                key={num}
+                                type="button"
+                                onClick={() => applyConsecutiveNumber2(num)}
+                                className={`py-1 px-1.5 rounded-lg font-black text-xs text-center transition cursor-pointer border flex items-center justify-center gap-1 shadow-xs ${
+                                  isSelected
+                                    ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-500/40'
+                                    : 'bg-slate-50 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950/40'
+                                }`}
+                              >
+                                <span>#{num}</span>
+                                {isSelected && <Check className="w-3 h-3 text-white" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-2 text-center text-[11px] text-slate-500">
+                          No se encontró el número libre "{freeNumberSearch2}".
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    {calf2.isTemporaryTag ? 'N° Temporal *' : 'Chapa Oficial *'}
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                    <span>{calf2.isTemporaryTag ? 'N° Temporal *' : 'Chapa Oficial *'}</span>
+                    <div className="flex items-center gap-1.5">
+                      {farmConsecutiveStats?.missingConsecutives?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowFreeNumbers2(prev => !prev)}
+                          className="text-[10px] text-purple-600 dark:text-purple-400 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <span>{farmConsecutiveStats.missingConsecutives.length} libres</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showFreeNumbers2 ? 'rotate-180' : ''}`} />
+                        </button>
+                      )}
+                      {farmConsecutiveStats?.nextSuggestedConsecutive && (
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                          Sug: #{farmConsecutiveStats.nextSuggestedConsecutive + 1}
+                        </span>
+                      )}
+                    </div>
                   </label>
                   <input
                     type="text"

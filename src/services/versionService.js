@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.30";
+export const CURRENT_APP_VERSION = "2.24.31";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.31",
+    date: "24/10/2026",
+    title: "🏷️ Desplegable de Números Libres en Chapeteo Oficial (Manga) y Registro de Crías",
+    highlights: [
+      "Chapeteo Definitivo y Retiro de Temporales (Manga): Al marcar oficialmente una cría y reemplazar su número temporal (#TEMP) por su chapa definitiva, ahora se visualiza el panel de números libres disponibles con el resumen de rangos, buscador y botones para asignar con 1 solo clic.",
+      "Integración en Registro de Partos y Nacimientos: Al ingresar una nueva cría (o parto gemelar), el ganadero puede consultar y asignar los números libres intermedios tanto para chapas definitivas como temporales.",
+      "Asignación Inteligente y Respeto de Sufijos: Al presionar cualquier número libre o 'Usar el menor', se reemplaza la base numérica preservando sufijos de año (-6, /5) y confirmando en verde que se trata de un número libre sin registros previos."
+    ]
+  },
   {
     version: "2.24.30",
     date: "24/10/2026",
