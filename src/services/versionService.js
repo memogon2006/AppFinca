@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.29";
+export const CURRENT_APP_VERSION = "2.24.30";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.30",
+    date: "24/10/2026",
+    title: "📦 Limpieza y Reseteo Automático de Memoria tras Ingresar Lotes de Ganado",
+    highlights: [
+      "Reseteo Integral del Formulario de Lotes: Al guardar con éxito un lote de ganado, se purga de inmediato la memoria temporal y el borrador local (localStorage), asegurando que al abrir nuevamente el modal no aparezcan animales o costos del lote anterior.",
+      "Sugerencia Automática del Próximo Lote: Al volver a ingresar al formulario, el sistema analiza los lotes existentes y sugiere automáticamente la nomenclatura consecutiva (ej: 'Ingreso #2', 'Ingreso #3') y el nuevo consecutivo libre de aretes.",
+      "Blindaje contra Auto-Guardado Obsoleto: Desactivación inmediata del disparador de auto-guardado en segundo plano durante el proceso de guardado, evitando que datos antiguos re-infecten el almacenamiento local."
+    ]
+  },
   {
     version: "2.24.29",
     date: "24/10/2026",

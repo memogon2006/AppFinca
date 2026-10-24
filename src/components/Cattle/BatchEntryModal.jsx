@@ -39,6 +39,27 @@ import { DuplicateWarningModal } from './DuplicateWarningModal';
 import { analyzeFarmConsecutives, extractConsecutiveNumber } from '../../services/consecutiveService';
 import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
 
+/**
+ * Determina el nombre consecutivo sugerido para el siguiente lote
+ * analizando los lotes registrados previamente en la finca (ej: 'Ingreso #1' -> 'Ingreso #2').
+ */
+export function getSuggestedNextBatchName(cattle = []) {
+  if (!Array.isArray(cattle) || cattle.length === 0) return 'Ingreso #1';
+  let maxNumber = 0;
+  cattle.forEach(c => {
+    const batch = c.entryBatch || '';
+    if (!batch) return;
+    const match = batch.match(/(?:ingreso|lote)\s*#?\s*(\d+)/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNumber) {
+        maxNumber = num;
+      }
+    }
+  });
+  return maxNumber > 0 ? `Ingreso #${maxNumber + 1}` : 'Ingreso #1';
+}
+
 export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]', cattleList = [] }) {
   const { currentUser, isWorker } = useAuth();
   const [batchDuplicates, setBatchDuplicates] = useState([]);
@@ -62,9 +83,9 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   }, [cattleList]);
 
   // Configuración general del lote
-  const [batchInfo, setBatchInfo] = useState({
+  const [batchInfo, setBatchInfo] = useState(() => ({
     entryType: 'Compra', // 'Compra' | 'Nacimiento' | 'Compañía' | 'Traslado'
-    entryBatch: 'Ingreso #1',
+    entryBatch: getSuggestedNextBatchName(cattleList),
     entryDate: getLocalDateString(),
     owner: 'Hacienda Principal',
     ironBrand: '',
@@ -76,7 +97,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
     fatherType: 'toro', // 'toro' | 'pajilla' | 'desconocido'
     fatherId: '',
     fatherTag: '',
-  });
+  }));
 
   // Modalidad de costo: 'pricePerKg' (kilos * $/kg) | 'fixedPrice' (por cabeza) | 'zeroCost' ($0 por nacimiento)
   const [costMode, setCostMode] = useState('pricePerKg');
@@ -122,7 +143,62 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const [errors, setErrors] = useState(null);
   const isDraftInitializedRef = React.useRef(false);
 
-  // 1. Cargar borrador guardado al abrir el modal
+  // Reiniciar integralmente el formulario y purgar memoria
+  const resetForm = (clearStorage = true) => {
+    if (clearStorage) {
+      clearDraft('batch_entry');
+    }
+    setIsDraftRestored(false);
+    isDraftInitializedRef.current = false;
+
+    const nextBatchName = getSuggestedNextBatchName(cattleList);
+    const nextStartNum = farmConsecutiveStats?.nextSuggestedConsecutive || 1;
+
+    setBatchInfo({
+      entryType: 'Compra',
+      entryBatch: nextBatchName,
+      entryDate: getLocalDateString(),
+      owner: 'Hacienda Principal',
+      ironBrand: '',
+      sex: '',
+      productionType: 'Ceba',
+      category: '',
+      breed: '',
+      notes: '',
+      fatherType: 'toro',
+      fatherId: '',
+      fatherTag: '',
+    });
+    setCostMode('pricePerKg');
+    setFixedPricePerHead('');
+    setPricePerKg('');
+    setBatchExpenses('');
+    setExpensesConcept('');
+    setRows([
+      { id: '1', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+      { id: '2', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+      { id: '3', tagNumber: '', sex: 'Macho', color: '', entryWeight: '', motherTag: '', motherId: '' },
+    ]);
+    setSeriesConfig({
+      prefix: '',
+      startNumber: nextStartNum,
+      suffix: '',
+      separator: '-',
+      count: 5,
+      defaultSex: 'Macho',
+      defaultColor: 'Castaño',
+      defaultIronBrand: '',
+      defaultWeight: '',
+    });
+    setShowSeriesGenerator(false);
+    setEnableBatchGenealogy(false);
+    setErrors(null);
+    setBatchDuplicates([]);
+    setIsDuplicateModalOpen(false);
+    setPendingPayload(null);
+  };
+
+  // 1. Cargar borrador guardado al abrir el modal o inicializar formulario limpio
   useEffect(() => {
     if (isOpen) {
       const draft = loadDraft('batch_entry');
@@ -142,6 +218,8 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
         if (hasSubstantialData) {
           setIsDraftRestored(true);
         }
+      } else {
+        resetForm(false);
       }
       setTimeout(() => {
         isDraftInitializedRef.current = true;
@@ -174,34 +252,7 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
 
   // Descartar borrador y reiniciar formulario a valores limpios
   const handleDiscardDraft = () => {
-    clearDraft('batch_entry');
-    setIsDraftRestored(false);
-    setBatchInfo({
-      entryType: 'Compra',
-      entryBatch: 'Ingreso #1',
-      entryDate: getLocalDateString(),
-      owner: 'Hacienda Principal',
-      ironBrand: '',
-      sex: '',
-      productionType: 'Ceba',
-      category: '',
-      breed: '',
-      notes: '',
-      fatherType: 'toro',
-      fatherId: '',
-      fatherTag: '',
-    });
-    setCostMode('pricePerKg');
-    setFixedPricePerHead('');
-    setPricePerKg('');
-    setBatchExpenses('');
-    setExpensesConcept('');
-    setRows([
-      { id: '1', tagNumber: '', sex: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
-      { id: '2', tagNumber: '', sex: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
-      { id: '3', tagNumber: '', sex: '', color: '', entryWeight: '', motherTag: '', motherId: '' },
-    ]);
-    setErrors(null);
+    resetForm(true);
   };
 
   // Lista dinámica de colores (historial registrado en finca + base estándar)
@@ -326,9 +377,11 @@ export function BatchEntryModal({ isOpen, onClose, onSaveBatch, zIndex = 'z-[60]
   const avgTotalCostPerHead = totalAnimals > 0 ? (totalInvestmentWithExpenses / totalAnimals) : 0;
 
   const executeSaveBatch = (batchAnimalsPayload) => {
+    isDraftInitializedRef.current = false;
     clearDraft('batch_entry');
     setIsDraftRestored(false);
     onSaveBatch(batchAnimalsPayload);
+    resetForm(true);
     onClose();
   };
 
