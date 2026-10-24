@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.28";
+export const CURRENT_APP_VERSION = "2.24.29";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.29",
+    date: "24/10/2026",
+    title: "🔢 Desplegable de Números Libres y Disponibles en Registro de Bovinos",
+    highlights: [
+      "Banner Desplegable de Consecutivos Libres: Al registrar un bovino, la sección de numeración ahora cuenta con un desplegable interactivo que lista todos los números entre el #1 y el último registrado que nunca han sido utilizados en la finca.",
+      "Asignación Rápida con 1 Clic: El ganadero puede hacer clic en cualquiera de los números libres o en 'Usar el menor' para asignarlo inmediatamente al animal respetando sufijos de año (-6, /5).",
+      "Buscador y Resumen de Rangos: Visualización compacta de los rangos faltantes con barra de búsqueda rápida para verificar si un número específico está disponible."
+    ]
+  },
   {
     version: "2.24.28",
     date: "22/10/2026",

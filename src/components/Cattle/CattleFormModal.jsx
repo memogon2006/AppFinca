@@ -11,14 +11,16 @@ import {
   getDynamicFarmIronBrands
 } from '../../types/cattle';
 import { BOVINE_GESTATION_DAYS, formatDate, getLocalDateString } from '../../services/calculations';
-import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Heart, Dna, Tag, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { Save, Milk, ChevronDown, ChevronUp, AlertTriangle, ShieldAlert, Hash, Sparkles, Check, Info, Heart, Dna, Tag, Calendar, Clock, AlertCircle, ListFilter, Search, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findDuplicateCattle, saveTraceabilityLog } from '../../services/duplicateDetectionService';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
 import { 
   analyzeFarmConsecutives, 
   evaluateCandidateConsecutive, 
-  saveConsecutiveTraceabilityLog 
+  saveConsecutiveTraceabilityLog,
+  extractConsecutiveNumber,
+  formatConsecutiveRanges
 } from '../../services/consecutiveService';
 import { ConsecutiveWarningModal } from './ConsecutiveWarningModal';
 import { saveDraft, loadDraft, clearDraft } from '../../services/draftService';
@@ -33,10 +35,12 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const [isDraftRestored, setIsDraftRestored] = useState(false);
   const isDraftInitializedRef = React.useRef(false);
 
-  // Estado para Control de Numeración Consecutiva
+  // Estado para Control de Numeración Consecutiva y Números Libres
   const [isConsecutiveModalOpen, setIsConsecutiveModalOpen] = useState(false);
   const [consecutiveWarningData, setConsecutiveWarningData] = useState(null);
   const [consecutiveConfirmed, setConsecutiveConfirmed] = useState(false);
+  const [showFreeNumbers, setShowFreeNumbers] = useState(false);
+  const [freeNumberSearch, setFreeNumberSearch] = useState('');
 
   // Estado local para input de días de preñez (diagnóstico de palpación/ecografía)
   const [gestationDaysInput, setGestationDaysInput] = useState('');
@@ -45,6 +49,27 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   const farmConsecutiveStats = useMemo(() => {
     return analyzeFarmConsecutives(cattleList);
   }, [cattleList]);
+
+  // Filtrado dinámico de números libres según búsqueda
+  const displayedFreeNumbers = useMemo(() => {
+    const list = farmConsecutiveStats?.missingConsecutives || [];
+    if (!freeNumberSearch.trim()) return list;
+    const query = freeNumberSearch.trim().toLowerCase().replace('#', '');
+    return list.filter(num => String(num).includes(query));
+  }, [farmConsecutiveStats?.missingConsecutives, freeNumberSearch]);
+
+  // Asigna un número consecutivo (libre o sugerido) al input del animal respetando cualquier sufijo
+  const applyConsecutiveNumber = (num) => {
+    if (!num && num !== 0) return;
+    setFormData(prev => ({
+      ...prev,
+      tagNumber: prev.tagNumber.includes('-') 
+        ? `${num}-${prev.tagNumber.split('-')[1]}` 
+        : prev.tagNumber.includes('/') 
+          ? `${num}/${prev.tagNumber.split('/')[1]}` 
+          : String(num)
+    }));
+  };
 
   const [formData, setFormData] = useState({
     tagNumber: '',
@@ -1045,24 +1070,32 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               </div>
 
               {!isEditing && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextNum = farmConsecutiveStats.nextSuggestedConsecutive;
-                    setFormData(prev => ({
-                      ...prev,
-                      tagNumber: prev.tagNumber.includes('-') 
-                        ? `${nextNum}-${prev.tagNumber.split('-')[1]}` 
-                        : prev.tagNumber.includes('/') 
-                          ? `${nextNum}/${prev.tagNumber.split('/')[1]}` 
-                          : String(nextNum)
-                    }));
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer min-h-[36px]"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Usar sugerido (#{farmConsecutiveStats.nextSuggestedConsecutive})</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFreeNumbers(prev => !prev)}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer min-h-[36px] ${
+                        showFreeNumbers
+                          ? 'bg-emerald-700 text-white border-emerald-700 shadow-md shadow-emerald-700/20'
+                          : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border-emerald-500/50 text-emerald-800 dark:text-emerald-200'
+                      }`}
+                    >
+                      <ListFilter className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{showFreeNumbers ? 'Ocultar libres' : `Ver libres (${farmConsecutiveStats.missingConsecutives.length})`}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showFreeNumbers ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => applyConsecutiveNumber(farmConsecutiveStats.nextSuggestedConsecutive)}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer min-h-[36px]"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Usar sugerido (#{farmConsecutiveStats.nextSuggestedConsecutive})</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -1073,12 +1106,37 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                   {farmConsecutiveStats.maxConsecutive > 0 ? `#${farmConsecutiveStats.maxConsecutive}` : 'Ninguno'}
                 </strong>
               </div>
-              <div className="p-2.5 rounded-xl bg-emerald-500/20 dark:bg-emerald-950/80 border-2 border-emerald-500 dark:border-emerald-500/80 shadow-xs">
+
+              {/* Tarjeta Siguiente Sugerido con Desplegable de Números Libres */}
+              <div 
+                onClick={() => {
+                  if (farmConsecutiveStats.missingConsecutives.length > 0) {
+                    setShowFreeNumbers(prev => !prev);
+                  }
+                }}
+                className={`p-2.5 rounded-xl border-2 shadow-xs transition ${
+                  farmConsecutiveStats.missingConsecutives.length > 0
+                    ? 'bg-emerald-500/20 dark:bg-emerald-950/80 border-emerald-500 dark:border-emerald-500/80 cursor-pointer hover:bg-emerald-500/30'
+                    : 'bg-emerald-500/20 dark:bg-emerald-950/80 border-emerald-500 dark:border-emerald-500/80'
+                }`}
+                title={farmConsecutiveStats.missingConsecutives.length > 0 ? "Haz clic para ver o desplegar los números libres no usados en la finca" : ""}
+              >
                 <span className="text-[10px] sm:text-[11px] text-emerald-800 dark:text-emerald-300 font-black uppercase block">Siguiente Sugerido:</span>
                 <strong className="text-lg sm:text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5 block">
                   #{farmConsecutiveStats.nextSuggestedConsecutive}
                 </strong>
+                {farmConsecutiveStats.missingConsecutives.length > 0 ? (
+                  <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-black text-emerald-800 dark:text-emerald-200 bg-white/80 dark:bg-slate-900/80 px-2 py-0.5 rounded-md border border-emerald-500/40 shadow-2xs">
+                    <span>{farmConsecutiveStats.missingConsecutives.length} libres antes</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showFreeNumbers ? 'rotate-180' : ''}`} />
+                  </span>
+                ) : (
+                  <span className="mt-1 inline-block text-[10px] text-emerald-700/80 dark:text-emerald-300/70 font-semibold">
+                    Secuencia continua
+                  </span>
+                )}
               </div>
+
               <div className="col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col justify-center shadow-xs">
                 <span className="text-[10px] sm:text-[11px] text-slate-500 font-bold uppercase block">Total Histórico:</span>
                 <strong className="text-base sm:text-xl font-black text-slate-700 dark:text-slate-300 mt-0.5 block">
@@ -1086,6 +1144,120 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 </strong>
               </div>
             </div>
+
+            {/* Banner Desplegable de Números Libres / No Usados */}
+            {showFreeNumbers && (
+              <div className="mt-3 mb-3 p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border-2 border-emerald-500/60 shadow-lg text-slate-800 dark:text-slate-100 animate-fadeIn">
+                <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                      <Hash className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white uppercase tracking-wider block">
+                        Números Libres / No Usados en Finca
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {farmConsecutiveStats.missingConsecutives.length === 1
+                          ? 'Hay 1 número intermedio libre antes del último registrado'
+                          : `Hay ${farmConsecutiveStats.missingConsecutives.length} números intermedios libres (entre el #1 y el #${farmConsecutiveStats.maxConsecutive})`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {farmConsecutiveStats.missingConsecutives.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => applyConsecutiveNumber(farmConsecutiveStats.missingConsecutives[0])}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition cursor-pointer flex items-center gap-1 shadow-xs"
+                        title="Asignar el menor número libre disponible para llenar huecos en orden"
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Usar el menor (#{farmConsecutiveStats.missingConsecutives[0]})</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowFreeNumbers(false)}
+                      className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                      title="Cerrar panel de números libres"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rangos resumidos si hay varios */}
+                {farmConsecutiveStats.missingConsecutives.length > 3 && (
+                  <div className="mt-2 text-[11px] text-slate-600 dark:text-slate-300 bg-emerald-50/70 dark:bg-emerald-950/30 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300">Rangos libres: </span>
+                    <span className="font-mono text-slate-700 dark:text-slate-200">
+                      {farmConsecutiveStats.missingRanges || formatConsecutiveRanges(farmConsecutiveStats.missingConsecutives)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Buscador de número libre específico si hay más de 12 */}
+                {farmConsecutiveStats.missingConsecutives.length > 12 && (
+                  <div className="mt-2.5 relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={freeNumberSearch}
+                      onChange={(e) => setFreeNumberSearch(e.target.value)}
+                      placeholder="Buscar número libre específico (ej. 15)..."
+                      className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                    />
+                    {freeNumberSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setFreeNumberSearch('')}
+                        className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Grilla interactiva de botones de números libres */}
+                <div className="mt-2.5 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                  {displayedFreeNumbers.length > 0 ? (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
+                      {displayedFreeNumbers.map(num => {
+                        const isCurrentlySelected = extractConsecutiveNumber(formData.tagNumber) === num;
+                        return (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() => applyConsecutiveNumber(num)}
+                            className={`py-1.5 px-2 rounded-lg font-black text-xs text-center transition cursor-pointer border flex items-center justify-center gap-1 shadow-xs ${
+                              isCurrentlySelected
+                                ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-500/40 shadow-sm'
+                                : 'bg-slate-50 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300'
+                            }`}
+                            title={`Haz clic para asignar el número #${num} a este bovino`}
+                          >
+                            <span>#{num}</span>
+                            {isCurrentlySelected && <Check className="w-3 h-3 text-white" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center text-xs text-slate-500 dark:text-slate-400">
+                      No se encontró el número libre "{freeNumberSearch}".
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>💡 Haz clic sobre cualquier número para asignarlo directamente al animal.</span>
+                  <span className="font-bold">Total: {farmConsecutiveStats.missingConsecutives.length} disponibles</span>
+                </div>
+              </div>
+            )}
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
               ℹ️ La numeración se calcula usando únicamente el número <strong>antes de <code>-</code> o <code>/</code></strong> (ej. <strong>25-6 → 25</strong>). Los números posteriores no modifican el consecutivo principal.
@@ -1144,10 +1316,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
               {/* Badge de estado del consecutivo en tiempo real */}
               {formData.tagNumber.trim() && consecutiveEvaluation.isNumeric && (
                 <div className="mt-1.5 flex items-center gap-1.5 text-[11px] animate-fadeIn">
-                  {consecutiveEvaluation.status === 'exact_match' || consecutiveEvaluation.status === 'first_animal' ? (
+                  {consecutiveEvaluation.status === 'exact_match' || consecutiveEvaluation.status === 'first_animal' || consecutiveEvaluation.status === 'free_number_fill' ? (
                     <span className="inline-flex items-center gap-1 text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-600/50">
                       <Check className="w-3 h-3" />
-                      <span>✓ Consecutivo correcto (#{consecutiveEvaluation.enteredConsecutive})</span>
+                      <span>{consecutiveEvaluation.status === 'free_number_fill' ? `✓ Número libre asignado (#${consecutiveEvaluation.enteredConsecutive})` : `✓ Consecutivo correcto (#${consecutiveEvaluation.enteredConsecutive})`}</span>
                     </span>
                   ) : consecutiveEvaluation.status === 'jump_ahead' ? (
                     <span className="inline-flex items-center gap-1 text-amber-800 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-600/50">
@@ -1157,7 +1329,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                   ) : consecutiveEvaluation.status === 'lower_or_reused' ? (
                     <span className="inline-flex items-center gap-1 text-blue-800 dark:text-blue-300 font-bold bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-md border border-blue-300 dark:border-blue-600/50">
                       <Info className="w-3 h-3 text-blue-600" />
-                      <span>ℹ️ Consecutivo #{consecutiveEvaluation.enteredConsecutive} (menor/histórico)</span>
+                      <span>ℹ️ Consecutivo #{consecutiveEvaluation.enteredConsecutive} (ya registrado en finca)</span>
                     </span>
                   ) : null}
                 </div>

@@ -86,26 +86,55 @@ export function analyzeFarmConsecutives(cattleList = []) {
   const maxConsecutive = sortedNumbers.length > 0 ? sortedNumbers[sortedNumbers.length - 1] : 0;
   const nextSuggestedConsecutive = maxConsecutive > 0 ? maxConsecutive + 1 : 1;
 
-  // Detectar saltos / números faltantes en la secuencia histórica
+  // Detectar saltos / números faltantes en la secuencia histórica (del 1 al maxConsecutive)
   const missingConsecutives = [];
-  if (sortedNumbers.length > 0) {
-    const min = sortedNumbers[0] <= 5 ? 1 : sortedNumbers[0];
-    for (let i = min; i < maxConsecutive; i++) {
+  if (sortedNumbers.length > 0 && maxConsecutive > 1) {
+    const startFrom = (sortedNumbers[0] <= 50 || sortedNumbers.length >= 5) ? 1 : sortedNumbers[0];
+    for (let i = startFrom; i < maxConsecutive; i++) {
       if (!consecutiveSet.has(i)) {
         missingConsecutives.push(i);
       }
     }
   }
 
+  const missingRanges = formatConsecutiveRanges(missingConsecutives);
+
   return {
     sortedNumbers,
     maxConsecutive,
     nextSuggestedConsecutive,
     missingConsecutives,
+    missingRanges,
+    lowestMissingConsecutive: missingConsecutives.length > 0 ? missingConsecutives[0] : null,
+    freeNumbersCount: missingConsecutives.length,
     consecutiveOccurrences,
     totalRecordsAnalyzed: cattleList.length,
     distinctConsecutivesCount: sortedNumbers.length,
   };
+}
+
+/**
+ * Comprime una lista de números enteros ordenados en rangos legibles
+ * Ejemplo: [1, 2, 3, 5, 8, 9, 10] -> "#1 al #3, #5, #8 al #10"
+ */
+export function formatConsecutiveRanges(numbers = []) {
+  if (!numbers || numbers.length === 0) return '';
+  const ranges = [];
+  let start = numbers[0];
+  let prev = numbers[0];
+
+  for (let i = 1; i < numbers.length; i++) {
+    const curr = numbers[i];
+    if (curr === prev + 1) {
+      prev = curr;
+    } else {
+      ranges.push(start === prev ? `#${start}` : `#${start} al #${prev}`);
+      start = curr;
+      prev = curr;
+    }
+  }
+  ranges.push(start === prev ? `#${start}` : `#${start} al #${prev}`);
+  return ranges.join(', ');
 }
 
 /**
@@ -187,14 +216,35 @@ export function evaluateCandidateConsecutive(candidateTag, farmStats) {
   // Caso 3: Número menor o igual al último consecutivo histórico (ej. escribe 20-6 cuando el último es 25)
   if (enteredConsecutive <= max) {
     const matchingAnimals = farmStats?.consecutiveOccurrences?.get(enteredConsecutive) || [];
+    const isFreeNumber = matchingAnimals.length === 0;
+
+    // Si el número nunca fue registrado (hueco / número libre):
+    if (isFreeNumber) {
+      return {
+        isValid: true,
+        isNumeric: true,
+        enteredConsecutive,
+        status: 'free_number_fill',
+        title: '✓ Número Libre Asignado',
+        message: `Asignando número libre #${enteredConsecutive} (disponible en la finca, sin registros previos).`,
+        details: {
+          lastConsecutive: max,
+          expectedConsecutive: nextExpected,
+          enteredConsecutive,
+          isFreeNumber: true,
+        }
+      };
+    }
+
+    // Si ya existe al menos un animal con ese consecutivo (reutilización real):
     return {
       isValid: false,
       isNumeric: true,
       enteredConsecutive,
       status: 'lower_or_reused',
       warningType: 'LOWER_OR_REUSED',
-      title: '⚠️ REVISAR NUMERACIÓN',
-      message: `El consecutivo ingresado (${enteredConsecutive}) es menor o igual al último consecutivo registrado (${max}) en esta finca. El siguiente consecutivo sugerido es ${nextExpected}.`,
+      title: '⚠️ REVISAR NUMERACIÓN (NÚMERO YA USADO)',
+      message: `El consecutivo ingresado (${enteredConsecutive}) ya fue utilizado previamente por ${matchingAnimals.length} animal(es) en esta finca. El siguiente consecutivo sugerido es ${nextExpected}.`,
       details: {
         lastConsecutive: max,
         expectedConsecutive: nextExpected,
