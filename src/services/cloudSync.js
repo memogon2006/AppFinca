@@ -595,6 +595,7 @@ export async function cloudPushData(userId) {
 
     const activeModules = getActiveModules(userId);
     const activeModulesUpdatedAt = getModulesUpdatedAt(userId) || Date.now();
+    const tombstonesList = Array.from(getTombstones(userId).values());
     const payload = {
       userId,
       activeModules,
@@ -616,6 +617,7 @@ export async function cloudPushData(userId) {
       activityLogs,
       calendarNotes,
       rainfall,
+      tombstones: tombstonesList,
       syncedAt: new Date().toISOString(),
     };
 
@@ -759,26 +761,35 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
     }
   }
 
-  // 3. Eliminar registros locales obsoletos que ya no existen en Firebase o que fueron eliminados
+  // 3. Eliminar registros locales obsoletos ÚNICAMENTE si fueron eliminados explícitamente (tombstones)
+  // SALVAGUARDA DE SEGURIDAD ABSOLUTA Y CERO PÉRDIDA DE DATOS:
+  // Un registro local NUNCA debe ser eliminado por el simple hecho de no aparecer en la nube.
+  // Si un registro existe localmente pero falta en la nube y no está en tombstones, se PRESERVA
+  // intacto y se pone en cola de sincronización para auto-reparar la nube.
   try {
     const remoteIds = new Set(remoteList.map(item => String(item.id)));
-    const idsToDelete = localItems
-      .filter(localItem => {
-        if (!localItem.id && localItem.id !== 0) return false;
-        const strId = String(localItem.id);
-        if (isDeleted(localItem.id)) return true;
-        if (!remoteIds.has(strId)) {
-          if (!pendingIds.has(strId)) return true;
-          // Si estaba pendiente pero su fecha es de hace más de 24 horas, es huérfano
-          const localTs = parseRecordTimestamp(localItem);
-          if (localTs > 0 && (Date.now() - localTs > 24 * 60 * 60 * 1000)) return true;
-        }
-        return false;
-      })
-      .map(localItem => localItem.id);
+    const idsToDelete = [];
+    const missingFromRemoteIds = [];
+
+    for (const localItem of localItems) {
+      if (!localItem || (localItem.id === undefined && localItem.id === null)) continue;
+      const strId = String(localItem.id);
+
+      if (isDeleted(localItem.id)) {
+        idsToDelete.push(localItem.id);
+      } else if (!remoteIds.has(strId)) {
+        // El registro existe localmente pero no en la nube, y NO fue eliminado.
+        // NUNCA borrarlo: registrarlo para subirlo y auto-reparar la nube
+        missingFromRemoteIds.push(strId);
+      }
+    }
 
     if (idsToDelete.length > 0) {
       await db[tableName].bulkDelete(idsToDelete).catch(() => null);
+    }
+
+    if (missingFromRemoteIds.length > 0) {
+      markPendingSync(userId, ...missingFromRemoteIds);
     }
   } catch (err) {
     console.warn(`Error reconciliando colección ${tableName}:`, err);
@@ -812,6 +823,15 @@ export async function cloudPullData(userId) {
             }
           } catch (modErr) {
             console.warn('Error applying pulled active modules:', modErr);
+          }
+        }
+
+        // Reconciliar lápidas (tombstones) remotas si existen para sincronizar eliminaciones legítimas
+        if (remoteData.tombstones && Array.isArray(remoteData.tombstones)) {
+          for (const t of remoteData.tombstones) {
+            if (t && t.tableName && t.id) {
+              addTombstones(userId, t.tableName, t.id);
+            }
           }
         }
 

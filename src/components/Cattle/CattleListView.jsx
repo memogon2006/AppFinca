@@ -71,6 +71,7 @@ export function CattleListView({
   const [viewMode, setViewMode] = useState('grid');
   const [filters, setFilters] = useState({
     search: '',
+    searchMode: 'tag', // 'tag' (Arete) o 'date' (Fecha)
     sex: '',
     productionType: '',
     status: 'Activo',
@@ -160,31 +161,40 @@ export function CattleListView({
         if (animalBreed !== selectedBreed) return false;
       }
 
-      if (filters.search) {
-        const query = filters.search.toLowerCase();
-        const tag = (animal.tagNumber || '').toLowerCase();
-        const name = (animal.name || '').toLowerCase();
-        const brand = (animal.ironBrand || '').toLowerCase();
-        const owner = (animal.owner || '').toLowerCase();
-        const breed = (animal.breed || '').toLowerCase();
-        const batch = (animal.entryBatch || animal.paddock || '').toLowerCase();
-        const entryDate = (animal.entryDate || '').toLowerCase();
-        const exitDate = (animal.exitDate || '').toLowerCase();
-        const buyer = (animal.saleBuyer || animal.buyer || '').toLowerCase();
-        const color = (animal.color || '').toLowerCase();
-        if (
-          !tag.includes(query) &&
-          !name.includes(query) &&
-          !brand.includes(query) &&
-          !owner.includes(query) &&
-          !breed.includes(query) &&
-          !batch.includes(query) &&
-          !entryDate.includes(query) &&
-          !exitDate.includes(query) &&
-          !buyer.includes(query) &&
-          !color.includes(query)
-        ) {
-          return false;
+      if (filters.search && filters.search.trim()) {
+        const query = filters.search.trim().toLowerCase();
+        const mode = filters.searchMode || 'tag';
+
+        if (mode === 'tag') {
+          // Búsqueda exclusiva por número de arete / chapa (y chapa temporal previa)
+          const cleanQuery = query.replace('#', '');
+          const tag = (animal.tagNumber || '').toLowerCase().replace('#', '');
+          const prevTag = (animal.previousTemporaryTag || '').toLowerCase().replace('#', '');
+          if (!tag.includes(cleanQuery) && !prevTag.includes(cleanQuery)) {
+            return false;
+          }
+        } else if (mode === 'date') {
+          // Búsqueda exclusiva por fecha con formato específico (YYYY-MM-DD o DD/MM/YYYY)
+          let normalizedQuery = query;
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(query)) {
+            const [d, m, y] = query.split('/');
+            normalizedQuery = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+          } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(query)) {
+            const [d, m, y] = query.split('-');
+            normalizedQuery = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+          }
+
+          const entryDate = (animal.entryDate || '').toLowerCase();
+          const birthDate = (animal.birthDate || '').toLowerCase();
+          const exitDate = (animal.exitDate || '').toLowerCase();
+
+          const matchesEntry = entryDate.includes(normalizedQuery) || entryDate.includes(query);
+          const matchesBirth = birthDate.includes(normalizedQuery) || birthDate.includes(query);
+          const matchesExit = exitDate.includes(normalizedQuery) || exitDate.includes(query);
+
+          if (!matchesEntry && !matchesBirth && !matchesExit) {
+            return false;
+          }
         }
       }
 

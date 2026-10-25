@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, RefreshCw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, RefreshCw, Calendar, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import { PRODUCTION_TYPES } from '../../types/cattle';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveModules, MODULE_KEYS } from '../../services/moduleService';
@@ -12,6 +12,7 @@ export function CattleFilters({ filters, setFilters, owners = [], breeds = [], e
   const handleClear = () => {
     setFilters({
       search: '',
+      searchMode: 'tag',
       sex: '',
       productionType: '',
       status: 'Activo',
@@ -42,29 +43,92 @@ export function CattleFilters({ filters, setFilters, owners = [], breeds = [], e
   return (
     <div className="space-y-3 bg-white dark:bg-slate-900/90 p-3.5 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-lg backdrop-blur-md">
       {/* Search and Quick Toggles */}
-      <div className="flex flex-col md:flex-row items-center gap-3">
-        {/* Search Bar */}
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Buscar arete, fecha (YYYY-MM), hierro, dueño, lote o comprador..."
-            value={filters.search}
-            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition min-h-[42px]"
-          />
-          {filters.search && (
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+        {/* Selector de Modo de Búsqueda y Barra Adaptativa (Exclusivo: Arete o Fecha) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 w-full">
+          {/* Selector exclusivo: Arete vs Fecha */}
+          <div className="inline-flex items-center bg-slate-100 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
             <button
-              onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1"
+              type="button"
+              onClick={() => setFilters(prev => ({ ...prev, searchMode: 'tag', search: '' }))}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer min-h-[36px] ${
+                (filters.searchMode || 'tag') === 'tag'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
             >
-              <X className="w-4 h-4" />
+              <Tag className="w-3.5 h-3.5" />
+              <span>Buscar Arete</span>
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => setFilters(prev => ({ ...prev, searchMode: 'date', search: '' }))}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer min-h-[36px] ${
+                filters.searchMode === 'date'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Buscar Fecha</span>
+            </button>
+          </div>
+
+          {/* Campo de Búsqueda Adaptativo */}
+          <div className="relative flex-1 w-full">
+            {filters.searchMode === 'date' ? (
+              <div className="relative flex items-center gap-2 w-full">
+                <div className="relative flex-1">
+                  <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                    className="w-full pl-10 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-emerald-500/60 dark:border-emerald-500/60 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500 min-h-[42px]"
+                    title="Selecciona la fecha para filtrar"
+                  />
+                  {filters.search && (
+                    <button
+                      type="button"
+                      onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 cursor-pointer"
+                      title="Limpiar fecha"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <span className="hidden sm:inline-block text-[11px] text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap bg-slate-100 dark:bg-slate-800 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                  Formato: AAAA-MM-DD
+                </span>
+              </div>
+            ) : (
+              <div className="relative w-full">
+                <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Buscar únicamente por número de arete o chapa (ej. 15, 204)..."
+                  value={filters.search}
+                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition min-h-[42px]"
+                />
+                {filters.search && (
+                  <button
+                    type="button"
+                    onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 cursor-pointer"
+                    title="Limpiar búsqueda"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Status Filter Tabs (Activo, Vendido, Muerto, Todos) */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 self-stretch md:self-auto justify-center overflow-x-auto">
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 self-stretch lg:self-auto justify-center overflow-x-auto shrink-0">
           {[
             { id: 'Activo', label: 'En Finca' },
             { id: 'Vendido', label: 'Vendidos' },

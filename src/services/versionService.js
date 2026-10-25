@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.33";
+export const CURRENT_APP_VERSION = "2.24.34";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.34",
+    date: "24/10/2026",
+    title: "🛡️ Blindaje de Persistencia Local (Cero Pérdida de Datos) y Búsqueda Exclusiva (Arete o Fecha)",
+    highlights: [
+      "Blindaje Antieliminación por Sincronización: Se erradicó por completo la eliminación de registros locales por no aparecer en la nube. Todo animal o registro local se preserva de forma permanente y se auto-repara subiéndose a la nube ante cualquier desalineación entre dispositivos.",
+      "Sincronización Segura de Lápidas (Tombstones): Las eliminaciones solo ocurren cuando el usuario pulsa deliberadamente 'Eliminar'. Las lápidas se sincronizan en la nube evitando la pérdida de registros reales.",
+      "Barra de Búsqueda Exclusiva en Inventario: Se reemplazó la búsqueda genérica por un selector exclusivo con 2 únicos modos: 'Buscar Arete' (filtra únicamente por número de chapa) y 'Buscar Fecha' (filtra por fecha específica en formato AAAA-MM-DD o DD/MM/AAAA)."
+    ]
+  },
   {
     version: "2.24.33",
     date: "24/10/2026",
