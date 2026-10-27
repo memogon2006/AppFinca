@@ -38,6 +38,8 @@ import { RainfallWidget } from './RainfallWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { FarmSatelliteMapWidget } from './FarmSatelliteMapWidget';
+import { AgroClimateWidget } from './AgroClimateWidget';
+import { MineralSaltWidget } from '../Nutrition/MineralSaltWidget';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString, getDaysDifference, parseAuditTimestamp } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
@@ -56,8 +58,11 @@ export function DashboardView({
   milkDeliveries = [],
   milkSettlements = [],
   paddocks = [],
+  mineralSaltLogs = [],
   userId = null,
   onRotateBatch,
+  onOpenNewSalt,
+  onDeleteSaltLog,
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -681,6 +686,13 @@ export function DashboardView({
         )}
       </div>
 
+      {/* MONITOREO AGROCLIMÁTICO & ESTRÉS TÉRMICO BOVINO (ITH) */}
+      <AgroClimateWidget
+        userId={userId}
+        paddocks={paddocks}
+        onOpenNewRain={onOpenNewRain}
+      />
+
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}
       <div className={`grid grid-cols-1 ${isModuleActive(MODULE_KEYS.WEIGHTS) ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
         
@@ -934,14 +946,24 @@ export function DashboardView({
         onCompleteBooster={onCompleteBooster}
       />
 
+      {/* CONTROL DE SAL MINERALIZADA & SUPLEMENTACIÓN */}
+      <MineralSaltWidget
+        mineralSaltLogs={mineralSaltLogs}
+        paddocks={paddocks}
+        onOpenNewSalt={onOpenNewSalt}
+        onDeleteSaltLog={onDeleteSaltLog}
+      />
+
       {/* MAPA SATELITAL DE LA FINCA, LOTES Y ROTACIÓN DE POTREROS */}
       <FarmSatelliteMapWidget
         paddocks={paddocks}
         cattle={cattle}
+        mineralSaltLogs={mineralSaltLogs}
         userId={userId}
         onSelectAnimal={onSelectAnimal}
         onNavigate={onNavigate}
         onRotateBatch={onRotateBatch}
+        onOpenNewSalt={onOpenNewSalt}
       />
 
     </div>

@@ -201,6 +201,28 @@ db.version(16).stores({
   settings: 'key, userId'
 });
 
+db.version(17).stores({
+  users: 'id, email, username, farmName, name, role, ownerId, createdAt',
+  cattle: '++id, tagNumber, name, owner, ironBrand, sex, category, productionType, status, reproductiveStatus, milkingStatus, isBreedingOnly, entryDate, exitDate, entryBatch, paddock, color, motherId, motherTag, fatherId, fatherTag, fatherType, userId',
+  weighings: '++id, cattleId, date, weight, userId',
+  expenses: '++id, cattleId, date, category, userId',
+  farmExpenses: '++id, date, type, category, concept, amount, isRecurring, recurrenceFrequency, paymentMethod, userId, createdAt',
+  farmIncomes: '++id, date, type, category, concept, amount, paymentMethod, userId, createdAt',
+  vaccinations: '++id, date, vaccineType, batchName, ruvNumber, officialCycle, userId',
+  audits: '++id, date, inspectorName, scopeType, totalExpected, totalVerified, totalMissing, userId, createdAt',
+  palpations: '++id, cattleId, tagNumber, date, diagnosis, pregnancyDays, expectedCalvingDate, veterinarian, userId, createdAt',
+  activityLogs: '++id, action, description, tagNumber, operatorName, operatorRole, timestamp, userId',
+  calendarNotes: '++id, date, title, category, completed, userId, createdAt',
+  paddocks: '++id, name, areaHa, pastureType, waterSource, status, currentBatchId, currentBatchName, entryDate, exitDate, lastRestStartDate, targetRestDays, targetGrazingDays, notes, userId, createdAt',
+  milkRecords: '++id, date, cattleId, tagNumber, milkingSession, amLiters, pmLiters, totalLiters, lactationNumber, daysInMilk, userId, createdAt',
+  milkDeliveries: '++id, date, totalLiters, pricePerLiter, totalValue, buyer, milkDestination, destination, rejectedLiters, temperature, paymentStatus, userId, createdAt',
+  dailyMilkLogs: '++id, date, amLiters, pmLiters, totalLiters, cowsMilked, calvesLiters, farmLiters, salesLiters, rejectedLiters, pricePerLiter, settlementId, isSettled, notes, userId, createdAt',
+  milkSettlements: '++id, startDate, endDate, periodType, totalLiters, pricePerLiter, baseAmount, bonuses, deductions, totalValue, buyer, paymentStatus, paymentDate, registerIncome, incomeId, notes, userId, createdAt',
+  rainfall: '++id, date, amountMm, intensity, notes, userId, createdAt',
+  mineralSaltLogs: '++id, date, paddockId, paddockName, batchName, saltBrand, saltType, bagsCount, bagWeightKg, totalKg, costPerBag, totalCost, durationDays, dailyGramsPerHead, status, notes, userId, createdAt',
+  settings: 'key, userId'
+});
+
 // Registrar una acción en la bitácora de auditoría
 export async function logActivity({ action, description, tagNumber = '', operatorName = 'Sistema', operatorRole = 'admin', userId = 'default' }) {
   try {

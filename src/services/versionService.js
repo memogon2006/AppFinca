@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.36";
+export const CURRENT_APP_VERSION = "2.24.37";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.37",
+    date: "26/10/2026",
+    title: "🌦️ Pronóstico Agroclimático & Estrés Térmico (ITH) y 🧂 Control Zootécnico de Sal Mineralizada & Suplementos",
+    highlights: [
+      "Monitoreo Agroclimático & ITH Bovino: Integración satelital con Open-Meteo calculando en tiempo real el Índice de Temperatura y Humedad (ITH) con semáforo zootécnico (Confort, Alerta Leve, Peligro y Emergencia) y pronóstico a 7 días.",
+      "Recomendaciones Zootécnicas de Pastoreo: Consejos automáticos según el ITH y la lluvia prevista (priorización de potreros con sombra en horas pico y advertencia de no meter ganado a potreros bajos en días de lluvias intensas).",
+      "Control de Sal Mineralizada & Suplementos: Registro y cálculo automático del consumo en g/cabeza/día, detección de subconsumo (<60g) o desperdicio (>130g) y cálculo económico del costo de sal por cabeza al mes.",
+      "Integración en el Tablero y Potreros: Widget nutricional de saleros activos, indicador del último suministro de sal en cada potrero del mapa satelital y sincronización completa en la nube."
+    ]
+  },
   {
     version: "2.24.36",
     date: "26/10/2026",

@@ -40,10 +40,12 @@ import { RotateBatchModal } from '../Paddocks/RotateBatchModal';
 export function FarmSatelliteMapWidget({
   paddocks = [],
   cattle = [],
+  mineralSaltLogs = [],
   userId = null,
   onSelectAnimal,
   onNavigate,
-  onRotateBatch
+  onRotateBatch,
+  onOpenNewSalt
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -760,6 +762,9 @@ export function FarmSatelliteMapWidget({
                 const isSelected = selectedPaddockId === p.id;
                 const isExpanded = !!expandedPaddockAnimals[p.id];
                 const hasGeometry = p.polygon && Array.isArray(p.polygon) && p.polygon.length >= 3;
+                const lastSalt = mineralSaltLogs
+                  .filter(s => String(s.paddockId) === String(p.id))
+                  .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt))[0];
 
                 return (
                   <div
@@ -897,6 +902,31 @@ export function FarmSatelliteMapWidget({
                             )}
                           </div>
                         )}
+
+                        {/* Indicador de Sal Mineralizada */}
+                        {lastSalt ? (
+                          <div className="flex items-center justify-between text-[10px] p-2 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-950 dark:text-amber-200">
+                            <span className="font-bold flex items-center gap-1">
+                              <Scale className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span className="truncate max-w-[140px]">{lastSalt.saltBrand || 'Sal Mineral'}</span>
+                            </span>
+                            <span className="font-black text-amber-800 dark:text-amber-300">
+                              {lastSalt.dailyGramsPerHead} g/cab/día
+                            </span>
+                          </div>
+                        ) : onOpenNewSalt ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenNewSalt(p.id);
+                            }}
+                            className="text-[10px] text-amber-600 dark:text-amber-400 font-bold hover:underline flex items-center gap-1"
+                          >
+                            <Scale className="w-3 h-3" />
+                            <span>+ Servir sal mineral en este potrero</span>
+                          </button>
+                        ) : null}
 
                         {/* Botón de Acción Directa: Rotar Lote */}
                         <div className="pt-1 flex items-center justify-between">
