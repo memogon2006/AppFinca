@@ -38,11 +38,19 @@ export function PaddocksView({
   onDeletePaddock,
   onRotateBatch,
   isWorker = false,
-  userId = null
+  userId = null,
+  initialViewMode = 'grid'
 }) {
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'map'
+  const [viewMode, setViewMode] = useState(initialViewMode); // 'grid' | 'map'
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'descanso' | 'ocupado' | 'mantenimiento' | 'ready'
+
+  // Escuchar si desde el tablero u otra parte se solicita abrir directamente el mapa
+  React.useEffect(() => {
+    const handleOpenMap = () => setViewMode('map');
+    window.addEventListener('ganado_open_paddocks_map', handleOpenMap);
+    return () => window.removeEventListener('ganado_open_paddocks_map', handleOpenMap);
+  }, []);
   
   // Modales
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -217,51 +225,56 @@ export function PaddocksView({
         </div>
 
         {/* Acciones de Cabecera */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
 
-          {/* Selector de Modo de Vista: Cuadrícula vs Mapa Satelital */}
-          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
-                viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Cuadrícula</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('map')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
-                viewMode === 'map'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>Mapa Satelital</span>
-              <span className="text-[10px] bg-emerald-500/40 text-white px-1.5 py-0.2 rounded-full font-bold">HD</span>
-            </button>
-          </div>
+          {/* Botón Principal Llamativo: Alternador Mapa Satelital HD vs Cuadrícula */}
+          <button
+            type="button"
+            onClick={() => setViewMode(prev => prev === 'map' ? 'grid' : 'map')}
+            className={`group relative px-4 py-2.5 sm:px-5 sm:py-2.5 rounded-2xl font-black text-xs sm:text-sm flex items-center gap-2.5 shadow-lg active:scale-95 transition-all cursor-pointer border ${
+              viewMode === 'map'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-700 dark:border-slate-300 shadow-slate-900/30'
+                : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white border-emerald-400/60 shadow-emerald-700/35 ring-2 ring-emerald-400/35'
+            }`}
+            title={viewMode === 'map' ? 'Ver potreros en cuadrícula tradicional' : 'Abrir mapa satelital interactivo HD de la finca'}
+          >
+            <div className="relative flex items-center justify-center">
+              <Compass className={`w-5 h-5 transition-transform group-hover:rotate-45 duration-300 ${
+                viewMode === 'map' ? 'text-emerald-400 dark:text-emerald-600' : 'text-white'
+              }`} />
+              {viewMode !== 'map' && (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-300"></span>
+                </span>
+              )}
+            </div>
+            <span className="tracking-tight text-white dark:text-inherit font-black">
+              {viewMode === 'map' ? '📋 Ver en Cuadrícula' : '🗺️ Mapa Satelital HD'}
+            </span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-sm shadow-inner ${
+              viewMode === 'map'
+                ? 'bg-emerald-500/20 text-emerald-300 dark:text-emerald-700 border border-emerald-500/30'
+                : 'bg-white/20 text-white border border-white/30'
+            }`}>
+              Satelital
+            </span>
+          </button>
           
           <button
             type="button"
             onClick={() => handleOpenCalculator(null)}
-            className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+            className="px-3.5 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
             title="Calcular aforo en marco de 1m2 y carga animal"
           >
             <Calculator className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Calculadora Aforo 1m²</span>
+            <span>Aforo 1m²</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleOpenRotate(null)}
-            className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-teal-700/20 active:scale-95 transition cursor-pointer"
+            className="px-3.5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-teal-700/20 active:scale-95 transition cursor-pointer"
             title="Mover lote de ganado a otro potrero"
           >
             <ArrowRightLeft className="w-4 h-4" />
@@ -271,7 +284,7 @@ export function PaddocksView({
           <button
             type="button"
             onClick={handleOpenNew}
-            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-700/20 active:scale-95 transition cursor-pointer"
+            className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-700/20 active:scale-95 transition cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>+ Nuevo Potrero</span>

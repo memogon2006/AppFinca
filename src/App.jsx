@@ -2683,6 +2683,9 @@ export default function App() {
             milkRecords={milkRecords}
             milkDeliveries={milkDeliveries}
             milkSettlements={milkSettlements}
+            paddocks={paddocks}
+            userId={userId}
+            onRotateBatch={handleRotateBatch}
             rainfall={rainfall}
             onOpenNewRain={handleOpenNewRain}
             onOpenCalving={handleOpenCalving}

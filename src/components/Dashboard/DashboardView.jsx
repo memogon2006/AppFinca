@@ -37,6 +37,7 @@ import { ChecklistAuditWidget } from './ChecklistAuditWidget';
 import { RainfallWidget } from './RainfallWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
+import { FarmSatelliteMapWidget } from './FarmSatelliteMapWidget';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString, getDaysDifference, parseAuditTimestamp } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
@@ -54,6 +55,9 @@ export function DashboardView({
   milkRecords = [],
   milkDeliveries = [],
   milkSettlements = [],
+  paddocks = [],
+  userId = null,
+  onRotateBatch,
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -928,6 +932,16 @@ export function DashboardView({
         onOpenCensusModal={onOpenCensusModal}
         onDeleteVaccination={onDeleteVaccination}
         onCompleteBooster={onCompleteBooster}
+      />
+
+      {/* MAPA SATELITAL DE LA FINCA, LOTES Y ROTACIÓN DE POTREROS */}
+      <FarmSatelliteMapWidget
+        paddocks={paddocks}
+        cattle={cattle}
+        userId={userId}
+        onSelectAnimal={onSelectAnimal}
+        onNavigate={onNavigate}
+        onRotateBatch={onRotateBatch}
       />
 
     </div>

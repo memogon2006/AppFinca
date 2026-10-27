@@ -88,7 +88,7 @@ export function PaddocksMapView({
         totalDrawnHa += area;
         mappedPaddocksCount++;
       }
-      if (p.status === 'Ocupado' || p.currentBatchId) {
+      if (p.status === 'Ocupado' || p.status === 'ocupado' || p.currentBatchId || p.currentBatchName) {
         occupiedCount++;
       } else {
         inRestCount++;
@@ -112,8 +112,8 @@ export function PaddocksMapView({
 
   // Obtener estilo y color de cada potrero según su estado zootécnico
   const getPaddockStyle = (paddock) => {
-    const isOccupied = paddock.status === 'Ocupado' || paddock.currentBatchId;
-    const isMaintenance = paddock.status === 'Mantenimiento';
+    const isOccupied = paddock.status === 'Ocupado' || paddock.status === 'ocupado' || !!paddock.currentBatchId || !!paddock.currentBatchName;
+    const isMaintenance = paddock.status === 'Mantenimiento' || paddock.status === 'mantenimiento';
     
     // 🟡 Ocupado con ganado
     if (isOccupied) {

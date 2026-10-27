@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.35";
+export const CURRENT_APP_VERSION = "2.24.36";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.36",
+    date: "26/10/2026",
+    title: "🗺️ Mapa Satelital en Tablero Principal: Control de Lotes, Animales por Potrero, Rotación en Vivo y Botón Satelital Destacado",
+    highlights: [
+      "Monitoreo Satelital en el Tablero Principal: Incorporación en la parte inferior del Dashboard del mapa interactivo satelital de la finca junto al panel de control de lotes y animales en pastoreo.",
+      "Control de Lotes y Animales por Potrero: Visualización en tiempo real de qué lote ocupa cada potrero, total de cabezas, peso promedio, días de pastoreo transcurridos y lista desplegable de aretes con enlace directo a la ficha del bovino.",
+      "Rotación Rápida desde el Tablero: Botón directo para rotar ganado o meter animales a potreros listos sin salir del tablero de control.",
+      "Botón de Mapa Satelital Más Grande y Llamativo: En el módulo de potreros, el botón de mapa satelital ahora cuenta con mayor tamaño, gradiente esmeralda, radar pulsante animado y mayor visibilidad para alternar al instante con la cuadrícula."
+    ]
+  },
   {
     version: "2.24.35",
     date: "26/10/2026",
