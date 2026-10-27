@@ -84,6 +84,45 @@ export function getITHLevel(ithValue) {
 }
 
 /**
+ * Categoriza el piso térmico altitudinal y su impacto zootécnico en pastos y razas
+ * @param {number} elevationMeters - Metros sobre el nivel del mar (m.s.n.m.)
+ */
+export function getThermalFloor(elevationMeters) {
+  const elev = parseFloat(elevationMeters) || 125;
+  if (elev < 1000) {
+    return {
+      floor: 'Cálido',
+      name: 'Piso Térmico Cálido (Trópico Bajo)',
+      elevationRange: '0 - 1.000 m.s.n.m.',
+      tempRange: '> 24°C',
+      emoji: '🌴',
+      badgeClass: 'bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700',
+      description: 'Clima cálido tropical. Óptimo para pasturas Brachiaria, Mombaza, Tanzania y ganado Cebú Brahman, Nelore, Girolando y Guzerá.'
+    };
+  }
+  if (elev <= 2000) {
+    return {
+      floor: 'Templado',
+      name: 'Piso Térmico Templado (Trópico Medio)',
+      elevationRange: '1.000 - 2.000 m.s.n.m.',
+      tempRange: '17°C - 24°C',
+      emoji: '⛰️',
+      badgeClass: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700',
+      description: 'Clima medio de ladera y valles. Ideal para pasto Estrella, Mulato II, Caimán y cruces F1, Simmental, Pardo Suizo y Bonsmara.'
+    };
+  }
+  return {
+    floor: 'Frío',
+    name: 'Piso Térmico Frío (Trópico Alto)',
+    elevationRange: '> 2.000 m.s.n.m.',
+    tempRange: '12°C - 17°C',
+    emoji: '🏔️',
+    badgeClass: 'bg-sky-100 text-sky-900 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-300 dark:border-sky-700',
+    description: 'Trópico alto especializado. Clima frío para pasto Kikuyo, Raigrás, Avena forrajera y ganado lechero Holstein, Normando, Jersey y Ayrshire.'
+  };
+}
+
+/**
  * Traduce los códigos climáticos WMO de Open-Meteo a descripciones en español
  */
 export function getWeatherCodeInfo(code) {
@@ -191,8 +230,12 @@ export async function fetchAgroWeatherData(latitude, longitude, forceRefresh = f
       };
     });
 
+    const elevation = Math.round(json.elevation || 125);
+
     const parsedData = {
       location: { lat, lng },
+      elevation,
+      thermalFloor: getThermalFloor(elevation),
       current: {
         temp,
         humidity,
@@ -221,6 +264,8 @@ export async function fetchAgroWeatherData(latitude, longitude, forceRefresh = f
     return {
       isFallback: true,
       location: { lat, lng },
+      elevation: 125,
+      thermalFloor: getThermalFloor(125),
       current: {
         temp: 29.5,
         humidity: 78,

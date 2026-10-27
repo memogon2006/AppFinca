@@ -40,16 +40,16 @@ export const MAP_TILE_PROVIDERS = {
  * Centros geográficos predeterminados de zonas ganaderas clave de Colombia
  */
 export const COLOMBIAN_CATTLE_REGIONS = [
-  { name: 'Magdalena Medio (Puerto Berrío, Ant)', lat: 6.4914, lng: -74.4047, zoom: 14 },
-  { name: 'Córdoba (Montería / Cereté)', lat: 8.7559, lng: -75.8814, zoom: 14 },
-  { name: 'Cesar (Valledupar / Aguachica)', lat: 10.4631, lng: -73.2532, zoom: 14 },
-  { name: 'Llanos Orientales (Villavicencio / San Martín)', lat: 4.1420, lng: -73.6266, zoom: 14 },
-  { name: 'Casanare (Yopal / Paz de Ariporo)', lat: 5.3378, lng: -72.3959, zoom: 14 },
-  { name: 'Bajo Cauca Antioqueño (Caucasia)', lat: 7.9866, lng: -75.1936, zoom: 14 },
-  { name: 'Sabana de Torres / Cimitarra (Santander)', lat: 7.3917, lng: -73.4981, zoom: 14 },
-  { name: 'Sucre / San Jorge (San Marcos)', lat: 8.6606, lng: -75.1328, zoom: 14 },
-  { name: 'Altiplano Cundiboyacense (Ubaté / Chiquinquirá)', lat: 5.3092, lng: -73.8181, zoom: 14 },
-  { name: 'Eje Cafetero (La Dorada / Caldas)', lat: 5.4539, lng: -74.6644, zoom: 14 },
+  { name: 'Magdalena Medio (Puerto Berrío, Ant)', lat: 6.4914, lng: -74.4047, zoom: 14, municipality: 'Puerto Berrío', department: 'Antioquia', region: 'Magdalena Medio', altitude: 125 },
+  { name: 'Córdoba (Montería / Cereté)', lat: 8.7559, lng: -75.8814, zoom: 14, municipality: 'Montería', department: 'Córdoba', region: 'Sabana de Córdoba', altitude: 18 },
+  { name: 'Cesar (Valledupar / Aguachica)', lat: 10.4631, lng: -73.2532, zoom: 14, municipality: 'Valledupar', department: 'Cesar', region: 'Valle del Cesar', altitude: 168 },
+  { name: 'Llanos Orientales (Villavicencio / San Martín)', lat: 4.1420, lng: -73.6266, zoom: 14, municipality: 'Villavicencio', department: 'Meta', region: 'Llanos Orientales / Piedemonte', altitude: 467 },
+  { name: 'Casanare (Yopal / Paz de Ariporo)', lat: 5.3378, lng: -72.3959, zoom: 14, municipality: 'Yopal', department: 'Casanare', region: 'Sabanas de Casanare', altitude: 350 },
+  { name: 'Bajo Cauca Antioqueño (Caucasia)', lat: 7.9866, lng: -75.1936, zoom: 14, municipality: 'Caucasia', department: 'Antioquia', region: 'Bajo Cauca', altitude: 65 },
+  { name: 'Santander / Cimitarra / Sabana de Torres', lat: 7.3917, lng: -73.4981, zoom: 14, municipality: 'Cimitarra', department: 'Santander', region: 'Carare Opón / Magdalena', altitude: 190 },
+  { name: 'Sucre / San Jorge (San Marcos)', lat: 8.6606, lng: -75.1328, zoom: 14, municipality: 'San Marcos', department: 'Sucre', region: 'San Jorge / Mojana', altitude: 25 },
+  { name: 'Altiplano Cundiboyacense (Ubaté / Chiquinquirá)', lat: 5.3092, lng: -73.8181, zoom: 14, municipality: 'Ubaté', department: 'Cundinamarca', region: 'Altiplano Cundiboyacense (Trópico Alto)', altitude: 2556 },
+  { name: 'Eje Cafetero / Caldas (La Dorada)', lat: 5.4539, lng: -74.6644, zoom: 14, municipality: 'La Dorada', department: 'Caldas', region: 'Magdalena Caldense', altitude: 176 },
 ];
 
 /**
@@ -155,6 +155,53 @@ export function saveFarmBoundary(userId, boundaryData) {
     }
   } catch (e) {
     console.warn('Error guardando lindero de finca:', e);
+  }
+}
+
+const FARM_LOCATION_PREFIX = 'ganado_farm_location_';
+
+export const DEFAULT_FARM_LOCATION = {
+  farmName: 'Finca Principal',
+  vereda: 'Vereda Las Delicias',
+  municipality: 'Puerto Berrío',
+  department: 'Antioquia',
+  region: 'Magdalena Medio',
+  altitudeMeters: 125,
+};
+
+/**
+ * Obtiene el perfil de ubicación geográfica de la finca (Vereda, Municipio, Departamento, Altura)
+ */
+export function getFarmLocationProfile(userId) {
+  if (!userId) return DEFAULT_FARM_LOCATION;
+  try {
+    const raw = localStorage.getItem(`${FARM_LOCATION_PREFIX}${userId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_FARM_LOCATION, ...parsed };
+    }
+    return DEFAULT_FARM_LOCATION;
+  } catch {
+    return DEFAULT_FARM_LOCATION;
+  }
+}
+
+/**
+ * Guarda el perfil de ubicación geográfica de la finca
+ */
+export function saveFarmLocationProfile(userId, profile) {
+  if (!userId || !profile) return;
+  try {
+    const payload = {
+      ...profile,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(`${FARM_LOCATION_PREFIX}${userId}`, JSON.stringify(payload));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ganado_farm_location_changed', { detail: payload }));
+    }
+  } catch (e) {
+    console.warn('Error guardando perfil de ubicación:', e);
   }
 }
 

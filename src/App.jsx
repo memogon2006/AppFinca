@@ -35,7 +35,6 @@ import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
 import { PaddocksView } from './components/Paddocks/PaddocksView';
 import { RainfallView } from './components/Rainfall/RainfallView';
 import { RainfallModal } from './components/Rainfall/RainfallModal';
-import { MineralSaltModal } from './components/Nutrition/MineralSaltModal';
 import { FinancesView } from './components/Finances/FinancesView';
 import { AccountingView } from './components/Accounting/AccountingView';
 import { ExpenseModal } from './components/Accounting/ExpenseModal';
@@ -129,9 +128,6 @@ export default function App() {
 
   const [isRainfallModalOpen, setIsRainfallModalOpen] = useState(false);
   const [editingRainfall, setEditingRainfall] = useState(null);
-
-  const [isMineralSaltModalOpen, setIsMineralSaltModalOpen] = useState(false);
-  const [editingMineralSaltLog, setEditingMineralSaltLog] = useState(null);
 
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
   const [brandingAnimal, setBrandingAnimal] = useState(null);
@@ -542,14 +538,6 @@ export default function App() {
     () => {
       if (!userId && !currentUser?.id) return [];
       return db.rainfall ? db.rainfall.filter(r => !r.userId || allowedUserIds.has(r.userId)).toArray() : [];
-    },
-    [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
-  ) || [];
-
-  const mineralSaltLogs = useLiveQuery(
-    () => {
-      if (!userId && !currentUser?.id) return [];
-      return db.mineralSaltLogs ? db.mineralSaltLogs.filter(s => !s.userId || allowedUserIds.has(s.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -2497,44 +2485,6 @@ export default function App() {
     }
   };
 
-  const handleOpenNewSalt = (paddockId = null) => {
-    setEditingMineralSaltLog(paddockId ? { paddockId } : null);
-    setIsMineralSaltModalOpen(true);
-  };
-
-  const handleSaveMineralSaltLog = async (logData) => {
-    if (!userId || !db.mineralSaltLogs) return;
-    const finalLog = {
-      ...logData,
-      userId,
-      updatedAt: new Date().toISOString()
-    };
-    await db.mineralSaltLogs.put(finalLog);
-    markPendingSync(userId, finalLog.id);
-    await logActivity({
-      action: editingMineralSaltLog ? 'EDIT' : 'CREATE',
-      description: `Sal Mineral servida en ${finalLog.paddockName} (${finalLog.bagsCount} bultos ${finalLog.saltBrand})`,
-      operatorName: currentUser?.name || currentUser?.username || 'Administrador',
-      operatorRole: currentUser?.role || 'admin',
-      userId
-    }).catch(() => null);
-    cloudPushData(userId);
-    triggerFeedback('success');
-    showToast('🧂 Suministro de sal registrado exitosamente', 'success');
-  };
-
-  const handleDeleteMineralSaltLog = async (id) => {
-    if (!userId || !db.mineralSaltLogs) return;
-    if (confirm('¿Deseas eliminar este registro de sal mineral?')) {
-      await db.mineralSaltLogs.delete(id);
-      addTombstones(userId, 'mineralSaltLogs', id);
-      markPendingSync(userId, id);
-      cloudPushData(userId);
-      triggerFeedback('warning');
-      showToast('Registro de sal eliminado 🗑️', 'warning');
-    }
-  };
-
   const handleOpenNewRain = () => {
     setEditingRainfall(null);
     setIsRainfallModalOpen(true);
@@ -2734,9 +2684,6 @@ export default function App() {
             milkDeliveries={milkDeliveries}
             milkSettlements={milkSettlements}
             paddocks={paddocks}
-            mineralSaltLogs={mineralSaltLogs}
-            onOpenNewSalt={handleOpenNewSalt}
-            onDeleteSaltLog={handleDeleteMineralSaltLog}
             userId={userId}
             onRotateBatch={handleRotateBatch}
             rainfall={rainfall}
@@ -3170,21 +3117,6 @@ export default function App() {
         editingRecord={editingRainfall}
         showToast={showToast}
       />
-
-      {/* 8. Modal de Suministro de Sal Mineralizada & Suplementos */}
-      {isMineralSaltModalOpen && (
-        <MineralSaltModal
-          isOpen={isMineralSaltModalOpen}
-          onClose={() => {
-            setIsMineralSaltModalOpen(false);
-            setEditingMineralSaltLog(null);
-          }}
-          paddocks={paddocks}
-          cattle={cattle}
-          editingLog={editingMineralSaltLog}
-          onSaveLog={handleSaveMineralSaltLog}
-        />
-      )}
 
     </div>
   );

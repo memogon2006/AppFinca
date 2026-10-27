@@ -39,7 +39,6 @@ import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { FarmSatelliteMapWidget } from './FarmSatelliteMapWidget';
 import { AgroClimateWidget } from './AgroClimateWidget';
-import { MineralSaltWidget } from '../Nutrition/MineralSaltWidget';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString, getDaysDifference, parseAuditTimestamp } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
@@ -58,11 +57,8 @@ export function DashboardView({
   milkDeliveries = [],
   milkSettlements = [],
   paddocks = [],
-  mineralSaltLogs = [],
   userId = null,
   onRotateBatch,
-  onOpenNewSalt,
-  onDeleteSaltLog,
   onNavigate, 
   onSelectAnimal, 
   onOpenNewAnimal,
@@ -946,24 +942,14 @@ export function DashboardView({
         onCompleteBooster={onCompleteBooster}
       />
 
-      {/* CONTROL DE SAL MINERALIZADA & SUPLEMENTACIÓN */}
-      <MineralSaltWidget
-        mineralSaltLogs={mineralSaltLogs}
-        paddocks={paddocks}
-        onOpenNewSalt={onOpenNewSalt}
-        onDeleteSaltLog={onDeleteSaltLog}
-      />
-
       {/* MAPA SATELITAL DE LA FINCA, LOTES Y ROTACIÓN DE POTREROS */}
       <FarmSatelliteMapWidget
         paddocks={paddocks}
         cattle={cattle}
-        mineralSaltLogs={mineralSaltLogs}
         userId={userId}
         onSelectAnimal={onSelectAnimal}
         onNavigate={onNavigate}
         onRotateBatch={onRotateBatch}
-        onOpenNewSalt={onOpenNewSalt}
       />
 
     </div>
