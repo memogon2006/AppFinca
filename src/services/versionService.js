@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.40";
+export const CURRENT_APP_VERSION = "2.24.41";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.41",
+    date: "27/10/2026",
+    title: "📍 Conexión GPS del Dispositivo & Ventana Única de Delimitación Satelital de Potreros",
+    highlights: [
+      "Conexión con GPS del Dispositivo: Solicitud de autorización de geolocalización nativa del navegador/celular para centrar el satélite en tiempo real sobre tu predio o potrero con precisión métrica.",
+      "Botón Flotante 'Mi Ubicación (GPS)': Botón llamativo con animación de radar y punto azul en vivo que vuela automáticamente a tu ubicación actual sin necesidad de buscar manualmente en el mapa.",
+      "Ventana Única de Creación al Delimitar: Se eliminó la doble ventana que pedía el nombre del potrero dos veces. Ahora al cerrar el polígono satelital se abre de inmediato una sola ventana directa con área (Ha) y cerca (m) calculadas.",
+      "Guardado en 1 Clic: Permite registrar el potrero con su nombre, pasto, fuente de agua y animales opcionales en una sola pantalla, o asociar el dibujo a un potrero preexistente sin recargar.",
+      "Memoria de Predio Local: Guarda la última posición conocida para que en futuras sesiones el satélite abra directamente sobre tu finca."
+    ]
+  },
   {
     version: "2.24.40",
     date: "27/10/2026",

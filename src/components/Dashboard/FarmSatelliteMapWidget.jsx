@@ -26,7 +26,9 @@ import {
 } from 'lucide-react';
 import { 
   MAP_TILE_PROVIDERS, 
-  getFarmBoundary 
+  getFarmBoundary,
+  getLastKnownLocation,
+  saveLastKnownLocation
 } from '../../services/mapService';
 import { 
   formatDate, 
@@ -242,6 +244,12 @@ export function FarmSatelliteMapWidget({
         const firstWithCoords = paddocks.find(p => p.centerLat && p.centerLng);
         if (firstWithCoords) {
           initialCenter = [firstWithCoords.centerLat, firstWithCoords.centerLng];
+        } else {
+          const lastLoc = getLastKnownLocation(userId);
+          if (lastLoc && typeof lastLoc.lat === 'number' && typeof lastLoc.lng === 'number') {
+            initialCenter = [lastLoc.lat, lastLoc.lng];
+            initialZoom = 16;
+          }
         }
       }
 
@@ -408,22 +416,23 @@ export function FarmSatelliteMapWidget({
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
+        const { latitude, longitude, accuracy } = pos.coords;
+        saveLastKnownLocation(userId, { lat: latitude, lng: longitude });
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.setView([latitude, longitude], 16);
+          mapInstanceRef.current.flyTo([latitude, longitude], 17, { duration: 1.5 });
           L.circleMarker([latitude, longitude], {
             radius: 8,
-            fillColor: '#3b82f6',
+            fillColor: '#0284c7',
             color: '#ffffff',
             weight: 2,
-            fillOpacity: 0.9
-          }).addTo(mapInstanceRef.current).bindPopup('📍 Tu ubicación actual').openPopup();
+            fillOpacity: 0.95
+          }).addTo(mapInstanceRef.current).bindPopup(`📍 Mi ubicación en vivo (±${Math.round(accuracy || 0)}m)`).openPopup();
         }
       },
       (err) => {
-        alert('No se pudo obtener la ubicación GPS: ' + err.message);
+        alert('No se pudo obtener la ubicación GPS: ' + (err.message || 'Permiso denegado'));
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 15000 }
     );
   };
 

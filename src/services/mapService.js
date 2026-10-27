@@ -199,3 +199,77 @@ export async function searchColombianLocation(query) {
     return [];
   }
 }
+
+const LAST_GPS_LOCATION_KEY = 'ganado_last_gps_location_';
+
+/**
+ * Obtiene la última ubicación GPS conocida del dispositivo guardada localmente
+ */
+export function getLastKnownLocation(userId = 'default') {
+  try {
+    const raw = localStorage.getItem(`${LAST_GPS_LOCATION_KEY}${userId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Guarda la última ubicación GPS conocida
+ */
+export function saveLastKnownLocation(userId = 'default', coords) {
+  if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
+  try {
+    localStorage.setItem(`${LAST_GPS_LOCATION_KEY}${userId}`, JSON.stringify({
+      lat: coords.lat,
+      lng: coords.lng,
+      timestamp: Date.now()
+    }));
+  } catch {}
+}
+
+/**
+ * Solicita la ubicación actual del dispositivo usando la API de Geolocalización de HTML5
+ * con alta precisión (GPS) y tiempo de espera controlado.
+ */
+export function getDeviceCurrentLocation(options = {}) {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || !navigator || !navigator.geolocation) {
+      reject(new Error('Tu navegador o dispositivo no soporta geolocalización GPS.'));
+      return;
+    }
+
+    const geoOptions = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 10000,
+      ...options
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy, altitude } = position.coords;
+        resolve({
+          lat: parseFloat(latitude.toFixed(6)),
+          lng: parseFloat(longitude.toFixed(6)),
+          accuracy: Math.round(accuracy || 0),
+          altitude: altitude ? Math.round(altitude) : null
+        });
+      },
+      (error) => {
+        let msg = 'No se pudo obtener la ubicación del dispositivo.';
+        if (error.code === error.PERMISSION_DENIED) {
+          msg = 'Permiso denegado: Por favor habilita el permiso de ubicación en los ajustes de tu navegador o celular para encontrar tu predio.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          msg = 'La señal de GPS o ubicación no está disponible en este momento.';
+        } else if (error.code === error.TIMEOUT) {
+          msg = 'Se agotó el tiempo esperando la señal de GPS.';
+        }
+        const err = new Error(msg);
+        err.code = error.code;
+        reject(err);
+      },
+      geoOptions
+    );
+  });
+}
