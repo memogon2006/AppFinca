@@ -1,4 +1,4 @@
-export const CURRENT_APP_VERSION = "2.24.38";
+export const CURRENT_APP_VERSION = "2.24.39";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
@@ -6,24 +6,13 @@ export const CURRENT_BUILD_TIME = Date.now();
   */
  export const APP_CHANGELOG = [
   {
-    version: "2.24.38",
+    version: "2.24.39",
     date: "26/10/2026",
-    title: "📍 Ubicación Geográfica, Zona Ganadera, Vereda, Departamento & Altura (m.s.n.m.) en Pronóstico Agroclimático",
+    title: "🗺️ Retorno a Versión de Mapeo Satelital y Rotación de Lotes (Sin Módulo Agroclimático)",
     highlights: [
-      "Espacio de Ubicación de la Finca: Incorporación de sección dedicada y destacada en el pronóstico agroclimático que detalla el nombre del predio, vereda, municipio, departamento y subregión ganadera.",
-      "Altitud Topográfica Satelital (m.s.n.m.): Detección y calibración de la elevación sobre el nivel del mar obtenida vía modelo digital de elevación (SRTM Open-Meteo) o personalizada por el ganadero.",
-      "Piso Térmico Zootécnico: Clasificación automática según la altura (Cálido <1000m, Templado 1000-2000m, Frío >2000m) con recomendaciones zootécnicas para especies forrajeras y razas de ganado.",
-      "Calibración y Presets de Regiones Ganaderas: Modal interactivo para editar vereda, municipio, departamento, zona o seleccionar con 1 clic cuencas ganaderas colombianas (Magdalena Medio, Córdoba, Cesar, Llanos, etc.).",
-      "Retiro de Módulo de Sal Mineralizada: Conforme a lo solicitado, se removió temporalmente el control mineral y suplementación para revisarlo posteriormente."
-    ]
-  },
-  {
-    version: "2.24.37",
-    date: "26/10/2026",
-    title: "🌦️ Pronóstico Agroclimático & Estrés Térmico (ITH) Bovino",
-    highlights: [
-      "Monitoreo Agroclimático & ITH Bovino: Integración satelital con Open-Meteo calculando en tiempo real el Índice de Temperatura y Humedad (ITH) con semáforo zootécnico (Confort, Alerta Leve, Peligro y Emergencia) y pronóstico a 7 días.",
-      "Recomendaciones Zootécnicas de Pastoreo: Consejos automáticos según el ITH y la lluvia prevista (priorización de potreros con sombra en horas pico y advertencia de no meter ganado a potreros bajos en días de lluvias intensas)."
+      "Retorno a versión anterior: Se eliminó el módulo de pronóstico agroclimático e ITH conforme a lo solicitado.",
+      "Tablero Principal: Mantiene el mapa interactivo satelital de la finca, lotes y animales en pastoreo por potrero, rotación directa y botón satelital destacado en potreros.",
+      "Preservación de Datos: Todos los potreros, linderos y animales registrados se mantienen íntegros y seguros."
     ]
   },
   {

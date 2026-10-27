@@ -38,7 +38,6 @@ import { RainfallWidget } from './RainfallWidget';
 import { ProductionTypeChart } from './ProductionTypeChart';
 import { WeightPerformanceChart } from './WeightPerformanceChart';
 import { FarmSatelliteMapWidget } from './FarmSatelliteMapWidget';
-import { AgroClimateWidget } from './AgroClimateWidget';
 import { formatCurrency, formatNumber, calculateWeightMetrics, calculateFinancials, calculateSaleCashFlow, getSafeDateString, getLocalDateString, getDaysDifference, parseAuditTimestamp } from '../../services/calculations';
 import { useFarmPrices } from '../../services/farmPriceService';
 import { useAuth } from '../../context/AuthContext';
@@ -681,13 +680,6 @@ export function DashboardView({
           />
         )}
       </div>
-
-      {/* MONITOREO AGROCLIMÁTICO & ESTRÉS TÉRMICO BOVINO (ITH) */}
-      <AgroClimateWidget
-        userId={userId}
-        paddocks={paddocks}
-        onOpenNewRain={onOpenNewRain}
-      />
 
       {/* SECCIÓN DE GRÁFICAS DEL TABLERO: RENDIMIENTO DE PESO Y ESTRUCTURA DEL HATO */}
       <div className={`grid grid-cols-1 ${isModuleActive(MODULE_KEYS.WEIGHTS) ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>

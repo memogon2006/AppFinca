@@ -1,5 +1,5 @@
 {
-  "version": "2.24.38",
-  "buildTime": 1792925000000,
-  "description": "📍 Ubicación Geográfica, Zona Ganadera, Vereda, Departamento & Altura (m.s.n.m.) en Pronóstico Agroclimático"
+  "version": "2.24.39",
+  "buildTime": 1792930000000,
+  "description": "🗺️ Retorno a Versión de Mapeo Satelital y Rotación de Lotes (Sin Módulo Agroclimático)"
 }
