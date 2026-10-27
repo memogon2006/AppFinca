@@ -1,10 +1,24 @@
-export const CURRENT_APP_VERSION = "2.24.34";
+export const CURRENT_APP_VERSION = "2.24.35";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.35",
+    date: "26/10/2026",
+    title: "🗺️ Mapeo Satelital de la Finca: Linderos Exteriores, División de Potreros con Geometría Inteligente (Snapping) y Semáforo Zootécnico en Vivo",
+    highlights: [
+      "Mapeo Satelital HD Gratuito ($0): Integración de capas satelitales híbridas de alta resolución (Google Satellite Hybrid y Esri World Imagery) sin necesidad de tarjetas ni facturación Cloud.",
+      "Trazado de Linderos Exteriores: Herramienta dedicada para dibujar el perímetro de la finca con cálculo geodésico automático de área total en hectáreas (Ha) y longitud perimetral en metros.",
+      "Subdivisión de Potreros con Snapping (Adherencia de Cercas): Motor Leaflet-Geoman con imantado de vértices entre cercas vecinas, evitando solapamientos o vacíos en las divisiones de potreros.",
+      "Cálculo Geodésico Automático con Turf.js: Al cerrar cualquier polígono, el sistema calcula de inmediato el área en Ha, m² y metros lineales de cerca para cotizaciones o aforos.",
+      "Semáforo Zootécnico en Vivo sobre el Mapa: Cada potrero se colorea según su estado (Verde: descanso óptimo listo para pastar, Amarillo: ocupado con ganado activo y conteo de cabezas, Rojo: pastoreo excedido, Gris/Ámbar: mantenimiento).",
+      "Rotación y Operaciones Directas desde el Mapa: Tarjeta flotante interactiva al tocar cualquier potrero con acciones directas para rotar lotes de ganado, calcular aforo 1m² o editar ficha zootécnica.",
+      "Buscador Geográfico Colombiano: Localizador por municipio/vereda con OpenStreetMap Nominatim y accesos rápidos a las principales cuencas ganaderas de Colombia."
+    ]
+  },
   {
     version: "2.24.34",
     date: "24/10/2026",

@@ -254,6 +254,11 @@ export function PaddockFormModal({
       shadeQuality: formData.shadeQuality,
       fencingType: formData.fencingType,
       notes: formData.notes.trim(),
+      // Preservar geometría satelital si existe
+      polygon: editingPaddock?.polygon || null,
+      perimeterMeters: editingPaddock?.perimeterMeters || null,
+      centerLat: editingPaddock?.centerLat || null,
+      centerLng: editingPaddock?.centerLng || null,
     };
 
     try {
@@ -318,6 +323,11 @@ export function PaddockFormModal({
               className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               placeholder="Ej. 2.5"
             />
+            {editingPaddock?.polygon && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-500/30 mt-1">
+                <span>🛰️ Trazado satelital ({editingPaddock.perimeterMeters ? `${editingPaddock.perimeterMeters} m de cerca` : 'Con polígono'})</span>
+              </span>
+            )}
           </div>
 
         </div>

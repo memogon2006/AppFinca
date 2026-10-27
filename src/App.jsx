@@ -2727,6 +2727,7 @@ export default function App() {
             onDeletePaddock={handleDeletePaddock}
             onRotateBatch={handleRotateBatch}
             isWorker={isWorker}
+            userId={userId}
           />
         )}
 
