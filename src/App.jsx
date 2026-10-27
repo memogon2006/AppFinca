@@ -2377,7 +2377,17 @@ export default function App() {
     }
   };
 
-  const handleRotateBatch = async ({ fromPaddockId, toPaddockId, batchName, date, updateCattleLocation, notes }) => {
+  const handleRotateBatch = async ({ 
+    fromPaddockId, 
+    toPaddockId, 
+    batchName, 
+    animalCount = 0, 
+    selectedAnimalIds = [], 
+    selectedTagNumbers = [], 
+    date, 
+    updateCattleLocation = true, 
+    notes = '' 
+  }) => {
     if (!userId || !db.paddocks) return;
     const todayStr = date || getLocalDateString();
     const changedPaddockIds = [];
@@ -2390,6 +2400,8 @@ export default function App() {
           status: 'descanso',
           currentBatchId: '',
           currentBatchName: '',
+          currentAnimalCount: 0,
+          assignedTagNumbers: [],
           exitDate: todayStr,
           lastRestStartDate: todayStr,
           updatedAt: new Date().toISOString(),
@@ -2398,15 +2410,20 @@ export default function App() {
       }
     }
 
-    // 2. Potrero destino pasa a ocupado
+    // 2. Potrero destino pasa a ocupado con cantidad y lote
     let destPaddockName = '';
+    const cleanBatchName = (batchName || '').trim();
+    const effectiveCount = parseInt(animalCount, 10) || selectedAnimalIds.length || selectedTagNumbers.length || 0;
+
     if (toPaddockId && toPaddockId !== 'none') {
       const toP = await db.paddocks.get(toPaddockId) || await db.paddocks.get(Number(toPaddockId));
       if (toP) {
         destPaddockName = toP.name;
         await db.paddocks.update(toP.id, {
           status: 'ocupado',
-          currentBatchName: batchName || toP.currentBatchName || 'Lote Activo',
+          currentBatchName: cleanBatchName,
+          currentAnimalCount: effectiveCount,
+          assignedTagNumbers: selectedTagNumbers || [],
           entryDate: todayStr,
           exitDate: '',
           updatedAt: new Date().toISOString(),
@@ -2417,22 +2434,71 @@ export default function App() {
 
     // 3. Si se marcó actualizar ubicación del ganado, actualizar su potrero
     const changedCattleIds = [];
-    if (updateCattleLocation && batchName && destPaddockName) {
-      const matched = cattle.filter(c => c.status === 'Activo' && (c.entryBatch === batchName || c.paddock === batchName));
-      for (const animal of matched) {
-        await db.cattle.update(animal.id, {
-          paddock: destPaddockName,
-          updatedAt: new Date().toISOString(),
-        });
-        changedCattleIds.push(animal.id);
+    if (updateCattleLocation && destPaddockName) {
+      // Caso A: Se seleccionaron IDs específicos de animales
+      if (selectedAnimalIds && selectedAnimalIds.length > 0) {
+        for (const animalId of selectedAnimalIds) {
+          const updateData = {
+            paddock: destPaddockName,
+            updatedAt: new Date().toISOString(),
+          };
+          if (cleanBatchName) updateData.entryBatch = cleanBatchName;
+          await db.cattle.update(animalId, updateData);
+          changedCattleIds.push(animalId);
+        }
+      } 
+      // Caso B: Se tienen los números de arete
+      else if (selectedTagNumbers && selectedTagNumbers.length > 0) {
+        const matched = cattle.filter(c => 
+          c.status === 'Activo' && 
+          selectedTagNumbers.some(tag => String(tag).trim().toLowerCase() === String(c.tagNumber).trim().toLowerCase())
+        );
+        for (const animal of matched) {
+          const updateData = {
+            paddock: destPaddockName,
+            updatedAt: new Date().toISOString(),
+          };
+          if (cleanBatchName) updateData.entryBatch = cleanBatchName;
+          await db.cattle.update(animal.id, updateData);
+          changedCattleIds.push(animal.id);
+        }
+      }
+      // Caso C: Se rotó por lote existente
+      else if (cleanBatchName) {
+        const matched = cattle.filter(c => c.status === 'Activo' && (c.entryBatch === cleanBatchName || c.paddock === cleanBatchName));
+        for (const animal of matched) {
+          await db.cattle.update(animal.id, {
+            paddock: destPaddockName,
+            updatedAt: new Date().toISOString(),
+          });
+          changedCattleIds.push(animal.id);
+        }
+      }
+      // Caso D: Se rotó desde un potrero origen y no se especificaron aretes individuales
+      else if (fromPaddockId && fromPaddockId !== 'none') {
+        const fromP = paddocks.find(p => String(p.id) === String(fromPaddockId));
+        if (fromP) {
+          const matched = cattle.filter(c => c.status === 'Activo' && c.paddock === fromP.name);
+          for (const animal of matched) {
+            await db.cattle.update(animal.id, {
+              paddock: destPaddockName,
+              updatedAt: new Date().toISOString(),
+            });
+            changedCattleIds.push(animal.id);
+          }
+        }
       }
     }
 
     markPendingSync(userId, ...changedPaddockIds, ...changedCattleIds);
 
+    const logDesc = cleanBatchName 
+      ? `Lote "${cleanBatchName}" (${effectiveCount} cabezas)` 
+      : `${effectiveCount} ${effectiveCount === 1 ? 'animal' : 'animales'}`;
+
     await logActivity({
       action: 'batch_rotated',
-      description: `Rotó el lote "${batchName}" hacia el potrero "${destPaddockName || 'Destino'}"${changedCattleIds.length > 0 ? ` (${changedCattleIds.length} bovinos reubicados)` : ''}${notes ? ` - "${notes}"` : ''}`,
+      description: `Rotó ${logDesc} hacia el potrero "${destPaddockName || 'Destino'}"${changedCattleIds.length > 0 ? ` (${changedCattleIds.length} bovinos con arete reubicados)` : ''}${notes ? ` - "${notes}"` : ''}`,
       operatorName: currentUser?.name || currentUser?.username || 'Administrador',
       operatorRole: currentUser?.role || 'admin',
       userId,
@@ -2440,7 +2506,7 @@ export default function App() {
 
     cloudPushData(userId);
     triggerFeedback('batch');
-    showToast(`¡Lote "${batchName}" rotado exitosamente hacia ${destPaddockName}! 🌾🔄`, 'success');
+    showToast(`¡${logDesc} rotado exitosamente hacia ${destPaddockName}! 🌾🔄`, 'success');
   };
 
   const handleSaveRainfall = async (record) => {

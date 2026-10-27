@@ -818,11 +818,12 @@ export function PaddocksMapView({
               </span>
             </div>
 
-            {selectedPaddock.currentBatchName && (
+            {(selectedPaddock.currentBatchName || selectedPaddock.currentAnimalCount > 0) && (
               <div className="col-span-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200">
-                <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">Lote en Pastoreo:</span>
+                <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">Animales en Pastoreo:</span>
                 <span className="font-extrabold text-xs">
-                  🐄 {selectedPaddock.currentBatchName}
+                  🐄 {selectedPaddock.currentBatchName ? `${selectedPaddock.currentBatchName}` : 'Pastoreo'}
+                  {selectedPaddock.currentAnimalCount > 0 ? ` (${selectedPaddock.currentAnimalCount} ${selectedPaddock.currentAnimalCount === 1 ? 'cabeza' : 'cabezas'})` : ''}
                 </span>
               </div>
             )}

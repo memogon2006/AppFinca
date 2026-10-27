@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.39";
+export const CURRENT_APP_VERSION = "2.24.40";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.40",
+    date: "27/10/2026",
+    title: "🏷️ Rotación de Potreros por Número de Arete o Cantidad de Animales (Nombre de Lote Opcional)",
+    highlights: [
+      "Nombre de Lote 100% Opcional: Ya no es obligatorio crear ni escribir un nombre de lote para rotar o registrar animales en un potrero.",
+      "Conteo de Animales Obligatorio y Flexible: Ahora es obligatorio indicar cuántos animales rotan, con dos modalidades prácticas a elegir: (1) ingresando/seleccionando los números de arete individuales, o (2) digitando la cantidad directa de animales (cabezas).",
+      "Selector Rápido de Aretes y Pegado Masivo: Búsqueda ágil de aretes con autocompletado, caja para pegar listas de aretes separados por comas o espacios, y botón para cargar en 1 clic todos los animales del potrero origen.",
+      "Actualización Automática de Ficha Individual: Al rotar por número de animal, se actualiza automáticamente el potrero en la ficha de cada bovino seleccionado.",
+      "Soporte en Tablero y Mapa Satelital: Los potreros ocupados muestran la cantidad exacta de animales en pastoreo y sus aretes, con o sin nombre de lote."
+    ]
+  },
   {
     version: "2.24.39",
     date: "26/10/2026",

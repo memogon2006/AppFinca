@@ -42,6 +42,7 @@ export function PaddockFormModal({
     customWater: '',
     status: 'descanso',
     currentBatchName: '',
+    currentAnimalCount: '',
     targetRestDays: 30,
     targetGrazingDays: 3,
     lastRestStartDate: getLocalDateString(),
@@ -96,6 +97,7 @@ export function PaddockFormModal({
         customWater: !isStandardWater ? (editingPaddock.waterSource || '') : '',
         status: editingPaddock.status || 'descanso',
         currentBatchName: editingPaddock.currentBatchName || '',
+        currentAnimalCount: editingPaddock.currentAnimalCount !== undefined ? editingPaddock.currentAnimalCount : '',
         targetRestDays: editingPaddock.targetRestDays !== undefined ? editingPaddock.targetRestDays : pastureDefault.restDays || 30,
         targetGrazingDays: editingPaddock.targetGrazingDays !== undefined ? editingPaddock.targetGrazingDays : 3,
         lastRestStartDate: editingPaddock.lastRestStartDate || getLocalDateString(),
@@ -110,17 +112,20 @@ export function PaddockFormModal({
       setCustomAforoKg(editingPaddock.cuttingWeightKg || '');
       setCustomUsablePct(editingPaddock.usablePercentage || 70);
 
-      // Si tiene lote asignado, buscar cabezas y peso
-      if (editingPaddock.currentBatchName) {
-        const batchAnimals = cattle.filter(c => 
-          (c.entryBatch === editingPaddock.currentBatchName || c.paddock === editingPaddock.name) && 
-          c.status === 'Activo'
-        );
-        if (batchAnimals.length > 0) {
-          setSimulatedAnimalCount(batchAnimals.length);
-          const totalW = batchAnimals.reduce((acc, c) => acc + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
-          setSimulatedAvgWeight(Math.round(totalW / batchAnimals.length));
+      // Si tiene animales o lote asignado, buscar cabezas y peso
+      const batchAnimals = cattle.filter(c => 
+        ((editingPaddock.currentBatchName && (c.entryBatch === editingPaddock.currentBatchName || c.paddock === editingPaddock.currentBatchName)) || c.paddock === editingPaddock.name) && 
+        c.status === 'Activo'
+      );
+      if (batchAnimals.length > 0) {
+        setSimulatedAnimalCount(batchAnimals.length);
+        const totalW = batchAnimals.reduce((acc, c) => acc + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
+        setSimulatedAvgWeight(Math.round(totalW / batchAnimals.length));
+        if (editingPaddock.currentAnimalCount === undefined || editingPaddock.currentAnimalCount === '') {
+          setFormData(prev => ({ ...prev, currentAnimalCount: batchAnimals.length }));
         }
+      } else if (editingPaddock.currentAnimalCount) {
+        setSimulatedAnimalCount(editingPaddock.currentAnimalCount);
       }
     } else {
       const defaultPasture = PASTURE_TYPES[0];
@@ -135,6 +140,7 @@ export function PaddockFormModal({
         customWater: '',
         status: 'descanso',
         currentBatchName: '',
+        currentAnimalCount: '',
         targetRestDays: pastureDefault.restDays || 30,
         targetGrazingDays: 3,
         lastRestStartDate: getLocalDateString(),
@@ -244,7 +250,8 @@ export function PaddockFormModal({
       pastureType: finalPastureType || 'Sin especificar',
       waterSource: finalWaterSource || 'Sin especificar',
       status: formData.status,
-      currentBatchName: formData.status === 'ocupado' ? formData.currentBatchName.trim() : '',
+      currentBatchName: formData.status === 'ocupado' ? (formData.currentBatchName || '').trim() : '',
+      currentAnimalCount: formData.status === 'ocupado' ? (parseInt(formData.currentAnimalCount, 10) || simulatedAnimalCount || 0) : 0,
       targetRestDays: parseInt(formData.targetRestDays) || 30,
       targetGrazingDays: parseInt(formData.targetGrazingDays) || 3,
       cuttingWeightKg: customAforoKg !== '' ? parseFloat(customAforoKg) : defaultPastureAforo.avgCuttingKg,
@@ -753,25 +760,46 @@ export function PaddockFormModal({
               </div>
             </div>
 
-            {/* Lote actual si está ocupado */}
+            {/* Si está ocupado: Cantidad de animales (obligatoria) y Lote (opcional) */}
             {formData.status === 'ocupado' ? (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Lote / Grupo que lo Pastorea:
-                </label>
-                <input
-                  type="text"
-                  value={formData.currentBatchName}
-                  onChange={(e) => handleBatchSelected(e.target.value)}
-                  list="modal-batches-list"
-                  placeholder="Ej. Lote Machos Ceba"
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
-                />
-                <datalist id="modal-batches-list">
-                  {activeBatches.map(b => (
-                    <option key={b} value={b} />
-                  ))}
-                </datalist>
+              <div className="space-y-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Cantidad de Animales / Cabezas: *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={formData.currentAnimalCount}
+                      onChange={(e) => handleChange('currentAnimalCount', e.target.value)}
+                      placeholder="Ej. 25"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-black text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Nombre del Lote (Opcional):
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.currentBatchName}
+                      onChange={(e) => handleBatchSelected(e.target.value)}
+                      list="modal-batches-list"
+                      placeholder="Ej. Lote Ceba (Opcional)"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                    />
+                    <datalist id="modal-batches-list">
+                      {activeBatches.map(b => (
+                        <option key={b} value={b} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  Es obligatorio indicar la cantidad de animales; el nombre del lote es opcional.
+                </p>
               </div>
             ) : formData.status === 'descanso' ? (
               <div>

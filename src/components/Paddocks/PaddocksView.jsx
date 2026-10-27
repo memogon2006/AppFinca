@@ -89,7 +89,7 @@ export function PaddocksView({
       c.status === 'Activo' && 
       ((p.currentBatchName && (c.entryBatch === p.currentBatchName || c.paddock === p.currentBatchName)) || c.paddock === p.name)
     );
-    const activeAnimalsCount = activeAnimals.length;
+    const activeAnimalsCount = activeAnimals.length > 0 ? activeAnimals.length : (parseInt(p.currentAnimalCount, 10) || 0);
     const totalWeight = activeAnimals.reduce((sum, c) => sum + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
     const avgWeight = activeAnimalsCount > 0 ? Math.round(totalWeight / activeAnimalsCount) : 380;
 
@@ -608,7 +608,7 @@ export function PaddocksView({
                       <div className="flex items-center justify-between text-xs mb-1">
                         <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                           <Boxes className="w-3.5 h-3.5 text-rose-600" />
-                          <span>Lote: <strong>{p.currentBatchName || 'Activo'}</strong></span>
+                          <span>{p.currentBatchName ? `Lote: ${p.currentBatchName}` : 'Animales en pastoreo'}</span>
                         </span>
                         <span className="font-black text-rose-600 dark:text-rose-400">
                           {m.activeAnimalsCount} {m.activeAnimalsCount === 1 ? 'bovino' : 'bovinos'}

@@ -119,9 +119,9 @@ export function FarmSatelliteMapWidget({
       const isGrazingExceeded = grazingDays > targetGrazing;
 
       const animalsInPaddock = cattleByPaddock.map[p.id] || [];
-      const animalsCount = animalsInPaddock.length;
+      const animalsCount = animalsInPaddock.length > 0 ? animalsInPaddock.length : (parseInt(p.currentAnimalCount, 10) || (p.assignedTagNumbers?.length || 0));
       const totalWeight = animalsInPaddock.reduce((acc, c) => acc + (parseFloat(c.currentWeight || c.entryWeight) || 380), 0);
-      const avgWeight = animalsCount > 0 ? Math.round(totalWeight / animalsCount) : 380;
+      const avgWeight = animalsInPaddock.length > 0 ? Math.round(totalWeight / animalsInPaddock.length) : 380;
 
       const isOccupied = p.status === 'ocupado' || p.status === 'Ocupado' || !!p.currentBatchName || animalsCount > 0;
       const isMaintenance = p.status === 'mantenimiento' || p.status === 'Mantenimiento';
@@ -347,7 +347,7 @@ export function FarmSatelliteMapWidget({
           <div style="font-size: 10px; color: #f1f5f9; text-shadow: 0 1px 2px rgba(0,0,0,0.9); font-weight: 600;">${p.areaHa || 1} Ha</div>
           ${p.isOccupied ? `
             <div style="font-size: 9px; color: #fef08a; text-shadow: 0 1px 3px rgba(0,0,0,0.9); font-weight: 800; margin-top: 1px;">
-              📦 ${p.currentBatchName || 'Lote'} (${p.animalsCount} cab)
+              🐄 ${p.currentBatchName ? `${p.currentBatchName} (${p.animalsCount} cab)` : `${p.animalsCount} cabezas`}
             </div>
           ` : ''}
         </div>
@@ -825,7 +825,7 @@ export function FarmSatelliteMapWidget({
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                             <Boxes className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Lote: {p.currentBatchName || 'Lote General'}</span>
+                            <span>{p.currentBatchName ? `Lote: ${p.currentBatchName}` : 'Animales en pastoreo'}</span>
                           </span>
                           <span className="font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-lg border border-amber-200/60 dark:border-amber-800/60">
                             🐄 {p.animalsCount} {p.animalsCount === 1 ? 'cabeza' : 'cabezas'}
@@ -855,7 +855,7 @@ export function FarmSatelliteMapWidget({
                         </div>
 
                         {/* Desplegable de Aretes de Animales */}
-                        {p.animalsInPaddock.length > 0 && (
+                        {(p.animalsInPaddock.length > 0 || (p.assignedTagNumbers && p.assignedTagNumbers.length > 0)) && (
                           <div className="pt-1">
                             <button
                               type="button"
@@ -867,7 +867,7 @@ export function FarmSatelliteMapWidget({
                             >
                               <span className="flex items-center gap-1">
                                 <Users className="w-3 h-3 text-emerald-600" />
-                                <span>Ver los {p.animalsInPaddock.length} animales en este potrero</span>
+                                <span>Ver los {p.animalsInPaddock.length || p.assignedTagNumbers?.length} animales en este potrero</span>
                               </span>
                               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                             </button>
@@ -875,23 +875,34 @@ export function FarmSatelliteMapWidget({
                             {isExpanded && (
                               <div className="mt-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/80 max-h-32 overflow-y-auto space-y-1 custom-scrollbar">
                                 <div className="flex flex-wrap gap-1">
-                                  {p.animalsInPaddock.map(a => (
-                                    <button
-                                      key={a.id}
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (onSelectAnimal) onSelectAnimal(a);
-                                      }}
-                                      className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-800 dark:text-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-400 transition cursor-pointer flex items-center gap-1"
-                                      title={`Ver ficha completa de ${a.tagNumber}`}
-                                    >
-                                      <span>#{a.tagNumber}</span>
-                                      {a.currentWeight && (
-                                        <span className="text-[9px] font-normal text-slate-400">({a.currentWeight}kg)</span>
-                                      )}
-                                    </button>
-                                  ))}
+                                  {p.animalsInPaddock.length > 0 ? (
+                                    p.animalsInPaddock.map(a => (
+                                      <button
+                                        key={a.id}
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (onSelectAnimal) onSelectAnimal(a);
+                                        }}
+                                        className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-800 dark:text-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-400 transition cursor-pointer flex items-center gap-1"
+                                        title={`Ver ficha completa de ${a.tagNumber}`}
+                                      >
+                                        <span>#{a.tagNumber}</span>
+                                        {a.currentWeight && (
+                                          <span className="text-[9px] font-normal text-slate-400">({a.currentWeight}kg)</span>
+                                        )}
+                                      </button>
+                                    ))
+                                  ) : (
+                                    (p.assignedTagNumbers || []).map((tag, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-800 dark:text-slate-200 flex items-center gap-1"
+                                      >
+                                        <span>#{tag}</span>
+                                      </span>
+                                    ))
+                                  )}
                                 </div>
                               </div>
                             )}

@@ -442,7 +442,7 @@ export async function deletePaddock(id) {
   }
 }
 
-export async function rotatePaddockBatch({ fromPaddockId, toPaddockId, batchName, date = getLocalDateString(), userId }) {
+export async function rotatePaddockBatch({ fromPaddockId, toPaddockId, batchName, animalCount = 0, selectedTagNumbers = [], date = getLocalDateString(), userId }) {
   try {
     const todayStr = date || getLocalDateString();
     if (fromPaddockId && fromPaddockId !== 'none') {
@@ -452,6 +452,8 @@ export async function rotatePaddockBatch({ fromPaddockId, toPaddockId, batchName
           status: 'descanso',
           currentBatchId: '',
           currentBatchName: '',
+          currentAnimalCount: 0,
+          assignedTagNumbers: [],
           exitDate: todayStr,
           lastRestStartDate: todayStr,
           updatedAt: new Date().toISOString(),
@@ -463,16 +465,19 @@ export async function rotatePaddockBatch({ fromPaddockId, toPaddockId, batchName
       if (toP) {
         await db.paddocks.update(toP.id, {
           status: 'ocupado',
-          currentBatchName: batchName || toP.currentBatchName || 'Lote Activo',
+          currentBatchName: batchName ? batchName.trim() : (toP.currentBatchName || ''),
+          currentAnimalCount: parseInt(animalCount, 10) || (selectedTagNumbers?.length || 0),
+          assignedTagNumbers: selectedTagNumbers || [],
           entryDate: todayStr,
           exitDate: '',
           updatedAt: new Date().toISOString(),
         });
       }
     }
+    const countDisplay = animalCount > 0 ? `${animalCount} cabezas` : (batchName || 'Ganado');
     await logActivity({
       action: 'Rotación de Potrero',
-      description: `Lote "${batchName || 'Ganado'}" rotado a nuevo potrero.`,
+      description: `Rotación de ${countDisplay} a nuevo potrero.`,
       operatorName: 'Rotación de Pastoreo',
       userId: userId || 'default',
     });
