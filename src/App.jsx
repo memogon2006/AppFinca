@@ -63,6 +63,7 @@ import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
 import { useActiveModules, MODULE_KEYS, autoActivateModulesForAnimal, setActiveModules, getActiveModules } from './services/moduleService';
+import { SANITARY_CATEGORIES, calculateSanitaryCosts } from './services/sanitarySessionService';
 import { CheckCircle2, Sparkles, Trash2, AlertCircle, X } from 'lucide-react';
 
 export default function App() {
@@ -1584,6 +1585,125 @@ export default function App() {
     showToast(`Registro sanitario de ${vaccinationData.vaccineType} guardado exitosamente 💉${vacCost > 0 ? ` (Gasto de ${formatCurrency(vacCost)} registrado en Finanzas 💰)` : ''}${vaccinationData.requiresBooster ? ' (Alarma de refuerzo configurada)' : ''}`);
   };
 
+  /**
+   * Registra una dosis, vacuna, ivermectina, droga o metabólico aplicado en caliente
+   * desde la Báscula Rápida o desde el Checklist de Inventario con conexión financiera directa.
+   */
+  const handleSaveSanitaryTreatment = async ({
+    cattleIds = [],
+    cattleTags = [],
+    date = getLocalDateString(),
+    treatmentDraft = {},
+    sourceLabel = 'Manga'
+  }) => {
+    if (!userId || !cattleIds.length || !treatmentDraft) return null;
+
+    const cat = SANITARY_CATEGORIES.find(c => c.id === treatmentDraft.category);
+    const categoryName = cat ? cat.shortName : 'Tratamiento';
+    const productName = (treatmentDraft.productName || '').trim() || categoryName;
+    const title = `${cat?.icon || '💉'} ${categoryName}: ${productName}`;
+    const costs = calculateSanitaryCosts(treatmentDraft, cattleIds.length);
+
+    const vacId = 'vac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const isSingle = cattleIds.length === 1;
+
+    const vacRecord = {
+      id: vacId,
+      date: date || getLocalDateString(),
+      vaccineType: title,
+      vaccineCategory: treatmentDraft.category || 'droga',
+      productName,
+      doseAmount: treatmentDraft.doseAmount || '',
+      targetType: isSingle ? 'individual' : 'multiple',
+      targetLabel: isSingle ? `Individual: #${cattleTags[0] || 'Bovino'}` : `${cattleIds.length} bovinos (${sourceLabel})`,
+      cattleId: isSingle ? String(cattleIds[0]) : null,
+      selectedCattleIds: cattleIds.map(String),
+      selectedTags: cattleTags,
+      animalCount: cattleIds.length,
+      officialCycle: treatmentDraft.category === 'vacuna' ? 'Plan Sanitario de Manga' : 'Manejo Sanitario en Manga',
+      cost: costs.totalCost,
+      unitCost: costs.unitCost,
+      notes: `${sourceLabel} - Dosis: ${treatmentDraft.doseAmount || 'Estándar'}.${treatmentDraft.notes ? ` Notas: ${treatmentDraft.notes}` : ''}`,
+      userId,
+      createdAt: new Date().toISOString()
+    };
+
+    if (db.vaccinations) {
+      await db.vaccinations.put(vacRecord);
+      markPendingSync(userId, vacId);
+    }
+
+    // 1. Integración Financiera: Farm Expenses (Contabilidad de la Finca - Costo por Litro y Kilo)
+    if (costs.totalCost > 0 && db.farmExpenses) {
+      const expId = 'exp_vac_' + vacId;
+      const expenseRecord = {
+        id: expId,
+        date: date || getLocalDateString(),
+        concept: `Sanidad Manga (${categoryName}): ${productName} (${cattleIds.length} cabezas)`,
+        category: 'sanidad',
+        type: 'Variable',
+        amount: costs.totalCost,
+        paymentMethod: 'Efectivo',
+        notes: `Tratamiento en ${sourceLabel}. Animales: ${cattleTags.slice(0, 10).join(', ')}${cattleTags.length > 10 ? '...' : ''}. Costo unitario: $${costs.unitCost.toLocaleString('es-CO')}`,
+        vaccinationId: vacId,
+        isVaccinationExpense: true,
+        userId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await db.farmExpenses.put(expenseRecord);
+      markPendingSync(userId, expId);
+    }
+
+    // 2. Integración Individual: db.expenses y actualización de additionalCosts en cada animal
+    if (costs.unitCost > 0) {
+      for (let i = 0; i < cattleIds.length; i++) {
+        const cId = String(cattleIds[i]);
+        if (db.expenses) {
+          const indExpId = 'ind_exp_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substr(2, 4);
+          await db.expenses.put({
+            id: indExpId,
+            cattleId: cId,
+            date: date || getLocalDateString(),
+            category: 'Medicamentos',
+            concept: `${productName} (${categoryName})`,
+            amount: costs.unitCost,
+            notes: `Aplicado en ${sourceLabel}. Dosis: ${treatmentDraft.doseAmount || 'estándar'}`,
+            userId,
+            createdAt: new Date().toISOString()
+          }).catch(() => null);
+          markPendingSync(userId, indExpId);
+        }
+
+        // Incrementar additionalCosts en la ficha del bovino para calcular inversión real acumulada
+        try {
+          const animalObj = await db.cattle.get(Number(cId)) || await db.cattle.get(cId);
+          if (animalObj) {
+            const currentAdd = parseFloat(animalObj.additionalCosts) || 0;
+            await db.cattle.update(animalObj.id, {
+              additionalCosts: currentAdd + costs.unitCost
+            });
+            markPendingSync(userId, animalObj.id);
+          }
+        } catch (e) {
+          console.warn('Error actualizando additionalCosts en bovino:', e);
+        }
+      }
+    }
+
+    logActivity({
+      action: 'vaccination',
+      description: `Registró ${title} (${cattleIds.length} bovinos) en ${sourceLabel}.${costs.totalCost > 0 ? ` Costo total: $${costs.totalCost.toLocaleString('es-CO')}` : ''}`,
+      tagNumber: isSingle ? cattleTags[0] : '',
+      operatorName: currentUser?.name || 'Administrador',
+      operatorRole: currentUser?.role || 'admin',
+      userId
+    }).catch(() => null);
+
+    cloudPushData(userId);
+    return vacRecord;
+  };
+
   const handleCompleteBooster = async (vacId) => {
     if (!userId || !db.vaccinations) return;
     const vac = await db.vaccinations.get(vacId);
@@ -2834,6 +2954,7 @@ export default function App() {
             onNavigate={setCurrentView}
             currentUser={currentUser}
             onOpenChecklist={() => setIsChecklistOpen(true)}
+            onSaveSanitaryTreatment={handleSaveSanitaryTreatment}
           />
         )}
 
@@ -3137,6 +3258,7 @@ export default function App() {
         cattle={cattle}
         weighings={weighings}
         currentUser={currentUser}
+        onSaveSanitaryTreatment={handleSaveSanitaryTreatment}
         onDataChanged={() => {
           markPendingSync(userId, 'audit_' + Date.now());
           cloudPushData(userId);

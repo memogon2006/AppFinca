@@ -20,6 +20,22 @@ import {
 import { calculateWeightMetrics, formatDate } from '../../services/calculations';
 import { triggerWeighingFeedback } from '../../services/soundService';
 import { db } from '../../services/db';
+import { 
+  SANITARY_CATEGORIES, 
+  getSanitarySessionDraft, 
+  saveSanitarySessionDraft, 
+  calculateSanitaryCosts,
+  formatSanitaryTreatmentTitle
+} from '../../services/sanitarySessionService';
+import { 
+  Syringe, 
+  ChevronDown, 
+  ChevronUp, 
+  DollarSign, 
+  Pill, 
+  CheckCheck,
+  RotateCcw
+} from 'lucide-react';
 
 const DRAFT_WEIGHTS_KEY = 'bovina_quick_weights_draft';
 
@@ -31,7 +47,8 @@ export function QuickWeighinView({
   onSelectAnimal,
   onNavigate,
   currentUser,
-  onOpenChecklist
+  onOpenChecklist,
+  onSaveSanitaryTreatment
 }) {
   const saveBatchFn = onSaveBatchWeighings || onSaveBatch;
   const activeCattle = cattle.filter(c => c.status === 'Activo');
@@ -39,6 +56,15 @@ export function QuickWeighinView({
 
   // Modo Checklist & Arqueo conectado a la Báscula
   const [enableChecklistMode, setEnableChecklistMode] = useState(false);
+
+  // Estado del tratamiento sanitario en manga (Memoria persistente de la jornada)
+  const [sanitaryDraft, setSanitaryDraft] = useState(() => getSanitarySessionDraft());
+  const [isSanitaryPanelOpen, setIsSanitaryPanelOpen] = useState(false);
+
+  // Sincronizar borrador sanitario en localStorage
+  useEffect(() => {
+    saveSanitarySessionDraft(sanitaryDraft);
+  }, [sanitaryDraft]);
 
   // La fecha SIEMPRE inicia vacía por solicitud explícita del usuario
   const [weighDate, setWeighDate] = useState('');
@@ -145,6 +171,17 @@ export function QuickWeighinView({
         notes: 'Pesaje rápido de báscula'
       }]);
 
+      // Si la dosis sanitaria o vacuna está activa, registrarla también para este animal
+      if (sanitaryDraft?.enabled && onSaveSanitaryTreatment) {
+        await onSaveSanitaryTreatment({
+          cattleIds: [animal.id],
+          cattleTags: [animal.tagNumber],
+          date: weighDate,
+          treatmentDraft: sanitaryDraft,
+          sourceLabel: 'Báscula Rápida'
+        }).catch(err => console.warn('Error guardando dosis sanitaria:', err));
+      }
+
       // FEEDBACK SONORO (BEEP DE BÁSCULA) Y HÁPTICO (VIBRACIÓN)
       triggerWeighingFeedback('single');
 
@@ -225,6 +262,23 @@ export function QuickWeighinView({
     try {
       setSaving(true);
       await saveBatchFn(batch);
+
+      // Si la dosis sanitaria o vacuna está activa, registrarla masivamente para todo el lote
+      if (sanitaryDraft?.enabled && onSaveSanitaryTreatment && batch.length > 0) {
+        const weighedCattleIds = batch.map(b => b.cattleId);
+        const weighedCattleTags = weighedCattleIds.map(id => {
+          const a = activeCattle.find(c => String(c.id) === String(id));
+          return a?.tagNumber || 'S/N';
+        });
+
+        await onSaveSanitaryTreatment({
+          cattleIds: weighedCattleIds,
+          cattleTags: weighedCattleTags,
+          date: weighDate,
+          treatmentDraft: sanitaryDraft,
+          sourceLabel: `Báscula Rápida (${selectedBatch ? `Lote ${selectedBatch}` : 'General'})`
+        }).catch(err => console.warn('Error guardando dosis sanitaria en lote:', err));
+      }
       
       // FEEDBACK SONORO MELÓDICO Y VIBRACIÓN DE LOTE
       triggerWeighingFeedback('batch');
@@ -595,6 +649,346 @@ export function QuickWeighinView({
         </div>
       )}
 
+      {/* ========================================================================= */}
+      {/* SECCIÓN ZOOTÉCNICA: ¿DESEAS HACER ALGO MÁS COMO REGISTRAR VACUNA O DOSIS? */}
+      {/* ========================================================================= */}
+      <div className="rounded-3xl border transition-all duration-300 overflow-hidden shadow-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        
+        {/* Cabecera / Barra resumida */}
+        <div className={`p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3.5 transition-colors ${
+          sanitaryDraft?.enabled
+            ? 'bg-gradient-to-r from-teal-950/80 via-emerald-950/70 to-slate-900 border-b border-emerald-500/40 text-white'
+            : 'bg-slate-50 dark:bg-slate-900/60 text-slate-800 dark:text-slate-200'
+        }`}>
+          <div className="flex items-start sm:items-center gap-3">
+            <div className={`p-2.5 rounded-2xl flex items-center justify-center shrink-0 ${
+              sanitaryDraft?.enabled
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+            }`}>
+              <Syringe className="w-5 h-5" />
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm sm:text-base font-black">
+                  {sanitaryDraft?.enabled 
+                    ? '💉 Dosis Sanitaria / Vacuna Conectada al Pesaje' 
+                    : '¿Deseas registrar vacuna o alguna dosis sanitaria en este pesaje?'}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  Opcional
+                </span>
+                {sanitaryDraft?.enabled && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500 text-slate-950 flex items-center gap-1 shadow-xs">
+                    <CheckCheck className="w-3.5 h-3.5" /> Activo en Manga
+                  </span>
+                )}
+              </div>
+
+              {sanitaryDraft?.enabled ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-emerald-200 font-semibold">
+                  <span>
+                    <strong>{formatSanitaryTreatmentTitle(sanitaryDraft)}</strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Costo: <strong>{calculateSanitaryCosts(sanitaryDraft, 1).costPerAnimalFormatted} / animal</strong>
+                    {sanitaryDraft.costMode === 'per_bottle' && ` (Frasco: $${parseFloat(sanitaryDraft.bottleCost || 0).toLocaleString('es-CO')})`}
+                  </span>
+                  <span>•</span>
+                  <span className="text-[11px] text-emerald-300/80 italic">
+                    Se sumará a la ficha del bovino y a costos de carne/leche en Finanzas
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Puedes registrar en caliente si aplicaste un <strong>metabólico, ivermectina, droga o vacuna</strong> y cuánto costó la dosis o el frasco.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+            {sanitaryDraft?.enabled && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSanitaryDraft(prev => ({ ...prev, enabled: false }));
+                  setIsSanitaryPanelOpen(false);
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition cursor-pointer"
+                title="Desactivar aplicación sanitaria en este pesaje"
+              >
+                Desactivar
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsSanitaryPanelOpen(prev => !prev)}
+              className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition cursor-pointer shadow-sm ${
+                sanitaryDraft?.enabled
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+            >
+              <span>{isSanitaryPanelOpen ? 'Cerrar Panel' : (sanitaryDraft?.enabled ? 'Modificar Dosis' : '+ Configurar Dosis')}</span>
+              {isSanitaryPanelOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Formulario Desplegable */}
+        {isSanitaryPanelOpen && (
+          <div className="p-4 sm:p-6 bg-slate-900 text-white space-y-5 border-t border-slate-800 animate-fade-in">
+            {/* 1. Categoría */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>1. ¿Qué tipo de dosis o tratamiento le pusiste?</span>
+              </label>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {SANITARY_CATEGORIES.map(cat => {
+                  const isSelected = (sanitaryDraft?.category || 'ivermectina') === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setSanitaryDraft(prev => ({
+                          ...prev,
+                          enabled: true,
+                          category: cat.id,
+                          doseAmount: prev.doseAmount || cat.defaultDose
+                        }));
+                      }}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                        isSelected
+                          ? 'bg-emerald-500 text-slate-950 font-black border-emerald-400 ring-2 ring-emerald-300 shadow-lg'
+                          : 'bg-slate-800/80 hover:bg-slate-800 text-slate-200 border-slate-700/80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">{cat.icon}</span>
+                        {isSelected && <span className="text-[10px] font-black uppercase bg-slate-950 text-emerald-400 px-1.5 py-0.5 rounded-md">Seleccionado</span>}
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold leading-tight">{cat.name}</div>
+                        <div className={`text-[10px] line-clamp-1 mt-0.5 ${isSelected ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
+                          {cat.description}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Nombre del producto y dosis */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                  <span>Nombre del Medicamento / Producto:</span>
+                  <span className="text-[10px] text-slate-400">Ej. Catosal, Ivermectina 3.15%</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Escribe o selecciona abajo..."
+                  value={sanitaryDraft?.productName || ''}
+                  onChange={(e) => setSanitaryDraft(prev => ({ ...prev, enabled: true, productName: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
+                />
+
+                {/* Chips de sugerencias del producto según categoría */}
+                {(() => {
+                  const currentCat = SANITARY_CATEGORIES.find(c => c.id === (sanitaryDraft?.category || 'ivermectina'));
+                  const suggestions = currentCat?.popularProducts || [];
+                  return (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {suggestions.map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setSanitaryDraft(prev => ({ 
+                            ...prev, 
+                            enabled: true, 
+                            productName: p,
+                            doseAmount: prev.doseAmount || currentCat?.defaultDose || '10 ml'
+                          }))}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                            sanitaryDraft?.productName === p
+                              ? 'bg-amber-400 text-slate-950 border-amber-300 font-black'
+                              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                          }`}
+                        >
+                          + {p}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-200">
+                  Dosis o Cantidad por Animal (ml / cc):
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ej. 10 ml, 5 cc..."
+                    value={sanitaryDraft?.doseAmount || ''}
+                    onChange={(e) => setSanitaryDraft(prev => ({ ...prev, enabled: true, doseAmount: e.target.value }))}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                  <div className="flex items-center gap-1">
+                    {['2 ml', '5 ml', '10 ml', '15 ml'].map(d => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setSanitaryDraft(prev => ({ ...prev, enabled: true, doseAmount: d }))}
+                        className={`px-2 py-2 rounded-xl text-[10px] font-bold border transition cursor-pointer ${
+                          sanitaryDraft?.doseAmount === d
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Costo Financiero (Conexión con Costo de Carne y Leche) */}
+            <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-black text-amber-300 uppercase tracking-wider">
+                    3. ¿Cuánto te costó la dosis o el frasco? (Conexión Contable)
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  Se conecta automáticamente al costo de producción por kilo de carne y litro de leche
+                </span>
+              </div>
+
+              {/* Selector de Modo de Costo */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSanitaryDraft(prev => ({ ...prev, enabled: true, costMode: 'per_dose' }))}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    (sanitaryDraft?.costMode || 'per_dose') === 'per_dose'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-sm'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                  }`}
+                >
+                  Costo Directo por Dosis / Animal ($)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSanitaryDraft(prev => ({ ...prev, enabled: true, costMode: 'per_bottle' }))}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    sanitaryDraft?.costMode === 'per_bottle'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-sm'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                  }`}
+                >
+                  Costo por Frasco Completo ($) (Prorrateo Automático)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSanitaryDraft(prev => ({ ...prev, enabled: true, costMode: 'zero' }))}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    sanitaryDraft?.costMode === 'zero'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-sm'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                  }`}
+                >
+                  Sin Costo ($0)
+                </button>
+              </div>
+
+              {/* Inputs según modo de costo */}
+              {sanitaryDraft?.costMode === 'per_bottle' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 mb-1 block">
+                      Precio Total del Frasco / Botella ($ COP):
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Ej. 90000"
+                      value={sanitaryDraft?.bottleCost || ''}
+                      onChange={(e) => setSanitaryDraft(prev => ({ ...prev, enabled: true, bottleCost: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-extrabold text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 mb-1 block">
+                      ¿Para cuántos animales / dosis rinde el frasco?:
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Ej. 20"
+                      value={sanitaryDraft?.bottleDoses || '20'}
+                      onChange={(e) => setSanitaryDraft(prev => ({ ...prev, enabled: true, bottleDoses: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-extrabold text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-bold">
+                    💡 Cálculo automático: <strong>{calculateSanitaryCosts(sanitaryDraft, 1).costPerAnimalFormatted} por novillo</strong>. En contabilidad se asentará el valor del frasco y a cada animal se le sumará este costo unitario en su ficha.
+                  </div>
+                </div>
+              ) : sanitaryDraft?.costMode === 'zero' ? (
+                <p className="text-xs text-slate-400 italic">
+                  Se registrará el evento clínico en la ficha del animal sin costo contable monetario.
+                </p>
+              ) : (
+                <div className="max-w-xs pt-1">
+                  <label className="text-[11px] font-bold text-slate-300 mb-1 block">
+                    Costo por Dosis / Animal ($ COP):
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Ej. 5000"
+                    value={sanitaryDraft?.unitCost || ''}
+                    onChange={(e) => setSanitaryDraft(prev => ({ ...prev, enabled: true, unitCost: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-extrabold text-xs focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Botón de Confirmación */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <span className="text-xs text-slate-400">
+                La aplicación recordará este medicamento y costo durante toda la jornada de manga.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSanitaryDraft(prev => ({ ...prev, enabled: true }));
+                  setIsSanitaryPanelOpen(false);
+                }}
+                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer shadow-lg shadow-emerald-500/20"
+              >
+                ✓ Aplicar y Guardar para esta Jornada
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
+
       {activeCattle.length === 0 ? (
         <div className="custom-card p-8 sm:p-10 text-center text-slate-500 dark:text-slate-400 text-sm">
           No hay bovinos activos para pesar. Registra animales en el inventario primero.
@@ -729,6 +1123,18 @@ export function QuickWeighinView({
 
                   {/* Input de Pesaje y Botón de Acción OK */}
                   <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                    {sanitaryDraft?.enabled && (
+                      <div className="flex items-center justify-between text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Syringe className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                          <span className="truncate">+ {formatSanitaryTreatmentTitle(sanitaryDraft)}</span>
+                        </div>
+                        <span className="shrink-0 text-[10px] text-emerald-700 dark:text-emerald-300 font-extrabold">
+                          {calculateSanitaryCosts(sanitaryDraft, 1).costPerAnimalFormatted}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2">
                       <div className="relative flex-1">
                         <input

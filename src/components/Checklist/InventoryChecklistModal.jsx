@@ -28,12 +28,23 @@ import {
   Baby,
   Skull,
   Save,
-  Clock
+  Clock,
+  Syringe,
+  DollarSign,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { db, logActivity } from '../../services/db';
 import { triggerFeedback } from '../../services/soundService';
 import { formatNumber, getLocalDateString } from '../../services/calculations';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { 
+  SANITARY_CATEGORIES, 
+  getSanitarySessionDraft, 
+  saveSanitarySessionDraft, 
+  calculateSanitaryCosts,
+  formatSanitaryTreatmentTitle
+} from '../../services/sanitarySessionService';
 
 const QUICK_NOTES = [
   { id: 'bichera', label: '🐛 Bichera / Gusanera', color: 'bg-rose-100 text-rose-800 border-rose-300' },
@@ -52,6 +63,7 @@ export function InventoryChecklistModal({
   weighings = [],
   currentUser,
   onDataChanged,
+  onSaveSanitaryTreatment,
   zIndex = 'z-[60]'
 }) {
   useScrollLock(isOpen);
@@ -68,6 +80,22 @@ export function InventoryChecklistModal({
 
   // Modo Báscula Rápida integrado en el Checklist
   const [enableQuickWeigh, setEnableQuickWeigh] = useState(false);
+
+  // Tratamiento sanitario masivo (lote) en Arqueo
+  const [batchSanitaryDraft, setBatchSanitaryDraft] = useState(() => getSanitarySessionDraft());
+  const [isBatchSanitaryOpen, setIsBatchSanitaryOpen] = useState(false);
+
+  // Sincronizar borrador sanitario
+  useEffect(() => {
+    saveSanitarySessionDraft(batchSanitaryDraft);
+  }, [batchSanitaryDraft]);
+
+  // Estado de tratamiento individual en modal de Novedad Rápida (🩹)
+  const [indSanitaryActive, setIndSanitaryActive] = useState(false);
+  const [indCategory, setIndCategory] = useState('droga');
+  const [indProductName, setIndProductName] = useState('');
+  const [indDose, setIndDose] = useState('');
+  const [indCost, setIndCost] = useState('');
 
   // Estado del conteo activo: Map<animalId, { verified: boolean, verifiedAt: string, note: string, quickTags: string[], weight?: string, isInfiltrated?: boolean, isExtra?: boolean }>
   const [checkMap, setCheckMap] = useState({});
@@ -316,11 +344,37 @@ export function InventoryChecklistModal({
     setActiveNoteAnimal(animal);
     setCustomNoteText(data.note || '');
     setSelectedQuickTags(data.quickTags || []);
+    
+    // Cargar tratamiento individual previo si existe
+    if (data.sanitaryTreatment) {
+      setIndSanitaryActive(true);
+      setIndCategory(data.sanitaryTreatment.category || 'droga');
+      setIndProductName(data.sanitaryTreatment.productName || '');
+      setIndDose(data.sanitaryTreatment.doseAmount || '');
+      setIndCost(data.sanitaryTreatment.unitCost || '');
+    } else {
+      setIndSanitaryActive(false);
+      setIndCategory('droga');
+      setIndProductName('');
+      setIndDose('');
+      setIndCost('');
+    }
   };
 
   // Guardar novedad del animal
   const handleSaveNote = () => {
     if (!activeNoteAnimal) return;
+
+    const indSanitaryObj = indSanitaryActive ? {
+      enabled: true,
+      category: indCategory,
+      productName: indProductName.trim() || 'Tratamiento',
+      doseAmount: indDose.trim(),
+      costMode: 'per_dose',
+      unitCost: indCost,
+      totalCost: parseFloat(indCost) || 0
+    } : null;
+
     setCheckMap(prev => {
       const current = prev[activeNoteAnimal.id] || { verified: false, verifiedAt: null, note: '', quickTags: [] };
       return {
@@ -331,7 +385,8 @@ export function InventoryChecklistModal({
           verified: true,
           verifiedAt: current.verifiedAt || new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
           note: customNoteText.trim(),
-          quickTags: selectedQuickTags
+          quickTags: selectedQuickTags,
+          sanitaryTreatment: indSanitaryObj
         }
       };
     });
@@ -605,6 +660,36 @@ export function InventoryChecklistModal({
 
       if (weighingInserts.length > 0 && db.weighings) {
         await db.weighings.bulkPut(weighingInserts);
+      }
+
+      // 1.1 Registrar dosis y tratamientos sanitarios (individuales y masivos)
+      if (onSaveSanitaryTreatment) {
+        for (const animal of allCountingList) {
+          const state = checkMap[animal.id];
+          if (state?.verified && state?.sanitaryTreatment) {
+            await onSaveSanitaryTreatment({
+              cattleIds: [animal.id],
+              cattleTags: [animal.tagNumber || 'S/N'],
+              date: auditDate,
+              treatmentDraft: state.sanitaryTreatment,
+              sourceLabel: `Arqueo (${inspectorName || 'Manga'}) - Individual`
+            }).catch(e => console.warn('Error guardando dosis individual de arqueo:', e));
+          }
+        }
+
+        // Si la dosis masiva de lote/grupo estaba activa:
+        if (batchSanitaryDraft?.enabled) {
+          const verifiedAnimals = allCountingList.filter(a => checkMap[a.id]?.verified && !a.isExtra);
+          if (verifiedAnimals.length > 0) {
+            await onSaveSanitaryTreatment({
+              cattleIds: verifiedAnimals.map(a => a.id),
+              cattleTags: verifiedAnimals.map(a => a.tagNumber || 'S/N'),
+              date: auditDate,
+              treatmentDraft: batchSanitaryDraft,
+              sourceLabel: `Arqueo de Inventario (${scopeType === 'batch' ? `Lote ${selectedBatch}` : 'General'})`
+            }).catch(e => console.warn('Error guardando dosis sanitaria de lote en arqueo:', e));
+          }
+        }
       }
 
       // 2. Guardar registro estructurado de arqueo histórico
@@ -1002,6 +1087,151 @@ export function InventoryChecklistModal({
                 }`}>
                   <div className="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform" />
                 </div>
+              </div>
+
+              {/* Conectar con Registro de Vacuna / Dosis Sanitaria Opcional */}
+              <div className="space-y-3">
+                <div 
+                  onClick={() => {
+                    setBatchSanitaryDraft(prev => ({ ...prev, enabled: !prev.enabled }));
+                    setIsBatchSanitaryOpen(prev => !prev);
+                    triggerFeedback('click');
+                  }}
+                  className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between select-none ${
+                    batchSanitaryDraft?.enabled
+                      ? 'bg-gradient-to-r from-teal-500/15 via-emerald-500/10 to-teal-500/20 border-teal-500 dark:border-teal-400 shadow-md'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                      batchSanitaryDraft?.enabled ? 'bg-teal-500 text-slate-950 font-black shadow-sm' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                    }`}>
+                      💉
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                          ¿Deseas registrar vacuna o alguna dosis sanitaria a los verificados?
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          batchSanitaryDraft?.enabled ? 'bg-teal-500 text-slate-950 shadow-xs' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                        }`}>
+                          {batchSanitaryDraft?.enabled ? '💉 Dosis Activa' : 'Opcional'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Aplica automáticamente la vacuna, ivermectina, droga o metabólico y sus costos contables a los animales presentes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`w-12 h-6 rounded-full p-0.5 transition-colors duration-200 flex items-center shrink-0 ${
+                    batchSanitaryDraft?.enabled ? 'bg-teal-500 justify-end' : 'bg-slate-300 dark:bg-slate-600 justify-start'
+                  }`}>
+                    <div className="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform" />
+                  </div>
+                </div>
+
+                {/* Subpanel de Configuración Sanitaria si está activo */}
+                {batchSanitaryDraft?.enabled && isBatchSanitaryOpen && (
+                  <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-4 border border-teal-500/40 shadow-xl animate-fade-in">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-teal-300 uppercase tracking-wider">
+                        Selecciona el tipo de producto aplicado:
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {SANITARY_CATEGORIES.map(cat => {
+                          const isSel = (batchSanitaryDraft.category || 'ivermectina') === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setBatchSanitaryDraft(prev => ({
+                                ...prev,
+                                category: cat.id,
+                                doseAmount: prev.doseAmount || cat.defaultDose
+                              }))}
+                              className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col gap-1 ${
+                                isSel
+                                  ? 'bg-teal-500 text-slate-950 font-black border-teal-400'
+                                  : 'bg-slate-800 text-slate-200 border-slate-700'
+                              }`}
+                            >
+                              <span className="text-lg">{cat.icon}</span>
+                              <span className="text-xs font-black leading-tight">{cat.shortName}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 mb-1 block">
+                          Nombre del Medicamento / Producto:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej. Ivermectina 3.15%, Catosal..."
+                          value={batchSanitaryDraft.productName || ''}
+                          onChange={(e) => setBatchSanitaryDraft(prev => ({ ...prev, productName: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-white focus:outline-none"
+                        />
+                        {/* Chips sugeridos */}
+                        {(() => {
+                          const currentCat = SANITARY_CATEGORIES.find(c => c.id === (batchSanitaryDraft.category || 'ivermectina'));
+                          return (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {currentCat?.popularProducts?.slice(0, 4).map(p => (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  onClick={() => setBatchSanitaryDraft(prev => ({ ...prev, productName: p }))}
+                                  className="px-2 py-0.5 rounded-lg text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                                >
+                                  + {p}
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 mb-1 block">
+                          Dosis por Cabeza:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej. 10 ml, 5 cc..."
+                          value={batchSanitaryDraft.doseAmount || ''}
+                          onChange={(e) => setBatchSanitaryDraft(prev => ({ ...prev, doseAmount: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Costo */}
+                    <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center gap-3">
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="text-xs font-bold text-amber-300 mb-1 block">
+                          Costo por Dosis / Cabeza ($ COP) o $0 si no aplica:
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="Ej. 4000"
+                          value={batchSanitaryDraft.unitCost || ''}
+                          onChange={(e) => setBatchSanitaryDraft(prev => ({ ...prev, costMode: 'per_dose', unitCost: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-black text-white focus:outline-none"
+                        />
+                      </div>
+                      <div className="text-[11px] text-slate-400 self-end pb-2">
+                        Se sumará a la ficha de cada animal verificado y a gastos de sanidad en contabilidad.
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Tarjeta de Resumen Previo */}
@@ -1854,6 +2084,79 @@ export function InventoryChecklistModal({
                   onChange={(e) => setCustomNoteText(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold focus:outline-none"
                 />
+              </div>
+
+              {/* Sección Opcional: ¿Deseas registrar medicamento o dosis específica a este animal? */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-200">
+                    <Syringe className="w-4 h-4 text-emerald-500" />
+                    <span>¿Aplicaste medicamento o dosis a este animal?</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIndSanitaryActive(prev => !prev)}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition cursor-pointer ${
+                      indSanitaryActive 
+                        ? 'bg-emerald-500 text-slate-950 shadow-xs' 
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300'
+                    }`}
+                  >
+                    {indSanitaryActive ? '✓ Sí, registrar' : '+ No / Inactivo'}
+                  </button>
+                </div>
+
+                {indSanitaryActive && (
+                  <div className="space-y-2.5 pt-1 animate-fade-in border-t border-slate-200 dark:border-slate-700 mt-2">
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {SANITARY_CATEGORIES.map(cat => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setIndCategory(cat.id);
+                            if (!indDose) setIndDose(cat.defaultDose);
+                          }}
+                          className={`p-1.5 rounded-xl text-center text-[10px] font-bold border transition cursor-pointer flex flex-col items-center gap-0.5 ${
+                            indCategory === cat.id
+                              ? 'bg-emerald-500 text-slate-950 font-black border-emerald-400 shadow-xs'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          <span className="text-base">{cat.icon}</span>
+                          <span className="truncate w-full font-black">{cat.shortName}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">
+                          Medicamento / Producto:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej. Curabicheras, Oxitetra..."
+                          value={indProductName}
+                          onChange={(e) => setIndProductName(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-semibold focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">
+                          Costo Dosis ($ COP):
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="Ej. 8000 (o $0)"
+                          value={indCost}
+                          onChange={(e) => setIndCost(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-black text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Botón Guardar Novedad */}

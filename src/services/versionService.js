@@ -1,10 +1,22 @@
-export const CURRENT_APP_VERSION = "2.24.41";
+export const CURRENT_APP_VERSION = "2.24.42";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.42",
+    date: "27/10/2026",
+    title: "💉 Vacunas, Dosis & Costos Conectados en Báscula Rápida y Checklist (Memoria de Manga)",
+    highlights: [
+      "Registro Opcional en Báscula Rápida: Nueva sección zootécnica para registrar si al pesar se aplicó metabólico, ivermectina, droga o vacuna sin entorpecer la agilidad del corral.",
+      "Registro Opcional en Checklist / Arqueo: Posibilidad de aplicar dosis masivas a todos los animales verificados y registrar tratamientos individuales en el modal de novedad rápida (bicheras, cojeras).",
+      "Memoria de Sesión de Manga: El sistema recuerda automáticamente la última dosis, categoría, producto y costo para precargarlos en los siguientes novillos con 1 solo toque.",
+      "Conexión Financiera Total: Los costos del frasco (con cálculo automático por cabeza) o costo directo por dosis se cargan automáticamente a Egresos de Sanidad en Contabilidad y se suman a la inversión de cada animal en su Ficha Técnica, impactando el costo por kilo de carne y litro de leche.",
+      "Preservación del Botón del Tablero: El botón de registro de vacunación en el Dashboard continúa funcionando al 100% para planes sanitarios oficiales, RUV y calendarios de refuerzo."
+    ]
+  },
   {
     version: "2.24.41",
     date: "27/10/2026",
