@@ -236,37 +236,48 @@ export async function cloudFindUser(email) {
           .replace(/[^a-z0-9]/g, '');
 
         const normClean = normalizeStr(cleanEmail);
-        const entries = Object.values(allUsersMap).filter(u => u && typeof u === 'object');
+        const entries = Object.values(allUsersMap).filter(u => u && typeof u === 'object' && !u.isDeleted);
+
+        // Helper para elegir siempre el registro más reciente si existen nodos duplicados de la misma finca/usuario
+        const pickMostRecentUser = (matches) => {
+          if (!matches || matches.length === 0) return null;
+          if (matches.length === 1) return matches[0];
+          return matches.sort((a, b) => {
+            const tsA = new Date(a.updatedAt || a.createdAt || 0).getTime() || (a.activeModulesUpdatedAt || 0);
+            const tsB = new Date(b.updatedAt || b.createdAt || 0).getTime() || (b.activeModulesUpdatedAt || 0);
+            return tsB - tsA;
+          })[0];
+        };
 
         // A. Coincidencia exacta por correo
-        let found = entries.find(u => u.email && u.email.trim().toLowerCase() === cleanEmail);
+        let found = pickMostRecentUser(entries.filter(u => u.email && u.email.trim().toLowerCase() === cleanEmail));
 
         // B. Coincidencia por prefijo del correo (ej: 'juliayema' => 'juliayema@gmail.com')
         if (!found) {
-          found = entries.find(u => {
+          found = pickMostRecentUser(entries.filter(u => {
             if (!u.email) return false;
             const prefix = u.email.split('@')[0].trim().toLowerCase();
             return prefix === cleanEmail || (normClean && normalizeStr(prefix) === normClean);
-          });
+          }));
         }
 
         // C. Coincidencia por nombre de la Finca / Hacienda (ej: 'LA JULIA', 'GANADERIA LA G')
         if (!found) {
-          found = entries.find(u => {
+          found = pickMostRecentUser(entries.filter(u => {
             if (!u.farmName) return false;
             const farm = u.farmName.trim().toLowerCase();
             return farm === cleanEmail || (normClean && normalizeStr(u.farmName) === normClean);
-          });
+          }));
         }
 
         // D. Coincidencia por nombre de usuario o nombre completo
         if (!found) {
-          found = entries.find(u => {
+          found = pickMostRecentUser(entries.filter(u => {
             const uName = (u.name || '').trim().toLowerCase();
             const uUser = (u.username || '').trim().toLowerCase();
             return uUser === cleanEmail || uName === cleanEmail ||
                    (normClean && (normalizeStr(u.username) === normClean || normalizeStr(u.name) === normClean));
-          });
+          }));
         }
 
         if (found && (found.id || found.email)) {
@@ -294,7 +305,7 @@ export async function cloudFindUser(email) {
 const PENDING_SYNC_KEY = 'ganadera_pending_sync_';
 const PENDING_DEL_KEY = 'ganadera_pending_del_';
 const TOMBSTONES_KEY = 'ganadera_tombstones_';
-const TOMBSTONE_TTL_MS = 5 * 60 * 1000; // 5 minutos de memoria para evitar resurrección de elementos eliminados
+const TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días de memoria para evitar resurrección de elementos eliminados en celulares
 
 /**
  * Obtiene el mapa de lápidas (tombstones) de elementos eliminados recientemente
@@ -376,10 +387,10 @@ export function notifySyncStateChange(userId) {
 /**
  * Guarda y emite la marca de tiempo de la última sincronización exitosa con Firebase
  */
-export function recordLastSyncedAt(userId) {
+export function recordLastSyncedAt(userId, customIso = null) {
   if (!userId) return;
   try {
-    const iso = new Date().toISOString();
+    const iso = customIso || new Date().toISOString();
     localStorage.setItem(`${LAST_SYNCED_KEY}${userId}`, iso);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ganado_last_synced_changed', {
@@ -527,6 +538,13 @@ export function markInitialPullCompleted() {
 }
 
 /**
+ * Reinicia el estado de descarga inicial al cambiar de sesión/finca
+ */
+export function resetInitialPullState() {
+  isInitialPullDone = false;
+}
+
+/**
  * Helper para extraer una marca de tiempo numérica confiable de cualquier registro
  */
 function parseRecordTimestamp(item) {
@@ -557,20 +575,23 @@ export function hasPendingSync(userId) {
 /**
  * Sube a Firebase el inventario completo de ganado, pesajes, vacunaciones, palpaciones y finanzas
  */
-export async function cloudPushData(userId) {
+export async function cloudPushData(userId, options = {}) {
   if (!userId) return false;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
 
+  const { skipPrePull = false } = options;
+
   // SALVAGUARDA VITAL: Ningún dispositivo puede subir datos (PUSH) sin haber completado
-  // primero su descarga (PULL) inicial en esta sesión. Esto evita que una caché vieja
-  // de un celular recién abierto sobreescriba la nube antes de estar al día.
-  if (!isInitialPullDone) {
+  // primero su descarga (PULL) inicial en esta sesión, salvo que sea una restauración explícita de respaldo.
+  if (!isInitialPullDone && !skipPrePull) {
     try {
       await cloudPullData(userId);
       isInitialPullDone = true;
     } catch (pullErr) {
       console.warn('⚠️ No se pudo completar pull previo a push:', pullErr);
     }
+  } else if (skipPrePull) {
+    isInitialPullDone = true;
   }
 
   try {
@@ -593,11 +614,39 @@ export async function cloudPushData(userId) {
     const calendarNotes = db.calendarNotes ? await db.calendarNotes.filter(isTarget).toArray() : [];
     const rainfall = db.rainfall ? await db.rainfall.filter(isTarget).toArray() : [];
 
+    // Preservar trabajadores registrados en el nodo remoto para no perderlos al hacer PUT
+    let existingWorkers = undefined;
+    try {
+      const wRes = await safeFetch(`${FIREBASE_URL}/userData/${userId}/workers.json?_t=${Date.now()}`, {}, 5000);
+      if (wRes && wRes.ok) {
+        const wData = await wRes.json();
+        if (wData && typeof wData === 'object') {
+          existingWorkers = wData;
+        }
+      }
+    } catch (e) {}
+
+    let sessionMeta = {};
+    try {
+      const rawSession = localStorage.getItem('ganado_current_user_session');
+      if (rawSession) {
+        const parsed = JSON.parse(rawSession);
+        sessionMeta = {
+          farmName: parsed?.farmName || undefined,
+          ownerEmail: parsed?.ownerEmail || parsed?.email || undefined,
+        };
+      }
+    } catch (e) {}
+
     const activeModules = getActiveModules(userId);
     const activeModulesUpdatedAt = getModulesUpdatedAt(userId) || Date.now();
     const tombstonesList = Array.from(getTombstones(userId).values());
+    const nowIso = new Date().toISOString();
     const payload = {
       userId,
+      ...(sessionMeta.farmName ? { farmName: sessionMeta.farmName } : {}),
+      ...(sessionMeta.ownerEmail ? { ownerEmail: sessionMeta.ownerEmail } : {}),
+      ...(existingWorkers ? { workers: existingWorkers } : {}),
       activeModules,
       activeModulesUpdatedAt,
       cattle,
@@ -618,7 +667,7 @@ export async function cloudPushData(userId) {
       calendarNotes,
       rainfall,
       tombstones: tombstonesList,
-      syncedAt: new Date().toISOString(),
+      syncedAt: nowIso,
     };
 
     const res = await safeFetch(`${FIREBASE_URL}/userData/${userId}.json`, {
@@ -631,7 +680,7 @@ export async function cloudPushData(userId) {
       // Limpiar cola de pendientes al confirmar que Firebase recibió los datos
       clearPendingSync(userId);
       clearPendingDeletes(userId);
-      recordLastSyncedAt(userId);
+      recordLastSyncedAt(userId, nowIso);
       return true;
     }
     return false;
@@ -653,21 +702,185 @@ function normalizeRemoteList(val) {
 }
 
 /**
- * Reconcilia y sincroniza una tabla local con la versión remota de Firebase
- * Aplica resolución Last-Write-Wins (LWW) y blindaje estricto de liquidaciones de salida
+ * Calcula la marca de tiempo más reciente de un nodo de respaldo en la nube
+ * (Evalúa syncedAt y también la fecha más reciente de sus registros de ganado/pesajes)
  */
-async function reconcileCollection(tableName, rawRemoteData, userId) {
-  if (!db[tableName] || rawRemoteData === undefined || rawRemoteData === null) return;
+function getSnapshotLatestTimestamp(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return 0;
+  let maxTs = 0;
+  if (snapshot.syncedAt) {
+    const t = new Date(snapshot.syncedAt).getTime();
+    if (!isNaN(t) && t > maxTs) maxTs = t;
+  }
+  const cattleList = normalizeRemoteList(snapshot.cattle);
+  for (const c of cattleList) {
+    const t = parseRecordTimestamp(c);
+    if (t > maxTs) maxTs = t;
+  }
+  const weighList = normalizeRemoteList(snapshot.weighings);
+  for (const w of weighList) {
+    const t = parseRecordTimestamp(w);
+    if (t > maxTs) maxTs = t;
+  }
+  return maxTs;
+}
 
+/**
+ * Busca y resuelve siempre el ÚLTIMO respaldo general generado en la nube para la finca activa.
+ * Si la finca tuvo nodos alternativos por correo, alias o dispositivos previos, compara sus
+ * marcas de tiempo (syncedAt) y selecciona el respaldo más reciente para que todos los
+ * dispositivos (celulares y computadores) queden 100% conectados con la información al día.
+ */
+async function fetchLatestCloudFarmSnapshot(userId, checkAliases = false) {
+  const candidates = [];
+
+  // 1. Nodo principal por userId
+  try {
+    const res = await safeFetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`);
+    if (res && res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        candidates.push({ key: userId, data, ts: getSnapshotLatestTimestamp(data) });
+      }
+    }
+  } catch (e) {}
+
+  // 2. Al iniciar sesión o arrancar la app, verificar si existe un respaldo más reciente de la misma finca
+  // bajo claves alternativas (ej. usr_<safeEmail>, <safeEmail>, o coincidencia exacta de farmName/email)
+  if (checkAliases) {
+    try {
+      let sessionUser = null;
+      try {
+        const raw = localStorage.getItem('ganado_current_user_session');
+        if (raw) sessionUser = JSON.parse(raw);
+      } catch (e) {}
+
+      const email = (sessionUser?.ownerEmail || sessionUser?.email || '').trim().toLowerCase();
+      const farmName = (sessionUser?.farmName || '').trim().toLowerCase();
+      const safeEmail = email ? toSafeEmailKey(email) : '';
+      const aliasKeys = new Set();
+
+      if (safeEmail) {
+        if (safeEmail !== userId) aliasKeys.add(safeEmail);
+        if (`usr_${safeEmail}` !== userId) aliasKeys.add(`usr_${safeEmail}`);
+      }
+      if (sessionUser?.ownerId && sessionUser.ownerId !== userId) {
+        aliasKeys.add(sessionUser.ownerId);
+      }
+
+      for (const aliasKey of aliasKeys) {
+        try {
+          const aRes = await safeFetch(`${FIREBASE_URL}/userData/${aliasKey}.json?_t=${Date.now()}`, {}, 6000);
+          if (aRes && aRes.ok) {
+            const aData = await aRes.json();
+            if (aData && typeof aData === 'object' && normalizeRemoteList(aData.cattle).length > 0) {
+              candidates.push({ key: aliasKey, data: aData, ts: getSnapshotLatestTimestamp(aData) });
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Si el usuario tiene nombre de finca o correo, consultar /users.json para detectar si existe otro
+      // userId asociado a la misma finca cuyo respaldo en /userData sea más reciente
+      if (email || farmName) {
+        const uRes = await safeFetch(`${FIREBASE_URL}/users.json?_t=${Date.now()}`, {}, 6000);
+        if (uRes && uRes.ok) {
+          const allUsers = await uRes.json();
+          if (allUsers && typeof allUsers === 'object') {
+            const normalizeStr = (str) => (str || '')
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '');
+            const normFarm = normalizeStr(farmName);
+
+            const matchingUserIds = new Set();
+            for (const uObj of Object.values(allUsers)) {
+              if (!uObj || typeof uObj !== 'object' || uObj.isDeleted) continue;
+              const uEmail = (uObj.email || '').trim().toLowerCase();
+              const uOwnerEmail = (uObj.ownerEmail || '').trim().toLowerCase();
+              const uFarm = normalizeStr(uObj.farmName);
+
+              const sameEmail = email && (uEmail === email || uOwnerEmail === email);
+              const sameFarm = normFarm && normFarm.length >= 4 && uFarm === normFarm;
+
+              if (sameEmail || sameFarm) {
+                if (uObj.id && uObj.id !== userId && !String(uObj.id).startsWith('usr_wrk_')) {
+                  matchingUserIds.add(uObj.id);
+                }
+                if (uObj.ownerId && uObj.ownerId !== userId) {
+                  matchingUserIds.add(uObj.ownerId);
+                }
+              }
+            }
+
+            for (const otherId of matchingUserIds) {
+              if (candidates.some(c => c.key === otherId)) continue;
+              try {
+                const oRes = await safeFetch(`${FIREBASE_URL}/userData/${otherId}.json?_t=${Date.now()}`, {}, 6000);
+                if (oRes && oRes.ok) {
+                  const oData = await oRes.json();
+                  if (oData && typeof oData === 'object' && normalizeRemoteList(oData.cattle).length > 0) {
+                    candidates.push({ key: otherId, data: oData, ts: getSnapshotLatestTimestamp(oData) });
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+        }
+      }
+    } catch (aliasErr) {
+      console.warn('Nota verificando nodos de respaldo de la finca:', aliasErr);
+    }
+  }
+
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0].data;
+
+  // Ordenar candidatos priorizando el respaldo más reciente (mayor timestamp syncedAt)
+  // y que contenga inventario activo válido
+  candidates.sort((a, b) => {
+    const aHasCattle = normalizeRemoteList(a.data?.cattle).length > 0 ? 1 : 0;
+    const bHasCattle = normalizeRemoteList(b.data?.cattle).length > 0 ? 1 : 0;
+    if (aHasCattle !== bHasCattle) return bHasCattle - aHasCattle;
+    return b.ts - a.ts;
+  });
+
+  const winner = candidates[0];
+
+  // Si el respaldo más reciente estaba en un nodo hermano, consolidarlo también en userId
+  if (winner.key !== userId && winner.data) {
+    safeFetch(`${FIREBASE_URL}/userData/${userId}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...winner.data, userId }),
+    }).catch(() => null);
+  }
+
+  return winner.data;
+}
+
+/**
+ * Reconcilia y sincroniza una tabla local con la versión remota de Firebase.
+ * Garantiza que el último respaldo general de la nube sea la fuente de verdad
+ * y evita que datos viejos guardados en un celular sobreescriban o resuciten en la nube.
+ */
+async function reconcileCollection(tableName, rawRemoteData, userId, options = {}) {
+  if (!db[tableName]) return;
+
+  const { forceAuthoritative = false } = options;
   const remoteList = normalizeRemoteList(rawRemoteData);
-  const pendingIds = getPendingSyncIds(userId);
-  const pendingDeletes = getPendingDeletes(userId)
-    .filter(d => d.tableName === tableName)
-    .map(d => String(d.id));
+  const pendingIds = forceAuthoritative ? new Set() : getPendingSyncIds(userId);
+  const pendingDeletes = forceAuthoritative
+    ? []
+    : getPendingDeletes(userId)
+        .filter(d => d.tableName === tableName)
+        .map(d => String(d.id));
   const pendingDeleteSet = new Set(pendingDeletes);
   const tombstones = getTombstones(userId);
   const isDeleted = (id) => {
     if (!id && id !== 0) return false;
+    if (forceAuthoritative) return false; // En carga autoritativa del último respaldo, el respaldo de la nube manda
     const strId = String(id);
     const numId = !isNaN(Number(id)) ? Number(id) : null;
     return pendingDeleteSet.has(strId) || 
@@ -680,7 +893,7 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
            (tableName === 'milkDeliveries' && (tombstones.has(`farmIncomes_inc_tank_${strId}`) || pendingDeleteSet.has(`inc_tank_${strId}`)));
   };
 
-  // Obtener los registros locales existentes para comparar marcas de tiempo (LWW)
+  // Obtener los registros locales existentes para comparar marcas de tiempo
   const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
   const localItems = await db[tableName].filter(isTarget).toArray();
   const localItemMap = new Map();
@@ -699,8 +912,8 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
     const strId = String(remoteItem.id);
     const localItem = localItemMap.get(strId);
 
-    if (!localItem) {
-      // Registro nuevo que no existe localmente: se acepta directamente
+    if (!localItem || forceAuthoritative) {
+      // Registro nuevo o carga autoritativa del último respaldo de la nube: se acepta directamente
       validItems.push({ ...remoteItem, userId });
       continue;
     }
@@ -720,16 +933,13 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
         validItems.push({ ...remoteItem, userId });
         supersededPendingIds.push(strId);
       } else {
-        // El cliente local tiene una mutación deliberada más reciente (offline real).
+        // El cliente local tiene una mutación deliberada más reciente (offline real en esta sesión).
         // Se preserva la versión local intacta.
       }
     } else {
-      // Sin pendientes locales:
-      // Se actualiza si la versión remota es igual o más reciente, si el local carece de timestamp,
-      // o si hay un cambio de estado de vida o salida.
-      if (isRemoteLiquidated || remoteTs >= localTs || (remoteItem.status && remoteItem.status !== localItem.status)) {
-        validItems.push({ ...remoteItem, userId });
-      }
+      // Sin cambios pendientes locales en este dispositivo:
+      // El respaldo de la nube es SIEMPRE la autoridad general para mantener todos los equipos idénticos.
+      validItems.push({ ...remoteItem, userId });
     }
   }
 
@@ -751,25 +961,27 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
 
   // 2. Si algún registro recibido de Firebase está marcado como eliminado en tombstones,
   // asegurar su eliminación inmediata de IndexedDB local
-  for (const item of remoteList) {
-    if (item && item.id && isDeleted(item.id)) {
-      await db[tableName].delete(item.id).catch(() => null);
-      if (!isNaN(Number(item.id))) {
-        await db[tableName].delete(Number(item.id)).catch(() => null);
+  if (!forceAuthoritative) {
+    for (const item of remoteList) {
+      if (item && item.id && isDeleted(item.id)) {
+        await db[tableName].delete(item.id).catch(() => null);
+        if (!isNaN(Number(item.id))) {
+          await db[tableName].delete(Number(item.id)).catch(() => null);
+        }
+        await db[tableName].delete(String(item.id)).catch(() => null);
       }
-      await db[tableName].delete(String(item.id)).catch(() => null);
     }
   }
 
-  // 3. Eliminar registros locales obsoletos ÚNICAMENTE si fueron eliminados explícitamente (tombstones)
-  // SALVAGUARDA DE SEGURIDAD ABSOLUTA Y CERO PÉRDIDA DE DATOS:
-  // Un registro local NUNCA debe ser eliminado por el simple hecho de no aparecer en la nube.
-  // Si un registro existe localmente pero falta en la nube y no está en tombstones, se PRESERVA
-  // intacto y se pone en cola de sincronización para auto-reparar la nube.
+  // 3. Depurar registros obsoletos locales que ya no existen en el último respaldo general de la nube.
+  // REGLA CLAVE CONTRA CACHÉ VIEJA DE CELULARES:
+  // Si un registro local NO existe en el respaldo de la nube (!remoteIds.has(strId)):
+  // - Si NO estaba marcado como pendiente de subida antes del pull (!pendingIds.has(strId)) o si es
+  //   una carga autoritativa de respaldo (forceAuthoritative), significa que es un dato viejo/eliminado
+  //   que quedó guardado en el celular: se ELIMINA localmente y NUNCA se vuelve a subir a la nube.
   try {
     const remoteIds = new Set(remoteList.map(item => String(item.id)));
     const idsToDelete = [];
-    const missingFromRemoteIds = [];
 
     for (const localItem of localItems) {
       if (!localItem || (localItem.id === undefined && localItem.id === null)) continue;
@@ -778,18 +990,21 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
       if (isDeleted(localItem.id)) {
         idsToDelete.push(localItem.id);
       } else if (!remoteIds.has(strId)) {
-        // El registro existe localmente pero no en la nube, y NO fue eliminado.
-        // NUNCA borrarlo: registrarlo para subirlo y auto-reparar la nube
-        missingFromRemoteIds.push(strId);
+        if (forceAuthoritative || !pendingIds.has(strId)) {
+          idsToDelete.push(localItem.id);
+        }
       }
     }
 
     if (idsToDelete.length > 0) {
       await db[tableName].bulkDelete(idsToDelete).catch(() => null);
-    }
-
-    if (missingFromRemoteIds.length > 0) {
-      markPendingSync(userId, ...missingFromRemoteIds);
+      for (const rawId of idsToDelete) {
+        await db[tableName].delete(rawId).catch(() => null);
+        if (!isNaN(Number(rawId))) {
+          await db[tableName].delete(Number(rawId)).catch(() => null);
+        }
+        await db[tableName].delete(String(rawId)).catch(() => null);
+      }
     }
   } catch (err) {
     console.warn(`Error reconciliando colección ${tableName}:`, err);
@@ -797,73 +1012,99 @@ async function reconcileCollection(tableName, rawRemoteData, userId) {
 }
 
 /**
- * Descarga el inventario, pesajes, vacunaciones y registros desde Firebase Realtime Database
- * Sincroniza bidireccionalmente cualquier cambio hecho en otro dispositivo en tiempo real
+ * Descarga el último respaldo general de la finca desde Firebase Realtime Database
+ * y sincroniza todas las colecciones para que todos los dispositivos vean la misma información al día.
  */
-export async function cloudPullData(userId) {
+export async function cloudPullData(userId, options = {}) {
   if (!userId) return false;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
 
+  const { forceAuthoritative = false } = options;
+  const isFirstSessionPull = !isInitialPullDone || forceAuthoritative;
+
   try {
-    const res = await safeFetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`);
-    if (res && res.ok) {
-      const remoteData = await res.json();
-      if (remoteData && typeof remoteData === 'object') {
-        // Reconciliar módulos activos de la finca respetando la marca de tiempo local
-        if (remoteData.activeModules && typeof remoteData.activeModules === 'object') {
-          try {
-            const localTs = getModulesUpdatedAt(userId);
-            const remoteTs = parseInt(remoteData.activeModulesUpdatedAt, 10) || 0;
-            // Si el cambio de la nube es más reciente o si localmente no había marca
-            if (!localTs || remoteTs >= localTs) {
-              setActiveModules(remoteData.activeModules, userId, false);
-            } else {
-              // Si el estado local es más reciente que el de la nube, hacer PUSH inmediato
-              cloudPushData(userId).catch(() => null);
-            }
-          } catch (modErr) {
-            console.warn('Error applying pulled active modules:', modErr);
-          }
-        }
+    const remoteData = await fetchLatestCloudFarmSnapshot(userId, isFirstSessionPull);
+    if (remoteData && typeof remoteData === 'object') {
+      // Determinar si el respaldo de la nube es más reciente que la última sincronización de este dispositivo
+      const lastLocalSyncIso = getLastSyncedAt(userId);
+      const lastLocalSyncTs = lastLocalSyncIso ? new Date(lastLocalSyncIso).getTime() : 0;
+      const remoteSyncTs = getSnapshotLatestTimestamp(remoteData);
+      const isRemoteSnapshotNewer = remoteSyncTs > 0 && (!lastLocalSyncTs || remoteSyncTs > lastLocalSyncTs);
 
-        // Reconciliar lápidas (tombstones) remotas si existen para sincronizar eliminaciones legítimas
-        if (remoteData.tombstones && Array.isArray(remoteData.tombstones)) {
-          for (const t of remoteData.tombstones) {
-            if (t && t.tableName && t.id) {
-              addTombstones(userId, t.tableName, t.id);
-            }
-          }
-        }
-
-        const collections = [
-          'cattle',
-          'weighings',
-          'expenses',
-          'farmExpenses',
-          'farmIncomes',
-          'vaccinations',
-          'audits',
-          'palpations',
-          'paddocks',
-          'milkRecords',
-          'milkDeliveries',
-          'dailyMilkLogs',
-          'milkSettlements',
-          'transactions',
-          'activityLogs',
-          'calendarNotes',
-          'rainfall'
-        ];
-
-        for (const col of collections) {
-          if (remoteData[col] !== undefined) {
-            await reconcileCollection(col, remoteData[col], userId);
-          }
-        }
-        isInitialPullDone = true;
-        recordLastSyncedAt(userId);
-        return true;
+      // Si estamos iniciando sesión o abriendo la app y la nube tiene un respaldo más nuevo que este celular,
+      // el respaldo de la nube actúa como fuente de verdad absoluta (limpiando pendientes obsoletos de sesiones viejas)
+      const useAuthoritativeSnapshot = forceAuthoritative || (!isInitialPullDone && isRemoteSnapshotNewer);
+      if (useAuthoritativeSnapshot) {
+        clearPendingSync(userId);
+        clearPendingDeletes(userId);
       }
+
+      // Reconciliar módulos activos de la finca respetando la marca de tiempo
+      if (remoteData.activeModules && typeof remoteData.activeModules === 'object') {
+        try {
+          const localTs = getModulesUpdatedAt(userId);
+          const remoteTs = parseInt(remoteData.activeModulesUpdatedAt, 10) || 0;
+          if (useAuthoritativeSnapshot || !localTs || remoteTs >= localTs) {
+            setActiveModules(remoteData.activeModules, userId, false);
+          } else {
+            cloudPushData(userId).catch(() => null);
+          }
+        } catch (modErr) {
+          console.warn('Error applying pulled active modules:', modErr);
+        }
+      }
+
+      // Reconciliar lápidas (tombstones) remotas si existen para sincronizar eliminaciones legítimas
+      if (remoteData.tombstones && Array.isArray(remoteData.tombstones)) {
+        for (const t of remoteData.tombstones) {
+          if (t && t.tableName && t.id) {
+            addTombstones(userId, t.tableName, t.id);
+          }
+        }
+      }
+
+      const collections = [
+        'cattle',
+        'weighings',
+        'expenses',
+        'farmExpenses',
+        'farmIncomes',
+        'vaccinations',
+        'audits',
+        'palpations',
+        'paddocks',
+        'milkRecords',
+        'milkDeliveries',
+        'dailyMilkLogs',
+        'milkSettlements',
+        'transactions',
+        'activityLogs',
+        'calendarNotes',
+        'rainfall'
+      ];
+
+      // Verificar si el nodo remoto representa un respaldo válido de la finca
+      const hasValidSnapshot = Boolean(
+        remoteData.syncedAt ||
+        remoteData.userId ||
+        remoteData.cattle !== undefined ||
+        remoteData.weighings !== undefined ||
+        remoteData.paddocks !== undefined
+      );
+
+      for (const col of collections) {
+        if (remoteData[col] !== undefined) {
+          await reconcileCollection(col, remoteData[col], userId, { forceAuthoritative: useAuthoritativeSnapshot });
+        } else if (hasValidSnapshot) {
+          // En Firebase Realtime DB los arrays vacíos [] se omiten (quedan undefined).
+          // Reconciliar con [] asegura que si en el último respaldo general se vació una tabla,
+          // el celular también limpie esos registros viejos y no los vuelva a subir.
+          await reconcileCollection(col, [], userId, { forceAuthoritative: useAuthoritativeSnapshot });
+        }
+      }
+      isInitialPullDone = true;
+      recordLastSyncedAt(userId, remoteData.syncedAt || new Date().toISOString());
+      return true;
     }
   } catch (e) {
     console.warn('⚠️ Error en cloudPullData Firebase:', e);
@@ -921,20 +1162,20 @@ export async function cloudDeleteUserData(userId, email) {
 
 /**
  * Sincronización bidireccional inteligente y segura para múltiples computadores y celulares simultáneos
- * Garantiza estrictamente PULL-First: Descarga siempre primero lo más reciente de la nube.
+ * Garantiza estrictamente PULL-First: Descarga siempre primero el último respaldo general de la nube.
  * Solo si hay cambios locales legítimos posteriores al PULL, realiza PUSH.
  */
-export async function syncCloudAndLocal(userId) {
+export async function syncCloudAndLocal(userId, options = {}) {
   if (!userId) return;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
   if (isSyncInProgress) return;
   isSyncInProgress = true;
   try {
-    // 1. SIEMPRE PULL-First: Descargar primero lo más reciente de la nube
-    await cloudPullData(userId);
+    // 1. SIEMPRE PULL-First: Descargar primero el último respaldo general de la nube
+    await cloudPullData(userId, options);
     isInitialPullDone = true;
 
-    // 2. Solo si después del PULL aún hay pendientes locales legítimos, hacer PUSH
+    // 2. Solo si después del PULL aún hay pendientes locales legítimos creados en esta sesión, hacer PUSH
     const hasPending = hasPendingSync(userId);
     if (hasPending) {
       await cloudPushData(userId);

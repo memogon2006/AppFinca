@@ -11,7 +11,11 @@ import {
   cloudUpdateWorker,
   cloudDeleteWorker,
   cloudGetDeletedWorkers,
-  cloudIsWorkerDeleted
+  cloudIsWorkerDeleted,
+  clearPendingSync,
+  clearPendingDeletes,
+  resetInitialPullState,
+  toSafeEmailKey
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 import { setActiveModules, getActiveModules, DEFAULT_MODULES, FARM_PRESETS, getDefaultWorkerModules } from './moduleService';
@@ -419,8 +423,10 @@ export async function loginUser({ email, password }) {
     }
   }
 
-  // 2. Si el usuario existe localmente y la contraseña coincide (Modo Offline o coincidencia local validada)
-  if (localUser && localUser.passwordHash === inputHash) {
+  // 2. MODO EXCLUSIVAMENTE OFFLINE (Sin conexión a internet): usar credenciales locales en caché
+  // Si hay internet (isOnline), SIEMPRE se prioriza remoteUser de la nube para garantizar que
+  // celulares y computadores carguen el último respaldo general de la finca y no una caché vieja del teléfono.
+  if (!isOnline && localUser && localUser.passwordHash === inputHash) {
     if (localUser.role === 'worker' && localUser.isActive === false) {
       throw new Error('⚠️ Tu cuenta de trabajador ha sido deshabilitada por el administrador del predio.');
     }
@@ -501,17 +507,10 @@ export async function loginUser({ email, password }) {
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
-
-    // Sincronización en segundo plano sin retrasar el ingreso
-    const dataOwnerId = sessionUser.role === 'worker' ? (sessionUser.ownerId || sessionUser.id) : sessionUser.id;
-    if (dataOwnerId && navigator.onLine) {
-      syncCloudAndLocal(dataOwnerId).catch(() => null);
-    }
-
     return sessionUser;
   }
 
-  // 2. RUTA EN LA NUBE (Primer inicio de sesión en un dispositivo nuevo o credenciales actualizadas)
+  // 3. RUTA EN LA NUBE (Autoridad Principal cuando hay conexión a internet)
   if (!remoteUser && isOnline) {
     [remoteUser, isDeletedRemote] = await Promise.all([
       cloudFindUser(cleanInput).catch(() => null),
@@ -551,6 +550,12 @@ export async function loginUser({ email, password }) {
   if (user) {
     if (!user.id && user.email) {
       user.id = 'usr_' + toSafeEmailKey(user.email);
+    }
+    // Si el teléfono tenía guardado un localUser antiguo con un ID distinto para esta misma cuenta/finca,
+    // purgar el ID viejo localmente para evitar que se mezclen datos obsoletos del celular
+    if (localUser && localUser.id && localUser.id !== user.id) {
+      await db.users.delete(localUser.id).catch(() => null);
+      await purgeLocalUserData(localUser.id, null, { keepSession: true }).catch(() => null);
     }
     await db.users.put(user).catch(() => null);
   } else if (localUser) {
@@ -665,10 +670,15 @@ export async function loginUser({ email, password }) {
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
 
-  // Sincronizar datos en segundo plano
+  // DESCARGA AUTORITATIVA DEL ÚLTIMO RESPALDO GENERAL DE LA FINCA AL INICIAR SESIÓN:
+  // Limpiamos cualquier cola pendiente vieja que tuviera este celular/computador y descargamos
+  // de inmediato el último respaldo general de la nube antes de abrir el tablero.
   const dataOwnerId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
   if (dataOwnerId && navigator.onLine) {
-    syncCloudAndLocal(dataOwnerId).catch(() => null);
+    resetInitialPullState();
+    clearPendingSync(dataOwnerId);
+    clearPendingDeletes(dataOwnerId);
+    await cloudPullData(dataOwnerId, { forceAuthoritative: true }).catch(() => null);
   }
 
   return sessionUser;
@@ -678,6 +688,7 @@ export async function loginUser({ email, password }) {
  * Cierra la sesión activa
  */
 export function logoutUser() {
+  resetInitialPullState();
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem('ganado_active_modules');
   window.dispatchEvent(new CustomEvent('ganado_modules_changed', { detail: { ...DEFAULT_MODULES } }));
@@ -900,10 +911,30 @@ export async function deleteUserAccount(userId, password) {
  * Purga y limpia de forma exhaustiva todos los datos locales de un usuario
  * (usado cuando la cuenta es eliminada desde la nube o desde la app)
  */
-export async function purgeLocalUserData(userId, email) {
+export async function purgeLocalUserData(userId, email, options = {}) {
+  const { keepSession = false } = options;
   const cleanEmail = (email || '').trim().toLowerCase();
 
-  const allTables = ['cattle', 'weighings', 'expenses', 'vaccinations', 'audits', 'palpations', 'paddocks', 'milkRecords', 'milkDeliveries', 'transactions', 'settings'];
+  const allTables = [
+    'cattle',
+    'weighings',
+    'expenses',
+    'farmExpenses',
+    'farmIncomes',
+    'vaccinations',
+    'audits',
+    'palpations',
+    'paddocks',
+    'milkRecords',
+    'milkDeliveries',
+    'dailyMilkLogs',
+    'milkSettlements',
+    'transactions',
+    'activityLogs',
+    'calendarNotes',
+    'rainfall',
+    'settings'
+  ];
   for (const table of allTables) {
     if (db[table]) {
       try {
@@ -922,18 +953,20 @@ export async function purgeLocalUserData(userId, email) {
     if (userId) await db.users.delete(userId).catch(() => null);
     const remainingUsers = await db.users.toArray().catch(() => []);
     for (const u of remainingUsers) {
-      if ((u.email || '').trim().toLowerCase() === cleanEmail || (userId && u.id === userId)) {
+      if ((cleanEmail && (u.email || '').trim().toLowerCase() === cleanEmail) || (userId && u.id === userId)) {
         await db.users.delete(u.id).catch(() => null);
       }
     }
   }
 
-  logoutUser();
-  try {
-    sessionStorage.clear();
-    localStorage.removeItem('ganado_current_user_session');
-    localStorage.removeItem('ganado_session_token');
-  } catch (e) {}
+  if (!keepSession) {
+    logoutUser();
+    try {
+      sessionStorage.clear();
+      localStorage.removeItem('ganado_current_user_session');
+      localStorage.removeItem('ganado_session_token');
+    } catch (e) {}
+  }
 }
 
 

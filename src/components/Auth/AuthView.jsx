@@ -235,20 +235,24 @@ export function AuthView() {
           for (const u of data.users) {
             await db.users.put(u);
             await cloudSaveUser(u);
-            await cloudPushData(u.id);
           }
           activeUser = data.users[0];
         }
 
+        const nowIso = new Date().toISOString();
         if (data.cattle && Array.isArray(data.cattle)) {
           for (const item of data.cattle) {
-            await db.cattle.put(item);
+            await db.cattle.put({ ...item, updatedAt: nowIso });
           }
         }
         if (data.weighings && Array.isArray(data.weighings)) {
           for (const item of data.weighings) {
-            await db.weighings.put(item);
+            await db.weighings.put({ ...item, updatedAt: nowIso });
           }
+        }
+
+        if (activeUser && activeUser.id) {
+          await cloudPushData(activeUser.id, { skipPrePull: true });
         }
 
         if (activeUser) {

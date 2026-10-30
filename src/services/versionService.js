@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.42";
+export const CURRENT_APP_VERSION = "2.24.43";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.43",
+    date: "29/10/2026",
+    title: "☁️ Sincronización Autoritativa del Último Respaldo General de la Finca",
+    highlights: [
+      "Carga del Último Respaldo General al Iniciar: Al ingresar desde cualquier celular o computador con internet, el sistema consulta y descarga de inmediato el último respaldo general generado de la finca en la nube antes de abrir el tablero.",
+      "Blindaje contra Caché Vieja de Celulares: Se eliminó el problema donde un celular con datos antiguos en caché cargaba su propia información vieja o volvía a subir registros eliminados sobreescribiendo el respaldo general.",
+      "Resolución Inteligente de Nodos por Fecha (syncedAt): Si una finca tuvo accesos por correo, alias o dispositivos previos, el motor compara las marcas de tiempo y selecciona automáticamente el respaldo más reciente para mantener a todos los usuarios conectados al día.",
+      "Lápidas de Eliminación de 30 Días y Limpieza de Tablas Vacías: Garantiza que cualquier animal o registro eliminado en el computador desaparezca también en los celulares al conectarse."
+    ]
+  },
   {
     version: "2.24.42",
     date: "27/10/2026",

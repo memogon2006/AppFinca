@@ -835,6 +835,10 @@ export async function importBackupData(jsonData, userId) {
     data.milkDeliveries = toCleanArray(data.milkDeliveries);
     data.dailyMilkLogs = toCleanArray(data.dailyMilkLogs);
     data.milkSettlements = toCleanArray(data.milkSettlements);
+    data.rainfall = toCleanArray(data.rainfall);
+    data.transactions = toCleanArray(data.transactions);
+
+    const nowIso = new Date().toISOString();
 
     const tables = [db.cattle, db.weighings, db.expenses];
     if (db.vaccinations) tables.push(db.vaccinations);
@@ -849,6 +853,8 @@ export async function importBackupData(jsonData, userId) {
     if (db.milkDeliveries) tables.push(db.milkDeliveries);
     if (db.dailyMilkLogs) tables.push(db.dailyMilkLogs);
     if (db.milkSettlements) tables.push(db.milkSettlements);
+    if (db.rainfall) tables.push(db.rainfall);
+    if (db.transactions) tables.push(db.transactions);
 
     await db.transaction('rw', tables, async () => {
       if (userId) {
@@ -867,6 +873,8 @@ export async function importBackupData(jsonData, userId) {
         if (db.milkDeliveries) await db.milkDeliveries.where('userId').equals(userId).delete();
         if (db.dailyMilkLogs) await db.dailyMilkLogs.where('userId').equals(userId).delete();
         if (db.milkSettlements) await db.milkSettlements.where('userId').equals(userId).delete();
+        if (db.rainfall) await db.rainfall.where('userId').equals(userId).delete();
+        if (db.transactions) await db.transactions.where('userId').equals(userId).delete();
       } else {
         await db.cattle.clear();
         await db.weighings.clear();
@@ -883,13 +891,16 @@ export async function importBackupData(jsonData, userId) {
         if (db.milkDeliveries) await db.milkDeliveries.clear();
         if (db.dailyMilkLogs) await db.dailyMilkLogs.clear();
         if (db.milkSettlements) await db.milkSettlements.clear();
+        if (db.rainfall) await db.rainfall.clear();
+        if (db.transactions) await db.transactions.clear();
       }
 
       if (data.cattle?.length) {
         const cleaned = data.cattle.map(c => ({
           ...c,
           userId: userId || c.userId || 'default',
-          entryBatch: c.entryBatch || c.paddock || 'Ingreso #1'
+          entryBatch: c.entryBatch || c.paddock || 'Ingreso #1',
+          updatedAt: nowIso
         }));
         await db.cattle.bulkPut(cleaned);
       }
@@ -897,6 +908,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedW = data.weighings.map(w => ({
           ...w,
           userId: userId || w.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.weighings.bulkPut(cleanedW);
       }
@@ -904,6 +916,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedE = data.expenses.map(e => ({
           ...e,
           userId: userId || e.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.expenses.bulkPut(cleanedE);
       }
@@ -911,6 +924,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedFE = data.farmExpenses.map(e => ({
           ...e,
           userId: userId || e.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.farmExpenses.bulkPut(cleanedFE);
       }
@@ -918,6 +932,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedFI = data.farmIncomes.map(i => ({
           ...i,
           userId: userId || i.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.farmIncomes.bulkPut(cleanedFI);
       }
@@ -925,6 +940,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedV = data.vaccinations.map(v => ({
           ...v,
           userId: userId || v.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.vaccinations.bulkPut(cleanedV);
       }
@@ -932,6 +948,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedP = data.palpations.map(p => ({
           ...p,
           userId: userId || p.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.palpations.bulkPut(cleanedP);
       }
@@ -939,6 +956,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedA = data.audits.map(a => ({
           ...a,
           userId: userId || a.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.audits.bulkPut(cleanedA);
       }
@@ -946,6 +964,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedL = data.activityLogs.map(l => ({
           ...l,
           userId: userId || l.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.activityLogs.bulkPut(cleanedL);
       }
@@ -953,6 +972,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedCN = data.calendarNotes.map(n => ({
           ...n,
           userId: userId || n.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.calendarNotes.bulkPut(cleanedCN);
       }
@@ -960,6 +980,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedPad = data.paddocks.map(pad => ({
           ...pad,
           userId: userId || pad.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.paddocks.bulkPut(cleanedPad);
       }
@@ -967,6 +988,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedMR = data.milkRecords.map(m => ({
           ...m,
           userId: userId || m.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.milkRecords.bulkPut(cleanedMR);
       }
@@ -974,6 +996,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedMD = data.milkDeliveries.map(d => ({
           ...d,
           userId: userId || d.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.milkDeliveries.bulkPut(cleanedMD);
       }
@@ -981,6 +1004,7 @@ export async function importBackupData(jsonData, userId) {
         const cleanedDML = data.dailyMilkLogs.map(l => ({
           ...l,
           userId: userId || l.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.dailyMilkLogs.bulkPut(cleanedDML);
       }
@@ -988,8 +1012,25 @@ export async function importBackupData(jsonData, userId) {
         const cleanedMS = data.milkSettlements.map(s => ({
           ...s,
           userId: userId || s.userId || 'default',
+          updatedAt: nowIso
         }));
         await db.milkSettlements.bulkPut(cleanedMS);
+      }
+      if (data.rainfall?.length && db.rainfall) {
+        const cleanedRF = data.rainfall.map(r => ({
+          ...r,
+          userId: userId || r.userId || 'default',
+          updatedAt: nowIso
+        }));
+        await db.rainfall.bulkPut(cleanedRF);
+      }
+      if (data.transactions?.length && db.transactions) {
+        const cleanedTX = data.transactions.map(t => ({
+          ...t,
+          userId: userId || t.userId || 'default',
+          updatedAt: nowIso
+        }));
+        await db.transactions.bulkPut(cleanedTX);
       }
     });
 

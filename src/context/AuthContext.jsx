@@ -164,6 +164,11 @@ export function AuthProvider({ children }) {
             setSoundEnabled(soundEnabled, effectiveFarmId, false);
           }
 
+          const idChanged = Boolean(remoteUser.id && session.id && remoteUser.id !== session.id);
+          if (idChanged) {
+            await purgeLocalUserData(session.id, null, { keepSession: true }).catch(() => null);
+          }
+
           const merged = {
             ...session,
             ...remoteUser,
@@ -192,7 +197,7 @@ export function AuthProvider({ children }) {
 
           const targetDataId = merged.role === 'worker' ? (merged.ownerId || merged.id) : merged.id;
           if (targetDataId && navigator.onLine) {
-            syncCloudAndLocal(targetDataId).catch(() => null);
+            syncCloudAndLocal(targetDataId, { forceAuthoritative: idChanged }).catch(() => null);
           }
 
           return merged;

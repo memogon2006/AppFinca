@@ -19,7 +19,7 @@ import {
   deleteRainfallRecord
 } from './services/db';
 import { useAuth } from './context/AuthContext';
-import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete, isInitialPullCompleted } from './services/cloudSync';
+import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete, isInitialPullCompleted, hasPendingSync } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
 import { Navbar } from './components/Navbar';
 import { SuperAdminView } from './components/Admin/SuperAdminView';
@@ -2684,9 +2684,9 @@ export default function App() {
   const handleManualSync = async () => {
     if (!userId) return;
     setIsSyncing(true);
-    await syncCloudAndLocal(userId);
+    await syncCloudAndLocal(userId, { forceAuthoritative: !hasPendingSync(userId) });
     setIsSyncing(false);
-    showToast(`¡Sincronización con la nube completada! ☁️`, 'success');
+    showToast(`¡Sincronización con el último respaldo de la nube completada! ☁️`, 'success');
   };
 
   const handleOpenNew = (initialData = null) => {
