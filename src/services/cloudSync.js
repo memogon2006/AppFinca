@@ -360,6 +360,24 @@ export function addTombstones(userId, tableName, ...itemIds) {
   }
 }
 
+/**
+ * Elimina lápidas locales para elementos que han sido restaurados o están activos en el respaldo de la nube
+ */
+export function removeTombstones(userId, tableName, ...itemIds) {
+  if (!userId || !tableName || !itemIds) return;
+  try {
+    const key = `${TOMBSTONES_KEY}${userId}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    const list = JSON.parse(raw);
+    const toRemove = new Set(itemIds.flat().filter(Boolean).map(String));
+    const filtered = list.filter(item => !(item && item.tableName === tableName && toRemove.has(String(item.id))));
+    localStorage.setItem(key, JSON.stringify(filtered));
+  } catch (e) {
+    console.warn('Error removing tombstone:', e);
+  }
+}
+
 const LAST_SYNCED_KEY = 'ganadera_last_synced_at_';
 
 /**
@@ -597,6 +615,25 @@ export async function cloudPushData(userId, options = {}) {
   try {
     const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
     const cattle = await db.cattle.filter(isTarget).toArray();
+
+    // SALVAGUARDA ANTI-BORRADO ACCIDENTAL:
+    // Si la base de datos local tiene 0 bovinos (ej. sesión recién abierta antes de terminar el pull),
+    // verificar primero si en la nube existen bovinos para esta finca. Si la nube tiene ganado y no se
+    // acaban de eliminar manualmente todos los animales, abortar el push vacío y descargar desde la nube.
+    if (cattle.length === 0 && !options.allowEmptyInventory) {
+      try {
+        const checkRes = await safeFetch(`${FIREBASE_URL}/userData/${userId}/cattle.json?_t=${Date.now()}`, {}, 6000);
+        if (checkRes && checkRes.ok) {
+          const remoteCattle = normalizeRemoteList(await checkRes.json());
+          const pendingCattleDeletes = getPendingDeletes(userId).filter(d => d.tableName === 'cattle');
+          if (remoteCattle.length > 0 && pendingCattleDeletes.length === 0) {
+            await cloudPullData(userId, { forceAuthoritative: true });
+            return false;
+          }
+        }
+      } catch (e) {}
+    }
+
     const weighings = await db.weighings.filter(isTarget).toArray();
     const expenses = db.expenses ? await db.expenses.filter(isTarget).toArray() : [];
     const vaccinations = db.vaccinations ? await db.vaccinations.filter(isTarget).toArray() : [];
@@ -640,7 +677,17 @@ export async function cloudPushData(userId, options = {}) {
 
     const activeModules = getActiveModules(userId);
     const activeModulesUpdatedAt = getModulesUpdatedAt(userId) || Date.now();
-    const tombstonesList = Array.from(getTombstones(userId).values());
+    const activeCattleIdSet = new Set(cattle.map(c => String(c.id)));
+    const activeWeighingIdSet = new Set(weighings.map(w => String(w.id)));
+    const activePaddockIdSet = new Set(paddocks.map(p => String(p.id)));
+    const tombstonesList = Array.from(getTombstones(userId).values()).filter(t => {
+      if (!t || !t.id) return false;
+      const tid = String(t.id);
+      if (t.tableName === 'cattle' && activeCattleIdSet.has(tid)) return false;
+      if (t.tableName === 'weighings' && activeWeighingIdSet.has(tid)) return false;
+      if (t.tableName === 'paddocks' && activePaddockIdSet.has(tid)) return false;
+      return true;
+    });
     const nowIso = new Date().toISOString();
     const payload = {
       userId,
@@ -989,7 +1036,7 @@ async function reconcileCollection(tableName, rawRemoteData, userId, options = {
 
       if (isDeleted(localItem.id)) {
         idsToDelete.push(localItem.id);
-      } else if (!remoteIds.has(strId)) {
+      } else if (remoteList.length > 0 && !remoteIds.has(strId)) {
         if (forceAuthoritative || !pendingIds.has(strId)) {
           idsToDelete.push(localItem.id);
         }
@@ -1039,27 +1086,16 @@ export async function cloudPullData(userId, options = {}) {
         clearPendingDeletes(userId);
       }
 
-      // Reconciliar módulos activos de la finca respetando la marca de tiempo
+      // Reconciliar módulos activos de la finca respetando la marca de tiempo (sin disparar push durante pull)
       if (remoteData.activeModules && typeof remoteData.activeModules === 'object') {
         try {
           const localTs = getModulesUpdatedAt(userId);
           const remoteTs = parseInt(remoteData.activeModulesUpdatedAt, 10) || 0;
           if (useAuthoritativeSnapshot || !localTs || remoteTs >= localTs) {
             setActiveModules(remoteData.activeModules, userId, false);
-          } else {
-            cloudPushData(userId).catch(() => null);
           }
         } catch (modErr) {
           console.warn('Error applying pulled active modules:', modErr);
-        }
-      }
-
-      // Reconciliar lápidas (tombstones) remotas si existen para sincronizar eliminaciones legítimas
-      if (remoteData.tombstones && Array.isArray(remoteData.tombstones)) {
-        for (const t of remoteData.tombstones) {
-          if (t && t.tableName && t.id) {
-            addTombstones(userId, t.tableName, t.id);
-          }
         }
       }
 
@@ -1083,23 +1119,54 @@ export async function cloudPullData(userId, options = {}) {
         'rainfall'
       ];
 
-      // Verificar si el nodo remoto representa un respaldo válido de la finca
-      const hasValidSnapshot = Boolean(
-        remoteData.syncedAt ||
-        remoteData.userId ||
-        remoteData.cattle !== undefined ||
-        remoteData.weighings !== undefined ||
-        remoteData.paddocks !== undefined
+      // 1. Limpiar cualquier lápida (tombstone) vieja del navegador para registros que SÍ están activos en el respaldo de la nube
+      const pendingDeleteKeys = new Set(
+        (useAuthoritativeSnapshot ? [] : getPendingDeletes(userId)).map(d => `${d.tableName}_${String(d.id)}`)
       );
+      for (const col of collections) {
+        if (remoteData[col] !== undefined) {
+          const colList = normalizeRemoteList(remoteData[col]);
+          const activeIds = colList
+            .filter(item => item && item.id !== undefined && item.id !== null && !pendingDeleteKeys.has(`${col}_${String(item.id)}`))
+            .map(item => String(item.id));
+          if (activeIds.length > 0) {
+            removeTombstones(userId, col, ...activeIds);
+          }
+        }
+      }
 
+      // 2. Aplicar las lápidas (tombstones) remotas del respaldo de la nube para eliminar registros dados de baja
+      const remoteTombstoneIdsByTable = new Map();
+      if (remoteData.tombstones && Array.isArray(remoteData.tombstones)) {
+        for (const t of remoteData.tombstones) {
+          if (t && t.tableName && t.id) {
+            const colList = normalizeRemoteList(remoteData[t.tableName]);
+            const existsInActiveCloud = colList.some(item => item && String(item.id) === String(t.id));
+            if (!existsInActiveCloud) {
+              addTombstones(userId, t.tableName, t.id);
+              if (!remoteTombstoneIdsByTable.has(t.tableName)) {
+                remoteTombstoneIdsByTable.set(t.tableName, []);
+              }
+              remoteTombstoneIdsByTable.get(t.tableName).push(t.id);
+            }
+          }
+        }
+      }
+
+      // 3. Reconciliar cada colección con el respaldo de la nube
       for (const col of collections) {
         if (remoteData[col] !== undefined) {
           await reconcileCollection(col, remoteData[col], userId, { forceAuthoritative: useAuthoritativeSnapshot });
-        } else if (hasValidSnapshot) {
-          // En Firebase Realtime DB los arrays vacíos [] se omiten (quedan undefined).
-          // Reconciliar con [] asegura que si en el último respaldo general se vació una tabla,
-          // el celular también limpie esos registros viejos y no los vuelva a subir.
-          await reconcileCollection(col, [], userId, { forceAuthoritative: useAuthoritativeSnapshot });
+        } else if (remoteTombstoneIdsByTable.has(col) && db[col]) {
+          // Si la colección está vacía en la nube pero hay lápidas explícitas, asegurar su borrado local
+          const delIds = remoteTombstoneIdsByTable.get(col);
+          for (const rawId of delIds) {
+            await db[col].delete(rawId).catch(() => null);
+            if (!isNaN(Number(rawId))) {
+              await db[col].delete(Number(rawId)).catch(() => null);
+            }
+            await db[col].delete(String(rawId)).catch(() => null);
+          }
         }
       }
       isInitialPullDone = true;

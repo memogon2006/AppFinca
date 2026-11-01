@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.43";
+export const CURRENT_APP_VERSION = "2.24.44";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.44",
+    date: "01/11/2026",
+    title: "🛡️ Restauración de Inventario Real y Blindaje Anti-Sobreescritura de Nube",
+    highlights: [
+      "Restauración Completa de Ganadería La G: Se recuperaron y consolidaron en la nube los 20 bovinos activos originales (23 en total con 3 vendidos) y sus 34 pesajes históricos, depurando los 5 registros nuevos que habían ingresado por error.",
+      "Blindaje Anti-Vaciado en Subidas (cloudPushData): Ningún dispositivo con base de datos local vacía puede sobreescribir un inventario existente en Firebase; el sistema detecta los animales en la nube y fuerza la descarga autoritativa.",
+      "Limpieza Automática de Lápidas Obsoletas: Al descargar un respaldo desde Firebase, el navegador elimina automáticamente de su memoria cualquier lápida vieja que bloquee animales activos en la nube.",
+      "Sincronización Silenciosa de Módulos al Iniciar Sesión: Evita que el ajuste de módulos durante el login dispare subidas prematuras antes de completar la descarga del inventario."
+    ]
+  },
   {
     version: "2.24.43",
     date: "29/10/2026",

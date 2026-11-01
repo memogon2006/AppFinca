@@ -461,11 +461,11 @@ export async function loginUser({ email, password }) {
       effectiveModules = { ...DEFAULT_MODULES };
     }
 
-    // Guardar en scoped storage y activar para esta finca
+    // Guardar en scoped storage y activar para esta finca (sin disparar push antes de pull)
     try {
       localStorage.setItem(`ganado_active_modules_${effectiveFarmId}`, JSON.stringify(effectiveModules));
     } catch (e) {}
-    setActiveModules(effectiveModules, effectiveFarmId);
+    setActiveModules(effectiveModules, effectiveFarmId, false);
 
     // Reconciliar perfil y estado de sonido de la finca
     let effectiveSoundProfile = localUser.soundProfile;
@@ -625,7 +625,7 @@ export async function loginUser({ email, password }) {
   try {
     localStorage.setItem(`ganado_active_modules_${effectiveFarmId}`, JSON.stringify(remoteModules));
   } catch (e) {}
-  setActiveModules(remoteModules, effectiveFarmId);
+  setActiveModules(remoteModules, effectiveFarmId, false);
 
   // Reconciliar perfil y estado de sonido de la finca
   let effectiveSoundProfile = user.soundProfile;
@@ -691,7 +691,7 @@ export function logoutUser() {
   resetInitialPullState();
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem('ganado_active_modules');
-  window.dispatchEvent(new CustomEvent('ganado_modules_changed', { detail: { ...DEFAULT_MODULES } }));
+  window.dispatchEvent(new CustomEvent('ganado_modules_changed', { detail: { ...DEFAULT_MODULES, syncToCloud: false } }));
   window.dispatchEvent(new CustomEvent('ganado_sound_changed', { detail: { profile: 'chime', enabled: true, syncToCloud: false } }));
   window.dispatchEvent(new CustomEvent('farm_prices_updated', { detail: {} }));
 }
