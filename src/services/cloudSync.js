@@ -793,6 +793,11 @@ async function fetchLatestCloudFarmSnapshot(userId, checkAliases = false) {
     if (res && res.ok) {
       const data = await res.json();
       if (data && typeof data === 'object') {
+        // VÍA RÁPIDA: Si el nodo principal de la finca ya contiene ganado activo registrado,
+        // retornarlo de inmediato sin hacer escaneos adicionales de alias ni descargar /users.json
+        if (normalizeRemoteList(data.cattle).length > 0) {
+          return data;
+        }
         candidates.push({ key: userId, data, ts: getSnapshotLatestTimestamp(data) });
       }
     }

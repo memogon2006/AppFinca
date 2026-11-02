@@ -458,10 +458,10 @@ export function DashboardView({
               <button
                 onClick={onOpenBatchEntry}
                 className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
-                title="Registrar un lote completo con cálculo por kilo o precio fijo"
+                title="Registrar un lote completo de bovinos con cálculo por kilo o precio fijo"
               >
                 <PackagePlus className="w-4 h-4" />
-                <span>Ingresar Lote</span>
+                <span>Ingreso de Lote de Bovinos</span>
               </button>
             )}
             <button
@@ -469,7 +469,7 @@ export function DashboardView({
               className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>+ Individual</span>
+              <span>+ Ingreso de Bovino Individual</span>
             </button>
           </div>
         </div>

@@ -157,4 +157,131 @@ export function getDynamicFarmIronBrands(cattleList = [], extraBrand = '') {
   });
 }
 
+export const ANIMAL_SPECIES = [
+  { value: 'Bovino', label: 'Bovino (Vacuno)', icon: '🐂', plural: 'Bovinos', color: 'emerald' },
+  { value: 'Equino', label: 'Equino (Caballos / Mulas / Burros)', icon: '🐎', plural: 'Equinos', color: 'amber' },
+  { value: 'Bufalino', label: 'Bufalino (Búfalos)', icon: '🐃', plural: 'Bufalinos', color: 'indigo' },
+  { value: 'Ovino / Caprino', label: 'Ovino / Caprino (Ovejos / Cabras)', icon: '🐑', plural: 'Ovinos y Caprinos', color: 'teal' },
+  { value: 'Porcino', label: 'Porcino (Cerdos)', icon: '🐖', plural: 'Porcinos', color: 'pink' },
+  { value: 'Otra especie', label: 'Aves / Otra Especie', icon: '🐓', plural: 'Otras Especies', color: 'purple' },
+];
+
+export const SPECIES_CATEGORIES = {
+  'Bovino': CATEGORIES,
+  'Equino': [
+    { value: 'Caballo', label: 'Caballo (Silla / Vaquería / Reproductor)', sex: 'Macho' },
+    { value: 'Yegua', label: 'Yegua (Silla / Cría / Trabajo)', sex: 'Hembra' },
+    { value: 'Potro', label: 'Potro (< 36 meses)', sex: 'Macho' },
+    { value: 'Potranca', label: 'Potranca (< 36 meses)', sex: 'Hembra' },
+    { value: 'Mula / Macho Mular', label: 'Mula / Macho Mular (Trabajo / Carga)', sex: 'Ambos' },
+    { value: 'Burro / Asno', label: 'Burro / Asno / Pollino', sex: 'Ambos' },
+  ],
+  'Bufalino': [
+    { value: 'Bucerro', label: 'Bucerro / Bucerra (< 12 meses)', sex: 'Ambos' },
+    { value: 'Buvillo', label: 'Buvillo (Levante / Ceba)', sex: 'Macho' },
+    { value: 'Buvilla', label: 'Buvilla de Vientre / Levante', sex: 'Hembra' },
+    { value: 'Búfala', label: 'Búfala Adulta', sex: 'Hembra' },
+    { value: 'Butoro', label: 'Butoro Reproductor', sex: 'Macho' },
+  ],
+  'Ovino / Caprino': [
+    { value: 'Cordero / Cabrito', label: 'Cordero / Cabrito (< 6 meses)', sex: 'Ambos' },
+    { value: 'Ovejo / Camuro Levante', label: 'Ovejo / Camuro de Ceba', sex: 'Macho' },
+    { value: 'Oveja / Cabra Vientre', label: 'Oveja / Cabra de Cría', sex: 'Hembra' },
+    { value: 'Reproductor Ovino/Caprino', label: 'Reproductor (Carnero / Macho Cabrío)', sex: 'Macho' },
+  ],
+  'Porcino': [
+    { value: 'Lechón', label: 'Lechón / Precebo', sex: 'Ambos' },
+    { value: 'Cerdo de Ceba', label: 'Cerdo de Levante / Engorde', sex: 'Ambos' },
+    { value: 'Cerda de Cría', label: 'Cerda de Cría / Madre', sex: 'Hembra' },
+    { value: 'Verraco', label: 'Verraco Reproductor', sex: 'Macho' },
+  ],
+  'Otra especie': [
+    { value: 'Ejemplar Joven', label: 'Ejemplar Joven / Cría', sex: 'Ambos' },
+    { value: 'Ejemplar Adulto', label: 'Ejemplar Adulto', sex: 'Ambos' },
+    { value: 'Lote / Parvada', label: 'Grupo / Parvada', sex: 'Ambos' },
+  ],
+};
+
+export const SPECIES_PRODUCTION_TYPES = {
+  'Bovino': PRODUCTION_TYPES,
+  'Equino': [
+    { value: 'Trabajo de Vaquería', label: 'Trabajo de Vaquería / Campo', color: 'amber', desc: 'Recorrido de potreros y manejo de ganado' },
+    { value: 'Silla / Cabalgata', label: 'Silla / Cabalgata / Exposición', color: 'purple', desc: 'Monta, recreación o pista' },
+    { value: 'Cría', label: 'Cría / Reproducción Equina', color: 'emerald', desc: 'Yeguas de cría y reproductores' },
+    { value: 'Carga / Arriería', label: 'Carga / Transporte / Arriería', color: 'blue', desc: 'Mulares y caballares de carga' },
+  ],
+  'Bufalino': PRODUCTION_TYPES,
+  'Ovino / Caprino': [
+    { value: 'Ceba', label: 'Carne / Ceba', color: 'emerald', desc: 'Engorde de camuros/corderos' },
+    { value: 'Cría', label: 'Cría / Pie de Cría', color: 'purple', desc: 'Multiplicación del rebaño' },
+    { value: 'Lechería', label: 'Leche Caprina / Ovina', color: 'blue', desc: 'Producción láctea' },
+  ],
+  'Porcino': [
+    { value: 'Ceba', label: 'Ceba / Engorde', color: 'emerald', desc: 'Cerdos de engorde comercial' },
+    { value: 'Cría', label: 'Cría de Lechones', color: 'purple', desc: 'Cerdas madres y verracos' },
+  ],
+  'Otra especie': [
+    { value: 'Trabajo / Guardia', label: 'Trabajo / Utilidad en Finca', color: 'amber', desc: 'Apoyo en el predio' },
+    { value: 'Cría', label: 'Cría / Autoconsumo', color: 'purple', desc: 'Producción en finca' },
+    { value: 'Ceba', label: 'Engorde / Comercial', color: 'emerald', desc: 'Venta comercial' },
+  ],
+};
+
+export const SPECIES_BREEDS = {
+  'Bovino': COMMON_BREEDS,
+  'Equino': [
+    'Criollo Colombiano (Paso Fino)',
+    'Criollo Colombiano (Trocha y Galope)',
+    'Criollo Colombiano (Trote y Galope)',
+    'Criollo de Vaquería',
+    'Cuarto de Milla (Quarter Horse)',
+    'Árabe',
+    'Appaloosa',
+    'Pinto',
+    'Mular Criollo',
+    'Asnal / Burro Criollo',
+    'Mestizo / Cruce',
+  ],
+  'Bufalino': [
+    'Murrah',
+    'Mediterráneo',
+    'Jafarabadi',
+    'Carabao',
+    'Mestizo Bufalino',
+  ],
+  'Ovino / Caprino': [
+    'Pelibuey / Camuro',
+    'Dorper',
+    'Katahadin',
+    'Santa Inés',
+    'Saanen',
+    'Alpina',
+    'Boer',
+    'Criollo / Cruce',
+  ],
+  'Porcino': [
+    'Pietrain',
+    'Landrace',
+    'Large White / Yorkshire',
+    'Duroc',
+    'Criollo / Zungo',
+    'Cruce Comercial',
+  ],
+  'Otra especie': [
+    'Criollo',
+    'Comercial / Línea Mejorada',
+  ],
+};
+
+export function isBovine(animal) {
+  if (!animal) return true;
+  return !animal.species || animal.species === 'Bovino';
+}
+
+export function getSpeciesMeta(species) {
+  const clean = species || 'Bovino';
+  return ANIMAL_SPECIES.find(s => s.value === clean) || ANIMAL_SPECIES[0];
+}
+
+
 
