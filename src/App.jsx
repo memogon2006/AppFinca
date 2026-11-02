@@ -586,9 +586,8 @@ export default function App() {
         }
       }
 
-      if (changed) {
-        cloudPushData(userId);
-      }
+      // No disparar cloudPushData automático al montar para evitar que un cliente con caché parcial sobreescriba la nube
+      void changed;
     }
 
     cleanupDuplicateWeighings().catch(err => console.warn('Error en auto-reparación de pesajes:', err));

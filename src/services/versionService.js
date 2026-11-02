@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.44";
+export const CURRENT_APP_VERSION = "2.24.45";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.45",
+    date: "01/11/2026",
+    title: "🛡️ Restauración Definitiva de los 20 Bovinos Activos (Ganadería La G) y Purga de Lápidas Locales",
+    highlights: [
+      "Recuperación Total de los 20 Animales Activos: Se desbloquearon los 11 bovinos activos restantes que estaban siendo filtrados por lápidas locales del navegador, completando los 20 bovinos activos (23 totales con 3 vendidos) y sus 34 pesajes en Ganadería La G.",
+      "Rotación y Purga de Lápidas v2 (TOMBSTONES_KEY): Se eliminan automáticamente las lápidas v1 corruptas almacenadas en localStorage para que ningún dispositivo oculte animales restaurados.",
+      "Bloqueo contra Sobreescritura Parcial en cloudPushData: Si la nube contiene más bovinos que la base de datos local y no hubo eliminaciones en la sesión actual, el sistema bloquea el push parcial y descarga el respaldo completo."
+    ]
+  },
   {
     version: "2.24.44",
     date: "01/11/2026",

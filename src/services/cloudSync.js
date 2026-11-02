@@ -304,7 +304,8 @@ export async function cloudFindUser(email) {
 
 const PENDING_SYNC_KEY = 'ganadera_pending_sync_';
 const PENDING_DEL_KEY = 'ganadera_pending_del_';
-const TOMBSTONES_KEY = 'ganadera_tombstones_';
+const TOMBSTONES_KEY = 'ganadera_tombstones_v2_';
+const LEGACY_TOMBSTONES_KEY = 'ganadera_tombstones_';
 const TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días de memoria para evitar resurrección de elementos eliminados en celulares
 
 /**
@@ -313,6 +314,10 @@ const TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días de memoria para e
 export function getTombstones(userId) {
   if (!userId) return new Map();
   try {
+    // Limpiar lápidas corruptas/antiguas de la versión v1 si existían en el navegador
+    try {
+      localStorage.removeItem(`${LEGACY_TOMBSTONES_KEY}${userId}`);
+    } catch (e) {}
     const key = `${TOMBSTONES_KEY}${userId}`;
     const raw = localStorage.getItem(key);
     if (!raw) return new Map();
@@ -617,21 +622,22 @@ export async function cloudPushData(userId, options = {}) {
     const cattle = await db.cattle.filter(isTarget).toArray();
 
     // SALVAGUARDA ANTI-BORRADO ACCIDENTAL:
-    // Si la base de datos local tiene 0 bovinos (ej. sesión recién abierta antes de terminar el pull),
-    // verificar primero si en la nube existen bovinos para esta finca. Si la nube tiene ganado y no se
-    // acaban de eliminar manualmente todos los animales, abortar el push vacío y descargar desde la nube.
-    if (cattle.length === 0 && !options.allowEmptyInventory) {
-      try {
-        const checkRes = await safeFetch(`${FIREBASE_URL}/userData/${userId}/cattle.json?_t=${Date.now()}`, {}, 6000);
-        if (checkRes && checkRes.ok) {
-          const remoteCattle = normalizeRemoteList(await checkRes.json());
-          const pendingCattleDeletes = getPendingDeletes(userId).filter(d => d.tableName === 'cattle');
-          if (remoteCattle.length > 0 && pendingCattleDeletes.length === 0) {
-            await cloudPullData(userId, { forceAuthoritative: true });
-            return false;
+    // Si en la nube existen MÁS bovinos que en este dispositivo y no hay eliminaciones manuales
+    // pendientes en esta sesión, abortar el push parcial/vacío y descargar el respaldo completo de la nube.
+    if (!options.allowEmptyInventory) {
+      const pendingCattleDeletes = getPendingDeletes(userId).filter(d => d.tableName === 'cattle');
+      if (pendingCattleDeletes.length === 0) {
+        try {
+          const checkRes = await safeFetch(`${FIREBASE_URL}/userData/${userId}/cattle.json?_t=${Date.now()}`, {}, 6000);
+          if (checkRes && checkRes.ok) {
+            const remoteCattle = normalizeRemoteList(await checkRes.json());
+            if (remoteCattle.length > cattle.length) {
+              await cloudPullData(userId, { forceAuthoritative: true });
+              return false;
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
     }
 
     const weighings = await db.weighings.filter(isTarget).toArray();
@@ -1078,9 +1084,9 @@ export async function cloudPullData(userId, options = {}) {
       const remoteSyncTs = getSnapshotLatestTimestamp(remoteData);
       const isRemoteSnapshotNewer = remoteSyncTs > 0 && (!lastLocalSyncTs || remoteSyncTs > lastLocalSyncTs);
 
-      // Si estamos iniciando sesión o abriendo la app y la nube tiene un respaldo más nuevo que este celular,
-      // el respaldo de la nube actúa como fuente de verdad absoluta (limpiando pendientes obsoletos de sesiones viejas)
-      const useAuthoritativeSnapshot = forceAuthoritative || (!isInitialPullDone && isRemoteSnapshotNewer);
+      // Si la nube tiene un respaldo más nuevo que este dispositivo y no hay cambios locales pendientes,
+      // el respaldo de la nube actúa como fuente de verdad absoluta (incluyendo en sincronización en vivo)
+      const useAuthoritativeSnapshot = forceAuthoritative || (isRemoteSnapshotNewer && (!isInitialPullDone || !hasPendingSync(userId)));
       if (useAuthoritativeSnapshot) {
         clearPendingSync(userId);
         clearPendingDeletes(userId);
