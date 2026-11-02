@@ -2,7 +2,6 @@ import React from 'react';
 import { Badge, StatusBadge, FemaleStatusBadge, ReproductiveBadge, MilkingBadge, ProductionTypeBadge } from '../Common/Badge';
 import { formatCurrency, formatNumber, formatDate, calculateWeightMetrics, calculateFinancials, calculateReproduction, calculateMilkMetrics } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
-import { isBovine, getSpeciesMeta } from '../../types/cattle';
 import { Scale, DollarSign, Trash2, Tag, Flame, Skull, Milk, ShoppingBag, Calendar, Users, Handshake, Target, Zap, Syringe, Heart, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -62,9 +61,7 @@ export function CattleCard({
   };
 
   const batchName = animal.entryBatch || animal.paddock || '';
-  const animalIsBovine = isBovine(animal);
-  const speciesMeta = getSpeciesMeta(animal.species);
-  const isReadyForSale = animalIsBovine && animal.status === 'Activo' && weightMetrics.currentWeight >= 480;
+  const isReadyForSale = animal.status === 'Activo' && weightMetrics.currentWeight >= 480;
   const isCompanySale = animal.status === 'Vendido' && (animal.exitType === 'En Compañía' || !!animal.partnershipDetails);
 
   const femaleStatus = animal.femaleStatus || (
@@ -108,12 +105,6 @@ export function CattleCard({
         <div className="flex items-start justify-between gap-2 mb-2">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              {!animalIsBovine && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 text-[11px] font-black border border-amber-300 dark:border-amber-700 shadow-2xs">
-                  <span>{speciesMeta.icon}</span>
-                  <span>{speciesMeta.value}</span>
-                </span>
-              )}
               <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
                 {animal.tagNumber}
               </span>

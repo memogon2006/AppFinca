@@ -132,13 +132,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First puro para bundles con hash inmutable
+  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First con Network Fallback y Revalidación
   event.respondWith(
     (async () => {
-      const cachedResponse = await caches.match(request, { ignoreSearch: url.pathname.startsWith('/assets/') });
+      const cachedResponse = await caches.match(request);
       if (cachedResponse) {
-        // Los bundles dentro de /assets/ tienen hash único por versión, no requieren re-descarga en segundo plano
-        if (!url.pathname.startsWith('/assets/') && typeof navigator !== 'undefined' && navigator.onLine) {
+        if (typeof navigator !== 'undefined' && navigator.onLine) {
           fetch(request)
             .then((networkResponse) => {
               if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {

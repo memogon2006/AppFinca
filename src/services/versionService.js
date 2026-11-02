@@ -1,4 +1,4 @@
-export const CURRENT_APP_VERSION = "2.24.47";
+export const CURRENT_APP_VERSION = "2.24.48";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
@@ -6,13 +6,11 @@ export const CURRENT_BUILD_TIME = Date.now();
   */
  export const APP_CHANGELOG = [
   {
-    version: "2.24.47",
+    version: "2.24.48",
     date: "02/11/2026",
-    title: "⚡ Carga Instantánea + Botones de Bovinos y Módulo de Otras Especies en Inventario",
+    title: "🐂 Botones de Ingreso de Bovinos",
     highlights: [
-      "Optimización de Arranque Instantáneo: El arranque inicial ahora consulta directamente el nodo principal de la finca sin escanear alias redundantes cuando ya tiene animales cargados y sirve los paquetes desde caché instantáneo.",
-      "Botones Claros de Ingreso: Los botones principales ahora dicen explícitamente 'Ingreso de Lote de Bovinos' y '+ Ingreso de Bovino Individual'.",
-      "Nuevo Espacio '🐎 Otras Especies' en Inventario: Pestaña dedicada en el Inventario para registrar y filtrar Equinos (Caballos, Yeguas, Mulas), Bufalinos, Ovinos/Caprinos, Porcinos y Aves/Otras especies sin mezclarlos con el censo ni los promedios de peso de los Bovinos."
+      "Botones Claros de Ingreso: Los botones principales en el Tablero e Inventario ahora dicen explícitamente 'Ingreso de Lote de Bovinos' y '+ Ingreso de Bovino Individual'."
     ]
   },
   {

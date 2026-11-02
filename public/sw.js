@@ -1,5 +1,5 @@
 // Service Worker Auto-generado para Modo Offline 100% Blindado
-const CACHE_NAME = 'ganado-app-cache-v2.24.47';
+const CACHE_NAME = 'ganado-app-cache-v2.24.48';
 
 // Todos los recursos estáticos y paquetes JS/CSS compilados precacheados
 const STATIC_ASSETS = [
@@ -13,8 +13,8 @@ const STATIC_ASSETS = [
   "/apple-touch-icon.png",
   "/favicon.png",
   "/favicon.ico",
-  "/assets/index-BhSfwsmb.css",
-  "/assets/index-DTchuYxn.js",
+  "/assets/index-BxMu9dxe.css",
+  "/assets/index-WIDodGii.js",
   "/assets/vendor-charts-DljG-sht.js",
   "/assets/vendor-db-DLsAzhYJ.js",
   "/assets/vendor-export-BKvfhyNn.js",
@@ -107,13 +107,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First puro para bundles con hash inmutable
+  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First con Network Fallback y Revalidación
   event.respondWith(
     (async () => {
-      const cachedResponse = await caches.match(request, { ignoreSearch: url.pathname.startsWith('/assets/') });
+      const cachedResponse = await caches.match(request);
       if (cachedResponse) {
-        // Los bundles dentro de /assets/ tienen hash único por versión, no requieren re-descarga en segundo plano
-        if (!url.pathname.startsWith('/assets/') && typeof navigator !== 'undefined' && navigator.onLine) {
+        if (typeof navigator !== 'undefined' && navigator.onLine) {
           fetch(request)
             .then((networkResponse) => {
               if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {

@@ -11,7 +11,7 @@ import {
   calculateReproduction 
 } from '../../services/calculations';
 import { getFarmMeatPrice } from '../../services/farmPriceService';
-import { COMMON_BREEDS, ANIMAL_SPECIES, isBovine, getSpeciesMeta } from '../../types/cattle';
+import { COMMON_BREEDS } from '../../types/cattle';
 import { 
   LayoutGrid, 
   List, 
@@ -69,8 +69,6 @@ export function CattleListView({
   const handleDeleteAnimalSafe = onDeleteAnimal || onDelete;
   const handleAddWeightSafe = onOpenAddWeight || onAddWeight;
   const [viewMode, setViewMode] = useState('grid');
-  const [speciesTab, setSpeciesTab] = useState('bovinos'); // 'bovinos' | 'otras_especies' | 'todos'
-  const [selectedOtherSpecies, setSelectedOtherSpecies] = useState('all');
   const [filters, setFilters] = useState({
     search: '',
     searchMode: 'tag', // 'tag' (Arete) o 'date' (Fecha)
@@ -108,41 +106,8 @@ export function CattleListView({
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
   }, [cattle]);
 
-  // Conteo por grupo de especie (Bovinos vs Otras Especies)
-  const speciesCounts = useMemo(() => {
-    let bovinesActive = 0;
-    let bovinesTotal = 0;
-    let othersActive = 0;
-    let othersTotal = 0;
-    const bySpecies = {};
-
-    cattle.forEach(c => {
-      const sp = c.species || 'Bovino';
-      if (!bySpecies[sp]) bySpecies[sp] = { active: 0, total: 0 };
-      bySpecies[sp].total++;
-      if (c.status === 'Activo') bySpecies[sp].active++;
-
-      if (isBovine(c)) {
-        bovinesTotal++;
-        if (c.status === 'Activo') bovinesActive++;
-      } else {
-        othersTotal++;
-        if (c.status === 'Activo') othersActive++;
-      }
-    });
-
-    return { bovinesActive, bovinesTotal, othersActive, othersTotal, bySpecies };
-  }, [cattle]);
-
   const filteredCattle = useMemo(() => {
     return cattle.filter(animal => {
-      // Filtro principal por pestaña de especie (Bovinos vs Otras Especies vs Todos)
-      if (speciesTab === 'bovinos' && !isBovine(animal)) return false;
-      if (speciesTab === 'otras_especies') {
-        if (isBovine(animal)) return false;
-        if (selectedOtherSpecies !== 'all' && animal.species !== selectedOtherSpecies) return false;
-      }
-
       if (filters.status !== 'Todos' && animal.status !== filters.status) return false;
       
       // Filtro de modalidad de venta (Compañía vs Directa)
@@ -266,7 +231,7 @@ export function CattleListView({
           return (a.tagNumber || '').localeCompare(b.tagNumber || '', undefined, { numeric: true });
       }
     });
-  }, [cattle, weighings, filters, speciesTab, selectedOtherSpecies]);
+  }, [cattle, weighings, filters]);
 
   const summary = useMemo(() => {
     const totalCount = filteredCattle.length;
@@ -331,118 +296,8 @@ export function CattleListView({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       
-      {/* Barra Superior de Especies: Bovinos vs Otras Especies */}
-      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setSpeciesTab('bovinos')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 border transition cursor-pointer ${
-                speciesTab === 'bovinos'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20'
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span>🐂 Bovinos</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                speciesTab === 'bovinos'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-              }`}>
-                {speciesCounts.bovinesActive} en finca
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSpeciesTab('otras_especies')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 border transition cursor-pointer ${
-                speciesTab === 'otras_especies'
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm shadow-amber-500/20'
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span>🐎 Otras Especies (Equinos, Búfalos, Ovinos...)</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                speciesTab === 'otras_especies'
-                  ? 'bg-slate-950/15 text-slate-950'
-                  : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300'
-              }`}>
-                {speciesCounts.othersActive} en finca
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSpeciesTab('todos')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition cursor-pointer ${
-                speciesTab === 'todos'
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span>📋 Todas las Especies ({speciesCounts.bovinesActive + speciesCounts.othersActive})</span>
-            </button>
-          </div>
-
-          {handleOpenNewAnimalSafe && (
-            <button
-              type="button"
-              onClick={() => handleOpenNewAnimalSafe({
-                species: selectedOtherSpecies !== 'all' ? selectedOtherSpecies : 'Equino',
-                category: 'Caballo',
-                productionType: 'Trabajo de Vaquería'
-              })}
-              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer whitespace-nowrap"
-            >
-              <span>🐎 + Ingresar Otra Especie</span>
-            </button>
-          )}
-        </div>
-
-        {/* Sub-filtros rápidos cuando se está en "Otras Especies" */}
-        {speciesTab === 'otras_especies' && (
-          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mr-1">
-              Filtrar por especie:
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedOtherSpecies('all')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-black border transition cursor-pointer ${
-                selectedOtherSpecies === 'all'
-                  ? 'bg-amber-500 text-slate-950 border-amber-500'
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              Todas ({speciesCounts.othersActive})
-            </button>
-            {ANIMAL_SPECIES.filter(s => s.value !== 'Bovino').map(sp => {
-              const countObj = speciesCounts.bySpecies[sp.value] || { active: 0, total: 0 };
-              return (
-                <button
-                  key={sp.value}
-                  type="button"
-                  onClick={() => setSelectedOtherSpecies(sp.value)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer flex items-center gap-1 ${
-                    selectedOtherSpecies === sp.value
-                      ? 'bg-amber-500 text-slate-950 border-amber-500 font-black'
-                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
-                  }`}
-                >
-                  <span>{sp.icon}</span>
-                  <span>{sp.plural}</span>
-                  <span className="text-[10px] opacity-80">({countObj.active})</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
       {/* Barra de Filtros con Raza o Cruce */}
       <CattleFilters 
         filters={filters} 
@@ -457,7 +312,7 @@ export function CattleListView({
         {/* Indicadores Resumen a la Izquierda */}
         <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-extrabold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm whitespace-nowrap">
-            Total: <strong className="text-slate-950 dark:text-white font-black">{summary.totalCount}</strong> {speciesTab === 'otras_especies' ? (summary.totalCount === 1 ? 'ejemplar' : 'ejemplares') : (summary.totalCount === 1 ? 'bovino' : 'bovinos')}
+            Total: <strong className="text-slate-950 dark:text-white font-black">{summary.totalCount}</strong> {summary.totalCount === 1 ? 'bovino' : 'bovinos'}
           </span>
 
           <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-sm whitespace-nowrap">
@@ -554,16 +409,12 @@ export function CattleListView({
           {/* Botón + Individual */}
           {handleOpenNewAnimalSafe && (
             <button
-              onClick={() => handleOpenNewAnimalSafe(
-                speciesTab === 'otras_especies'
-                  ? { species: selectedOtherSpecies !== 'all' ? selectedOtherSpecies : 'Equino', category: 'Caballo', productionType: 'Trabajo de Vaquería' }
-                  : null
-              )}
+              onClick={handleOpenNewAnimalSafe}
               className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1 sm:gap-1.5 shadow-md shadow-emerald-600/30 transition cursor-pointer whitespace-nowrap min-h-[36px] sm:min-h-[38px]"
               title="Registrar un nuevo bovino individual"
             >
               <PlusCircle className="w-3.5 h-3.5 shrink-0" />
-              <span>{speciesTab === 'otras_especies' ? '+ Ingreso Individual (Otra Especie)' : '+ Ingreso de Bovino Individual'}</span>
+              <span>+ Ingreso de Bovino Individual</span>
             </button>
           )}
         </div>
@@ -573,25 +424,17 @@ export function CattleListView({
       {filteredCattle.length === 0 && (
         <div className="custom-card p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-3">
           <Layers className="w-12 h-12 text-slate-300 dark:text-slate-600" />
-          <h3 className="text-base font-bold text-slate-800 dark:text-white">
-            {speciesTab === 'otras_especies' ? 'No hay ejemplares registrados en Otras Especies' : 'No se encontraron bovinos'}
-          </h3>
+          <h3 className="text-base font-bold text-slate-800 dark:text-white">No se encontraron bovinos</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-            {speciesTab === 'otras_especies'
-              ? 'Aquí puedes llevar el inventario de tus caballos, yeguas, mulas, búfalos, ovejos, cerdos u otros animales de la finca.'
-              : cattle.length === 0 
-                ? 'El inventario está en ceros. Registra el primer bovino de tu finca para comenzar.'
-                : 'Prueba cambiando los criterios de búsqueda o el filtro de estado.'}
+            {cattle.length === 0 
+              ? 'El inventario está en ceros. Registra el primer bovino de tu finca para comenzar.'
+              : 'Prueba cambiando los criterios de búsqueda o el filtro de estado.'}
           </p>
           <button
-            onClick={() => handleOpenNewAnimalSafe(
-              speciesTab === 'otras_especies'
-                ? { species: selectedOtherSpecies !== 'all' ? selectedOtherSpecies : 'Equino', category: 'Caballo', productionType: 'Trabajo de Vaquería' }
-                : null
-            )}
+            onClick={handleOpenNewAnimalSafe}
             className="mt-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md min-h-[44px] cursor-pointer"
           >
-            {speciesTab === 'otras_especies' ? '🐎 Registrar Otra Especie Ahora' : 'Registrar Bovino Ahora'}
+            Registrar Bovino Ahora
           </button>
         </div>
       )}

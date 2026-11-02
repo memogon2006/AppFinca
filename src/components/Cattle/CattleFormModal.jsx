@@ -7,11 +7,6 @@ import {
   FEMALE_STATUSES,
   ENTRY_TYPES, 
   COMMON_BREEDS,
-  ANIMAL_SPECIES,
-  SPECIES_CATEGORIES,
-  SPECIES_PRODUCTION_TYPES,
-  SPECIES_BREEDS,
-  getSpeciesMeta,
   getDynamicFarmColors,
   getDynamicFarmIronBrands
 } from '../../types/cattle';
@@ -77,7 +72,6 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   };
 
   const [formData, setFormData] = useState({
-    species: 'Bovino',
     tagNumber: '',
     name: '',
     ironBrand: '',
@@ -133,7 +127,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
   }, [cattleList, animal]);
 
   useEffect(() => {
-    if (animal && animal.id) {
+    if (animal) {
       const isFemale = animal.sex === 'Hembra';
       
       let initialFemaleStatuses = [];
@@ -187,7 +181,6 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
       setFormData({
         ...animal,
-        species: animal.species || 'Bovino',
         entryBatch: animal.entryBatch || animal.paddock || 'Ingreso #1',
         breed: animal.breed || '',
         entryType: animal.entryType || (animal.origin === 'Nacido en finca' ? 'Nacimiento' : 'Compra'),
@@ -225,25 +218,21 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
         setEnableGenealogy(false);
       }
     } else {
-      const presetSpecies = animal?.species || 'Bovino';
-      const defaultCategory = animal?.category || '';
-      const defaultProdType = animal?.productionType || (SPECIES_PRODUCTION_TYPES[presetSpecies]?.[0]?.value || 'Ceba');
       setGestationDaysInput('');
       setMotherMode(availableMothers.length > 0 ? 'hato' : 'libre');
       setEnableGenealogy(false);
       setFormData({
-        species: presetSpecies,
         tagNumber: '',
         name: '',
         ironBrand: '',
         owner: 'Hacienda Principal',
         sex: '',
         breed: '',
-        category: defaultCategory,
-        productionType: defaultProdType,
+        category: '',
+        productionType: 'Ceba',
         status: 'Activo',
         color: '',
-        entryBatch: presetSpecies === 'Bovino' ? 'Ingreso #1' : '',
+        entryBatch: 'Ingreso #1',
         entryDate: getLocalDateString(),
         entryType: 'Compra',
         entryWeight: '',
@@ -272,10 +261,10 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       });
       setShowAdvancedMilk(false);
 
-      // Cargar borrador para nuevo animal si existe y coincide con la especie solicitada
+      // Cargar borrador para nuevo animal si existe
       const draft = loadDraft('cattle_form');
-      if (draft && (!animal?.species || (draft.species || 'Bovino') === presetSpecies)) {
-        setFormData({ ...draft, species: draft.species || presetSpecies });
+      if (draft) {
+        setFormData(draft);
         if (draft.pregnancyDays) setGestationDaysInput(String(draft.pregnancyDays));
         const hasData = draft.tagNumber || draft.name || draft.entryWeight || draft.color || draft.notes || draft.entryPrice;
         if (hasData) {
@@ -811,24 +800,19 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     }));
   };
 
-  const currentSpecies = formData.species || 'Bovino';
-  const isCurrentBovine = currentSpecies === 'Bovino';
-  const speciesCategories = SPECIES_CATEGORIES[currentSpecies] || CATEGORIES;
-  const speciesBreeds = SPECIES_BREEDS[currentSpecies] || COMMON_BREEDS;
-  const speciesProductionTypes = SPECIES_PRODUCTION_TYPES[currentSpecies] || PRODUCTION_TYPES;
-
-  // Regla de Negocio: El peso inicial es obligatorio si es Bovino Macho o Hembra destinada a Levante y Ceba/Engorde.
-  // Para otras especies (Equino, Ovino, Porcino, etc.) o hembras de Vientre/Cría/Lechería o Compañía, el peso inicial NO es obligatorio.
+  // Regla de Negocio: El peso inicial es obligatorio si es Macho o si es Hembra destinada a Levante y Ceba/Engorde.
+  // Si la hembra se usa para Vientre, Cría, Lechería o Vaca de Producción, o si el ganado es en Compañía, el peso inicial NO es obligatorio.
   const isFemale = formData.sex === 'Hembra';
   const isFatteningFemale = isFemale && (formData.productionType === 'Ceba' || formData.femaleStatuses?.includes('Ceba / Levante / Engorde') || formData.femaleStatus?.includes('Ceba'));
-  const isWeightRequired = isCurrentBovine && formData.entryType !== 'Compañía' && (formData.sex === 'Macho' || isFatteningFemale);
+  const isWeightRequired = formData.entryType !== 'Compañía' && (formData.sex === 'Macho' || isFatteningFemale);
 
   // Regla de Negocio: Ingreso # (Lote / Consecutivo)
-  // Obligatorio únicamente para bovinos comprados destinados a Ceba / Engorde o en Compañía.
+  // Obligatorio únicamente para animales comprados destinados a Ceba / Engorde o en Compañía.
+  // NO es obligatorio para animales nacidos en la finca, ni para animales de cría, vientre, lechería o doble propósito.
   const isBornInFarm = formData.entryType === 'Nacimiento' || formData.origin === 'Nacido en finca';
   const isCompany = formData.entryType === 'Compañía' || (formData.owner && formData.owner.toLowerCase().includes('compañía'));
   const isFattening = formData.productionType === 'Ceba' || formData.femaleStatuses?.includes('Ceba / Levante / Engorde') || formData.femaleStatus?.includes('Ceba');
-  const isEntryBatchRequired = isCurrentBovine && !isBornInFarm && (isFattening || isCompany);
+  const isEntryBatchRequired = !isBornInFarm && (isFattening || isCompany);
 
   const executeSave = (dataToSave) => {
     const parsedEntryWeight = dataToSave.entryWeight && parseFloat(dataToSave.entryWeight) > 0 ? parseFloat(dataToSave.entryWeight) : null;
@@ -843,7 +827,6 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
     onSave({
       ...dataToSave,
-      species: dataToSave.species || 'Bovino',
       entryBatch: batchValue,
       paddock: batchValue,
       entryType: dataToSave.entryType || 'Compra',
@@ -910,7 +893,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     }
 
     if (!isWorker) {
-      if (isCurrentBovine && formData.entryType !== 'Nacimiento') {
+      if (formData.entryType !== 'Nacimiento') {
         if (formData.entryPrice === '' || formData.entryPrice === null || Number(formData.entryPrice) <= 0) {
           newErrors.entryPrice = formData.entryType === 'Compañía' 
             ? 'El valor inicial o inversión es obligatorio para ganado en compañía.'
@@ -1026,67 +1009,19 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
     executeSave(formData);
   };
 
-  const availableCategories = speciesCategories.filter(c => c.sex === 'Ambos' || (!formData.sex || c.sex === formData.sex));
-  const currentSpeciesMeta = getSpeciesMeta(currentSpecies);
+  const availableCategories = CATEGORIES.filter(c => c.sex === 'Ambos' || (!formData.sex || c.sex === formData.sex));
 
   return (
     <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? `Editar ${currentSpeciesMeta.icon} ${currentSpecies} ${formData.tagNumber}` : (isCurrentBovine ? 'Registrar Nuevo Bovino en Finca' : `Registrar ${currentSpeciesMeta.icon} ${currentSpecies} en Finca`)}
-      subtitle="Ingresa la especie, identificación, Ingreso #, procedencia, peso y costos"
+      title={isEditing ? `Editar Bovino ${formData.tagNumber}` : 'Registrar Nuevo Bovino en Finca'}
+      subtitle="Ingresa la identificación, Ingreso #, procedencia, peso y costos"
       maxWidth="max-w-3xl"
       zIndex={zIndex}
     >
       <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-        
-        {/* SELECTOR DE ESPECIE ANIMAL */}
-        <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-              <span>🐾 Especie del Animal</span>
-            </span>
-            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-              {currentSpeciesMeta.icon} {currentSpeciesMeta.label}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            {ANIMAL_SPECIES.map((sp) => {
-              const isSelected = currentSpecies === sp.value;
-              return (
-                <button
-                  key={sp.value}
-                  type="button"
-                  onClick={() => {
-                    const defaultCat = SPECIES_CATEGORIES[sp.value]?.[0]?.value || '';
-                    const defaultProd = SPECIES_PRODUCTION_TYPES[sp.value]?.[0]?.value || 'Ceba';
-                    setFormData(prev => ({
-                      ...prev,
-                      species: sp.value,
-                      category: defaultCat,
-                      productionType: defaultProd,
-                      breed: '',
-                    }));
-                  }}
-                  className={`p-2 rounded-xl border text-left transition cursor-pointer flex items-center gap-2 ${
-                    isSelected
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-400/50'
-                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
-                  }`}
-                >
-                  <span className="text-lg shrink-0">{sp.icon}</span>
-                  <div className="min-w-0">
-                    <span className="text-xs font-extrabold block truncate">{sp.value}</span>
-                    <span className={`text-[9px] font-semibold block truncate ${isSelected ? 'text-emerald-100' : 'text-slate-400'}`}>
-                      {sp.description}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
         
         {/* BANNER DE BORRADOR RESTAURADO */}
         {isDraftRestored && !isEditing && (
@@ -1575,7 +1510,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
               />
               <datalist id="breeds-list">
-                {speciesBreeds.map(b => (
+                {COMMON_BREEDS.map(b => (
                   <option key={b} value={b} />
                 ))}
               </datalist>
@@ -1600,7 +1535,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Tipo de Producción / Propósito <span className="text-rose-500">*</span>
+                Tipo de Producción <span className="text-rose-500">*</span>
               </label>
               <select
                 name="productionType"
@@ -1608,7 +1543,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
                 onChange={handleChange}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition min-h-[44px]"
               >
-                {speciesProductionTypes.map(p => (
+                {PRODUCTION_TYPES.map(p => (
                   <option key={p.value} value={p.value}>{p.label}</option>
                 ))}
               </select>

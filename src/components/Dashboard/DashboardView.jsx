@@ -467,6 +467,7 @@ export function DashboardView({
             <button
               onClick={onOpenNewAnimal}
               className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition cursor-pointer"
+              title="Registrar un bovino individual en el inventario"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ Ingreso de Bovino Individual</span>
