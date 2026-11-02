@@ -1,10 +1,19 @@
-export const CURRENT_APP_VERSION = "2.24.48";
+export const CURRENT_APP_VERSION = "2.24.49";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.49",
+    date: "02/11/2026",
+    title: "⚡ Optimización de Velocidad de Carga y Rendimiento",
+    highlights: [
+      "Arranque Ultraligero (Code-Splitting): El paquete inicial del sistema se dividió en módulos bajo demanda, reduciendo drásticamente el peso de descarga al abrir la aplicación.",
+      "Montaje Inteligente de Modales y Sincronización Rápida: Los 22 modales ahora solo se ejecutan al abrirse, las fuentes cargan sin bloquear la pantalla y el respaldo en la nube responde en una sola consulta directa."
+    ]
+  },
   {
     version: "2.24.48",
     date: "02/11/2026",

@@ -46,7 +46,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   </head>
   <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 antialiased font-sans selection:bg-emerald-500 selection:text-white min-h-screen">
     <div id="root" class="min-h-screen flex flex-col">
@@ -63,29 +63,19 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       (function() {
-        // Asistencia automática para arranque offline o actualización inmediata en campo
+        // Asistencia para conexiones lentas sin interrumpir descargas en curso
         setTimeout(function() {
           var rootEl = document.getElementById('root');
           var statusEl = document.getElementById('splash-status');
           if (statusEl && rootEl && rootEl.querySelector('#splash-status')) {
             statusEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:8px;">' +
-              '<span style="color:#34d399;font-weight:600;font-size:12px;">⚡ Optimizando carga...</span>' +
+              '<span style="color:#34d399;font-weight:600;font-size:12px;">⚡ Cargando módulos...</span>' +
               '<button onclick="window.location.reload()" style="background:#10b981;color:#020617;font-weight:800;font-size:13px;padding:8px 18px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.35);display:flex;align-items:center;gap:6px;">' +
-              '<span>🔄 Entrar a la Finca</span>' +
+              '<span>🔄 Recargar</span>' +
               '</button>' +
               '</div>';
-
-            // Auto-recarga única si el Service Worker o el navegador requiere refresco de caché
-            if (!sessionStorage.getItem('ganado_boot_autoreload')) {
-              sessionStorage.setItem('ganado_boot_autoreload', 'true');
-              setTimeout(function() {
-                if (rootEl.querySelector('#splash-status')) {
-                  window.location.reload();
-                }
-              }, 1200);
-            }
           }
-        }, 2200);
+        }, 5000);
       })();
     </script>
   </body>

@@ -1,5 +1,5 @@
 {
-  "version": "2.24.48",
-  "buildTime": 1793659800000,
-  "description": "🐂 Botones de ingreso renombrados: 'Ingreso de Lote de Bovinos' y '+ Ingreso de Bovino Individual'"
+  "version": "2.24.49",
+  "buildTime": 1793660400000,
+  "description": "⚡ Optimización de Velocidad de Carga (Code-Splitting, Caché Instantáneo y Arranque sin Bloqueo)"
 }

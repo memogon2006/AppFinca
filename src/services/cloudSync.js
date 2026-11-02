@@ -788,19 +788,27 @@ async function fetchLatestCloudFarmSnapshot(userId, checkAliases = false) {
   const candidates = [];
 
   // 1. Nodo principal por userId
+  let primaryHasCattle = false;
   try {
-    const res = await safeFetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`);
+    const res = await safeFetch(`${FIREBASE_URL}/userData/${userId}.json?_t=${Date.now()}`, {}, 4500);
     if (res && res.ok) {
       const data = await res.json();
       if (data && typeof data === 'object') {
         candidates.push({ key: userId, data, ts: getSnapshotLatestTimestamp(data) });
+        if (normalizeRemoteList(data.cattle).length > 0) {
+          primaryHasCattle = true;
+        }
       }
     }
   } catch (e) {}
 
-  // 2. Al iniciar sesión o arrancar la app, verificar si existe un respaldo más reciente de la misma finca
-  // bajo claves alternativas (ej. usr_<safeEmail>, <safeEmail>, o coincidencia exacta de farmName/email)
-  if (checkAliases) {
+  // Fast-path: Si el nodo principal ya tiene ganado activo, retornar de inmediato sin escanear alias ni /users.json
+  if (primaryHasCattle && candidates.length > 0) {
+    return candidates[0].data;
+  }
+
+  // 2. Solo si el nodo principal está vacío, verificar si existe un respaldo en claves alternativas
+  if (checkAliases && !primaryHasCattle) {
     try {
       let sessionUser = null;
       try {

@@ -43,25 +43,23 @@ function pwaPrecachePlugin() {
       const swContent = `// Service Worker Auto-generado para Modo Offline 100% Blindado
 const CACHE_NAME = '${cacheName}';
 
-// Todos los recursos estáticos y paquetes JS/CSS compilados precacheados
-const STATIC_ASSETS = ${JSON.stringify(allAssets, null, 2)};
+// Recursos base de arranque rápido (sin saturar la red inicial con todos los módulos diferidos)
+const CORE_ASSETS = ${JSON.stringify(staticBase, null, 2)};
+const LAZY_ASSETS = ${JSON.stringify(assetFiles, null, 2)};
 
-// Instalación del Service Worker con precaching total
+// Instalación ligera y ultrarrápida del Service Worker
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('⚠️ Precarga individual de respaldo:', err);
-        return Promise.all(
-          STATIC_ASSETS.map((asset) => cache.add(asset).catch(() => null))
-        );
-      });
+      return Promise.all(
+        CORE_ASSETS.map((asset) => cache.add(asset).catch(() => null))
+      );
     })
   );
 });
 
-// Activación y limpieza inmediata de cachés anteriores
+// Activación, limpieza de cachés obsoletas y precarga diferida en segundo plano sin competir con el arranque
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -73,7 +71,19 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()).then(() => {
+      // Precargar módulos secundarios después de 6 segundos para garantizar offline total sin frenar el inicio
+      setTimeout(() => {
+        caches.open(CACHE_NAME).then( async (cache) => {
+          for (const asset of LAZY_ASSETS) {
+            const match = await cache.match(asset);
+            if (!match) {
+              await cache.add(asset).catch(() => null);
+            }
+          }
+        }).catch(() => null);
+      }, 6000);
+    })
   );
 });
 
@@ -101,13 +111,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Timeout y Fallback Offline
+  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Timeout Rápido y Fallback Offline
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       (async () => {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
           const response = await fetch(request, { signal: controller.signal });
           clearTimeout(timeoutId);
           if (response && response.status === 200) {
@@ -120,11 +130,11 @@ self.addEventListener('fetch', (event) => {
           }
         } catch (e) {}
 
-        const cachedResponse = await caches.match(request);
+        const cachedResponse = await caches.match(request, { ignoreSearch: true });
         if (cachedResponse) return cachedResponse;
-        const indexFallback = await caches.match('/index.html');
+        const indexFallback = await caches.match('/index.html', { ignoreSearch: true });
         if (indexFallback) return indexFallback;
-        const rootFallback = await caches.match('/');
+        const rootFallback = await caches.match('/', { ignoreSearch: true });
         if (rootFallback) return rootFallback;
         return new Response('Modo Sin Conexión Ganadero', { headers: { 'Content-Type': 'text/html' } });
       })()
@@ -132,12 +142,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First con Network Fallback y Revalidación
+  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First Instantáneo (sin re-descargar bundles con hash)
   event.respondWith(
     (async () => {
-      const cachedResponse = await caches.match(request);
+      const cachedResponse = await caches.match(request, { ignoreSearch: url.pathname.startsWith('/assets/') });
       if (cachedResponse) {
-        if (typeof navigator !== 'undefined' && navigator.onLine) {
+        // Los archivos en /assets/ tienen hash único por compilación (inmutables); no re-descargarlos en segundo plano
+        if (!url.pathname.startsWith('/assets/') && typeof navigator !== 'undefined' && navigator.onLine) {
           fetch(request)
             .then((networkResponse) => {
               if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
@@ -216,6 +227,9 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules/recharts')) {
             return 'vendor-charts';
+          }
+          if (id.includes('node_modules/leaflet')) {
+            return 'vendor-maps';
           }
           if (id.includes('node_modules/dexie')) {
             return 'vendor-db';

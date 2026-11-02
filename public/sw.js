@@ -1,8 +1,8 @@
 // Service Worker Auto-generado para Modo Offline 100% Blindado
-const CACHE_NAME = 'ganado-app-cache-v2.24.48';
+const CACHE_NAME = 'ganado-app-cache-v2.24.49';
 
-// Todos los recursos estáticos y paquetes JS/CSS compilados precacheados
-const STATIC_ASSETS = [
+// Recursos base de arranque rápido (sin saturar la red inicial con todos los módulos diferidos)
+const CORE_ASSETS = [
   "/",
   "/index.html",
   "/manifest.webmanifest",
@@ -12,31 +12,72 @@ const STATIC_ASSETS = [
   "/icon-192.png",
   "/apple-touch-icon.png",
   "/favicon.png",
-  "/favicon.ico",
-  "/assets/index-BxMu9dxe.css",
-  "/assets/index-WIDodGii.js",
-  "/assets/vendor-charts-DljG-sht.js",
+  "/favicon.ico"
+];
+const LAZY_ASSETS = [
+  "/assets/AccountingView-B4a7Xlyv.js",
+  "/assets/BatchAnalyticsView-Ga1717hJ.js",
+  "/assets/BatchEntryModal-ZUOJrP0U.js",
+  "/assets/BrandingRecordModal-C2KFtf4x.js",
+  "/assets/CalvingRecordModal-k5X80AkY.js",
+  "/assets/CattleDetailModal-Cs2VXZaT.js",
+  "/assets/CattleFormModal-DebNdluQ.js",
+  "/assets/DairyLactationChart-CTz4xqZY.js",
+  "/assets/DairyView-B_H8hl_O.js",
+  "/assets/DeathModal-V1OgQcP5.js",
+  "/assets/DuplicateWarningModal-BTXIl2Wo.js",
+  "/assets/ExpenseModal-jAV3AxmB.js",
+  "/assets/ExportImportModal-kUq04yD1.js",
+  "/assets/FarmCalendarModal-gYCNEdhC.js",
+  "/assets/FemalesView-CasONGEe.js",
+  "/assets/FinancesView--t0uw6Fc.js",
+  "/assets/ForcePasswordChangeModal-CdNs3PBV.js",
+  "/assets/GlossaryModal-Diw-8wbp.js",
+  "/assets/IncomeModal-DluxGGZU.js",
+  "/assets/InventoryChecklistModal-DLFBcl8w.js",
+  "/assets/PaddocksView-DH_l0rZZ.css",
+  "/assets/PaddocksView-DT5QPX_H.js",
+  "/assets/PartnershipSettlementModal-SLAy7o8D.js",
+  "/assets/ProfileModal-CofL9M_A.js",
+  "/assets/QuickPalpationView-BCnGjyqd.js",
+  "/assets/QuickWeighinView-DxoRW-Fq.js",
+  "/assets/RainfallModal-DnUWFSPd.js",
+  "/assets/RainfallView-w2SAugVp.js",
+  "/assets/SellModal-a-FDwroI.js",
+  "/assets/SettlementDetailCard-ObofJRsM.js",
+  "/assets/SuperAdminView-D0HyHJlB.js",
+  "/assets/VaccinationCensusModal-BOvoa7pU.js",
+  "/assets/VaccinationRecordModal-BctgH1Sv.js",
+  "/assets/WeightLogModal-CVOHaiAE.js",
+  "/assets/WeightsView-DqfTz0Xm.js",
+  "/assets/WhatsAppReportModal-BdlZzm5o.js",
+  "/assets/WorkersManagementModal-qB6BpDQ9.js",
+  "/assets/batchExcelService-Bfwr4Khw.js",
+  "/assets/confetti.module-oQXWb4Lk.js",
+  "/assets/consecutiveService-BMLp-nb3.js",
+  "/assets/index-CkRnvIyw.css",
+  "/assets/index-DHJV7bLq.js",
+  "/assets/vendor-charts-BBNzn1nk.js",
   "/assets/vendor-db-DLsAzhYJ.js",
   "/assets/vendor-export-BKvfhyNn.js",
-  "/assets/vendor-icons-CinzZpCn.js"
+  "/assets/vendor-icons-CVl_89w-.js",
+  "/assets/vendor-maps-Cvd-AAqa.js",
+  "/assets/vendor-maps-Dgihpmma.css"
 ];
 
-// Instalación del Service Worker con precaching total
+// Instalación ligera y ultrarrápida del Service Worker
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('⚠️ Precarga individual de respaldo:', err);
-        return Promise.all(
-          STATIC_ASSETS.map((asset) => cache.add(asset).catch(() => null))
-        );
-      });
+      return Promise.all(
+        CORE_ASSETS.map((asset) => cache.add(asset).catch(() => null))
+      );
     })
   );
 });
 
-// Activación y limpieza inmediata de cachés anteriores
+// Activación, limpieza de cachés obsoletas y precarga diferida en segundo plano sin competir con el arranque
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -48,7 +89,19 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()).then(() => {
+      // Precargar módulos secundarios después de 6 segundos para garantizar offline total sin frenar el inicio
+      setTimeout(() => {
+        caches.open(CACHE_NAME).then( async (cache) => {
+          for (const asset of LAZY_ASSETS) {
+            const match = await cache.match(asset);
+            if (!match) {
+              await cache.add(asset).catch(() => null);
+            }
+          }
+        }).catch(() => null);
+      }, 6000);
+    })
   );
 });
 
@@ -76,13 +129,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Timeout y Fallback Offline
+  // 2. Manejo de navegaciones (HTML principal / PWA app shell) - Network First con Timeout Rápido y Fallback Offline
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       (async () => {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
           const response = await fetch(request, { signal: controller.signal });
           clearTimeout(timeoutId);
           if (response && response.status === 200) {
@@ -95,11 +148,11 @@ self.addEventListener('fetch', (event) => {
           }
         } catch (e) {}
 
-        const cachedResponse = await caches.match(request);
+        const cachedResponse = await caches.match(request, { ignoreSearch: true });
         if (cachedResponse) return cachedResponse;
-        const indexFallback = await caches.match('/index.html');
+        const indexFallback = await caches.match('/index.html', { ignoreSearch: true });
         if (indexFallback) return indexFallback;
-        const rootFallback = await caches.match('/');
+        const rootFallback = await caches.match('/', { ignoreSearch: true });
         if (rootFallback) return rootFallback;
         return new Response('Modo Sin Conexión Ganadero', { headers: { 'Content-Type': 'text/html' } });
       })()
@@ -107,12 +160,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First con Network Fallback y Revalidación
+  // 3. Manejo de scripts, estilos, imágenes y fuentes - Cache First Instantáneo (sin re-descargar bundles con hash)
   event.respondWith(
     (async () => {
-      const cachedResponse = await caches.match(request);
+      const cachedResponse = await caches.match(request, { ignoreSearch: url.pathname.startsWith('/assets/') });
       if (cachedResponse) {
-        if (typeof navigator !== 'undefined' && navigator.onLine) {
+        // Los archivos en /assets/ tienen hash único por compilación (inmutables); no re-descargarlos en segundo plano
+        if (!url.pathname.startsWith('/assets/') && typeof navigator !== 'undefined' && navigator.onLine) {
           fetch(request)
             .then((networkResponse) => {
               if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {

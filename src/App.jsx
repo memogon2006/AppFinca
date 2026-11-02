@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { 
   db, 
@@ -22,42 +22,44 @@ import { useAuth } from './context/AuthContext';
 import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete, isInitialPullCompleted, hasPendingSync } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
 import { Navbar } from './components/Navbar';
-import { SuperAdminView } from './components/Admin/SuperAdminView';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { CattleListView } from './components/Cattle/CattleListView';
-import { WeightsView } from './components/Weights/WeightsView';
-import { QuickWeighinView } from './components/Weights/QuickWeighinView';
-import { FemalesView } from './components/Females/FemalesView';
-import { QuickPalpationView } from './components/Females/QuickPalpationView';
-import { CalvingRecordModal } from './components/Females/CalvingRecordModal';
-import { DairyView } from './components/Dairy/DairyView';
-import { BatchAnalyticsView } from './components/Batches/BatchAnalyticsView';
-import { PaddocksView } from './components/Paddocks/PaddocksView';
-import { RainfallView } from './components/Rainfall/RainfallView';
-import { RainfallModal } from './components/Rainfall/RainfallModal';
-import { FinancesView } from './components/Finances/FinancesView';
-import { AccountingView } from './components/Accounting/AccountingView';
-import { ExpenseModal } from './components/Accounting/ExpenseModal';
-import { IncomeModal } from './components/Accounting/IncomeModal';
-import { CattleFormModal } from './components/Cattle/CattleFormModal';
-import { CattleDetailModal } from './components/Cattle/CattleDetailModal';
-import { BrandingRecordModal } from './components/Cattle/BrandingRecordModal';
-import { SellModal } from './components/Cattle/SellModal';
-import { DeathModal } from './components/Cattle/DeathModal';
-import { WeightLogModal } from './components/Weights/WeightLogModal';
-import { ExportImportModal } from './components/Common/ExportImportModal';
-import { ProfileModal } from './components/Auth/ProfileModal';
-import { WorkersManagementModal } from './components/Auth/WorkersManagementModal';
-import { GlossaryModal } from './components/Common/GlossaryModal';
-import { PartnershipSettlementModal } from './components/Finances/PartnershipSettlementModal';
-import { BatchEntryModal } from './components/Cattle/BatchEntryModal';
-import { WhatsAppReportModal } from './components/Common/WhatsAppReportModal';
-import { FarmCalendarModal } from './components/Calendar/FarmCalendarModal';
-import { VaccinationRecordModal } from './components/Vaccinations/VaccinationRecordModal';
-import { VaccinationCensusModal } from './components/Vaccinations/VaccinationCensusModal';
-import { InventoryChecklistModal } from './components/Checklist/InventoryChecklistModal';
-import { ForcePasswordChangeModal } from './components/Auth/ForcePasswordChangeModal';
 import { UpdateNotificationBanner } from './components/Common/UpdateNotificationBanner';
+
+// Carga diferida (Code-Splitting) de vistas secundarias y modales pesados para arranque instantáneo
+const SuperAdminView = lazy(() => import('./components/Admin/SuperAdminView').then(m => ({ default: m.SuperAdminView })));
+const WeightsView = lazy(() => import('./components/Weights/WeightsView').then(m => ({ default: m.WeightsView })));
+const QuickWeighinView = lazy(() => import('./components/Weights/QuickWeighinView').then(m => ({ default: m.QuickWeighinView })));
+const FemalesView = lazy(() => import('./components/Females/FemalesView').then(m => ({ default: m.FemalesView })));
+const QuickPalpationView = lazy(() => import('./components/Females/QuickPalpationView').then(m => ({ default: m.QuickPalpationView })));
+const CalvingRecordModal = lazy(() => import('./components/Females/CalvingRecordModal').then(m => ({ default: m.CalvingRecordModal })));
+const DairyView = lazy(() => import('./components/Dairy/DairyView').then(m => ({ default: m.DairyView })));
+const BatchAnalyticsView = lazy(() => import('./components/Batches/BatchAnalyticsView').then(m => ({ default: m.BatchAnalyticsView })));
+const PaddocksView = lazy(() => import('./components/Paddocks/PaddocksView').then(m => ({ default: m.PaddocksView })));
+const RainfallView = lazy(() => import('./components/Rainfall/RainfallView').then(m => ({ default: m.RainfallView })));
+const RainfallModal = lazy(() => import('./components/Rainfall/RainfallModal').then(m => ({ default: m.RainfallModal })));
+const FinancesView = lazy(() => import('./components/Finances/FinancesView').then(m => ({ default: m.FinancesView })));
+const AccountingView = lazy(() => import('./components/Accounting/AccountingView').then(m => ({ default: m.AccountingView })));
+const ExpenseModal = lazy(() => import('./components/Accounting/ExpenseModal').then(m => ({ default: m.ExpenseModal })));
+const IncomeModal = lazy(() => import('./components/Accounting/IncomeModal').then(m => ({ default: m.IncomeModal })));
+const CattleFormModal = lazy(() => import('./components/Cattle/CattleFormModal').then(m => ({ default: m.CattleFormModal })));
+const CattleDetailModal = lazy(() => import('./components/Cattle/CattleDetailModal').then(m => ({ default: m.CattleDetailModal })));
+const BrandingRecordModal = lazy(() => import('./components/Cattle/BrandingRecordModal').then(m => ({ default: m.BrandingRecordModal })));
+const SellModal = lazy(() => import('./components/Cattle/SellModal').then(m => ({ default: m.SellModal })));
+const DeathModal = lazy(() => import('./components/Cattle/DeathModal').then(m => ({ default: m.DeathModal })));
+const WeightLogModal = lazy(() => import('./components/Weights/WeightLogModal').then(m => ({ default: m.WeightLogModal })));
+const ExportImportModal = lazy(() => import('./components/Common/ExportImportModal').then(m => ({ default: m.ExportImportModal })));
+const ProfileModal = lazy(() => import('./components/Auth/ProfileModal').then(m => ({ default: m.ProfileModal })));
+const WorkersManagementModal = lazy(() => import('./components/Auth/WorkersManagementModal').then(m => ({ default: m.WorkersManagementModal })));
+const GlossaryModal = lazy(() => import('./components/Common/GlossaryModal').then(m => ({ default: m.GlossaryModal })));
+const PartnershipSettlementModal = lazy(() => import('./components/Finances/PartnershipSettlementModal').then(m => ({ default: m.PartnershipSettlementModal })));
+const BatchEntryModal = lazy(() => import('./components/Cattle/BatchEntryModal').then(m => ({ default: m.BatchEntryModal })));
+const WhatsAppReportModal = lazy(() => import('./components/Common/WhatsAppReportModal').then(m => ({ default: m.WhatsAppReportModal })));
+const FarmCalendarModal = lazy(() => import('./components/Calendar/FarmCalendarModal').then(m => ({ default: m.FarmCalendarModal })));
+const VaccinationRecordModal = lazy(() => import('./components/Vaccinations/VaccinationRecordModal').then(m => ({ default: m.VaccinationRecordModal })));
+const VaccinationCensusModal = lazy(() => import('./components/Vaccinations/VaccinationCensusModal').then(m => ({ default: m.VaccinationCensusModal })));
+const InventoryChecklistModal = lazy(() => import('./components/Checklist/InventoryChecklistModal').then(m => ({ default: m.InventoryChecklistModal })));
+const ForcePasswordChangeModal = lazy(() => import('./components/Auth/ForcePasswordChangeModal').then(m => ({ default: m.ForcePasswordChangeModal })));
 import { calculateWeightMetrics, formatCurrency, formatNumber, formatDate, getLocalDateString } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -363,12 +365,12 @@ export default function App() {
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // 3. Sondeo en vivo cada 4 segundos para descargar cambios de otros dispositivos automáticamente
+    // 3. Sondeo en vivo cada 20 segundos para descargar cambios de otros dispositivos sin saturar conexiones lentas
     const syncInterval = setInterval(() => {
       if (document.visibilityState === 'visible' && navigator.onLine) {
         sync();
       }
-    }, 4000);
+    }, 20000);
 
     return () => {
       window.removeEventListener('online', handleSyncTrigger);
@@ -2833,6 +2835,12 @@ export default function App() {
 
       {/* Contenedor Principal */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-5 sm:py-8 mb-8 space-y-6">
+        <Suspense fallback={
+          <div className="p-12 flex flex-col items-center justify-center text-slate-400 gap-2">
+            <div className="w-7 h-7 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+            <span className="text-xs font-bold">Cargando vista...</span>
+          </div>
+        }>
         
         {currentView === 'dashboard' && (
           <DashboardView
@@ -3069,247 +3077,294 @@ export default function App() {
           />
         )}
 
+        </Suspense>
       </main>
 
-      {/* MODALES */}
+      {/* MODALES (Se montan bajo demanda al abrirse para no ejecutar cálculos ocultos en cada render) */}
+      <Suspense fallback={null}>
 
       {/* 1. Modal Base de Ficha Técnica / Detalle del Bovino */}
-      <CattleDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        animal={cattle.find(c => String(c.id) === String(selectedAnimal?.id)) || selectedAnimal}
-        cattleList={cattle}
-        weighings={weighings}
-        vaccinations={vaccinations}
-        milkRecords={milkRecords}
-        onOpenEdit={handleOpenEdit}
-        onOpenSell={handleOpenSell}
-        onOpenAddWeight={handleOpenAddWeight}
-        onOpenDeath={handleOpenDeath}
-        onRevertDeath={handleRevertDeath}
-        onDelete={handleDeleteAnimal}
-        onDeleteWeight={handleDeleteWeight}
-        onOpenGlossary={() => setIsGlossaryOpen(true)}
-        onOpenCalving={handleOpenCalving}
-        onOpenBranding={handleOpenBranding}
-        zIndex="z-50"
-      />
+      {isDetailModalOpen && (
+        <CattleDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          animal={cattle.find(c => String(c.id) === String(selectedAnimal?.id)) || selectedAnimal}
+          cattleList={cattle}
+          weighings={weighings}
+          vaccinations={vaccinations}
+          milkRecords={milkRecords}
+          onOpenEdit={handleOpenEdit}
+          onOpenSell={handleOpenSell}
+          onOpenAddWeight={handleOpenAddWeight}
+          onOpenDeath={handleOpenDeath}
+          onRevertDeath={handleRevertDeath}
+          onDelete={handleDeleteAnimal}
+          onDeleteWeight={handleDeleteWeight}
+          onOpenGlossary={() => setIsGlossaryOpen(true)}
+          onOpenCalving={handleOpenCalving}
+          onOpenBranding={handleOpenBranding}
+          zIndex="z-50"
+        />
+      )}
 
       {/* 2. Modales de Acción y Formularios (Con zIndex z-[80] para superponerse siempre por encima de Ficha Técnica) */}
-      <CalvingRecordModal
-        isOpen={isCalvingModalOpen}
-        onClose={() => {
-          setIsCalvingModalOpen(false);
-          setCalvingMotherAnimal(null);
-        }}
-        onSave={handleSaveCalving}
-        mother={calvingMotherAnimal}
-        cattleList={cattle}
-        paddocks={paddocks}
-        zIndex="z-[80]"
-      />
+      {isCalvingModalOpen && (
+        <CalvingRecordModal
+          isOpen={isCalvingModalOpen}
+          onClose={() => {
+            setIsCalvingModalOpen(false);
+            setCalvingMotherAnimal(null);
+          }}
+          onSave={handleSaveCalving}
+          mother={calvingMotherAnimal}
+          cattleList={cattle}
+          paddocks={paddocks}
+          zIndex="z-[80]"
+        />
+      )}
 
-      <BrandingRecordModal
-        isOpen={isBrandingModalOpen}
-        onClose={() => {
-          setIsBrandingModalOpen(false);
-          setBrandingAnimal(null);
-        }}
-        onSave={handleSaveBranding}
-        animal={brandingAnimal}
-        cattleList={cattle}
-        paddocks={paddocks}
-        zIndex="z-[80]"
-      />
+      {isBrandingModalOpen && (
+        <BrandingRecordModal
+          isOpen={isBrandingModalOpen}
+          onClose={() => {
+            setIsBrandingModalOpen(false);
+            setBrandingAnimal(null);
+          }}
+          onSave={handleSaveBranding}
+          animal={brandingAnimal}
+          cattleList={cattle}
+          paddocks={paddocks}
+          zIndex="z-[80]"
+        />
+      )}
 
-      <CattleFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => {
-          setIsFormModalOpen(false);
-          setEditingAnimal(null);
-        }}
-        onSave={handleSaveAnimal}
-        animal={editingAnimal}
-        cattleList={cattle}
-        zIndex="z-[80]"
-      />
+      {isFormModalOpen && (
+        <CattleFormModal
+          isOpen={isFormModalOpen}
+          onClose={() => {
+            setIsFormModalOpen(false);
+            setEditingAnimal(null);
+          }}
+          onSave={handleSaveAnimal}
+          animal={editingAnimal}
+          cattleList={cattle}
+          zIndex="z-[80]"
+        />
+      )}
 
-      <SellModal
-        isOpen={isSellModalOpen}
-        onClose={() => {
-          setIsSellModalOpen(false);
-          setSellingAnimal(null);
-        }}
-        animal={sellingAnimal}
-        onConfirmSale={handleConfirmSale}
-        zIndex="z-[80]"
-      />
+      {isSellModalOpen && (
+        <SellModal
+          isOpen={isSellModalOpen}
+          onClose={() => {
+            setIsSellModalOpen(false);
+            setSellingAnimal(null);
+          }}
+          animal={sellingAnimal}
+          onConfirmSale={handleConfirmSale}
+          zIndex="z-[80]"
+        />
+      )}
 
-      <DeathModal
-        isOpen={isDeathModalOpen}
-        onClose={() => {
-          setIsDeathModalOpen(false);
-          setDeathAnimal(null);
-        }}
-        animal={deathAnimal}
-        onConfirmDeath={handleConfirmDeath}
-        zIndex="z-[80]"
-      />
+      {isDeathModalOpen && (
+        <DeathModal
+          isOpen={isDeathModalOpen}
+          onClose={() => {
+            setIsDeathModalOpen(false);
+            setDeathAnimal(null);
+          }}
+          animal={deathAnimal}
+          onConfirmDeath={handleConfirmDeath}
+          zIndex="z-[80]"
+        />
+      )}
 
-      <WeightLogModal
-        isOpen={isWeightModalOpen}
-        onClose={() => {
-          setIsWeightModalOpen(false);
-          setWeighingAnimal(null);
-        }}
-        animal={weighingAnimal}
-        weighings={weighings}
-        onSaveWeight={handleSaveWeight}
-        zIndex="z-[80]"
-      />
+      {isWeightModalOpen && (
+        <WeightLogModal
+          isOpen={isWeightModalOpen}
+          onClose={() => {
+            setIsWeightModalOpen(false);
+            setWeighingAnimal(null);
+          }}
+          animal={weighingAnimal}
+          weighings={weighings}
+          onSaveWeight={handleSaveWeight}
+          zIndex="z-[80]"
+        />
+      )}
 
-      <BatchEntryModal
-        isOpen={isBatchEntryModalOpen}
-        onClose={() => setIsBatchEntryModalOpen(false)}
-        onSaveBatch={handleSaveBatchCattle}
-        cattleList={cattle}
-        zIndex="z-[60]"
-      />
+      {isBatchEntryModalOpen && (
+        <BatchEntryModal
+          isOpen={isBatchEntryModalOpen}
+          onClose={() => setIsBatchEntryModalOpen(false)}
+          onSaveBatch={handleSaveBatchCattle}
+          cattleList={cattle}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <PartnershipSettlementModal
-        isOpen={isPartnershipModalOpen}
-        onClose={() => setIsPartnershipModalOpen(false)}
-        cattle={cattle}
-        weighings={weighings}
-        onConfirmBatchSale={handleConfirmBatchSale}
-        zIndex="z-[60]"
-      />
+      {isPartnershipModalOpen && (
+        <PartnershipSettlementModal
+          isOpen={isPartnershipModalOpen}
+          onClose={() => setIsPartnershipModalOpen(false)}
+          cattle={cattle}
+          weighings={weighings}
+          onConfirmBatchSale={handleConfirmBatchSale}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <GlossaryModal
-        isOpen={isGlossaryOpen}
-        onClose={() => setIsGlossaryOpen(false)}
-        zIndex="z-[80]"
-      />
+      {isGlossaryOpen && (
+        <GlossaryModal
+          isOpen={isGlossaryOpen}
+          onClose={() => setIsGlossaryOpen(false)}
+          zIndex="z-[80]"
+        />
+      )}
 
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        onOpenWorkers={() => setIsWorkersModalOpen(true)}
-        activeCattleCount={activeCattleCount}
-        zIndex="z-[60]"
-      />
+      {isProfileModalOpen && (
+        <ProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          onOpenWorkers={() => setIsWorkersModalOpen(true)}
+          activeCattleCount={activeCattleCount}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <WorkersManagementModal
-        isOpen={isWorkersModalOpen}
-        onClose={() => setIsWorkersModalOpen(false)}
-        zIndex="z-[60]"
-      />
+      {isWorkersModalOpen && (
+        <WorkersManagementModal
+          isOpen={isWorkersModalOpen}
+          onClose={() => setIsWorkersModalOpen(false)}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <ExportImportModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-        onDataChanged={() => {}}
-        zIndex="z-[60]"
-      />
+      {isExportModalOpen && (
+        <ExportImportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          onDataChanged={() => {}}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <WhatsAppReportModal
-        isOpen={isWhatsAppModalOpen}
-        onClose={() => setIsWhatsAppModalOpen(false)}
-        cattle={cattle}
-        weighings={weighings}
-        farmName={currentUser?.farmName || 'INVENTARIO BOVINO APP'}
-        zIndex="z-[60]"
-      />
+      {isWhatsAppModalOpen && (
+        <WhatsAppReportModal
+          isOpen={isWhatsAppModalOpen}
+          onClose={() => setIsWhatsAppModalOpen(false)}
+          cattle={cattle}
+          weighings={weighings}
+          farmName={currentUser?.farmName || 'INVENTARIO BOVINO APP'}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <FarmCalendarModal
-        isOpen={isCalendarOpen}
-        onClose={() => setIsCalendarOpen(false)}
-        cattle={cattle}
-        weighings={weighings}
-        vaccinations={vaccinations}
-        notes={calendarNotes}
-        onSaveNote={handleSaveCalendarNote}
-        onToggleNote={handleToggleCalendarNote}
-        onDeleteNote={handleDeleteCalendarNote}
-        onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
-        zIndex="z-[60]"
-      />
+      {isCalendarOpen && (
+        <FarmCalendarModal
+          isOpen={isCalendarOpen}
+          onClose={() => setIsCalendarOpen(false)}
+          cattle={cattle}
+          weighings={weighings}
+          vaccinations={vaccinations}
+          notes={calendarNotes}
+          onSaveNote={handleSaveCalendarNote}
+          onToggleNote={handleToggleCalendarNote}
+          onDeleteNote={handleDeleteCalendarNote}
+          onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
+          zIndex="z-[60]"
+        />
+      )}
 
       {/* 3. Modales del Plan Sanitario y Vacunación Oficial FEDEGAN-ICA */}
-      <VaccinationRecordModal
-        isOpen={isVaccinationModalOpen}
-        onClose={() => setIsVaccinationModalOpen(false)}
-        cattle={cattle}
-        onSaveVaccination={handleSaveVaccination}
-        zIndex="z-[60]"
-      />
+      {isVaccinationModalOpen && (
+        <VaccinationRecordModal
+          isOpen={isVaccinationModalOpen}
+          onClose={() => setIsVaccinationModalOpen(false)}
+          cattle={cattle}
+          onSaveVaccination={handleSaveVaccination}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <VaccinationCensusModal
-        isOpen={isCensusModalOpen}
-        onClose={() => setIsCensusModalOpen(false)}
-        cattle={cattle}
-        vaccinations={vaccinations}
-        farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
-        farmerName={currentUser?.name || 'Ganadero'}
-        onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
-        zIndex="z-[60]"
-      />
+      {isCensusModalOpen && (
+        <VaccinationCensusModal
+          isOpen={isCensusModalOpen}
+          onClose={() => setIsCensusModalOpen(false)}
+          cattle={cattle}
+          vaccinations={vaccinations}
+          farmName={currentUser?.farmName || 'Mi Finca Ganadera'}
+          farmerName={currentUser?.name || 'Ganadero'}
+          onOpenVaccinationModal={() => setIsVaccinationModalOpen(true)}
+          zIndex="z-[60]"
+        />
+      )}
 
       {/* 4. Modal de Arqueo y Checklist de Inventario en Campo */}
-      <InventoryChecklistModal
-        isOpen={isChecklistOpen}
-        onClose={() => setIsChecklistOpen(false)}
-        cattle={cattle}
-        weighings={weighings}
-        currentUser={currentUser}
-        onSaveSanitaryTreatment={handleSaveSanitaryTreatment}
-        onDataChanged={() => {
-          markPendingSync(userId, 'audit_' + Date.now());
-          cloudPushData(userId);
-        }}
-        zIndex="z-[60]"
-      />
+      {isChecklistOpen && (
+        <InventoryChecklistModal
+          isOpen={isChecklistOpen}
+          onClose={() => setIsChecklistOpen(false)}
+          cattle={cattle}
+          weighings={weighings}
+          currentUser={currentUser}
+          onSaveSanitaryTreatment={handleSaveSanitaryTreatment}
+          onDataChanged={() => {
+            markPendingSync(userId, 'audit_' + Date.now());
+            cloudPushData(userId);
+          }}
+          zIndex="z-[60]"
+        />
+      )}
 
       {/* 5. Modal de Cambio Obligatorio de Contraseña tras Restablecimiento */}
-      <ForcePasswordChangeModal
-        isOpen={Boolean(currentUser?.mustChangePassword)}
-      />
+      {Boolean(currentUser?.mustChangePassword) && (
+        <ForcePasswordChangeModal
+          isOpen={Boolean(currentUser?.mustChangePassword)}
+        />
+      )}
 
       {/* 6. Modales de Contabilidad: Gastos e Ingresos */}
-      <ExpenseModal
-        isOpen={isExpenseModalOpen}
-        onClose={() => {
-          setIsExpenseModalOpen(false);
-          setEditingExpense(null);
-        }}
-        onSave={handleSaveFarmExpense}
-        expense={editingExpense}
-        zIndex="z-[60]"
-      />
+      {isExpenseModalOpen && (
+        <ExpenseModal
+          isOpen={isExpenseModalOpen}
+          onClose={() => {
+            setIsExpenseModalOpen(false);
+            setEditingExpense(null);
+          }}
+          onSave={handleSaveFarmExpense}
+          expense={editingExpense}
+          zIndex="z-[60]"
+        />
+      )}
 
-      <IncomeModal
-        isOpen={isIncomeModalOpen}
-        onClose={() => {
-          setIsIncomeModalOpen(false);
-          setEditingIncome(null);
-        }}
-        onSave={handleSaveFarmIncome}
-        income={editingIncome}
-        zIndex="z-[60]"
-      />
+      {isIncomeModalOpen && (
+        <IncomeModal
+          isOpen={isIncomeModalOpen}
+          onClose={() => {
+            setIsIncomeModalOpen(false);
+            setEditingIncome(null);
+          }}
+          onSave={handleSaveFarmIncome}
+          income={editingIncome}
+          zIndex="z-[60]"
+        />
+      )}
 
       {/* 7. Modal del Pluviómetro Digital & Registro de Lluvias */}
-      <RainfallModal
-        isOpen={isRainfallModalOpen}
-        onClose={() => {
-          setIsRainfallModalOpen(false);
-          setEditingRainfall(null);
-        }}
-        onSave={handleSaveRainfall}
-        editingRecord={editingRainfall}
-        showToast={showToast}
-      />
+      {isRainfallModalOpen && (
+        <RainfallModal
+          isOpen={isRainfallModalOpen}
+          onClose={() => {
+            setIsRainfallModalOpen(false);
+            setEditingRainfall(null);
+          }}
+          onSave={handleSaveRainfall}
+          editingRecord={editingRainfall}
+          showToast={showToast}
+        />
+      )}
 
+      </Suspense>
     </div>
   );
 }
