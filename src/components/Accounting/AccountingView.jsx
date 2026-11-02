@@ -75,6 +75,7 @@ export function AccountingView({
   milkSettlements = [],
   onOpenAddExpense, 
   onOpenEditExpense, 
+  onSaveExpense,
   onDeleteExpense, 
   onOpenAddIncome, 
   onOpenEditIncome, 
@@ -82,6 +83,7 @@ export function AccountingView({
   onSelectAnimal
 }) {
   const { currentUser, isWorker } = useAuth();
+  const tabsSectionRef = React.useRef(null);
   
   // Unificación de Ingresos: farmIncomes + liquidaciones de leche registradas
   const effectiveIncomes = useMemo(() => {
@@ -145,6 +147,7 @@ export function AccountingView({
   const [expenseSearch, setExpenseSearch] = useState('');
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('all');
   const [expenseTypeFilter, setExpenseTypeFilter] = useState('all');
+  const [recurringFilter, setRecurringFilter] = useState('all'); // 'all' | 'active' | 'paused' | 'pending_month'
   
   const [incomeSearch, setIncomeSearch] = useState('');
   const [incomeCategoryFilter, setIncomeCategoryFilter] = useState('all');
@@ -470,6 +473,139 @@ export function AccountingView({
       return true;
     }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }, [periodIncomes, incomeCategoryFilter, incomeSearch]);
+
+  // ==========================================
+  // CATÁLOGO Y CONTROL DE GASTOS RECURRENTES MENSUALES
+  // ==========================================
+  const currentMonthPrefix = `${currentYear}-${currentMonth}`;
+  const currentMonthLabel = `${MONTH_NAMES[parseInt(currentMonth, 10) - 1] || 'Mes'} ${currentYear}`;
+
+  const recurringCatalog = useMemo(() => {
+    const recurringRaw = (farmExpenses || []).filter(e => e && e.isRecurring);
+    const groupsMap = new Map();
+
+    recurringRaw.forEach(exp => {
+      const normConcept = (exp.concept || 'sin_concepto').trim().toLowerCase();
+      const key = `${exp.category || 'otros'}::${normConcept}`;
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, []);
+      }
+      groupsMap.get(key).push(exp);
+    });
+
+    const items = [];
+    for (const [key, records] of groupsMap.entries()) {
+      const sorted = [...records].sort((a, b) => {
+        const dA = getSafeDateString(a.date, a.createdAt);
+        const dB = getSafeDateString(b.date, b.createdAt);
+        if (dB !== dA) return dB.localeCompare(dA);
+        return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+      });
+      const latestRecord = sorted[0];
+      const isActive = latestRecord.recurringActive !== false;
+      const paidThisMonthRecord = sorted.find(r => {
+        const d = getSafeDateString(r.date, r.createdAt);
+        return d.startsWith(currentMonthPrefix);
+      }) || null;
+
+      items.push({
+        key,
+        latestRecord,
+        allRecords: sorted,
+        isActive,
+        paidThisMonthRecord,
+        amount: parseFloat(latestRecord.amount) || 0,
+        concept: latestRecord.concept || 'Gasto Recurrente',
+        category: latestRecord.category || 'otros',
+        type: latestRecord.type || 'Fijo',
+        paymentMethod: latestRecord.paymentMethod || 'Efectivo',
+        lastDate: getSafeDateString(latestRecord.date, latestRecord.createdAt),
+      });
+    }
+
+    items.sort((a, b) => {
+      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+      return b.amount - a.amount;
+    });
+
+    const activeItems = items.filter(i => i.isActive);
+    const pausedItems = items.filter(i => !i.isActive);
+    const totalActiveMonthlyAmount = activeItems.reduce((s, i) => s + i.amount, 0);
+    const paidThisMonthCount = activeItems.filter(i => !!i.paidThisMonthRecord).length;
+    const pendingThisMonthCount = activeItems.filter(i => !i.paidThisMonthRecord).length;
+
+    return {
+      items,
+      activeItems,
+      pausedItems,
+      totalActiveMonthlyAmount,
+      paidThisMonthCount,
+      pendingThisMonthCount,
+    };
+  }, [farmExpenses, currentMonthPrefix]);
+
+  const filteredRecurringItems = useMemo(() => {
+    return recurringCatalog.items.filter(item => {
+      if (recurringFilter === 'active') return item.isActive;
+      if (recurringFilter === 'paused') return !item.isActive;
+      if (recurringFilter === 'pending_month') return item.isActive && !item.paidThisMonthRecord;
+      return true;
+    });
+  }, [recurringCatalog.items, recurringFilter]);
+
+  const handleToggleRecurringGroupActive = async (group) => {
+    if (!onSaveExpense || !group) return;
+    const nextActive = !group.isActive;
+    for (const rec of group.allRecords) {
+      await onSaveExpense({
+        ...rec,
+        isRecurring: true,
+        recurringActive: nextActive,
+      });
+    }
+  };
+
+  const handleRemoveFromRecurringGroup = async (group) => {
+    if (!onSaveExpense || !group) return;
+    if (!window.confirm(`¿Deseas quitar "${group.concept}" de la lista de gastos recurrentes mensuales?\n\n(Los pagos ya registrados en tu historial de gastos se conservarán intactos, pero dejará de aparecer como gasto mensual recurrente).`)) {
+      return;
+    }
+    for (const rec of group.allRecords) {
+      await onSaveExpense({
+        ...rec,
+        isRecurring: false,
+        recurringActive: false,
+      });
+    }
+  };
+
+  const handleRegisterRecurringThisMonth = async (group) => {
+    if (!onSaveExpense || !group) return;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    await onSaveExpense({
+      date: todayStr,
+      type: group.latestRecord.type || 'Fijo',
+      category: group.latestRecord.category || 'nomina',
+      concept: group.latestRecord.concept,
+      amount: parseFloat(group.latestRecord.amount) || 0,
+      paymentMethod: group.latestRecord.paymentMethod || 'Efectivo',
+      isRecurring: true,
+      recurringActive: true,
+      recurrenceFrequency: 'Mensual',
+      notes: group.latestRecord.notes || `Causación mensual recurrente (${currentMonthLabel})`,
+    });
+  };
+
+  const handleToggleSingleRowRecurring = async (exp) => {
+    if (!onSaveExpense || !exp) return;
+    const nextRecurring = !exp.isRecurring;
+    await onSaveExpense({
+      ...exp,
+      isRecurring: nextRecurring,
+      recurringActive: nextRecurring,
+      recurrenceFrequency: 'Mensual',
+    });
+  };
 
   // ==========================================
   // ==========================================
@@ -923,6 +1059,68 @@ export function AccountingView({
       </div>
 
       {/* ========================================================================= */}
+      {/* 3.5 BARRA RESUMEN DE GASTOS RECURRENTES MENSUALES                         */}
+      {/* ========================================================================= */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-600/20 shrink-0">
+            <Repeat className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                Compromiso de Gastos Recurrentes Mensuales
+              </h3>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                {recurringCatalog.activeItems.length} {recurringCatalog.activeItems.length === 1 ? 'activo' : 'activos'}
+              </span>
+              {recurringCatalog.pausedItems.length > 0 && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                  {recurringCatalog.pausedItems.length} en pausa
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {recurringCatalog.items.length > 0 ? (
+                <>
+                  Total mensual activo: <strong className="text-indigo-600 dark:text-indigo-400">{formatCurrency(recurringCatalog.totalActiveMonthlyAmount)} / mes</strong>
+                  {' • '}
+                  <span>{recurringCatalog.paidThisMonthCount} causados en {currentMonthLabel}</span>
+                  {recurringCatalog.pendingThisMonthCount > 0 && (
+                    <span className="text-amber-600 dark:text-amber-400 font-bold"> • {recurringCatalog.pendingThisMonthCount} pendientes este mes</span>
+                  )}
+                </>
+              ) : (
+                'Aún no has marcado gastos fijos mensuales (sueldo, luz, arriendo). Adminístralos o actívalos aquí.'
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => onOpenAddExpense({ isRecurring: true, recurringActive: true, type: 'Fijo', category: 'nomina' })}
+            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <PlusCircle className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span>+ Nuevo Recurrente</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('recurring');
+              tabsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition cursor-pointer"
+          >
+            <Repeat className="w-3.5 h-3.5" />
+            <span>Ver / Activar o Desactivar ({recurringCatalog.items.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
       {/* 4. SECCIÓN DE GRÁFICOS (RECHARTS)                                         */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1089,11 +1287,11 @@ export function AccountingView({
       {/* ========================================================================= */}
       {/* 5. SUB-PESTAÑAS DE TABLAS DETALLADAS (LIBRO DE GASTOS / INGRESOS)         */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div ref={tabsSectionRef} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         
         {/* Cabecera de Pestañas */}
         <div className="border-b border-slate-200 dark:border-slate-800 px-4 pt-3 flex items-center justify-between flex-wrap gap-2 bg-slate-50/50 dark:bg-slate-950/20">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('summary')}
               className={`pb-3 px-3 text-xs font-black border-b-2 transition cursor-pointer ${
@@ -1115,6 +1313,20 @@ export function AccountingView({
               <span>📤 Libro de Gastos</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold">
                 {periodExpenses.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('recurring')}
+              className={`pb-3 px-3 text-xs font-black border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'recurring'
+                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Repeat className="w-3.5 h-3.5" />
+              <span>🔄 Gastos Recurrentes Mensuales</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">
+                {recurringCatalog.items.length}
               </span>
             </button>
             <button
@@ -1309,14 +1521,30 @@ export function AccountingView({
                             {exp.notes && <div className="text-[10px] text-slate-400 truncate max-w-xs">{exp.notes}</div>}
                           </td>
                           <td className="p-3 whitespace-nowrap">
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                              exp.type === 'Fijo' 
-                                ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}>
-                              {exp.isRecurring && <Repeat className="w-2.5 h-2.5 text-indigo-500" />}
-                              <span>{exp.type || 'Variable'}</span>
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                exp.type === 'Fijo' 
+                                  ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                              }`}>
+                                <span>{exp.type || 'Variable'}</span>
+                              </span>
+                              {exp.isRecurring && (
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveTab('recurring')}
+                                  title="Ver en el panel de Gastos Recurrentes Mensuales"
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border cursor-pointer transition ${
+                                    exp.recurringActive !== false
+                                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                                  }`}
+                                >
+                                  <Repeat className="w-2.5 h-2.5" />
+                                  <span>{exp.recurringActive !== false ? 'Mensual Activo' : 'Mensual Pausado'}</span>
+                                </button>
+                              )}
+                            </div>
                           </td>
                           <td className="p-3 whitespace-nowrap text-slate-500 text-[11px]">
                             {exp.paymentMethod || 'Efectivo'}
@@ -1326,6 +1554,17 @@ export function AccountingView({
                           </td>
                           <td className="p-3 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => handleToggleSingleRowRecurring(exp)}
+                                title={exp.isRecurring ? 'Quitar de gastos recurrentes mensuales' : 'Convertir en gasto recurrente mensual'}
+                                className={`p-1 rounded-lg transition cursor-pointer ${
+                                  exp.isRecurring
+                                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100'
+                                    : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                <Repeat className="w-3.5 h-3.5" />
+                              </button>
                               <button
                                 onClick={() => onOpenEditExpense(exp)}
                                 title="Editar Gasto"
@@ -1359,6 +1598,283 @@ export function AccountingView({
                 </tbody>
               </table>
             </div>
+
+          </div>
+        )}
+
+        {/* PESTAÑA 2.5: ESPACIO DE GASTOS RECURRENTES MENSUALES */}
+        {activeTab === 'recurring' && (
+          <div className="p-4 sm:p-5 space-y-5">
+            
+            {/* Tarjetas de Resumen del Compromiso Recurrente */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80">
+                <div className="text-[11px] font-black uppercase text-indigo-700 dark:text-indigo-300">
+                  Compromiso Mensual Activo
+                </div>
+                <div className="text-xl font-black text-indigo-900 dark:text-white mt-1">
+                  {formatCurrency(recurringCatalog.totalActiveMonthlyAmount)} <span className="text-xs font-bold text-indigo-500">/ mes</span>
+                </div>
+                <div className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">
+                  Suma de {recurringCatalog.activeItems.length} {recurringCatalog.activeItems.length === 1 ? 'gasto recurrente activo' : 'gastos recurrentes activos'}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80">
+                <div className="text-[11px] font-black uppercase text-emerald-700 dark:text-emerald-300">
+                  Estado en {currentMonthLabel}
+                </div>
+                <div className="text-xl font-black text-emerald-900 dark:text-white mt-1">
+                  {recurringCatalog.paidThisMonthCount} de {recurringCatalog.activeItems.length} <span className="text-xs font-bold text-emerald-600">causados</span>
+                </div>
+                <div className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 mt-0.5">
+                  {recurringCatalog.pendingThisMonthCount > 0
+                    ? `Faltan ${recurringCatalog.pendingThisMonthCount} por causar en este mes`
+                    : 'Todos los gastos activos están al día este mes'}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80">
+                <div className="text-[11px] font-black uppercase text-amber-700 dark:text-amber-300">
+                  Pausados / Desactivados
+                </div>
+                <div className="text-xl font-black text-amber-900 dark:text-white mt-1">
+                  {recurringCatalog.pausedItems.length} <span className="text-xs font-bold text-amber-600">en pausa</span>
+                </div>
+                <div className="text-[10px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                  No suman al compromiso mensual hasta que los reactives
+                </div>
+              </div>
+            </div>
+
+            {/* Controles y Filtros de Gastos Recurrentes */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setRecurringFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black border transition cursor-pointer ${
+                    recurringFilter === 'all'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  Todos ({recurringCatalog.items.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecurringFilter('active')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black border transition cursor-pointer ${
+                    recurringFilter === 'active'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  🟢 Activos ({recurringCatalog.activeItems.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecurringFilter('pending_month')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black border transition cursor-pointer ${
+                    recurringFilter === 'pending_month'
+                      ? 'bg-rose-600 text-white border-rose-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  ⏳ Pendientes en {currentMonthLabel} ({recurringCatalog.pendingThisMonthCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecurringFilter('paused')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black border transition cursor-pointer ${
+                    recurringFilter === 'paused'
+                      ? 'bg-amber-600 text-white border-amber-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  ⏸️ Pausados ({recurringCatalog.pausedItems.length})
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onOpenAddExpense({ isRecurring: true, recurringActive: true, type: 'Fijo', category: 'nomina' })}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-600/20 transition cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>+ Agregar Gasto Recurrente Mensual</span>
+              </button>
+            </div>
+
+            {/* Lista de Gastos Recurrentes */}
+            {filteredRecurringItems.length > 0 ? (
+              <div className="space-y-3">
+                {filteredRecurringItems.map(group => {
+                  const catObj = EXPENSE_CATEGORIES.find(c => c.id === group.category);
+                  return (
+                    <div
+                      key={group.key}
+                      className={`p-4 rounded-2xl border transition flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
+                        group.isActive
+                          ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xs'
+                          : 'bg-slate-50/70 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-800/60 opacity-80'
+                      }`}
+                    >
+                      {/* Información del Gasto Recurrente */}
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 border ${
+                          group.isActive
+                            ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800'
+                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                        }`}>
+                          {catObj ? catObj.icon : '🔄'}
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-black text-slate-900 dark:text-white">
+                              {group.concept}
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                              {catObj ? catObj.label : group.category}
+                            </span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                              group.isActive
+                                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                            }`}>
+                              {group.isActive ? '🟢 Recurrente Activo' : '⏸️ Recurrente Pausado'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 flex-wrap text-[11px] text-slate-500 dark:text-slate-400">
+                            <span>Último registro: <strong>{formatDate(group.lastDate)}</strong></span>
+                            <span>•</span>
+                            <span>Método: <strong>{group.paymentMethod}</strong></span>
+                            <span>•</span>
+                            <span>Historial: <strong>{group.allRecords.length} {group.allRecords.length === 1 ? 'pago' : 'pagos'}</strong></span>
+                          </div>
+
+                          {/* Estado en el mes actual */}
+                          <div className="pt-0.5">
+                            {group.paidThisMonthRecord ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                <span>Ya registrado en {currentMonthLabel} ({formatDate(group.paidThisMonthRecord.date)})</span>
+                              </span>
+                            ) : group.isActive ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                <span>Pendiente de registrar en {currentMonthLabel}</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 italic">
+                                Recurrencia pausada — no se cobrará este mes
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Monto y Controles de Activar / Desactivar / Quitar */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between lg:justify-end gap-3 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+                        <div className="text-left lg:text-right mr-2">
+                          <div className="text-base font-black text-rose-600 dark:text-rose-400">
+                            {formatCurrency(group.amount)}
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400">
+                            Costo Mensual
+                          </div>
+                        </div>
+
+                        {/* Botón rápido para causar en el mes actual si está pendiente */}
+                        {group.isActive && !group.paidThisMonthRecord && (
+                          <button
+                            type="button"
+                            onClick={() => handleRegisterRecurringThisMonth(group)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] flex items-center gap-1 shadow-xs transition cursor-pointer"
+                            title={`Registrar el pago de ${group.concept} en ${currentMonthLabel}`}
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            <span>Causar en {MONTH_NAMES[parseInt(currentMonth, 10) - 1]}</span>
+                          </button>
+                        )}
+
+                        {/* Switch Activar / Desactivar Recurrencia */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRecurringGroupActive(group)}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-black border flex items-center gap-2 transition cursor-pointer ${
+                            group.isActive
+                              ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-800'
+                              : 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800'
+                          }`}
+                          title={group.isActive ? 'Clic para pausar/desactivar este gasto mensual' : 'Clic para reactivar este gasto mensual'}
+                        >
+                          <div className={`w-7 h-4 rounded-full relative transition ${group.isActive ? 'bg-emerald-600' : 'bg-slate-400'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${group.isActive ? 'left-3.5' : 'left-0.5'}`} />
+                          </div>
+                          <span>{group.isActive ? 'Activo (Pausar)' : 'Pausado (Activar)'}</span>
+                        </button>
+
+                        {/* Editar, Quitar de Recurrentes y Eliminar */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onOpenEditExpense(group.latestRecord)}
+                            title="Editar monto o datos del gasto recurrente"
+                            className="p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFromRecurringGroup(group)}
+                            title="Quitar de gastos recurrentes (conservar pagos pasados como gasto único)"
+                            className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-amber-700 dark:hover:text-amber-300 bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/50 transition cursor-pointer"
+                          >
+                            Quitar recurrencia
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`¿Deseas eliminar por completo el gasto "${group.concept}" (${formatCurrency(group.amount)}) de la contabilidad?`)) {
+                                onDeleteExpense(group.latestRecord.id);
+                              }
+                            }}
+                            title="Eliminar gasto por completo"
+                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+                  <Repeat className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                    No hay gastos recurrentes en esta vista
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Registra aquí tus costos fijos de cada mes (como sueldo de mayordomo, energía eléctrica, arriendo de potreros o internet) para controlarlos, activarlos, pausarlos o quitarlos cuando quieras.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onOpenAddExpense({ isRecurring: true, recurringActive: true, type: 'Fijo', category: 'nomina' })}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs inline-flex items-center gap-1.5 shadow-sm cursor-pointer transition"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>+ Crear Primer Gasto Recurrente Mensual</span>
+                </button>
+              </div>
+            )}
 
           </div>
         )}

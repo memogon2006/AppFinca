@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.45";
+export const CURRENT_APP_VERSION = "2.24.46";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.46",
+    date: "02/11/2026",
+    title: "🔄 Espacio de Gastos Recurrentes Mensuales en Contabilidad (Activar, Pausar y Quitar)",
+    highlights: [
+      "Nueva Pestaña y Panel de Gastos Recurrentes Mensuales: En el módulo Financiero / Contabilidad ahora cuentas con un espacio exclusivo ('🔄 Gastos Recurrentes Mensuales') para ver todos tus costos fijos mensuales (nómina, energía, arriendos) y el compromiso total por mes.",
+      "Interruptor Directo (Activar / Pausar Recurrencia): Activa o pausa cualquier gasto recurrente con un solo clic sin perder el historial de pagos de meses anteriores.",
+      "Causación en 1 Clic y Opción 'Quitar Recurrencia': Identifica qué gastos recurrentes están pendientes en el mes actual para registrarlos con un clic, o quítalos de la lista de recurrentes cuando finalicen."
+    ]
+  },
   {
     version: "2.24.45",
     date: "01/11/2026",

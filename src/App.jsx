@@ -2999,14 +2999,19 @@ export default function App() {
             farmExpenses={farmExpenses}
             farmIncomes={farmIncomes}
             milkSettlements={milkSettlements}
-            onOpenAddExpense={() => {
-              setEditingExpense(null);
+            onOpenAddExpense={(preset = null) => {
+              if (preset && typeof preset === 'object' && !preset.nativeEvent) {
+                setEditingExpense({ ...preset, id: undefined });
+              } else {
+                setEditingExpense(null);
+              }
               setIsExpenseModalOpen(true);
             }}
             onOpenEditExpense={(exp) => {
               setEditingExpense(exp);
               setIsExpenseModalOpen(true);
             }}
+            onSaveExpense={handleSaveFarmExpense}
             onDeleteExpense={handleDeleteFarmExpense}
             onOpenAddIncome={() => {
               setEditingIncome(null);

@@ -36,6 +36,7 @@ export function ExpenseModal({
   zIndex = "z-[60]" 
 }) {
   useScrollLock(isOpen);
+  const isEditingExisting = Boolean(expense && expense.id);
   const [formData, setFormData] = useState({
     date: getLocalDateString(),
     type: 'Variable',
@@ -44,6 +45,7 @@ export function ExpenseModal({
     amount: '',
     paymentMethod: 'Efectivo',
     isRecurring: false,
+    recurringActive: true,
     recurrenceFrequency: 'Mensual',
     notes: '',
   });
@@ -53,7 +55,7 @@ export function ExpenseModal({
   const isDraftInitializedRef = React.useRef(false);
 
   useEffect(() => {
-    if (expense) {
+    if (expense && expense.id) {
       setFormData({
         id: expense.id,
         date: expense.date || getLocalDateString(),
@@ -63,24 +65,26 @@ export function ExpenseModal({
         amount: expense.amount !== undefined ? String(expense.amount) : '',
         paymentMethod: expense.paymentMethod || 'Efectivo',
         isRecurring: !!expense.isRecurring,
+        recurringActive: expense.recurringActive !== false,
         recurrenceFrequency: expense.recurrenceFrequency || 'Mensual',
         notes: expense.notes || '',
       });
       setIsDraftRestored(false);
     } else {
       const defaultState = {
-        date: getLocalDateString(),
-        type: 'Variable',
-        category: 'alimentacion',
-        concept: '',
-        amount: '',
-        paymentMethod: 'Efectivo',
-        isRecurring: false,
-        recurrenceFrequency: 'Mensual',
-        notes: '',
+        date: expense?.date || getLocalDateString(),
+        type: expense?.type || (expense?.isRecurring ? 'Fijo' : 'Variable'),
+        category: expense?.category || (expense?.isRecurring ? 'nomina' : 'alimentacion'),
+        concept: expense?.concept || '',
+        amount: expense?.amount !== undefined ? String(expense.amount) : '',
+        paymentMethod: expense?.paymentMethod || 'Efectivo',
+        isRecurring: !!expense?.isRecurring,
+        recurringActive: expense?.recurringActive !== false,
+        recurrenceFrequency: expense?.recurrenceFrequency || 'Mensual',
+        notes: expense?.notes || '',
       };
       
-      const draft = loadDraft('expense');
+      const draft = !expense?.isRecurring ? loadDraft('expense') : null;
       if (draft && (draft.concept || draft.amount || draft.notes)) {
         setFormData(draft);
         setIsDraftRestored(true);
@@ -97,11 +101,11 @@ export function ExpenseModal({
 
   // Auto-guardar borrador de gasto
   useEffect(() => {
-    if (!isOpen || expense || !isDraftInitializedRef.current) return;
+    if (!isOpen || isEditingExisting || !isDraftInitializedRef.current) return;
     if (formData.concept || formData.amount || formData.notes) {
       saveDraft('expense', formData);
     }
-  }, [isOpen, expense, formData]);
+  }, [isOpen, isEditingExisting, formData]);
 
   const handleDiscardDraft = () => {
     clearDraft('expense');
@@ -155,7 +159,7 @@ export function ExpenseModal({
       updatedAt: new Date().toISOString()
     };
 
-    if (!expense) {
+    if (!isEditingExisting) {
       clearDraft('expense');
       setIsDraftRestored(false);
     }
@@ -193,7 +197,11 @@ export function ExpenseModal({
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">
-                {expense ? 'Editar Gasto / Egreso' : 'Registrar Nuevo Gasto de Finca'}
+                {isEditingExisting
+                  ? 'Editar Gasto / Egreso'
+                  : formData.isRecurring
+                    ? 'Registrar Gasto Recurrente Mensual'
+                    : 'Registrar Nuevo Gasto de Finca'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Lleva la contabilidad exacta de costos operativos y de campo
@@ -361,25 +369,63 @@ export function ExpenseModal({
           </div>
 
           {/* Gasto Recurrente Toggle */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
-                <Repeat className="w-4 h-4" />
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                  <Repeat className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-black text-slate-800 dark:text-slate-200">¿Es un gasto recurrente mensual?</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Marca si este costo se repite cada mes (ej. sueldo, luz, arriendo)</div>
+                </div>
               </div>
-              <div>
-                <div className="text-xs font-black text-slate-800 dark:text-slate-200">¿Es un gasto recurrente mensual?</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400">Marca si este costo se repite cada mes (ej. sueldo, luz)</div>
-              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isRecurring}
+                  onChange={e => setFormData({
+                    ...formData,
+                    isRecurring: e.target.checked,
+                    recurringActive: e.target.checked ? true : formData.recurringActive
+                  })}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.isRecurring}
-                onChange={e => setFormData({ ...formData, isRecurring: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-rose-500"></div>
-            </label>
+
+            {formData.isRecurring && (
+              <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                  Estado en el listado mensual:
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, recurringActive: true })}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black border transition cursor-pointer ${
+                      formData.recurringActive !== false
+                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500'
+                    }`}
+                  >
+                    🟢 Activo cada mes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, recurringActive: false })}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black border transition cursor-pointer ${
+                      formData.recurringActive === false
+                        ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500'
+                    }`}
+                  >
+                    ⏸️ Pausado
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Notas Adicionales */}
