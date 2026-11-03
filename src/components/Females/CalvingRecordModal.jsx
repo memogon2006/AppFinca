@@ -25,7 +25,7 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { getLocalDateString, formatDate, calculateReproduction, BOVINE_GESTATION_DAYS } from '../../services/calculations';
+import { getLocalDateString, formatDate, getDaysDifference, calculateReproduction, BOVINE_GESTATION_DAYS } from '../../services/calculations';
 import { 
   analyzeFarmConsecutives, 
   evaluateCandidateConsecutive,
@@ -499,6 +499,29 @@ export function CalvingRecordModal({
                 onChange={(e) => setCalvingDate(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-emerald-500 min-h-[42px]"
               />
+              {calvingDate && (
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    📅 {formatDate(calvingDate)}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {getDaysDifference(calvingDate, new Date()) === 0 
+                      ? 'Nacimiento Hoy' 
+                      : getDaysDifference(calvingDate, new Date()) > 0 
+                        ? `Hace ${getDaysDifference(calvingDate, new Date())} días` 
+                        : `En ${Math.abs(getDaysDifference(calvingDate, new Date()))} días`}
+                  </span>
+                  {calculatedWeaningDate && (
+                    <>
+                      <span>•</span>
+                      <span className="text-blue-600 dark:text-blue-400 font-bold">
+                        Destete: {formatDate(calculatedWeaningDate)}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
               {errors.calvingDate && <p className="text-rose-500 text-[11px] font-bold mt-1">{errors.calvingDate}</p>}
             </div>
 

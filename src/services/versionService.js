@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.53";
+export const CURRENT_APP_VERSION = "2.24.54";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.54",
+    date: "03/11/2026",
+    title: "🛡️ Blindaje Zootécnico Integral de Partos y Destetes",
+    highlights: [
+      "Confirmación visual inmediata al registrar nacimientos: muestra la fecha en español, días de vida transcurridos y fecha proyectada de destete a los 7 meses.",
+      "Guardia biológica permanente: previene que crías lactantes con menos de 120 días muestren falsas alarmas de destete cumplido.",
+      "Trazabilidad completa con opciones de chulear (✓), cancelar (✕) y reactivar alertas en el Dashboard."
+    ]
+  },
   {
     version: "2.24.53",
     date: "03/11/2026",
