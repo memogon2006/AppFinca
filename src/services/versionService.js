@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.52";
+export const CURRENT_APP_VERSION = "2.24.53";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.53",
+    date: "03/11/2026",
+    title: "🍼 Fecha Exacta de Nacimiento Cría Madre #36 (18 de Mayo de 2026)",
+    highlights: [
+      "Fecha de nacimiento de la cría de la vaca #36 corregida exactamente al 18 de Mayo de 2026 (5.5 meses de vida).",
+      "Destete programado a los 7 meses oficiales (14 de Diciembre de 2026), eliminando la falsa alarma de vencimiento de septiembre.",
+      "Actualización directa en la nube de Firebase y base de datos local."
+    ]
+  },
   {
     version: "2.24.52",
     date: "03/11/2026",

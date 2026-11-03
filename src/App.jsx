@@ -431,7 +431,7 @@ export default function App() {
     }
   }, [cattle]);
 
-  // Auto-corrección biológica de fechas de destete y nacimientos discordantes en crías recién nacidas
+  // Sincronización de fechas de destete lógicas en crías
   useEffect(() => {
     if (!cattle || cattle.length === 0 || !userId) return;
     const now = new Date();
@@ -439,14 +439,8 @@ export default function App() {
       if ((c.category === 'Ternero' || c.category === 'Ternera' || c.entryType === 'Nacimiento') && !c.isWeaned) {
         let needsUpdate = false;
         const updates = {};
-        
-        // 1. Si entryDate es de octubre y birthDate quedó en febrero/marzo por error de mes al registrar el parto
-        if (c.entryDate && c.birthDate && c.entryDate !== c.birthDate && c.entryType === 'Nacimiento') {
-          updates.birthDate = c.entryDate;
-          needsUpdate = true;
-        }
 
-        const effectiveBirth = updates.birthDate || c.birthDate || c.entryDate;
+        const effectiveBirth = c.birthDate || c.entryDate;
         if (effectiveBirth) {
           const ageDays = getDaysDifference(effectiveBirth, now);
           // Si el ternero tiene menos de 120 días (~4 meses) pero su destete quedó programado en el pasado
@@ -455,7 +449,7 @@ export default function App() {
             if (p.length === 3) {
               const wDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
               if (wDate < now) {
-                // Recalcular destete a 210 días (7 meses ICA) desde la fecha de nacimiento real
+                // Recalcular destete a 210 días (7 meses ICA) desde la fecha de nacimiento
                 const realWeaning = new Date(effectiveBirth);
                 realWeaning.setDate(realWeaning.getDate() + 210);
                 const y = realWeaning.getFullYear();
