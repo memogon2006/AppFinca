@@ -732,6 +732,8 @@ export function DashboardView({
             cattle={activeCattle}
             weighings={weighings}
             vaccinations={vaccinations}
+            userId={userId}
+            currentUser={currentUser}
             onSelectAnimal={onSelectAnimal}
             onOpenCalving={onOpenCalving}
             onOpenBranding={onOpenBranding}

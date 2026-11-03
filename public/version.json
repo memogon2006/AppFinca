@@ -1,5 +1,5 @@
 {
-  "version": "2.24.50",
-  "buildTime": 1793707000000,
-  "description": "🔒 Aislamiento estricto de datos por cuenta: cada finca solo ve y sincroniza su propio ganado"
+  "version": "2.24.51",
+  "buildTime": 1793739500000,
+  "description": "📋 Trazabilidad & Auditoría de Alertas: control para chulear, cancelar, historial completo y reactivación de alertas por finca"
 }

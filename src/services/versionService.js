@@ -1,10 +1,21 @@
-export const CURRENT_APP_VERSION = "2.24.50";
+export const CURRENT_APP_VERSION = "2.24.51";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.51",
+    date: "03/11/2026",
+    title: "📋 Trazabilidad & Auditoría de Alertas Zootécnicas",
+    highlights: [
+      "Chulear (✓) y Cancelar (✕) alertas directamente desde las tarjetas del Dashboard y mantener la pantalla despejada.",
+      "Panel de Trazabilidad & Auditoría de Alertas: pestañas para revisar alertas pendientes, atendidas/chuleadas, canceladas y bitácora cronológica completa.",
+      "Registro con fecha, hora, chapa del bovino, nombre del operario responsable y notas u observaciones.",
+      "Opción de 'Deshacer / Reactivar' para regresar alertas atendidas o canceladas al tablero principal si se requiere."
+    ]
+  },
   {
     version: "2.24.50",
     date: "03/11/2026",
