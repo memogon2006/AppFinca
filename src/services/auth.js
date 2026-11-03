@@ -15,7 +15,8 @@ import {
   clearPendingSync,
   clearPendingDeletes,
   resetInitialPullState,
-  toSafeEmailKey
+  toSafeEmailKey,
+  purgeForeignLocalData
 } from './cloudSync';
 import { sendWelcomeEmail, sendPasswordResetEmail } from './emailService';
 import { setActiveModules, getActiveModules, DEFAULT_MODULES, FARM_PRESETS, getDefaultWorkerModules } from './moduleService';
@@ -290,13 +291,8 @@ export async function registerUser({ name, farmName, email, password, farmPreset
     localStorage.setItem(`ganado_active_modules_${userId}`, JSON.stringify(initialModules));
   } catch (e) {}
 
-  // Si existen animales sin userId, asociarlos
-  const legacyCattle = await db.cattle.filter(c => !c.userId).toArray();
-  if (legacyCattle.length > 0) {
-    for (const c of legacyCattle) {
-      await db.cattle.update(c.id, { userId });
-    }
-  }
+  // Aislamiento: una cuenta nueva SIEMPRE inicia con inventario vacío (no se le asignan animales huérfanos del dispositivo)
+  await purgeForeignLocalData(userId).catch(() => null);
 
   const legacyWeights = await db.weighings.filter(w => !w.userId).toArray();
   if (legacyWeights.length > 0) {
@@ -674,6 +670,10 @@ export async function loginUser({ email, password }) {
   // Limpiamos cualquier cola pendiente vieja que tuviera este celular/computador y descargamos
   // de inmediato el último respaldo general de la nube antes de abrir el tablero.
   const dataOwnerId = user.role === 'worker' ? (user.ownerId || user.id) : user.id;
+  if (dataOwnerId) {
+    // Aislamiento: borrar del dispositivo cualquier dato de otras cuentas antes de cargar esta finca
+    await purgeForeignLocalData(dataOwnerId).catch(() => null);
+  }
   if (dataOwnerId && navigator.onLine) {
     resetInitialPullState();
     clearPendingSync(dataOwnerId);

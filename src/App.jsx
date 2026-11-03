@@ -19,7 +19,7 @@ import {
   deleteRainfallRecord
 } from './services/db';
 import { useAuth } from './context/AuthContext';
-import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete, isInitialPullCompleted, hasPendingSync } from './services/cloudSync';
+import { cloudPushData, syncCloudAndLocal, markPendingSync, markPendingDelete, isInitialPullCompleted, hasPendingSync, purgeForeignLocalData } from './services/cloudSync';
 import { AuthView } from './components/Auth/AuthView';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/Dashboard/DashboardView';
@@ -351,8 +351,8 @@ export default function App() {
       }
     }
 
-    // 1. Sincronizar de inmediato al entrar
-    sync();
+    // 1. Aislar el dispositivo a esta finca y sincronizar de inmediato al entrar
+    purgeForeignLocalData(userId).catch(() => null).finally(() => sync());
 
     // 2. Sincronizar al reconectarse, volver a la ventana, enfocar la pantalla o restaurar desde hibernación móvil (pageshow)
     const handleSyncTrigger = () => sync();
@@ -386,14 +386,9 @@ export default function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [currentView]);
 
-  // Identificadores autorizados para consultar datos del predio (incluye dueño y trabajador)
-  const rawAllowedIds = [
-    userId,
-    currentUser?.id,
-    currentUser?.ownerId,
-    effectiveUserId,
-    'default'
-  ].filter(Boolean);
+  // AISLAMIENTO ESTRICTO: solo se muestran registros cuyo dueño es exactamente la finca activa
+  // (sin 'default', sin registros huérfanos y sin datos de otras cuentas usadas en este dispositivo)
+  const rawAllowedIds = [userId].filter(Boolean);
 
   const allowedUserIds = new Set([
     ...rawAllowedIds,
@@ -405,7 +400,7 @@ export default function App() {
   const cattle = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.cattle.filter(c => !c.userId || allowedUserIds.has(c.userId) || allowedUserIds.has(String(c.userId))).toArray();
+      return db.cattle.filter(c => allowedUserIds.has(c.userId) || allowedUserIds.has(String(c.userId))).toArray();
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -439,7 +434,7 @@ export default function App() {
   const weighings = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.weighings.filter(w => !w.userId || allowedUserIds.has(w.userId)).toArray();
+      return db.weighings.filter(w => allowedUserIds.has(w.userId)).toArray();
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -447,7 +442,7 @@ export default function App() {
   const vaccinations = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.vaccinations ? db.vaccinations.filter(v => !v.userId || allowedUserIds.has(v.userId)).toArray() : [];
+      return db.vaccinations ? db.vaccinations.filter(v => allowedUserIds.has(v.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -458,7 +453,7 @@ export default function App() {
         return db.audits ? db.audits.toArray() : [];
       }
       return db.audits ? db.audits.filter(a => {
-        if (!a.userId || a.userId === 'default') return true;
+        if (!a.userId || a.userId === 'default') return false;
         return allowedUserIds.has(a.userId) || allowedUserIds.has(String(a.userId));
       }).toArray() : [];
     },
@@ -468,7 +463,7 @@ export default function App() {
   const palpations = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.palpations ? db.palpations.filter(p => !p.userId || allowedUserIds.has(p.userId)).toArray() : [];
+      return db.palpations ? db.palpations.filter(p => allowedUserIds.has(p.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -476,7 +471,7 @@ export default function App() {
   const calendarNotes = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.calendarNotes ? db.calendarNotes.filter(n => !n.userId || allowedUserIds.has(n.userId)).toArray() : [];
+      return db.calendarNotes ? db.calendarNotes.filter(n => allowedUserIds.has(n.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -484,7 +479,7 @@ export default function App() {
   const farmExpenses = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.farmExpenses ? db.farmExpenses.filter(e => !e.userId || allowedUserIds.has(e.userId)).toArray() : [];
+      return db.farmExpenses ? db.farmExpenses.filter(e => allowedUserIds.has(e.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -492,7 +487,7 @@ export default function App() {
   const farmIncomes = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.farmIncomes ? db.farmIncomes.filter(i => !i.userId || allowedUserIds.has(i.userId)).toArray() : [];
+      return db.farmIncomes ? db.farmIncomes.filter(i => allowedUserIds.has(i.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -500,7 +495,7 @@ export default function App() {
   const paddocks = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.paddocks ? db.paddocks.filter(p => !p.userId || allowedUserIds.has(p.userId)).toArray() : [];
+      return db.paddocks ? db.paddocks.filter(p => allowedUserIds.has(p.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -508,7 +503,7 @@ export default function App() {
   const milkRecords = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.milkRecords ? db.milkRecords.filter(m => !m.userId || allowedUserIds.has(m.userId)).toArray() : [];
+      return db.milkRecords ? db.milkRecords.filter(m => allowedUserIds.has(m.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -516,7 +511,7 @@ export default function App() {
   const milkDeliveries = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.milkDeliveries ? db.milkDeliveries.filter(d => !d.userId || allowedUserIds.has(d.userId)).toArray() : [];
+      return db.milkDeliveries ? db.milkDeliveries.filter(d => allowedUserIds.has(d.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -524,7 +519,7 @@ export default function App() {
   const dailyMilkLogs = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.dailyMilkLogs ? db.dailyMilkLogs.filter(l => !l.userId || allowedUserIds.has(l.userId)).toArray() : [];
+      return db.dailyMilkLogs ? db.dailyMilkLogs.filter(l => allowedUserIds.has(l.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -532,7 +527,7 @@ export default function App() {
   const milkSettlements = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.milkSettlements ? db.milkSettlements.filter(s => !s.userId || allowedUserIds.has(s.userId)).toArray() : [];
+      return db.milkSettlements ? db.milkSettlements.filter(s => allowedUserIds.has(s.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];
@@ -540,7 +535,7 @@ export default function App() {
   const rainfall = useLiveQuery(
     () => {
       if (!userId && !currentUser?.id) return [];
-      return db.rainfall ? db.rainfall.filter(r => !r.userId || allowedUserIds.has(r.userId)).toArray() : [];
+      return db.rainfall ? db.rainfall.filter(r => allowedUserIds.has(r.userId)).toArray() : [];
     },
     [userId, currentUser?.id, currentUser?.ownerId, effectiveUserId]
   ) || [];

@@ -1,5 +1,5 @@
 {
-  "version": "2.24.49",
-  "buildTime": 1793660400000,
-  "description": "⚡ Optimización de Velocidad de Carga (Code-Splitting, Caché Instantáneo y Arranque sin Bloqueo)"
+  "version": "2.24.50",
+  "buildTime": 1793707000000,
+  "description": "🔒 Aislamiento estricto de datos por cuenta: cada finca solo ve y sincroniza su propio ganado"
 }

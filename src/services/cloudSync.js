@@ -618,7 +618,8 @@ export async function cloudPushData(userId, options = {}) {
   }
 
   try {
-    const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
+    // AISLAMIENTO ESTRICTO POR FINCA: solo se suben registros cuyo dueño es exactamente esta cuenta
+    const isTarget = item => item && item.userId !== undefined && item.userId !== null && String(item.userId) === String(userId);
     const cattle = await db.cattle.filter(isTarget).toArray();
 
     // SALVAGUARDA ANTI-BORRADO ACCIDENTAL:
@@ -744,6 +745,41 @@ export async function cloudPushData(userId, options = {}) {
 }
 
 /**
+ * AISLAMIENTO DE SEGURIDAD MULTI-CUENTA:
+ * Elimina del almacenamiento local de este dispositivo cualquier registro que NO pertenezca
+ * exactamente a la finca activa (registros de otras cuentas usadas antes en este navegador
+ * o registros huérfanos sin dueño). Así cada cuenta solo ve y sube su propio ganado.
+ */
+export async function purgeForeignLocalData(farmId) {
+  if (!farmId) return 0;
+  const target = String(farmId);
+  const tables = [
+    'cattle', 'weighings', 'expenses', 'farmExpenses', 'farmIncomes', 'vaccinations',
+    'audits', 'palpations', 'paddocks', 'milkRecords', 'milkDeliveries', 'dailyMilkLogs',
+    'milkSettlements', 'transactions', 'activityLogs', 'calendarNotes', 'rainfall'
+  ];
+  let removed = 0;
+  for (const t of tables) {
+    if (!db[t]) continue;
+    try {
+      const foreign = await db[t]
+        .filter(item => !item || item.userId === undefined || item.userId === null || String(item.userId) !== target)
+        .primaryKeys();
+      if (foreign.length > 0) {
+        await db[t].bulkDelete(foreign);
+        removed += foreign.length;
+      }
+    } catch (e) {
+      console.warn(`Aislamiento: no se pudo depurar ${t}:`, e);
+    }
+  }
+  if (removed > 0) {
+    console.log(`🔒 Aislamiento de cuenta: ${removed} registros ajenos eliminados del dispositivo.`);
+  }
+  return removed;
+}
+
+/**
  * Normaliza cualquier valor recibido de Firebase a un array seguro
  * (Soporta arrays nativos, objetos indexados {0:..., 1:...}, null y undefined)
  */
@@ -807,7 +843,8 @@ async function fetchLatestCloudFarmSnapshot(userId, checkAliases = false) {
     return candidates[0].data;
   }
 
-  // 2. Solo si el nodo principal está vacío, verificar si existe un respaldo en claves alternativas
+  // 2. AISLAMIENTO ESTRICTO: Solo si el nodo principal está vacío, revisar claves heredadas DE LA MISMA CUENTA
+  // (mismo correo exacto). NUNCA se buscan ni se copian datos de otras cuentas por nombre de finca u otro criterio.
   if (checkAliases && !primaryHasCattle) {
     try {
       let sessionUser = null;
@@ -817,7 +854,6 @@ async function fetchLatestCloudFarmSnapshot(userId, checkAliases = false) {
       } catch (e) {}
 
       const email = (sessionUser?.ownerEmail || sessionUser?.email || '').trim().toLowerCase();
-      const farmName = (sessionUser?.farmName || '').trim().toLowerCase();
       const safeEmail = email ? toSafeEmailKey(email) : '';
       const aliasKeys = new Set();
 
@@ -825,81 +861,29 @@ async function fetchLatestCloudFarmSnapshot(userId, checkAliases = false) {
         if (safeEmail !== userId) aliasKeys.add(safeEmail);
         if (`usr_${safeEmail}` !== userId) aliasKeys.add(`usr_${safeEmail}`);
       }
-      if (sessionUser?.ownerId && sessionUser.ownerId !== userId) {
-        aliasKeys.add(sessionUser.ownerId);
-      }
 
       for (const aliasKey of aliasKeys) {
         try {
           const aRes = await safeFetch(`${FIREBASE_URL}/userData/${aliasKey}.json?_t=${Date.now()}`, {}, 6000);
           if (aRes && aRes.ok) {
             const aData = await aRes.json();
-            if (aData && typeof aData === 'object' && normalizeRemoteList(aData.cattle).length > 0) {
+            const aOwnerEmail = (aData?.ownerEmail || '').trim().toLowerCase();
+            // Solo se acepta si el nodo heredado pertenece explícitamente al mismo correo
+            if (aData && typeof aData === 'object' && aOwnerEmail && aOwnerEmail === email && normalizeRemoteList(aData.cattle).length > 0) {
               candidates.push({ key: aliasKey, data: aData, ts: getSnapshotLatestTimestamp(aData) });
             }
           }
         } catch (e) {}
       }
-
-      // Si el usuario tiene nombre de finca o correo, consultar /users.json para detectar si existe otro
-      // userId asociado a la misma finca cuyo respaldo en /userData sea más reciente
-      if (email || farmName) {
-        const uRes = await safeFetch(`${FIREBASE_URL}/users.json?_t=${Date.now()}`, {}, 6000);
-        if (uRes && uRes.ok) {
-          const allUsers = await uRes.json();
-          if (allUsers && typeof allUsers === 'object') {
-            const normalizeStr = (str) => (str || '')
-              .normalize('NFD')
-              .replace(/[\u0300-\u036f]/g, '')
-              .toLowerCase()
-              .replace(/[^a-z0-9]/g, '');
-            const normFarm = normalizeStr(farmName);
-
-            const matchingUserIds = new Set();
-            for (const uObj of Object.values(allUsers)) {
-              if (!uObj || typeof uObj !== 'object' || uObj.isDeleted) continue;
-              const uEmail = (uObj.email || '').trim().toLowerCase();
-              const uOwnerEmail = (uObj.ownerEmail || '').trim().toLowerCase();
-              const uFarm = normalizeStr(uObj.farmName);
-
-              const sameEmail = email && (uEmail === email || uOwnerEmail === email);
-              const sameFarm = normFarm && normFarm.length >= 4 && uFarm === normFarm;
-
-              if (sameEmail || sameFarm) {
-                if (uObj.id && uObj.id !== userId && !String(uObj.id).startsWith('usr_wrk_')) {
-                  matchingUserIds.add(uObj.id);
-                }
-                if (uObj.ownerId && uObj.ownerId !== userId) {
-                  matchingUserIds.add(uObj.ownerId);
-                }
-              }
-            }
-
-            for (const otherId of matchingUserIds) {
-              if (candidates.some(c => c.key === otherId)) continue;
-              try {
-                const oRes = await safeFetch(`${FIREBASE_URL}/userData/${otherId}.json?_t=${Date.now()}`, {}, 6000);
-                if (oRes && oRes.ok) {
-                  const oData = await oRes.json();
-                  if (oData && typeof oData === 'object' && normalizeRemoteList(oData.cattle).length > 0) {
-                    candidates.push({ key: otherId, data: oData, ts: getSnapshotLatestTimestamp(oData) });
-                  }
-                }
-              } catch (e) {}
-            }
-          }
-        }
-      }
     } catch (aliasErr) {
-      console.warn('Nota verificando nodos de respaldo de la finca:', aliasErr);
+      console.warn('Nota verificando nodos heredados de la cuenta:', aliasErr);
     }
   }
 
   if (candidates.length === 0) return null;
   if (candidates.length === 1) return candidates[0].data;
 
-  // Ordenar candidatos priorizando el respaldo más reciente (mayor timestamp syncedAt)
-  // y que contenga inventario activo válido
+  // Ordenar candidatos priorizando el respaldo más reciente con inventario válido
   candidates.sort((a, b) => {
     const aHasCattle = normalizeRemoteList(a.data?.cattle).length > 0 ? 1 : 0;
     const bHasCattle = normalizeRemoteList(b.data?.cattle).length > 0 ? 1 : 0;
@@ -907,18 +891,8 @@ async function fetchLatestCloudFarmSnapshot(userId, checkAliases = false) {
     return b.ts - a.ts;
   });
 
-  const winner = candidates[0];
-
-  // Si el respaldo más reciente estaba en un nodo hermano, consolidarlo también en userId
-  if (winner.key !== userId && winner.data) {
-    safeFetch(`${FIREBASE_URL}/userData/${userId}.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...winner.data, userId }),
-    }).catch(() => null);
-  }
-
-  return winner.data;
+  // Nunca se escribe automáticamente en la nube de esta cuenta datos de otro nodo
+  return candidates[0].data;
 }
 
 /**
@@ -955,7 +929,8 @@ async function reconcileCollection(tableName, rawRemoteData, userId, options = {
   };
 
   // Obtener los registros locales existentes para comparar marcas de tiempo
-  const isTarget = item => !item.userId || item.userId === userId || String(item.userId).startsWith('usr_wrk_') || item.ownerId === userId;
+  // AISLAMIENTO ESTRICTO POR FINCA: solo se comparan registros locales cuyo dueño es exactamente esta cuenta
+  const isTarget = item => item && item.userId !== undefined && item.userId !== null && String(item.userId) === String(userId);
   const localItems = await db[tableName].filter(isTarget).toArray();
   const localItemMap = new Map();
   for (const loc of localItems) {

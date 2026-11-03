@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.49";
+export const CURRENT_APP_VERSION = "2.24.50";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.50",
+    date: "03/11/2026",
+    title: "🔒 Seguridad: Aislamiento Estricto de Ganado por Cuenta",
+    highlights: [
+      "Cada cuenta ve únicamente su propio ganado: se eliminó la búsqueda automática de 'fincas parecidas' que podía copiar animales de otra cuenta a una cuenta vacía.",
+      "Al iniciar sesión, el dispositivo borra de su memoria local cualquier dato de otras cuentas usadas antes en el mismo navegador.",
+      "Las cuentas nuevas siempre arrancan con inventario vacío hasta que registren su propio ganado."
+    ]
+  },
   {
     version: "2.24.49",
     date: "02/11/2026",
