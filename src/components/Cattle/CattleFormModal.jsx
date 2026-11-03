@@ -831,6 +831,7 @@ export function CattleFormModal({ isOpen, onClose, onSave, animal = null, zIndex
       paddock: batchValue,
       entryType: dataToSave.entryType || 'Compra',
       origin: isBorn ? 'Nacido en finca' : (dataToSave.origin || 'Comprado / Externo'),
+      birthDate: isBorn ? (dataToSave.entryDate || dataToSave.birthDate) : (dataToSave.birthDate || ''),
       motherId: dataToSave.motherId || '',
       motherTag: dataToSave.motherTag || '',
       fatherType: dataToSave.fatherType || 'toro',

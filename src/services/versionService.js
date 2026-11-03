@@ -1,10 +1,20 @@
-export const CURRENT_APP_VERSION = "2.24.51";
+export const CURRENT_APP_VERSION = "2.24.52";
 export const CURRENT_BUILD_TIME = Date.now();
 
 /**
   * Historial de las últimas actualizaciones generadas en el sistema
   */
  export const APP_CHANGELOG = [
+  {
+    version: "2.24.52",
+    date: "03/11/2026",
+    title: "🍼 Corrección de Alertas de Destete en Crías Recién Nacidas",
+    highlights: [
+      "Guardia biológica zootécnica: un ternero con menos de 120 días de nacido (~4 meses) nunca mostrará alerta errónea de 'Destete Cumplido'.",
+      "Auto-corrección de fechas de nacimiento y destete cuando se digita un mes anterior por error al registrar el parto.",
+      "Sincronización automática de fechas en la nube y en la base de datos local para crías activas (#25-6 y #TEMP)."
+    ]
+  },
   {
     version: "2.24.51",
     date: "03/11/2026",

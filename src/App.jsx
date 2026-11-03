@@ -60,7 +60,7 @@ const VaccinationRecordModal = lazy(() => import('./components/Vaccinations/Vacc
 const VaccinationCensusModal = lazy(() => import('./components/Vaccinations/VaccinationCensusModal').then(m => ({ default: m.VaccinationCensusModal })));
 const InventoryChecklistModal = lazy(() => import('./components/Checklist/InventoryChecklistModal').then(m => ({ default: m.InventoryChecklistModal })));
 const ForcePasswordChangeModal = lazy(() => import('./components/Auth/ForcePasswordChangeModal').then(m => ({ default: m.ForcePasswordChangeModal })));
-import { calculateWeightMetrics, formatCurrency, formatNumber, formatDate, getLocalDateString } from './services/calculations';
+import { calculateWeightMetrics, formatCurrency, formatNumber, formatDate, getLocalDateString, getDaysDifference } from './services/calculations';
 import { triggerFeedback } from './services/soundService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { saveActiveUIState, loadActiveUIState, clearActiveUIModal } from './services/draftService';
@@ -430,6 +430,52 @@ export default function App() {
       }
     }
   }, [cattle]);
+
+  // Auto-corrección biológica de fechas de destete y nacimientos discordantes en crías recién nacidas
+  useEffect(() => {
+    if (!cattle || cattle.length === 0 || !userId) return;
+    const now = new Date();
+    cattle.forEach(async (c) => {
+      if ((c.category === 'Ternero' || c.category === 'Ternera' || c.entryType === 'Nacimiento') && !c.isWeaned) {
+        let needsUpdate = false;
+        const updates = {};
+        
+        // 1. Si entryDate es de octubre y birthDate quedó en febrero/marzo por error de mes al registrar el parto
+        if (c.entryDate && c.birthDate && c.entryDate !== c.birthDate && c.entryType === 'Nacimiento') {
+          updates.birthDate = c.entryDate;
+          needsUpdate = true;
+        }
+
+        const effectiveBirth = updates.birthDate || c.birthDate || c.entryDate;
+        if (effectiveBirth) {
+          const ageDays = getDaysDifference(effectiveBirth, now);
+          // Si el ternero tiene menos de 120 días (~4 meses) pero su destete quedó programado en el pasado
+          if (ageDays < 120 && c.weaningPlannedDate) {
+            const p = c.weaningPlannedDate.split('-');
+            if (p.length === 3) {
+              const wDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+              if (wDate < now) {
+                // Recalcular destete a 210 días (7 meses ICA) desde la fecha de nacimiento real
+                const realWeaning = new Date(effectiveBirth);
+                realWeaning.setDate(realWeaning.getDate() + 210);
+                const y = realWeaning.getFullYear();
+                const m = String(realWeaning.getMonth() + 1).padStart(2, '0');
+                const d = String(realWeaning.getDate()).padStart(2, '0');
+                updates.weaningPlannedDate = `${y}-${m}-${d}`;
+                needsUpdate = true;
+              }
+            }
+          }
+        }
+
+        if (needsUpdate) {
+          updates.updatedAt = new Date().toISOString();
+          await db.cattle.update(c.id, updates);
+          markPendingSync(userId, c.id);
+        }
+      }
+    });
+  }, [cattle, userId]);
 
   const weighings = useLiveQuery(
     () => {

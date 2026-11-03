@@ -111,11 +111,17 @@ export function AlertsList({
 
     // ALERTA DESTACADA 3: Destete Programado / Pendiente en Crías
     if ((animal.category === 'Ternero' || animal.category === 'Ternera' || animal.entryType === 'Nacimiento') && !animal.isWeaned) {
-      const birthDateStr = animal.birthDate || animal.entryDate;
+      // Priorizar fecha de entrada si es nacimiento reciente o fecha de nacimiento
+      const birthDateStr = (animal.entryType === 'Nacimiento' && animal.entryDate) ? animal.entryDate : (animal.birthDate || animal.entryDate);
+      const ageDays = birthDateStr ? getDaysDifference(birthDateStr, new Date()) : 0;
+
       let isDueForWeaning = false;
       let daysUntilWeaning = null;
       let weaningDueDateStr = animal.weaningPlannedDate || '';
 
+      // GUARDIA BIOLÓGICA ZOOTÉCNICA:
+      // Un ternero con menos de 120 días de nacido (~4 meses) NUNCA puede estar destetado ni tener destete cumplido.
+      // Si la fecha programada quedó en el pasado por error de digitación de mes, se invalida y recalcula.
       if (weaningDueDateStr) {
         try {
           const todayMid = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime();
@@ -123,13 +129,17 @@ export function AlertsList({
           if (p.length === 3) {
             const wMid = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
             daysUntilWeaning = Math.round((wMid - todayMid) / 86400000);
-            if (daysUntilWeaning <= 20) {
+
+            // Si el ternero tiene menos de 120 días de nacido, es un error de digitación en la fecha agendada
+            if (ageDays < 120 && daysUntilWeaning <= 0) {
+              daysUntilWeaning = 210 - ageDays;
+              isDueForWeaning = false; // Aún en periodo lactante
+            } else if (daysUntilWeaning <= 20) {
               isDueForWeaning = true;
             }
           }
         } catch (e) {}
       } else if (birthDateStr) {
-        const ageDays = getDaysDifference(birthDateStr, new Date());
         if (ageDays >= 195) { // >= 6.5 meses (~195 días)
           isDueForWeaning = true;
           daysUntilWeaning = 210 - ageDays;
